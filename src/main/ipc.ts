@@ -2,6 +2,7 @@ import { decode } from '@shelacek/ubjson';
 import { dialog, ipcMain, IpcMainInvokeEvent } from 'electron';
 import { open, readdir } from 'fs/promises';
 import { join } from 'path';
+import iconv from 'iconv-lite';
 import { Player, Replay } from '../common/types';
 import { legalStages } from '../common/constants';
 
@@ -132,19 +133,37 @@ export default function setupIPCs(): void {
               }
             }
 
-            // TODO
             for (let i = 0; i < 4; i += 1) {
-              players[i].nametag = '';
+              const offset = i * 16 + 353;
+              const nametag = iconv
+                .decode(gameStart.subarray(offset, offset + 16), 'Shift_JIS')
+                .split('\0')
+                .shift();
+              if (nametag) {
+                players[i].nametag = nametag;
+              }
             }
 
-            // TODO
             for (let i = 0; i < 4; i += 1) {
-              players[i].displayName = '';
+              const offset = i * 31 + 421;
+              const displayName = iconv
+                .decode(gameStart.subarray(offset, offset + 31), 'Shift_JIS')
+                .split('\0')
+                .shift();
+              if (displayName) {
+                players[i].displayName = displayName;
+              }
             }
 
-            // TODO
             for (let i = 0; i < 4; i += 1) {
-              players[i].connectCode = '';
+              const offset = i * 10 + 545;
+              const connectCode = iconv
+                .decode(gameStart.subarray(offset, offset + 10), 'Shift_JIS')
+                .split('\0')
+                .shift();
+              if (connectCode) {
+                players[i].connectCode = connectCode;
+              }
             }
 
             // game end
@@ -159,6 +178,7 @@ export default function setupIPCs(): void {
               return null;
             }
             if (gameEnd[0] !== 0x39) {
+              // TODO maybe support replays with not game end event
               return null;
             }
             if (gameEnd[1] === 1 || gameEnd[1] === 2) {

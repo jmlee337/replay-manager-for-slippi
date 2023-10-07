@@ -15,10 +15,22 @@ import { format } from 'date-fns';
 import { Replay } from '../common/types';
 import { stageNames } from '../common/constants';
 
+const EllipsisText = styled.div`
+  flex-grow: 1;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+`;
+
 const PlayersRow = styled.div`
   display: flex;
+`;
+
+const QuarterSegment = styled.div`
   align-items: center;
-  justify-content: space-between;
+  box-sizing: border-box;
+  display: flex;
+  padding: 0 4px;
+  min-width: 25%;
 `;
 
 const ReplayContent = styled.div`
@@ -27,16 +39,8 @@ const ReplayContent = styled.div`
   flex-grow: 1;
 `;
 
-const SpanGrow = styled.span`
-  flex-grow: 1;
-`;
-
-const TextBlock = styled.div`
-  min-width: 25%;
-`;
-
 const chipStyle = {
-  width: '24%',
+  width: '25%',
 };
 
 const typographyStyle = {
@@ -76,6 +80,18 @@ const ReplayListItem = memo(function ReplayListItem({
   const duration = format(new Date(replay.lastFrame / 0.05994), "m'm'ss's'");
   const stageName = stageNames.get(replay.stageId) || replay.stageId;
 
+  const displayNames = replay.players.map((player) => {
+    const key = player.port;
+    const displayName = player.playerType === 0 && player.displayName;
+    const trophy = player.isWinner && <EmojiEvents />;
+    return (
+      <QuarterSegment key={key}>
+        {trophy}
+        <EllipsisText>{displayName}</EllipsisText>
+      </QuarterSegment>
+    );
+  });
+
   const playerChips = replay.players.map((player) => {
     const key = player.port;
     if (player.playerType !== 0 && player.playerType !== 1) {
@@ -87,18 +103,15 @@ const ReplayListItem = memo(function ReplayListItem({
         {player.externalCharacterId}/{player.costumeIndex}
       </Avatar>
     );
-    const name = player.playerType === 0 ? `P${key}` : 'CPU';
-    const label = (
-      <>
-        <SpanGrow>{name}</SpanGrow>
-        {player.isWinner && <EmojiEvents />}
-      </>
-    );
+    const name =
+      player.playerType === 0
+        ? player.connectCode || player.nametag || `P${key}`
+        : 'CPU';
     return (
       <Chip
         avatar={avatar}
         key={key}
-        label={label}
+        label={name}
         style={chipStyle}
         variant={player.playerType === 0 ? 'outlined' : 'filled'}
       />
@@ -113,17 +126,20 @@ const ReplayListItem = memo(function ReplayListItem({
     >
       <Checkbox checked={replay.selected} />
       <ReplayContent>
+        <Typography style={typographyStyle} variant="caption">
+          {displayNames}
+        </Typography>
         <PlayersRow>
           <ThemeProvider theme={chipTheme}>{playerChips}</ThemeProvider>
         </PlayersRow>
         <Typography style={typographyStyle} variant="subtitle1">
-          <TextBlock>{stageName}</TextBlock>
-          <TextBlock>{duration}</TextBlock>
-          <TextBlock>{time}</TextBlock>
+          <QuarterSegment>{stageName}</QuarterSegment>
+          <QuarterSegment>{duration}</QuarterSegment>
+          <QuarterSegment>{time}</QuarterSegment>
         </Typography>
         <Typography style={typographyStyle} variant="caption">
-          <TextBlock>{date}</TextBlock>
-          <TextBlock>{replay.fileName}</TextBlock>
+          <QuarterSegment>{date}</QuarterSegment>
+          <QuarterSegment>{replay.fileName}</QuarterSegment>
         </Typography>
       </ReplayContent>
     </ListItemButton>
