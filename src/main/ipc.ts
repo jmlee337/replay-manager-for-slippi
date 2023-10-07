@@ -101,8 +101,8 @@ export default function setupIPCs(): void {
               return null;
             }
 
-            const version = gameStart[1] * 100 + gameStart[2];
-            if (version < 313) {
+            const version = gameStart.readUint32BE(1);
+            if (version < 0x030d0000) {
               // Display Names/Connect Codes added in 3.9.0
               // Player Placements added in 3.13.0
               // TODO support older files
