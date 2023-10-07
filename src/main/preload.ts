@@ -1,6 +1,10 @@
-// Disable no-unused-vars, broken for spread args
-/* eslint no-unused-vars: off */
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import {
+  contextBridge,
+  ipcRenderer,
+  IpcRendererEvent,
+  OpenDialogReturnValue,
+} from 'electron';
+import { Replay } from '../common/types';
 
 export type Channels = 'ipc-example';
 
@@ -22,6 +26,10 @@ const electronHandler = {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },
   },
+  chooseDir: (): Promise<OpenDialogReturnValue> =>
+    ipcRenderer.invoke('chooseDir'),
+  getReplaysInDir: (dir: string): Promise<Replay[]> =>
+    ipcRenderer.invoke('getReplaysInDir', dir),
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

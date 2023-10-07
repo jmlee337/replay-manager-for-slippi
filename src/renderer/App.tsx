@@ -1,41 +1,65 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import icon from '../../assets/icon.svg';
-import './App.css';
+import { useState } from 'react';
+import { IconButton, InputBase } from '@mui/material';
+import { FolderOpen, Refresh } from '@mui/icons-material';
+import styled from '@emotion/styled';
+import { Replay } from '../common/types';
+import ReplayList from './ReplayList';
+
+const AppWindow = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+const FolderBar = styled.div`
+  display: flex;
+  padding-left: 58px;
+`;
 
 function Hello() {
+  const [dir, setDir] = useState('');
+  const [dirExists, setDirExists] = useState(true);
+  const [replays, setReplays] = useState([] as Replay[]);
+  const chooseDir = async () => {
+    const openDialogRes = await window.electron.chooseDir();
+    if (!openDialogRes.canceled) {
+      const newDir = openDialogRes.filePaths[0];
+      const newReplays = await window.electron.getReplaysInDir(newDir);
+      setDir(newDir);
+      setDirExists(true);
+      setReplays(newReplays);
+    }
+  };
+  const refreshReplays = async () => {
+    try {
+      setReplays(await window.electron.getReplaysInDir(dir));
+    } catch (e: any) {
+      setDirExists(false);
+      setReplays([]);
+    }
+  };
+
+  const onReplayClick = (index: number) => {
+    const newReplays = Array.from(replays);
+    newReplays[index].selected = !newReplays[index].selected;
+    setReplays(newReplays);
+  };
   return (
-    <div>
-      <div className="Hello">
-        <img width="200" alt="icon" src={icon} />
-      </div>
-      <h1>electron-react-boilerplate</h1>
-      <div className="Hello">
-        <a
-          href="https://electron-react-boilerplate.js.org/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <button type="button">
-            <span role="img" aria-label="books">
-              📚
-            </span>
-            Read our docs
-          </button>
-        </a>
-        <a
-          href="https://github.com/sponsors/electron-react-boilerplate"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <button type="button">
-            <span role="img" aria-label="folded hands">
-              🙏
-            </span>
-            Donate
-          </button>
-        </a>
-      </div>
-    </div>
+    <AppWindow>
+      <FolderBar>
+        <InputBase disabled size="small" value={dir} style={{ flexGrow: 1 }} />
+        <IconButton aria-label="choose folder" onClick={chooseDir}>
+          <FolderOpen />
+        </IconButton>
+        <IconButton aria-label="refresh folder" onClick={refreshReplays}>
+          <Refresh />
+        </IconButton>
+      </FolderBar>
+      {dirExists ? (
+        <ReplayList replays={replays} onClick={onReplayClick} />
+      ) : (
+        <div>Folder not found</div>
+      )}
+    </AppWindow>
   );
 }
 

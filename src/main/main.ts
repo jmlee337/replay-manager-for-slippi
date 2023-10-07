@@ -14,6 +14,7 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import setupIPCs from './ipc';
 
 class AppUpdater {
   constructor() {
@@ -127,6 +128,7 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(() => {
+    setupIPCs();
     createWindow();
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
