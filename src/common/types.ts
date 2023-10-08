@@ -21,3 +21,31 @@ export type Replay = {
   stageId: number;
   startAt: string;
 };
+
+export type Event = {
+  id: number;
+  name: string;
+};
+
+export type Phase = {
+  id: number;
+  name: string;
+};
+
+export type PhaseGroup = {
+  id: number;
+  name: string;
+};
+
+export type Set = {
+  id: number;
+  state: number;
+  fullRoundText: string;
+  winnerId: number;
+  entrant1Id: number;
+  entrant1Name: string;
+  entrant1Score: string | null;
+  entrant2Id: number;
+  entrant2Name: string;
+  entrant2Score: string | null;
+};

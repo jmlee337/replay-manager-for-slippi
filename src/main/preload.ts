@@ -32,6 +32,10 @@ const electronHandler = {
     ipcRenderer.invoke('getReplaysInDir', dir),
   getTournament: (slug: string): Promise<any> =>
     ipcRenderer.invoke('getTournament', slug),
+  getEvent: (id: number): Promise<any> => ipcRenderer.invoke('getEvent', id),
+  getPhase: (id: number): Promise<any> => ipcRenderer.invoke('getPhase', id),
+  getPhaseGroup: (id: number): Promise<any> =>
+    ipcRenderer.invoke('getPhaseGroup', id),
   getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
   setStartggKey: (startggKey: string): Promise<void> =>
     ipcRenderer.invoke('setStartggKey', startggKey),

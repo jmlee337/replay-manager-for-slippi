@@ -6,7 +6,7 @@ import iconv from 'iconv-lite';
 import Store from 'electron-store';
 import { Player, Replay } from '../common/types';
 import { legalStages } from '../common/constants';
-import { getTournament } from './startgg';
+import { getEvent, getPhase, getPhaseGroup, getTournament } from './startgg';
 
 const RAW_HEADER_START = Buffer.from([
   0x7b, 0x55, 0x03, 0x72, 0x61, 0x77, 0x5b, 0x24, 0x55, 0x23, 0x6c,
@@ -243,13 +243,26 @@ export default function setupIPCs(): void {
 
   const store = new Store();
   let startggKey = store.get('startggKey') as string;
-  ipcMain.handle('getTournament', (event: IpcMainInvokeEvent, slug: string) => {
-    if (!startggKey) {
-      throw Error('start.gg api key not set.');
-    }
+  ipcMain.handle(
+    'getTournament',
+    async (event: IpcMainInvokeEvent, slug: string) => getTournament(slug),
+  );
+  ipcMain.handle('getEvent', async (event: IpcMainInvokeEvent, id: number) =>
+    getEvent(id),
+  );
+  ipcMain.handle('getPhase', async (event: IpcMainInvokeEvent, id: number) =>
+    getPhase(id),
+  );
+  ipcMain.handle(
+    'getPhaseGroup',
+    async (event: IpcMainInvokeEvent, id: number) => {
+      if (!startggKey) {
+        throw new Error();
+      }
 
-    return getTournament(startggKey, slug);
-  });
+      return getPhaseGroup(startggKey, id);
+    },
+  );
   ipcMain.handle('getStartggKey', () => store.get('startggKey') as string);
   ipcMain.handle(
     'setStartggKey',
