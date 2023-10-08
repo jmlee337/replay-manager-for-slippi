@@ -30,6 +30,11 @@ const electronHandler = {
     ipcRenderer.invoke('chooseDir'),
   getReplaysInDir: (dir: string): Promise<Replay[]> =>
     ipcRenderer.invoke('getReplaysInDir', dir),
+  getTournament: (slug: string): Promise<any> =>
+    ipcRenderer.invoke('getTournament', slug),
+  getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
+  setStartggKey: (startggKey: string): Promise<void> =>
+    ipcRenderer.invoke('setStartggKey', startggKey),
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);
