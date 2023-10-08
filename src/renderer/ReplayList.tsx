@@ -133,9 +133,9 @@ const ReplayListItem = memo(function ReplayListItem({
           <ThemeProvider theme={chipTheme}>{playerChips}</ThemeProvider>
         </PlayersRow>
         <Typography style={typographyStyle} variant="subtitle1">
+          <QuarterSegment>{time}</QuarterSegment>
           <QuarterSegment>{stageName}</QuarterSegment>
           <QuarterSegment>{duration}</QuarterSegment>
-          <QuarterSegment>{time}</QuarterSegment>
         </Typography>
         <Typography style={typographyStyle} variant="caption">
           <QuarterSegment>{date}</QuarterSegment>
