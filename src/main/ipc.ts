@@ -122,14 +122,17 @@ export default function setupIPCs(): void {
               const offset = i * 36 + 101;
               players[i] = {} as Player;
               players[i].playerType = gameStart[offset + 1];
+              if (players[i].playerType === 1) {
+                isValid = false;
+              }
               players[i].port = i + 1;
               if (players[i].playerType === 0 || players[i].playerType === 1) {
                 players[i].costumeIndex = gameStart[offset + 3];
                 players[i].externalCharacterId = gameStart[offset];
+                if (players[i].externalCharacterId > 0x19) {
+                  isValid = false;
+                }
                 players[i].teamId = gameStart[offset + 9];
-              }
-              if (players[i].playerType === 1) {
-                isValid = false;
               }
             }
 
