@@ -1,28 +1,51 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import { FormEvent, useState } from 'react';
+import { FormEvent, SyntheticEvent, useState } from 'react';
 import {
   Button,
+  Chip,
   Dialog,
   DialogContent,
   DialogContentText,
   DialogTitle,
   IconButton,
   InputBase,
+  Snackbar,
+  Stack,
   TextField,
+  Typography,
 } from '@mui/material';
-import { Edit, FolderOpen, Key, Refresh } from '@mui/icons-material';
+import { Close, Edit, FolderOpen, Key, Refresh } from '@mui/icons-material';
 import styled from '@emotion/styled';
 import { Replay, Set, Tournament } from '../common/types';
 import ReplayList from './ReplayList';
 import TournamentView from './TournamentView';
+import './App.css';
 
-const AppWindow = styled.div`
-  display: flex;
+const Bottom = styled.div`
+  height: 108px;
 `;
 
-const Column = styled.div`
+const BottomColumns = styled.div`
+  align-items: center;
+  box-sizing: border-box;
   display: flex;
-  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  padding: 8px;
+`;
+
+const TopColumns = styled.div`
+  display: flex;
+  flex-grow: 1;
+  gap: 8px;
+  max-height: calc(100% - 108px);
+  padding: 0 8px;
+`;
+
+const TopColumn = styled(Stack)`
+  flex-shrink: 1;
+  overflow-y: scroll;
+  padding: 8px 0;
 `;
 
 const FolderBar = styled.div`
@@ -41,6 +64,28 @@ const TournamentBar = styled.div`
 `;
 
 function Hello() {
+  const [errorToastError, setErrorToastError] = useState('');
+  const [errorToastOpen, setErrorToastOpen] = useState(false);
+  const handleErrorToastClose = (
+    event: SyntheticEvent | Event,
+    reason?: string,
+  ) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+
+    setErrorToastError('');
+    setErrorToastOpen(false);
+  };
+  const showErrorToast = (e: any) => {
+    if (e instanceof Error) {
+      setErrorToastError(e.message);
+    } else {
+      setErrorToastError('Unknown Error!');
+    }
+    setErrorToastOpen(true);
+  };
+
   const [dir, setDir] = useState('');
   const [dirExists, setDirExists] = useState(true);
   const [replays, setReplays] = useState([] as Replay[]);
@@ -76,6 +121,7 @@ function Hello() {
     slug: '',
     events: [],
   } as Tournament);
+  const [selectedSet, setSelectedSet] = useState({} as Set);
   const getTournament = async (event: FormEvent<HTMLFormElement>) => {
     const target = event.target as typeof event.target & {
       slug: { value: string };
@@ -94,14 +140,21 @@ function Hello() {
         setSlug(newSlug);
         setSlugDialogOpen(false);
       } catch (e: any) {
-        setTournamentError('Error: start.gg API key');
+        setTournamentError(e.message);
       } finally {
         setGettingTournament(false);
       }
     }
   };
   const getEvent = async (id: number) => {
-    const phases = await window.electron.getEvent(id);
+    let phases;
+    try {
+      phases = await window.electron.getEvent(id);
+    } catch (e: any) {
+      showErrorToast(e);
+      return;
+    }
+
     const editEvent = tournament.events.find((event) => event.id === id);
     if (editEvent) {
       editEvent.phases = phases;
@@ -110,7 +163,14 @@ function Hello() {
   };
 
   const getPhase = async (id: number, eventId: number) => {
-    const phaseGroups = await window.electron.getPhase(id);
+    let phaseGroups;
+    try {
+      phaseGroups = await window.electron.getPhase(id);
+    } catch (e: any) {
+      showErrorToast(e);
+      return;
+    }
+
     const editEvent = tournament.events.find((event) => event.id === eventId);
     if (!editEvent) {
       return;
@@ -128,7 +188,14 @@ function Hello() {
     phaseId: number,
     eventId: number,
   ) => {
-    const sets = await window.electron.getPhaseGroup(id);
+    let sets;
+    try {
+      sets = await window.electron.getPhaseGroup(id);
+    } catch (e: any) {
+      showErrorToast(e);
+      return;
+    }
+
     const editEvent = tournament.events.find((event) => event.id === eventId);
     if (!editEvent) {
       return;
@@ -149,7 +216,7 @@ function Hello() {
   };
 
   const selectSet = (set: Set) => {
-    console.log(set.entrant1Names.concat(set.entrant2Names));
+    setSelectedSet(set);
   };
 
   const [startggKey, setStartggKey] = useState('');
@@ -172,103 +239,167 @@ function Hello() {
   };
 
   return (
-    <AppWindow>
-      <Column style={{ flexGrow: 2, minWidth: '600px' }}>
-        <FolderBar>
-          <InputBase
-            disabled
-            size="small"
-            value={dir}
-            style={{ flexGrow: 1 }}
+    <>
+      <TopColumns>
+        <TopColumn flexGrow={2} minWidth="600px">
+          <FolderBar>
+            <InputBase
+              disabled
+              size="small"
+              value={dir}
+              style={{ flexGrow: 1 }}
+            />
+            <IconButton aria-label="refresh folder" onClick={refreshReplays}>
+              <Refresh />
+            </IconButton>
+            <IconButton aria-label="choose folder" onClick={chooseDir}>
+              <FolderOpen />
+            </IconButton>
+          </FolderBar>
+          {dirExists ? (
+            <ReplayList replays={replays} onClick={onReplayClick} />
+          ) : (
+            <div>Folder not found</div>
+          )}
+        </TopColumn>
+        <TopColumn flexGrow={1} minWidth="300px">
+          <TournamentBar>
+            <InputBase
+              disabled
+              size="small"
+              value={slug}
+              style={{ flexGrow: 1 }}
+            />
+            <IconButton
+              aria-label="set tournament slug"
+              onClick={() => setSlugDialogOpen(true)}
+            >
+              <Edit />
+            </IconButton>
+            <Dialog
+              open={slugDialogOpen}
+              onClose={() => setSlugDialogOpen(false)}
+            >
+              <DialogTitle>Set Tournament Slug</DialogTitle>
+              <DialogContent>
+                <Form onSubmit={getTournament}>
+                  <TextField
+                    autoFocus
+                    label="Tournament Slug"
+                    name="slug"
+                    placeholder="genesis-9"
+                    size="small"
+                    variant="outlined"
+                  />
+                  <Button disabled={gettingTournament} type="submit">
+                    {gettingTournament ? 'Getting...' : 'Get!'}
+                  </Button>
+                </Form>
+                <DialogContentText color="red" variant="caption">
+                  {tournamentError}
+                </DialogContentText>
+              </DialogContent>
+            </Dialog>
+            <IconButton
+              aria-label="set startgg api key"
+              onClick={openStartggKeyDialog}
+            >
+              <Key />
+            </IconButton>
+            <Dialog
+              open={startggKeyDialogOpen}
+              onClose={() => setStartggKeyDialogOpen(false)}
+            >
+              <DialogTitle>Set start.gg API key</DialogTitle>
+              <DialogContent>
+                <Form onSubmit={setNewStartggKey}>
+                  <TextField
+                    autoFocus
+                    defaultValue={startggKey}
+                    fullWidth
+                    label="API key"
+                    name="key"
+                    size="small"
+                    type="password"
+                    variant="standard"
+                  />
+                  <Button type="submit">Set!</Button>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          </TournamentBar>
+          <TournamentView
+            tournament={tournament}
+            getEvent={getEvent}
+            getPhase={getPhase}
+            getPhaseGroup={getPhaseGroup}
+            selectSet={selectSet}
           />
-          <IconButton aria-label="refresh folder" onClick={refreshReplays}>
-            <Refresh />
-          </IconButton>
-          <IconButton aria-label="choose folder" onClick={chooseDir}>
-            <FolderOpen />
-          </IconButton>
-        </FolderBar>
-        {dirExists ? (
-          <ReplayList replays={replays} onClick={onReplayClick} />
-        ) : (
-          <div>Folder not found</div>
-        )}
-      </Column>
-      <Column style={{ flexGrow: 1, minWidth: '300px' }}>
-        <TournamentBar>
-          <InputBase
-            disabled
+        </TopColumn>
+      </TopColumns>
+      <Bottom>
+        <BottomColumns>
+          <Stack flexGrow={2} minWidth="600px">
+            a
+          </Stack>
+          <Stack flexGrow={1} minWidth="300px">
+            {!!selectedSet.id && (
+              <>
+                <Typography
+                  lineHeight="20px"
+                  textAlign="center"
+                  variant="caption"
+                >
+                  {selectedSet.fullRoundText} ({selectedSet.id})
+                </Typography>
+                <Stack direction="row" gap="8px">
+                  <Stack gap="8px" width="50%">
+                    <Chip
+                      label={selectedSet.entrant1Names[0].slice(0, 15)}
+                      variant="outlined"
+                    />
+                    {selectedSet.entrant1Names.length > 1 && (
+                      <Chip
+                        label={selectedSet.entrant1Names[1].slice(0, 15)}
+                        variant="outlined"
+                      />
+                    )}
+                  </Stack>
+                  <Stack gap="8px" width="50%">
+                    <Chip
+                      label={selectedSet.entrant2Names[0].slice(0, 15)}
+                      variant="outlined"
+                    />
+                    {selectedSet.entrant2Names.length > 1 && (
+                      <Chip
+                        label={selectedSet.entrant2Names[1].slice(0, 15)}
+                        variant="outlined"
+                      />
+                    )}
+                  </Stack>
+                </Stack>
+              </>
+            )}
+          </Stack>
+        </BottomColumns>
+      </Bottom>
+      <Snackbar
+        open={errorToastOpen}
+        autoHideDuration={5000}
+        onClose={handleErrorToastClose}
+        message={errorToastError}
+        action={
+          <IconButton
             size="small"
-            value={slug}
-            style={{ flexGrow: 1 }}
-          />
-          <IconButton
-            aria-label="set tournament slug"
-            onClick={() => setSlugDialogOpen(true)}
+            aria-label="close"
+            color="inherit"
+            onClick={handleErrorToastClose}
           >
-            <Edit />
+            <Close fontSize="small" />
           </IconButton>
-          <Dialog
-            open={slugDialogOpen}
-            onClose={() => setSlugDialogOpen(false)}
-          >
-            <DialogTitle>Set Tournament Slug</DialogTitle>
-            <DialogContent>
-              <Form onSubmit={getTournament}>
-                <TextField
-                  autoFocus
-                  label="Tournament Slug"
-                  name="slug"
-                  placeholder="genesis-9"
-                  size="small"
-                  variant="outlined"
-                />
-                <Button disabled={gettingTournament} type="submit">
-                  {gettingTournament ? 'Getting...' : 'Get!'}
-                </Button>
-              </Form>
-              <DialogContentText color="red" variant="caption">
-                {tournamentError}
-              </DialogContentText>
-            </DialogContent>
-          </Dialog>
-          <IconButton
-            aria-label="set startgg api key"
-            onClick={openStartggKeyDialog}
-          >
-            <Key />
-          </IconButton>
-          <Dialog
-            open={startggKeyDialogOpen}
-            onClose={() => setStartggKeyDialogOpen(false)}
-          >
-            <DialogTitle>Set start.gg API key</DialogTitle>
-            <DialogContent>
-              <Form onSubmit={setNewStartggKey}>
-                <TextField
-                  autoFocus
-                  defaultValue={startggKey}
-                  fullWidth
-                  label="API key"
-                  name="key"
-                  size="small"
-                  type="password"
-                  variant="standard"
-                />
-                <Button type="submit">Set!</Button>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        </TournamentBar>
-        <TournamentView
-          tournament={tournament}
-          getEvent={getEvent}
-          getPhase={getPhase}
-          getPhaseGroup={getPhaseGroup}
-          selectSet={selectSet}
-        />
-      </Column>
-    </AppWindow>
+        }
+      />
+    </>
   );
 }
 

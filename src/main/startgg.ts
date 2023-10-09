@@ -1,7 +1,19 @@
 import { Event, Phase, PhaseGroup, Set, Sets } from '../common/types';
 
+async function wrappedFetch(
+  input: URL | RequestInfo,
+  init?: RequestInit | undefined,
+): Promise<Response> {
+  const response = await fetch(input, init);
+  if (!response.ok) {
+    throw new Error(`${response.status} - ${response.statusText}`);
+  }
+
+  return response;
+}
+
 export async function getTournament(slug: string): Promise<Event[]> {
-  const response = await fetch(
+  const response = await wrappedFetch(
     `https://api.smash.gg/tournament/${slug}?expand%5B%5D=event`,
   );
   const json = await response.json();
@@ -20,7 +32,7 @@ export async function getTournament(slug: string): Promise<Event[]> {
 }
 
 export async function getEvent(id: number): Promise<Phase[]> {
-  const response = await fetch(
+  const response = await wrappedFetch(
     `https://api.smash.gg/event/${id}?expand[]=phase`,
   );
   const json = await response.json();
@@ -35,7 +47,7 @@ export async function getEvent(id: number): Promise<Phase[]> {
 }
 
 export async function getPhase(id: number): Promise<PhaseGroup[]> {
-  const response = await fetch(
+  const response = await wrappedFetch(
     `https://api.smash.gg/phase/${id}?expand[]=groups`,
   );
   const json = await response.json();
@@ -53,7 +65,7 @@ export async function getPhase(id: number): Promise<PhaseGroup[]> {
 }
 
 async function fetchGql(key: string, query: string, variables: any) {
-  const response = await fetch('https://api.start.gg/gql/alpha', {
+  const response = await wrappedFetch('https://api.start.gg/gql/alpha', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${key}`,

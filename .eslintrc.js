@@ -31,4 +31,8 @@ module.exports = {
       '@typescript-eslint/parser': ['.ts', '.tsx'],
     },
   },
+  globals: {
+    RequestInfo: true,
+    RequestInit: true,
+  },
 };
