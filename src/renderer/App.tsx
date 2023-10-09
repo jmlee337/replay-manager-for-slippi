@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Divider,
   IconButton,
   InputBase,
   Paper,
@@ -26,18 +27,14 @@ const Bottom = styled(Paper)`
   height: 108px;
 `;
 
-const BottomColumns = styled.div`
+const BottomColumns = styled(Stack)`
   box-sizing: border-box;
-  display: flex;
-  gap: 8px;
   height: 100%;
   padding: 8px;
 `;
 
-const TopColumns = styled.div`
-  display: flex;
+const TopColumns = styled(Stack)`
   flex-grow: 1;
-  gap: 8px;
   max-height: calc(100% - 108px);
   padding: 0 8px;
 `;
@@ -256,7 +253,11 @@ function Hello() {
 
   return (
     <>
-      <TopColumns>
+      <TopColumns
+        direction="row"
+        divider={<Divider flexItem orientation="vertical" />}
+        spacing="4px"
+      >
         <TopColumn flexGrow={2} minWidth="600px">
           <FolderBar>
             <InputBase
@@ -354,7 +355,11 @@ function Hello() {
         </TopColumn>
       </TopColumns>
       <Bottom elevation={3}>
-        <BottomColumns>
+        <BottomColumns
+          direction="row"
+          divider={<Divider flexItem orientation="vertical" />}
+          spacing="4px"
+        >
           <Stack
             boxSizing="border-box"
             direction="row"
