@@ -28,10 +28,12 @@ export function DraggableChip({
 }
 
 export function DroppableChip({
+  active,
   displayName,
   port,
   onDrop,
 }: {
+  active: boolean;
   displayName: string;
   port: number;
   onDrop: (displayName: string, entrantId: number) => void;
@@ -45,7 +47,9 @@ export function DroppableChip({
   };
 
   const dragEnterOver = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
+    if (active) {
+      event.preventDefault();
+    }
   };
 
   return (
@@ -55,7 +59,7 @@ export function DroppableChip({
       onDragOver={dragEnterOver}
       label={displayName || `P${port}`}
       style={{ width: '25%' }}
-      variant="outlined"
+      variant={active ? 'outlined' : 'filled'}
     />
   );
 }

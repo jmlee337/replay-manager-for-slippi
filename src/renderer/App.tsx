@@ -61,6 +61,7 @@ const TournamentBar = styled.div`
 `;
 
 function Hello() {
+  // Error toast
   const [errorToastError, setErrorToastError] = useState('');
   const [errorToastOpen, setErrorToastOpen] = useState(false);
   const handleErrorToastClose = (
@@ -83,6 +84,20 @@ function Hello() {
     setErrorToastOpen(true);
   };
 
+  const [p1Active, setP1Active] = useState(false);
+  const [p2Active, setP2Active] = useState(false);
+  const [p3Active, setP3Active] = useState(false);
+  const [p4Active, setP4Active] = useState(false);
+  const [displayName1, setDisplayName1] = useState('');
+  const [displayName2, setDisplayName2] = useState('');
+  const [displayName3, setDisplayName3] = useState('');
+  const [displayName4, setDisplayName4] = useState('');
+  const [entrantId1, setEntrantId1] = useState(0);
+  const [entrantId2, setEntrantId2] = useState(0);
+  const [entrantId3, setEntrantId3] = useState(0);
+  const [entrantId4, setEntrantId4] = useState(0);
+
+  // Replay list
   const [dir, setDir] = useState('');
   const [dirExists, setDirExists] = useState(true);
   const [replays, setReplays] = useState([] as Replay[]);
@@ -107,9 +122,52 @@ function Hello() {
   const onReplayClick = (index: number) => {
     const newReplays = Array.from(replays);
     newReplays[index].selected = !newReplays[index].selected;
+
+    const selectedReplays = newReplays.filter((replay) => replay.selected);
+    let newActive = [false, false, false, false];
+    if (selectedReplays.length > 0) {
+      newActive = selectedReplays
+        .map((replay) =>
+          replay.players.map((player) => player.playerType === 0),
+        )
+        .reduce(
+          (accArr, curArr) => [
+            accArr[0] && curArr[0],
+            accArr[1] && curArr[1],
+            accArr[2] && curArr[2],
+            accArr[3] && curArr[3],
+          ],
+          [true, true, true, true],
+        );
+    }
+    if (p1Active && !newActive[0]) {
+      setDisplayName1('');
+      setEntrantId1(0);
+    }
+    setP1Active(newActive[0]);
+
+    if (p2Active && !newActive[1]) {
+      setDisplayName2('');
+      setEntrantId2(0);
+    }
+    setP2Active(newActive[1]);
+
+    if (p3Active && !newActive[2]) {
+      setDisplayName3('');
+      setEntrantId3(0);
+    }
+    setP3Active(newActive[2]);
+
+    if (p4Active && !newActive[3]) {
+      setDisplayName4('');
+      setEntrantId4(0);
+    }
+    setP4Active(newActive[3]);
+
     setReplays(newReplays);
   };
 
+  // Tournament view
   const [slug, setSlug] = useState('');
   const [slugDialogOpen, setSlugDialogOpen] = useState(false);
   const [gettingTournament, setGettingTournament] = useState(false);
@@ -212,6 +270,19 @@ function Hello() {
     }
   };
 
+  const selectSet = (set: Set) => {
+    setDisplayName1('');
+    setDisplayName2('');
+    setDisplayName3('');
+    setDisplayName4('');
+    setEntrantId1(0);
+    setEntrantId2(0);
+    setEntrantId3(0);
+    setEntrantId4(0);
+    setSelectedSet(set);
+  };
+
+  // start.gg key
   const [startggKey, setStartggKey] = useState('');
   const [startggKeyDialogOpen, setStartggKeyDialogOpen] = useState(false);
   const openStartggKeyDialog = async () => {
@@ -229,26 +300,6 @@ function Hello() {
       await window.electron.setStartggKey(newKey);
       setStartggKeyDialogOpen(false);
     }
-  };
-
-  const [displayName1, setDisplayName1] = useState('');
-  const [displayName2, setDisplayName2] = useState('');
-  const [displayName3, setDisplayName3] = useState('');
-  const [displayName4, setDisplayName4] = useState('');
-  const [entrantId1, setEntrantId1] = useState(0);
-  const [entrantId2, setEntrantId2] = useState(0);
-  const [entrantId3, setEntrantId3] = useState(0);
-  const [entrantId4, setEntrantId4] = useState(0);
-  const selectSet = (set: Set) => {
-    setDisplayName1('');
-    setDisplayName2('');
-    setDisplayName3('');
-    setDisplayName4('');
-    setEntrantId1(0);
-    setEntrantId2(0);
-    setEntrantId3(0);
-    setEntrantId4(0);
-    setSelectedSet(set);
   };
 
   return (
@@ -368,6 +419,7 @@ function Hello() {
             padding="20px 16px 0 58px"
           >
             <DroppableChip
+              active={p1Active}
               displayName={displayName1}
               port={1}
               onDrop={(displayName: string, entrantId: number) => {
@@ -376,6 +428,7 @@ function Hello() {
               }}
             />
             <DroppableChip
+              active={p2Active}
               displayName={displayName2}
               port={2}
               onDrop={(displayName: string, entrantId: number) => {
@@ -384,6 +437,7 @@ function Hello() {
               }}
             />
             <DroppableChip
+              active={p3Active}
               displayName={displayName3}
               port={3}
               onDrop={(displayName: string, entrantId: number) => {
@@ -392,6 +446,7 @@ function Hello() {
               }}
             />
             <DroppableChip
+              active={p4Active}
               displayName={displayName4}
               port={4}
               onDrop={(displayName: string, entrantId: number) => {
