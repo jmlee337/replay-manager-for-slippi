@@ -307,7 +307,7 @@ function Hello() {
       <TopColumns
         direction="row"
         divider={<Divider flexItem orientation="vertical" />}
-        spacing="4px"
+        spacing="8px"
       >
         <TopColumn flexGrow={2} minWidth="600px">
           <FolderBar>
@@ -409,7 +409,7 @@ function Hello() {
         <BottomColumns
           direction="row"
           divider={<Divider flexItem orientation="vertical" />}
-          spacing="4px"
+          spacing="8px"
         >
           <Stack
             boxSizing="border-box"
