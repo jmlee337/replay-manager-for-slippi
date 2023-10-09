@@ -1,8 +1,11 @@
 import styled from '@emotion/styled';
 import {
+  Box,
+  CircularProgress,
   Collapse,
   IconButton,
   ListItemButton,
+  Stack,
   Typography,
 } from '@mui/material';
 import { ExpandLess, ExpandMore, Refresh, Restore } from '@mui/icons-material';
@@ -13,37 +16,11 @@ const Block = styled.div`
   padding-left: 8px;
 `;
 
-const Column = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-`;
-
-const EntrantLeftNames = styled.div`
-  display: flex;
-  flex-direction: column;
-  text-align: right;
+const EntrantNames = styled(Stack)`
   width: 40%;
 `;
 
-const EntrantLeftScore = styled.div`
-  border-right: black 1px solid;
-  box-sizing: border-box;
-  overflow-x: hidden;
-  padding: 0 4px;
-  text-align: right;
-  text-overflow: ellipsis;
-  width: 10%;
-`;
-
-const EntrantRightNames = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 40%;
-`;
-
-const EntrantRightScore = styled.div`
-  border-left: black 1px solid;
+const EntrantScore = styled(Box)`
   box-sizing: border-box;
   overflow-x: hidden;
   padding: 0 4px;
@@ -57,11 +34,16 @@ const Name = styled.div`
   white-space: nowrap;
 `;
 
-const typographyStyle = {
-  alignItems: 'center',
-  display: 'flex',
-  justifyContent: 'center',
-};
+const SetInnerRow = styled(Stack)`
+  align-items: center;
+  flex-direction: row;
+  justify-content: center;
+`;
+
+const ViewRow = styled(Stack)`
+  align-items: center;
+  flex-direction: row;
+`;
 
 function SetView({
   set,
@@ -86,25 +68,29 @@ function SetView({
   }
   return (
     <ListItemButton dense disableGutters onClick={() => selectSet(set)}>
-      <Column>
-        <Typography style={typographyStyle} variant="caption">
+      <Stack width="100%">
+        <SetInnerRow sx={{ typography: 'caption' }}>
           {set.fullRoundText}
-        </Typography>
-        <Typography style={typographyStyle} variant="body2">
-          <EntrantLeftNames>
-            {set.entrant1Names.map((name) => (
-              <Name>{name}</Name>
-            ))}
-          </EntrantLeftNames>
-          <EntrantLeftScore>{leftScore}</EntrantLeftScore>
-          <EntrantRightScore>{rightScore}</EntrantRightScore>
-          <EntrantRightNames>
-            {set.entrant2Names.map((name) => (
-              <Name>{name}</Name>
-            ))}
-          </EntrantRightNames>
-        </Typography>
-      </Column>
+        </SetInnerRow>
+        <SetInnerRow sx={{ typography: 'body2' }}>
+          <EntrantNames textAlign="right">
+            <Name>{set.entrant1Names[0]}</Name>
+            {set.entrant1Names.length > 1 && (
+              <Name>{set.entrant1Names[1]}</Name>
+            )}
+          </EntrantNames>
+          <EntrantScore borderRight={1} textAlign="right">
+            {leftScore}
+          </EntrantScore>
+          <EntrantScore borderLeft={1}>{rightScore}</EntrantScore>
+          <EntrantNames>
+            <Name>{set.entrant2Names[0]}</Name>
+            {set.entrant2Names.length > 1 && (
+              <Name>{set.entrant2Names[1]}</Name>
+            )}
+          </EntrantNames>
+        </SetInnerRow>
+      </Stack>
     </ListItemButton>
   );
 }
@@ -126,20 +112,28 @@ function PhaseGroupView({
   ) => Promise<void>;
   selectSet: (set: Set) => void;
 }) {
+  const [getting, setGetting] = useState(false);
   const [open, setOpen] = useState(false);
+  const onClick = async () => {
+    setGetting(true);
+    await getPhaseGroup(phaseGroup.id, phaseId, eventId);
+    setGetting(false);
+  };
 
   return (
     <>
-      <Typography variant="caption">
-        {phaseGroup.name} ({phaseGroup.id}){' '}
+      <ViewRow sx={{ typography: 'caption' }}>
+        <Name>{phaseGroup.name}</Name>
+        {'\u00A0'}({phaseGroup.id})
         <IconButton
           aria-label="restore phase"
-          onClick={() => getPhaseGroup(phaseGroup.id, phaseId, eventId)}
+          disabled={getting}
+          onClick={onClick}
           size="small"
         >
-          <Refresh />
+          {getting ? <CircularProgress size="24px" /> : <Refresh />}
         </IconButton>
-      </Typography>
+      </ViewRow>
       <Block>
         {phaseGroup.sets.pendingSets.map((set) => (
           <SetView key={set.id} set={set} selectSet={selectSet} />
@@ -189,8 +183,9 @@ function PhaseView({
 }) {
   return (
     <>
-      <Typography variant="caption">
-        {phase.name} ({phase.id}){' '}
+      <ViewRow sx={{ typography: 'caption' }}>
+        <Name>{phase.name}</Name>
+        {'\u00A0'}({phase.id})
         <IconButton
           aria-label="restore phase"
           onClick={() => getPhase(phase.id, eventId)}
@@ -198,7 +193,7 @@ function PhaseView({
         >
           <Restore />
         </IconButton>
-      </Typography>
+      </ViewRow>
       <Block>
         {phase.phaseGroups.map((phaseGroup) => (
           <PhaseGroupView
@@ -234,8 +229,9 @@ function EventView({
 }) {
   return (
     <>
-      <Typography variant="caption">
-        {event.name} ({event.id}){' '}
+      <ViewRow sx={{ typography: 'caption' }}>
+        <Name>{event.name}</Name>
+        {'\u00A0'}({event.id})
         <IconButton
           aria-label="restore event"
           onClick={() => getEvent(event.id)}
@@ -243,7 +239,7 @@ function EventView({
         >
           <Restore />
         </IconButton>
-      </Typography>
+      </ViewRow>
       <Block>
         {event.phases.map((phase) => (
           <PhaseView

@@ -6,7 +6,14 @@ export async function getTournament(slug: string): Promise<Event[]> {
   );
   const json = await response.json();
   return json.entities.event
-    .filter((event: any) => event.videogameId === 1)
+    .filter((event: any) => {
+      const isMelee = event.videogameId === 1;
+      const isSinglesOrDoulbes =
+        event.teamRosterSize === null ||
+        (event.teamRosterSize.minPlayers === 2 &&
+          event.teamRosterSize.maxPlayers === 2);
+      return isMelee && isSinglesOrDoulbes;
+    })
     .map(
       (event: any) => ({ id: event.id, name: event.name, phases: [] }) as Event,
     );
