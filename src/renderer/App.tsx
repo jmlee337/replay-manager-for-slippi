@@ -2,13 +2,13 @@ import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import { FormEvent, SyntheticEvent, useState } from 'react';
 import {
   Button,
-  Chip,
   Dialog,
   DialogContent,
   DialogContentText,
   DialogTitle,
   IconButton,
   InputBase,
+  Paper,
   Snackbar,
   Stack,
   TextField,
@@ -17,16 +17,16 @@ import {
 import { Close, Edit, FolderOpen, Key, Refresh } from '@mui/icons-material';
 import styled from '@emotion/styled';
 import { Replay, Set, Tournament } from '../common/types';
+import { DraggableChip, DroppableChip } from './DragAndDrop';
 import ReplayList from './ReplayList';
 import TournamentView from './TournamentView';
 import './App.css';
 
-const Bottom = styled.div`
+const Bottom = styled(Paper)`
   height: 108px;
 `;
 
 const BottomColumns = styled.div`
-  align-items: center;
   box-sizing: border-box;
   display: flex;
   gap: 8px;
@@ -215,10 +215,6 @@ function Hello() {
     }
   };
 
-  const selectSet = (set: Set) => {
-    setSelectedSet(set);
-  };
-
   const [startggKey, setStartggKey] = useState('');
   const [startggKeyDialogOpen, setStartggKeyDialogOpen] = useState(false);
   const openStartggKeyDialog = async () => {
@@ -236,6 +232,26 @@ function Hello() {
       await window.electron.setStartggKey(newKey);
       setStartggKeyDialogOpen(false);
     }
+  };
+
+  const [displayName1, setDisplayName1] = useState('');
+  const [displayName2, setDisplayName2] = useState('');
+  const [displayName3, setDisplayName3] = useState('');
+  const [displayName4, setDisplayName4] = useState('');
+  const [entrantId1, setEntrantId1] = useState(0);
+  const [entrantId2, setEntrantId2] = useState(0);
+  const [entrantId3, setEntrantId3] = useState(0);
+  const [entrantId4, setEntrantId4] = useState(0);
+  const selectSet = (set: Set) => {
+    setDisplayName1('');
+    setDisplayName2('');
+    setDisplayName3('');
+    setDisplayName4('');
+    setEntrantId1(0);
+    setEntrantId2(0);
+    setEntrantId3(0);
+    setEntrantId4(0);
+    setSelectedSet(set);
   };
 
   return (
@@ -337,10 +353,47 @@ function Hello() {
           />
         </TopColumn>
       </TopColumns>
-      <Bottom>
+      <Bottom elevation={3}>
         <BottomColumns>
-          <Stack flexGrow={2} minWidth="600px">
-            a
+          <Stack
+            boxSizing="border-box"
+            direction="row"
+            flexGrow={2}
+            minWidth="600px"
+            padding="20px 16px 0 58px"
+          >
+            <DroppableChip
+              displayName={displayName1}
+              port={1}
+              onDrop={(displayName: string, entrantId: number) => {
+                setDisplayName1(displayName);
+                setEntrantId1(entrantId);
+              }}
+            />
+            <DroppableChip
+              displayName={displayName2}
+              port={2}
+              onDrop={(displayName: string, entrantId: number) => {
+                setDisplayName2(displayName);
+                setEntrantId2(entrantId);
+              }}
+            />
+            <DroppableChip
+              displayName={displayName3}
+              port={3}
+              onDrop={(displayName: string, entrantId: number) => {
+                setDisplayName3(displayName);
+                setEntrantId3(entrantId);
+              }}
+            />
+            <DroppableChip
+              displayName={displayName4}
+              port={4}
+              onDrop={(displayName: string, entrantId: number) => {
+                setDisplayName4(displayName);
+                setEntrantId4(entrantId);
+              }}
+            />
           </Stack>
           <Stack flexGrow={1} minWidth="300px">
             {!!selectedSet.id && (
@@ -354,26 +407,26 @@ function Hello() {
                 </Typography>
                 <Stack direction="row" gap="8px">
                   <Stack gap="8px" width="50%">
-                    <Chip
-                      label={selectedSet.entrant1Names[0].slice(0, 15)}
-                      variant="outlined"
+                    <DraggableChip
+                      displayName={selectedSet.entrant1Names[0].slice(0, 15)}
+                      entrantId={selectedSet.entrant1Id}
                     />
                     {selectedSet.entrant1Names.length > 1 && (
-                      <Chip
-                        label={selectedSet.entrant1Names[1].slice(0, 15)}
-                        variant="outlined"
+                      <DraggableChip
+                        displayName={selectedSet.entrant1Names[1].slice(0, 15)}
+                        entrantId={selectedSet.entrant1Id}
                       />
                     )}
                   </Stack>
                   <Stack gap="8px" width="50%">
-                    <Chip
-                      label={selectedSet.entrant2Names[0].slice(0, 15)}
-                      variant="outlined"
+                    <DraggableChip
+                      displayName={selectedSet.entrant2Names[0].slice(0, 15)}
+                      entrantId={selectedSet.entrant2Id}
                     />
                     {selectedSet.entrant2Names.length > 1 && (
-                      <Chip
-                        label={selectedSet.entrant2Names[1].slice(0, 15)}
-                        variant="outlined"
+                      <DraggableChip
+                        displayName={selectedSet.entrant2Names[1].slice(0, 15)}
+                        entrantId={selectedSet.entrant2Id}
                       />
                     )}
                   </Stack>
