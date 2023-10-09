@@ -309,7 +309,7 @@ function Hello() {
         divider={<Divider flexItem orientation="vertical" />}
         spacing="8px"
       >
-        <TopColumn flexGrow={2} minWidth="600px">
+        <TopColumn flexGrow={1} minWidth="600px">
           <FolderBar>
             <InputBase
               disabled
@@ -330,7 +330,7 @@ function Hello() {
             <div>Folder not found</div>
           )}
         </TopColumn>
-        <TopColumn flexGrow={1} minWidth="300px">
+        <TopColumn width="300px">
           <TournamentBar>
             <InputBase
               disabled
@@ -414,7 +414,7 @@ function Hello() {
           <Stack
             boxSizing="border-box"
             direction="row"
-            flexGrow={2}
+            flexGrow={1}
             minWidth="600px"
             padding="20px 16px 0 58px"
           >
@@ -455,7 +455,7 @@ function Hello() {
               }}
             />
           </Stack>
-          <Stack flexGrow={1} minWidth="300px">
+          <Stack width="300px">
             {!!selectedSet.id && (
               <>
                 <Typography
