@@ -12,8 +12,9 @@ import {
 } from '@mui/material';
 import { Edit, FolderOpen, Key, Refresh } from '@mui/icons-material';
 import styled from '@emotion/styled';
-import { Replay } from '../common/types';
+import { Replay, Set, Tournament } from '../common/types';
 import ReplayList from './ReplayList';
+import TournamentView from './TournamentView';
 
 const AppWindow = styled.div`
   display: flex;
@@ -33,6 +34,10 @@ const Form = styled.form`
   align-items: center;
   display: flex;
   margin-top: 8px;
+`;
+
+const TournamentBar = styled.div`
+  display: flex;
 `;
 
 function Hello() {
@@ -67,7 +72,10 @@ function Hello() {
   const [slugDialogOpen, setSlugDialogOpen] = useState(false);
   const [gettingTournament, setGettingTournament] = useState(false);
   const [tournamentError, setTournamentError] = useState('');
-  const [tournament, setTournament] = useState({});
+  const [tournament, setTournament] = useState({
+    slug: '',
+    events: [],
+  } as Tournament);
   const getTournament = async (event: FormEvent<HTMLFormElement>) => {
     const target = event.target as typeof event.target & {
       slug: { value: string };
@@ -79,7 +87,10 @@ function Hello() {
       try {
         setGettingTournament(true);
         setTournamentError('');
-        setTournament(await window.electron.getTournament(newSlug));
+        setTournament({
+          slug: newSlug,
+          events: await window.electron.getTournament(newSlug),
+        });
         setSlug(newSlug);
         setSlugDialogOpen(false);
       } catch (e: any) {
@@ -88,6 +99,57 @@ function Hello() {
         setGettingTournament(false);
       }
     }
+  };
+  const getEvent = async (id: number) => {
+    const phases = await window.electron.getEvent(id);
+    const editEvent = tournament.events.find((event) => event.id === id);
+    if (editEvent) {
+      editEvent.phases = phases;
+      setTournament({ ...tournament });
+    }
+  };
+
+  const getPhase = async (id: number, eventId: number) => {
+    const phaseGroups = await window.electron.getPhase(id);
+    const editEvent = tournament.events.find((event) => event.id === eventId);
+    if (!editEvent) {
+      return;
+    }
+
+    const editPhase = editEvent.phases.find((phase) => phase.id === id);
+    if (editPhase) {
+      editPhase.phaseGroups = phaseGroups;
+      setTournament({ ...tournament });
+    }
+  };
+
+  const getPhaseGroup = async (
+    id: number,
+    phaseId: number,
+    eventId: number,
+  ) => {
+    const sets = await window.electron.getPhaseGroup(id);
+    const editEvent = tournament.events.find((event) => event.id === eventId);
+    if (!editEvent) {
+      return;
+    }
+
+    const editPhase = editEvent.phases.find((phase) => phase.id === phaseId);
+    if (!editPhase) {
+      return;
+    }
+
+    const editPhaseGroup = editPhase.phaseGroups.find(
+      (phaseGroup) => phaseGroup.id === id,
+    );
+    if (editPhaseGroup) {
+      editPhaseGroup.sets = sets;
+      setTournament({ ...tournament });
+    }
+  };
+
+  const selectSet = (set: Set) => {
+    console.log(set.entrant1Names.concat(set.entrant2Names));
   };
 
   const [startggKey, setStartggKey] = useState('');
@@ -119,11 +181,11 @@ function Hello() {
             value={dir}
             style={{ flexGrow: 1 }}
           />
-          <IconButton aria-label="choose folder" onClick={chooseDir}>
-            <FolderOpen />
-          </IconButton>
           <IconButton aria-label="refresh folder" onClick={refreshReplays}>
             <Refresh />
+          </IconButton>
+          <IconButton aria-label="choose folder" onClick={chooseDir}>
+            <FolderOpen />
           </IconButton>
         </FolderBar>
         {dirExists ? (
@@ -133,7 +195,7 @@ function Hello() {
         )}
       </Column>
       <Column style={{ flexGrow: 1, minWidth: '300px' }}>
-        <div style={{ display: 'flex' }}>
+        <TournamentBar>
           <InputBase
             disabled
             size="small"
@@ -197,8 +259,14 @@ function Hello() {
               </Form>
             </DialogContent>
           </Dialog>
-        </div>
-        {JSON.stringify(tournament)}
+        </TournamentBar>
+        <TournamentView
+          tournament={tournament}
+          getEvent={getEvent}
+          getPhase={getPhase}
+          getPhaseGroup={getPhaseGroup}
+          selectSet={selectSet}
+        />
       </Column>
     </AppWindow>
   );

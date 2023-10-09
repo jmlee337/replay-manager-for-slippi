@@ -22,30 +22,43 @@ export type Replay = {
   startAt: string;
 };
 
-export type Event = {
-  id: number;
-  name: string;
-};
-
-export type Phase = {
-  id: number;
-  name: string;
-};
-
-export type PhaseGroup = {
-  id: number;
-  name: string;
-};
-
 export type Set = {
   id: number;
   state: number;
   fullRoundText: string;
   winnerId: number;
   entrant1Id: number;
-  entrant1Name: string;
+  entrant1Names: string[];
   entrant1Score: string | null;
   entrant2Id: number;
-  entrant2Name: string;
+  entrant2Names: string[];
   entrant2Score: string | null;
+};
+
+export type Sets = {
+  pendingSets: Set[];
+  completedSets: Set[];
+};
+
+export type PhaseGroup = {
+  id: number;
+  name: string;
+  sets: Sets;
+};
+
+export type Phase = {
+  id: number;
+  name: string;
+  phaseGroups: PhaseGroup[];
+};
+
+export type Event = {
+  id: number;
+  name: string;
+  phases: Phase[];
+};
+
+export type Tournament = {
+  slug: string;
+  events: Event[];
 };

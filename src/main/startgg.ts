@@ -1,4 +1,4 @@
-import { Event, Phase, PhaseGroup, Set } from '../common/types';
+import { Event, Phase, PhaseGroup, Set, Sets } from '../common/types';
 
 export async function getTournament(slug: string): Promise<Event[]> {
   const response = await fetch(
@@ -7,7 +7,9 @@ export async function getTournament(slug: string): Promise<Event[]> {
   const json = await response.json();
   return json.entities.event
     .filter((event: any) => event.videogameId === 1)
-    .map((event: any) => ({ id: event.id, name: event.name }) as Event);
+    .map(
+      (event: any) => ({ id: event.id, name: event.name, phases: [] }) as Event,
+    );
 }
 
 export async function getEvent(id: number): Promise<Phase[]> {
@@ -20,6 +22,7 @@ export async function getEvent(id: number): Promise<Phase[]> {
       ({
         id: phase.id,
         name: phase.name,
+        phaseGroups: [],
       }) as Phase,
   );
 }
@@ -34,6 +37,10 @@ export async function getPhase(id: number): Promise<PhaseGroup[]> {
       ({
         id: group.id,
         name: group.displayIdentifier,
+        sets: {
+          pendingSets: [],
+          completedSets: [],
+        },
       }) as PhaseGroup,
   );
 }
@@ -58,7 +65,7 @@ async function fetchGql(key: string, query: string, variables: any) {
 const PHASE_GROUP_QUERY = `
   query PhaseGroupQuery($id:ID!, $page: Int) {
     phaseGroup(id: $id) {
-      sets(page: $page, perPage: 66, sortType: CALL_ORDER, filters: {hideEmpty: true}) {
+      sets(page: $page, perPage: 52, sortType: CALL_ORDER, filters: {hideEmpty: true}) {
         pageInfo {
           totalPages
         }
@@ -67,7 +74,9 @@ const PHASE_GROUP_QUERY = `
           slots {
             entrant {
               id
-              name
+              participants {
+                gamerTag
+              }
             }
             standing {
               stats {
@@ -89,32 +98,40 @@ const PHASE_GROUP_QUERY = `
 // 1838376 genesis-9-1
 // 1997685 test-tournament-sorry
 // 2181889 BattleGateway-42
+// 2139098 the-off-season-2-2 1-000-melee-doubles
 // state {1: not started, 2: started, 3: completed}
 // sort: completed reverse chronological, then call order
-export async function getPhaseGroup(key: string, id: number): Promise<Set[]> {
+export async function getPhaseGroup(key: string, id: number): Promise<Sets> {
   let page = 1;
   let nextData;
-  const sets = [];
+  const sets: Set[] = [];
   do {
     // eslint-disable-next-line no-await-in-loop
     nextData = await fetchGql(key, PHASE_GROUP_QUERY, { id, page });
-    const newSets = nextData.phaseGroup.sets.nodes
+    const newSets: Set[] = nextData.phaseGroup.sets.nodes
       .filter((set: any) => set.slots[0].entrant && set.slots[1].entrant)
-      .map(
-        (set: any) =>
-          ({
-            id: set.id,
-            state: set.state,
-            fullRoundText: set.fullRoundText,
-            winnerId: set.winnerId,
-            entrant1Id: set.slots[0].entrant.id,
-            entrant1Name: set.slots[0].entrant.name,
-            entrant1Score: set.slots[0].standing.stats.score.displayValue,
-            entrant2Id: set.slots[1].entrant.id,
-            entrant2Name: set.slots[1].entrant.name,
-            entrant2Score: set.slots[1].standing.stats.score.displayValue,
-          }) as Set,
-      );
+      .map((set: any) => {
+        const slot1 = set.slots[0];
+        const slot2 = set.slots[1];
+        const entrant1Names = slot1.entrant.participants.map(
+          (participant: { gamerTag: string }) => participant.gamerTag,
+        );
+        const entrant2Names = slot2.entrant.participants.map(
+          (participant: { gamerTag: string }) => participant.gamerTag,
+        );
+        return {
+          id: set.id,
+          state: set.state,
+          fullRoundText: set.fullRoundText,
+          winnerId: set.winnerId,
+          entrant1Id: slot1.entrant.id,
+          entrant1Names,
+          entrant1Score: slot1.standing.stats.score.displayValue,
+          entrant2Id: slot2.entrant.id,
+          entrant2Names,
+          entrant2Score: slot2.standing.stats.score.displayValue,
+        } as Set;
+      });
     sets.push(...newSets);
 
     page += 1;
@@ -124,7 +141,10 @@ export async function getPhaseGroup(key: string, id: number): Promise<Set[]> {
     (set: any) => set.state === 1 || set.state === 2,
   );
   if (partIndex === -1) {
-    return sets;
+    return { pendingSets: [], completedSets: sets };
   }
-  return sets.slice(partIndex).concat(sets.slice(0, partIndex));
+  return {
+    pendingSets: sets.slice(partIndex),
+    completedSets: sets.slice(0, partIndex),
+  };
 }

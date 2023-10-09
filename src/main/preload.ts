@@ -4,7 +4,7 @@ import {
   IpcRendererEvent,
   OpenDialogReturnValue,
 } from 'electron';
-import { Replay } from '../common/types';
+import { Event, Phase, PhaseGroup, Replay, Sets } from '../common/types';
 
 export type Channels = 'ipc-example';
 
@@ -30,11 +30,13 @@ const electronHandler = {
     ipcRenderer.invoke('chooseDir'),
   getReplaysInDir: (dir: string): Promise<Replay[]> =>
     ipcRenderer.invoke('getReplaysInDir', dir),
-  getTournament: (slug: string): Promise<any> =>
+  getTournament: (slug: string): Promise<Event[]> =>
     ipcRenderer.invoke('getTournament', slug),
-  getEvent: (id: number): Promise<any> => ipcRenderer.invoke('getEvent', id),
-  getPhase: (id: number): Promise<any> => ipcRenderer.invoke('getPhase', id),
-  getPhaseGroup: (id: number): Promise<any> =>
+  getEvent: (id: number): Promise<Phase[]> =>
+    ipcRenderer.invoke('getEvent', id),
+  getPhase: (id: number): Promise<PhaseGroup[]> =>
+    ipcRenderer.invoke('getPhase', id),
+  getPhaseGroup: (id: number): Promise<Sets> =>
     ipcRenderer.invoke('getPhaseGroup', id),
   getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
   setStartggKey: (startggKey: string): Promise<void> =>
