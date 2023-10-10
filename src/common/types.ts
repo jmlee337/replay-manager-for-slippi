@@ -62,3 +62,22 @@ export type Tournament = {
   slug: string;
   events: Event[];
 };
+
+export type StartggGameSelection = {
+  characterId: number;
+  entrantId: number;
+};
+
+export type StartggGame = {
+  // 1-indexed
+  gameNum: number;
+  selections: StartggGameSelection[];
+  stageId: number;
+  winnerId: number;
+};
+
+export type StartggSet = {
+  gameData: StartggGame[];
+  setId: number;
+  winnerId: number;
+};

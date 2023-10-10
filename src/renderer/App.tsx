@@ -23,9 +23,10 @@ import ReplayList from './ReplayList';
 import TournamentView from './TournamentView';
 import './App.css';
 import CopyControls from './CopyControls';
+import SetControls from './SetControls';
 
 const Bottom = styled(Paper)`
-  height: 108px;
+  height: 147px;
 `;
 
 const BottomColumns = styled(Stack)`
@@ -36,7 +37,7 @@ const BottomColumns = styled(Stack)`
 
 const TopColumns = styled(Stack)`
   flex-grow: 1;
-  max-height: calc(100% - 108px);
+  max-height: calc(100% - 147px);
   padding: 0 8px;
 `;
 
@@ -501,6 +502,11 @@ function Hello() {
                     )}
                   </Stack>
                 </Stack>
+                <SetControls
+                  entrantIds={[entrantId1, entrantId2, entrantId3, entrantId4]}
+                  replays={replays}
+                  set={selectedSet}
+                />
               </>
             )}
           </Stack>

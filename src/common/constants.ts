@@ -28,6 +28,35 @@ export const characterNames = new Map([
   [25, 'Ganon'],
 ]);
 
+export const characterStartggIds = new Map([
+  [0, 2], // Falcon
+  [1, 3], // DK
+  [2, 6], // Fox
+  [3, 16], // GW
+  [4, 10], // Kirby
+  [5, 1], // Bowser
+  [6, 11], // Link
+  [7, 12], // Luigi
+  [8, 13], // Mario
+  [9, 14], // Marth
+  [10, 15], // Mewtwo
+  [11, 17], // Ness
+  [12, 18], // Peach
+  [13, 20], // Pikachu
+  [14, 8], // ICs
+  [15, 9], // Puff
+  [16, 22], // Samus
+  [17, 24], // Yoshi
+  [18, 26], // Zelda
+  [19, 23], // Sheik
+  [20, 5], // Falco
+  [21, 25], // YL
+  [22, 4], // Doc
+  [23, 21], // Roy
+  [24, 19], // Pichu
+  [25, 7], // Ganon
+]);
+
 // Stage IDs (not internal stage ID)
 export const legalStages = new Set([2, 3, 8, 28, 31, 32]);
 
@@ -62,4 +91,36 @@ export const stageNames = new Map([
   [30, 'Kongo Jungle 64'],
   [31, 'BF'],
   [32, 'FD'],
+]);
+
+export const stageStartggIds = new Map([
+  [2, 11], // FoD
+  [3, 15], // PS
+  [4, 2], // Peach's Castle
+  [5, 6], // Kongo Jungle
+  [6, 10], // Brinstar
+  [7, 13], // Corneria
+  [8, 5], // YS
+  [9, 17], // Onett
+  [10, 16], // Mute City
+  [11, 3], // Rainbow Cruise
+  [12, 7], // Jungle Japes
+  [13, 8], // Great Bay
+  [14, 9], // Hyrule Temple
+  [15, 24], // Brinstar Depths
+  [16, 4], // Yoshi's Island
+  [17, 12], // Green Greens
+  [18, 28], // Fourside
+  [19, 1], // MKI
+  [20, 21], // MKII
+  [22, 14], // Venom
+  [23, 26], // Poké Floats
+  [24, 27], // Big Blue
+  [25, 18], // Icicle Mountain
+  [27, 29], // Flat Zone
+  [28, 25], // DL
+  [29, 22], // Yoshi's Island 64
+  [30, 23], // Kongo Jungle 64
+  [31, 19], // BF
+  [32, 20], // FD
 ]);
