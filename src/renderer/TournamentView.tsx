@@ -47,10 +47,21 @@ const ViewRow = styled(Stack)`
 
 function SetView({
   set,
+  eventId,
+  phaseId,
+  phaseGroupId,
   selectSet,
 }: {
   set: Set;
-  selectSet: (set: Set) => void;
+  eventId: number;
+  phaseId: number;
+  phaseGroupId: number;
+  selectSet: (
+    set: Set,
+    phaseGroupId: number,
+    phaseId: number,
+    eventId: number,
+  ) => void;
 }) {
   let leftScore = '\u00A0';
   let rightScore = '\u00A0';
@@ -67,7 +78,11 @@ function SetView({
     }
   }
   return (
-    <ListItemButton dense disableGutters onClick={() => selectSet(set)}>
+    <ListItemButton
+      dense
+      disableGutters
+      onClick={() => selectSet(set, phaseGroupId, phaseId, eventId)}
+    >
       <Stack width="100%">
         <SetInnerRow sx={{ typography: 'caption' }}>
           {set.fullRoundText}
@@ -110,7 +125,12 @@ function PhaseGroupView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
-  selectSet: (set: Set) => void;
+  selectSet: (
+    set: Set,
+    phaseGroupId: number,
+    phaseId: number,
+    eventId: number,
+  ) => void;
 }) {
   const [getting, setGetting] = useState(false);
   const [open, setOpen] = useState(false);
@@ -136,7 +156,14 @@ function PhaseGroupView({
       </ViewRow>
       <Block>
         {phaseGroup.sets.pendingSets.map((set) => (
-          <SetView key={set.id} set={set} selectSet={selectSet} />
+          <SetView
+            key={set.id}
+            set={set}
+            eventId={eventId}
+            phaseId={phaseId}
+            phaseGroupId={phaseGroup.id}
+            selectSet={selectSet}
+          />
         ))}
         {phaseGroup.sets.completedSets.length > 0 && (
           <>
@@ -154,7 +181,14 @@ function PhaseGroupView({
             </ListItemButton>
             <Collapse in={open}>
               {phaseGroup.sets.completedSets.map((set) => (
-                <SetView key={set.id} set={set} selectSet={selectSet} />
+                <SetView
+                  key={set.id}
+                  set={set}
+                  eventId={eventId}
+                  phaseId={phaseId}
+                  phaseGroupId={phaseGroup.id}
+                  selectSet={selectSet}
+                />
               ))}
             </Collapse>
           </>
@@ -179,7 +213,12 @@ function PhaseView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
-  selectSet: (set: Set) => void;
+  selectSet: (
+    set: Set,
+    phaseGroupId: number,
+    phaseId: number,
+    eventId: number,
+  ) => void;
 }) {
   return (
     <>
@@ -225,7 +264,12 @@ function EventView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
-  selectSet: (set: Set) => void;
+  selectSet: (
+    set: Set,
+    phaseGroupId: number,
+    phaseId: number,
+    eventId: number,
+  ) => void;
 }) {
   return (
     <>
@@ -271,7 +315,12 @@ export default function TournamentView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
-  selectSet: (set: Set) => void;
+  selectSet: (
+    set: Set,
+    phaseGroupId: number,
+    phaseId: number,
+    eventId: number,
+  ) => void;
 }) {
   return (
     <>

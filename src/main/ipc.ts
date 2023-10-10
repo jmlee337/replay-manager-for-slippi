@@ -4,9 +4,15 @@ import { open, readdir } from 'fs/promises';
 import { join } from 'path';
 import iconv from 'iconv-lite';
 import Store from 'electron-store';
-import { Player, Replay } from '../common/types';
+import { Player, Replay, StartggSet } from '../common/types';
 import { legalStages } from '../common/constants';
-import { getEvent, getPhase, getPhaseGroup, getTournament } from './startgg';
+import {
+  getEvent,
+  getPhase,
+  getPhaseGroup,
+  getTournament,
+  reportSet,
+} from './startgg';
 
 const RAW_HEADER_START = Buffer.from([
   0x7b, 0x55, 0x03, 0x72, 0x61, 0x77, 0x5b, 0x24, 0x55, 0x23, 0x6c,
@@ -257,10 +263,20 @@ export default function setupIPCs(): void {
     'getPhaseGroup',
     async (event: IpcMainInvokeEvent, id: number) => {
       if (!startggKey) {
-        throw new Error();
+        throw new Error('Please set start.gg API key');
       }
 
       return getPhaseGroup(startggKey, id);
+    },
+  );
+  ipcMain.handle(
+    'reportSet',
+    async (event: IpcMainInvokeEvent, set: StartggSet) => {
+      if (!startggKey) {
+        throw new Error('Please set start.gg API key');
+      }
+
+      return reportSet(startggKey, set);
     },
   );
   ipcMain.handle('getStartggKey', () => store.get('startggKey') as string);

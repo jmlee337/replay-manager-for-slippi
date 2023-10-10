@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { Close, Edit, FolderOpen, Key, Refresh } from '@mui/icons-material';
 import styled from '@emotion/styled';
-import { Replay, Set, Tournament } from '../common/types';
+import { Replay, Set, StartggSet, Tournament } from '../common/types';
 import { DraggableChip, DroppableChip } from './DragAndDrop';
 import ReplayList from './ReplayList';
 import TournamentView from './TournamentView';
@@ -178,7 +178,6 @@ function Hello() {
     slug: '',
     events: [],
   } as Tournament);
-  const [selectedSet, setSelectedSet] = useState({} as Set);
   const getTournament = async (event: FormEvent<HTMLFormElement>) => {
     const target = event.target as typeof event.target & {
       slug: { value: string };
@@ -272,7 +271,18 @@ function Hello() {
     }
   };
 
-  const selectSet = (set: Set) => {
+  const [selectedSet, setSelectedSet] = useState({} as Set);
+  const [selectedSetChain, setSelectedSetChain] = useState({
+    eventId: 0,
+    phaseId: 0,
+    phaseGroupId: 0,
+  });
+  const selectSet = (
+    set: Set,
+    phaseGroupId: number,
+    phaseId: number,
+    eventId: number,
+  ) => {
     setDisplayName1('');
     setDisplayName2('');
     setDisplayName3('');
@@ -281,7 +291,22 @@ function Hello() {
     setEntrantId2(0);
     setEntrantId3(0);
     setEntrantId4(0);
+
+    setSelectedSetChain({ eventId, phaseId, phaseGroupId });
     setSelectedSet(set);
+  };
+
+  const reportSet = async (set: StartggSet) => {
+    try {
+      await window.electron.reportSet(set);
+      await getPhaseGroup(
+        selectedSetChain.phaseGroupId,
+        selectedSetChain.phaseId,
+        selectedSetChain.eventId,
+      );
+    } catch (e: any) {
+      showErrorToast(e);
+    }
   };
 
   // start.gg key
@@ -505,6 +530,7 @@ function Hello() {
                 <SetControls
                   entrantIds={[entrantId1, entrantId2, entrantId3, entrantId4]}
                   replays={replays}
+                  reportSet={reportSet}
                   set={selectedSet}
                 />
               </>

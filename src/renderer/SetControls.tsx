@@ -12,15 +12,21 @@ import { characterStartggIds, stageStartggIds } from '../common/constants';
 export default function SetControls({
   entrantIds,
   replays,
+  reportSet,
   set,
 }: {
   entrantIds: number[];
   replays: Replay[];
+  reportSet: (set: StartggSet) => Promise<void>;
   set: Set;
 }) {
   let disabled = false;
   const selectedReplays = replays.filter((replay) => replay.selected);
-  if (selectedReplays.length === 0 || selectedReplays.length % 2 === 0) {
+  if (
+    set.state === 3 ||
+    selectedReplays.length === 0 ||
+    selectedReplays.length % 2 === 0
+  ) {
     disabled = true;
   } else {
     disabled = !selectedReplays.every((replay) => {
@@ -99,7 +105,7 @@ export default function SetControls({
             <Button
               disabled={disabled}
               endIcon={<Backup />}
-              onClick={() => console.log(getSet())}
+              onClick={() => reportSet(getSet())}
               size="small"
               variant="contained"
             >

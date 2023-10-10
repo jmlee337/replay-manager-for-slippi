@@ -1,4 +1,11 @@
-import { Event, Phase, PhaseGroup, Set, Sets } from '../common/types';
+import {
+  Event,
+  Phase,
+  PhaseGroup,
+  Set,
+  Sets,
+  StartggSet,
+} from '../common/types';
 
 async function wrappedFetch(
   input: URL | RequestInfo,
@@ -82,7 +89,7 @@ async function fetchGql(key: string, query: string, variables: any) {
 }
 
 const PHASE_GROUP_QUERY = `
-  query PhaseGroupQuery($id:ID!, $page: Int) {
+  query PhaseGroupQuery($id: ID!, $page: Int) {
     phaseGroup(id: $id) {
       sets(page: $page, perPage: 52, sortType: CALL_ORDER, filters: {hideEmpty: true}) {
         pageInfo {
@@ -166,4 +173,16 @@ export async function getPhaseGroup(key: string, id: number): Promise<Sets> {
     pendingSets: sets.slice(partIndex),
     completedSets: sets.slice(0, partIndex),
   };
+}
+
+const SET_MUTATION = `
+  mutation ReportBracketSet($setId: ID!, $gameData: [BracketSetGameDataInput], $winnerId: ID) {
+    reportBracketSet(setId: $setId, gameData: $gameData, winnerId: $winnerId) {
+      id
+    }
+  }
+`;
+
+export async function reportSet(key: string, set: StartggSet) {
+  await fetchGql(key, SET_MUTATION, set);
 }
