@@ -22,6 +22,7 @@ import { DraggableChip, DroppableChip } from './DragAndDrop';
 import ReplayList from './ReplayList';
 import TournamentView from './TournamentView';
 import './App.css';
+import CopyControls from './CopyControls';
 
 const Bottom = styled(Paper)`
   height: 108px;
@@ -314,7 +315,7 @@ function Hello() {
             <InputBase
               disabled
               size="small"
-              value={dir}
+              value={dir || 'choose replay folder...'}
               style={{ flexGrow: 1 }}
             />
             <IconButton aria-label="refresh folder" onClick={refreshReplays}>
@@ -329,6 +330,15 @@ function Hello() {
           ) : (
             <div>Folder not found</div>
           )}
+          <CopyControls
+            displayNames={[
+              displayName1,
+              displayName2,
+              displayName3,
+              displayName4,
+            ]}
+            replays={replays}
+          />
         </TopColumn>
         <TopColumn width="300px">
           <TournamentBar>

@@ -1,4 +1,37 @@
+// Character external ID to short name
+export const characterNames = new Map([
+  [0, 'Falcon'],
+  [1, 'DK'],
+  [2, 'Fox'],
+  [3, 'GW'],
+  [4, 'Kirby'],
+  [5, 'Bowser'],
+  [6, 'Link'],
+  [7, 'Luigi'],
+  [8, 'Mario'],
+  [9, 'Marth'],
+  [10, 'Mewtwo'],
+  [11, 'Ness'],
+  [12, 'Peach'],
+  [13, 'Pikachu'],
+  [14, 'ICs'],
+  [15, 'Puff'],
+  [16, 'Samus'],
+  [17, 'Yoshi'],
+  [18, 'Zelda'],
+  [19, 'Sheik'],
+  [20, 'Falco'],
+  [21, 'YL'],
+  [22, 'Doc'],
+  [23, 'Roy'],
+  [24, 'Pichu'],
+  [25, 'Ganon'],
+]);
+
+// Stage IDs (not internal stage ID)
 export const legalStages = new Set([2, 3, 8, 28, 31, 32]);
+
+// Stage ID (not internal stage ID) to short name
 export const stageNames = new Map([
   [2, 'FoD'],
   [3, 'PS'],
