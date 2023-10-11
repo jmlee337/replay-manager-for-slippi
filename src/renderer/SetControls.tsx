@@ -44,20 +44,26 @@ export default function SetControls({
 
   const getSet = () => {
     const gameData = selectedReplays.map((replay, i) => {
-      const selections = replay.players
-        .map((player, j) => {
-          let characterId = 0;
-          let entrantId = 0;
-          if (player.playerType === 0) {
-            characterId = characterStartggIds.get(player.externalCharacterId)!;
-            entrantId = entrantIds[j];
-          }
-          return { characterId, entrantId } as StartggGameSelection;
-        })
-        .filter(
-          (selection) =>
-            selection.characterId !== 0 && selection.entrantId !== 0,
-        );
+      let selections = [] as StartggGameSelection[];
+      if (entrantIds.filter((entrantId) => entrantId).length === 2) {
+        selections = replay.players
+          .map((player, j) => {
+            let characterId = 0;
+            let entrantId = 0;
+            if (player.playerType === 0) {
+              characterId = characterStartggIds.get(
+                player.externalCharacterId,
+              )!;
+              entrantId = entrantIds[j];
+            }
+            return { characterId, entrantId } as StartggGameSelection;
+          })
+          .filter(
+            (selection) =>
+              selection.characterId !== 0 && selection.entrantId !== 0,
+          );
+      }
+
       return {
         gameNum: i + 1,
         stageId: stageStartggIds.get(replay.stageId),
