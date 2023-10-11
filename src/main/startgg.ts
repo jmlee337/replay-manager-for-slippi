@@ -58,17 +58,21 @@ export async function getPhase(id: number): Promise<PhaseGroup[]> {
     `https://api.smash.gg/phase/${id}?expand[]=groups`,
   );
   const json = await response.json();
-  return json.entities.groups.map(
-    (group: any) =>
-      ({
-        id: group.id,
-        name: group.displayIdentifier,
-        sets: {
-          pendingSets: [],
-          completedSets: [],
-        },
-      }) as PhaseGroup,
-  );
+  return json.entities.groups
+    .map(
+      (group: any) =>
+        ({
+          id: group.id,
+          name: group.displayIdentifier,
+          sets: {
+            pendingSets: [],
+            completedSets: [],
+          },
+        }) as PhaseGroup,
+    )
+    .sort((phaseGroupA: PhaseGroup, phaseGroupB: PhaseGroup) =>
+      phaseGroupA.name.localeCompare(phaseGroupB.name),
+    );
 }
 
 async function fetchGql(key: string, query: string, variables: any) {
