@@ -61,6 +61,17 @@ export default function CopyControls({
   selectedReplays: Replay[];
 }) {
   const [error, setError] = useState('');
+  const showError = (e: string) => {
+    setError(e);
+    setTimeout(() => setError(''), 5000);
+  };
+
+  const [success, setSuccess] = useState('');
+  const showSuccess = () => {
+    setSuccess('Success!');
+    setTimeout(() => setSuccess(''), 5000);
+  };
+
   const [dir, setDir] = useState('');
   const chooseDir = async () => {
     const openDialogRes = await window.electron.chooseDir();
@@ -74,15 +85,9 @@ export default function CopyControls({
   const [writeFileNames, setWriteFileNames] = useState(true);
   const [writeStartTimes, setWriteStartTimes] = useState(true);
   const [makeNewFolder, setMakeNewFolder] = useState(true);
+  const [isCopying, setIsCopying] = useState(false);
   const onCopy = async () => {
-    if (!dir) {
-      setError('Please choose copy folder');
-      return;
-    }
-    if (selectedReplays.length === 0) {
-      setError('Please select replays');
-      return;
-    }
+    setIsCopying(true);
     setError('');
 
     let offsetMs = 0;
@@ -195,39 +200,45 @@ export default function CopyControls({
 
       if (writeFileNames) {
         fileNames = nameObjs.map((game, i) => {
-          const { startAt } = selectedReplays[i];
-          const writeStartDate = writeStartTimes
-            ? new Date(new Date(startAt).getTime() + offsetMs)
-            : new Date(startAt);
-          const writeStartAt = format(writeStartDate, "yyyyMMdd'T'HHmmss");
+          let prefix = `${i + 1}`;
+          if (!makeNewFolder) {
+            const { startAt } = selectedReplays[i];
+            const writeStartDate = writeStartTimes
+              ? new Date(new Date(startAt).getTime() + offsetMs)
+              : new Date(startAt);
+            const writeStartAt = format(writeStartDate, "yyyyMMdd'T'HHmmss");
+            prefix = `${writeStartAt}_${prefix}`;
+          }
           const labels = game
             .filter((nameObj) => nameObj.characterName)
             .map(toLabel)
             .join(', ');
-          return `${writeStartAt}_${i + 1} ${labels}.slp`;
+          return `${prefix} ${labels}.slp`;
         });
       }
     }
-    console.log(subdir);
-    console.log(fileNames);
 
-    if (writeDisplayNames || writeStartTimes) {
-      selectedReplays.forEach((replay) => {
-        if (writeDisplayNames) {
-          replay.players.forEach((player, i) => {
-            if (player.playerType === 0 && displayNames[i]) {
-              console.log(`P${i + 1} display name: ${displayNames[i]}`);
-            }
-          });
-        }
-        if (writeStartTimes) {
-          console.log(
-            new Date(
-              new Date(replay.startAt).getTime() + offsetMs,
-            ).toISOString(),
-          );
-        }
-      });
+    let startTimes: string[] = [];
+    if (writeStartTimes) {
+      startTimes = selectedReplays.map((replay) =>
+        new Date(new Date(replay.startAt).getTime() + offsetMs).toISOString(),
+      );
+    }
+
+    try {
+      await window.electron.writeReplays(
+        dir,
+        writeDisplayNames ? displayNames : [],
+        fileNames,
+        selectedReplays,
+        startTimes,
+        subdir,
+      );
+      showSuccess();
+    } catch (e: any) {
+      showError(e.toString());
+    } finally {
+      setIsCopying(false);
     }
   };
 
@@ -285,12 +296,13 @@ export default function CopyControls({
               {error}
             </Typography>
           )}
+          {success && <Typography variant="caption">{success}</Typography>}
           <Button
-            disabled={!dir || selectedReplays.length === 0}
+            disabled={isCopying || !dir || selectedReplays.length === 0}
             onClick={onCopy}
             variant="contained"
           >
-            Copy
+            {isCopying ? 'Copying...' : 'Copy'}
           </Button>
         </Stack>
       </Stack>
