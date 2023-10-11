@@ -382,7 +382,7 @@ function Hello() {
                     autoFocus
                     label="Tournament Slug"
                     name="slug"
-                    placeholder="genesis-9"
+                    placeholder="super-smash-con-2023"
                     size="small"
                     variant="outlined"
                   />
