@@ -104,6 +104,7 @@ function Hello() {
   const [dir, setDir] = useState('');
   const [dirExists, setDirExists] = useState(true);
   const [replays, setReplays] = useState([] as Replay[]);
+  const selectedReplays = replays.filter((replay) => replay.selected);
   const chooseDir = async () => {
     const openDialogRes = await window.electron.chooseDir();
     if (!openDialogRes.canceled) {
@@ -125,11 +126,10 @@ function Hello() {
   const onReplayClick = (index: number) => {
     const newReplays = Array.from(replays);
     newReplays[index].selected = !newReplays[index].selected;
-
-    const selectedReplays = newReplays.filter((replay) => replay.selected);
+    const newSelectedReplays = newReplays.filter((replay) => replay.selected);
     let newActive = [false, false, false, false];
-    if (selectedReplays.length > 0) {
-      newActive = selectedReplays
+    if (newSelectedReplays.length > 0) {
+      newActive = newSelectedReplays
         .map((replay) =>
           replay.players.map((player) => player.playerType === 0),
         )
@@ -368,7 +368,7 @@ function Hello() {
               displayName3,
               displayName4,
             ]}
-            replays={replays}
+            selectedReplays={selectedReplays}
           />
         </TopColumn>
         <TopColumn width="300px">
@@ -570,8 +570,8 @@ function Hello() {
                 </Tooltip>
                 <SetControls
                   entrantIds={[entrantId1, entrantId2, entrantId3, entrantId4]}
-                  replays={replays}
                   reportSet={reportSet}
+                  selectedReplays={selectedReplays}
                   set={selectedSet}
                 />
               </>

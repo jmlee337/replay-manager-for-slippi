@@ -55,10 +55,10 @@ type NamesObj = {
 
 export default function CopyControls({
   displayNames,
-  replays,
+  selectedReplays,
 }: {
   displayNames: string[];
-  replays: Replay[];
+  selectedReplays: Replay[];
 }) {
   const [error, setError] = useState('');
   const [dir, setDir] = useState('');
@@ -79,9 +79,6 @@ export default function CopyControls({
       setError('Please choose copy folder');
       return;
     }
-    const selectedReplays: Replay[] = replays.filter(
-      (replay) => replay.selected,
-    );
     if (selectedReplays.length === 0) {
       setError('Please select replays');
       return;
@@ -215,24 +212,22 @@ export default function CopyControls({
     console.log(fileNames);
 
     if (writeDisplayNames || writeStartTimes) {
-      replays
-        .filter((replay) => replay.selected)
-        .forEach((replay) => {
-          if (writeDisplayNames) {
-            replay.players.forEach((player, i) => {
-              if (player.playerType === 0 && displayNames[i]) {
-                console.log(`P${i + 1} display name: ${displayNames[i]}`);
-              }
-            });
-          }
-          if (writeStartTimes) {
-            console.log(
-              new Date(
-                new Date(replay.startAt).getTime() + offsetMs,
-              ).toISOString(),
-            );
-          }
-        });
+      selectedReplays.forEach((replay) => {
+        if (writeDisplayNames) {
+          replay.players.forEach((player, i) => {
+            if (player.playerType === 0 && displayNames[i]) {
+              console.log(`P${i + 1} display name: ${displayNames[i]}`);
+            }
+          });
+        }
+        if (writeStartTimes) {
+          console.log(
+            new Date(
+              new Date(replay.startAt).getTime() + offsetMs,
+            ).toISOString(),
+          );
+        }
+      });
     }
   };
 
@@ -290,7 +285,11 @@ export default function CopyControls({
               {error}
             </Typography>
           )}
-          <Button onClick={onCopy} variant="contained">
+          <Button
+            disabled={!dir || selectedReplays.length === 0}
+            onClick={onCopy}
+            variant="contained"
+          >
             Copy
           </Button>
         </Stack>

@@ -11,17 +11,16 @@ import { characterStartggIds, stageStartggIds } from '../common/constants';
 
 export default function SetControls({
   entrantIds,
-  replays,
+  selectedReplays,
   reportSet,
   set,
 }: {
   entrantIds: number[];
-  replays: Replay[];
+  selectedReplays: Replay[];
   reportSet: (set: StartggSet) => Promise<void>;
   set: Set;
 }) {
   let disabled = false;
-  const selectedReplays = replays.filter((replay) => replay.selected);
   if (
     set.state === 3 ||
     selectedReplays.length === 0 ||
