@@ -21,24 +21,40 @@ export default function SetControls({
   set: Set;
 }) {
   let disabled = false;
-  if (
-    set.state === 3 ||
-    selectedReplays.length === 0 ||
-    selectedReplays.length % 2 === 0
-  ) {
+  if (set.state === 3 || selectedReplays.length === 0) {
     disabled = true;
-  } else {
-    disabled = !selectedReplays.every((replay) => {
-      const humanPlayers = replay.players.filter(
-        (player) => player.playerType === 0,
-      );
-      const validEntrantIds = entrantIds.filter((entrantId) => entrantId !== 0);
-      const numPlayers = set.entrant1Names.length + set.entrant2Names.length;
-      return (
-        numPlayers === validEntrantIds.length &&
-        humanPlayers.every((player) => entrantIds[player.port - 1] !== 0)
-      );
-    });
+  }
+
+  const everyPlayerAssigned = selectedReplays.every((replay) => {
+    const humanPlayers = replay.players.filter(
+      (player) => player.playerType === 0,
+    );
+    const validEntrantIds = entrantIds.filter((entrantId) => entrantId !== 0);
+    const numPlayers = set.entrant1Names.length + set.entrant2Names.length;
+    return (
+      numPlayers === validEntrantIds.length &&
+      humanPlayers.every((player) => entrantIds[player.port - 1] !== 0)
+    );
+  });
+  if (!everyPlayerAssigned) {
+    disabled = true;
+  }
+
+  const gameWins = new Map<number, number>();
+  let maxGames = 0;
+  let winnerId = 0;
+  selectedReplays.forEach((replay) => {
+    const gameWinnerId =
+      entrantIds[replay.players.findIndex((player) => player.isWinner)];
+    const n = (gameWins.get(gameWinnerId) || 0) + 1;
+    if (n > maxGames) {
+      maxGames = n;
+      winnerId = gameWinnerId;
+    }
+    gameWins.set(gameWinnerId, n);
+  });
+  if (winnerId === 0 || maxGames / selectedReplays.length <= 0.5) {
+    disabled = true;
   }
 
   const getSet = () => {
@@ -71,19 +87,6 @@ export default function SetControls({
           entrantIds[replay.players.findIndex((player) => player.isWinner)],
       } as StartggGame;
     });
-
-    const gameWins = new Map<number, number>();
-    let maxGames = 0;
-    let winnerId = 0;
-    gameData.forEach((game) => {
-      const n = (gameWins.get(game.winnerId) || 0) + 1;
-      if (n > maxGames) {
-        maxGames = n;
-        winnerId = game.winnerId;
-      }
-      gameWins.set(game.winnerId, n);
-    });
-
     return { gameData, setId: set.id, winnerId } as StartggSet;
   };
 
