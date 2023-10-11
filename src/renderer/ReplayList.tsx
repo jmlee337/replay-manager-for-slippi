@@ -13,7 +13,7 @@ import { memo, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { Replay } from '../common/types';
-import { stageNames } from '../common/constants';
+import { characterNames, stageNames } from '../common/constants';
 
 const EllipsisText = styled.div`
   flex-grow: 1;
@@ -61,6 +61,8 @@ const chipTheme = createTheme({
   },
 });
 
+const characterIcons = require.context('./characters', true);
+
 const ReplayListItem = memo(function ReplayListItem({
   index,
   replay,
@@ -99,9 +101,12 @@ const ReplayListItem = memo(function ReplayListItem({
     }
 
     const avatar = (
-      <Avatar>
-        {player.externalCharacterId}/{player.costumeIndex}
-      </Avatar>
+      <Avatar
+        alt={characterNames.get(player.externalCharacterId)}
+        src={characterIcons(
+          `./${player.externalCharacterId}/${player.costumeIndex}/stock.png`,
+        )}
+      />
     );
     const name =
       player.playerType === 0
