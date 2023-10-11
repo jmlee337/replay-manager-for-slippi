@@ -1,5 +1,5 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import { FormEvent, SyntheticEvent, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import {
   Button,
   Dialog,
@@ -10,13 +10,12 @@ import {
   IconButton,
   InputBase,
   Paper,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Close, Edit, FolderOpen, Key, Refresh } from '@mui/icons-material';
+import { Edit, FolderOpen, Key, Refresh } from '@mui/icons-material';
 import styled from '@emotion/styled';
 import { Replay, Set, StartggSet, Tournament } from '../common/types';
 import { DraggableChip, DroppableChip } from './DragAndDrop';
@@ -25,6 +24,7 @@ import TournamentView from './TournamentView';
 import './App.css';
 import CopyControls from './CopyControls';
 import SetControls from './SetControls';
+import ErrorDialog from './ErrorDialog';
 
 const Bottom = styled(Paper)`
   height: 147px;
@@ -64,27 +64,11 @@ const TournamentBar = styled.div`
 `;
 
 function Hello() {
-  // Error toast
-  const [errorToastError, setErrorToastError] = useState('');
-  const [errorToastOpen, setErrorToastOpen] = useState(false);
-  const handleErrorToastClose = (
-    event: SyntheticEvent | Event,
-    reason?: string,
-  ) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-
-    setErrorToastError('');
-    setErrorToastOpen(false);
-  };
-  const showErrorToast = (e: any) => {
-    if (e instanceof Error) {
-      setErrorToastError(e.message);
-    } else {
-      setErrorToastError('Unknown Error!');
-    }
-    setErrorToastOpen(true);
+  const [error, setError] = useState('');
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const showErrorDialog = (message: string) => {
+    setError(message);
+    setErrorDialogOpen(true);
   };
 
   const [p1Active, setP1Active] = useState(false);
@@ -208,7 +192,7 @@ function Hello() {
     try {
       phases = await window.electron.getEvent(id);
     } catch (e: any) {
-      showErrorToast(e);
+      showErrorDialog(e.toString());
       return;
     }
 
@@ -224,7 +208,7 @@ function Hello() {
     try {
       phaseGroups = await window.electron.getPhase(id);
     } catch (e: any) {
-      showErrorToast(e);
+      showErrorDialog(e.toString());
       return;
     }
 
@@ -249,7 +233,7 @@ function Hello() {
     try {
       sets = await window.electron.getPhaseGroup(id);
     } catch (e: any) {
-      showErrorToast(e);
+      showErrorDialog(e.toString());
       return;
     }
 
@@ -306,7 +290,7 @@ function Hello() {
         selectedSetChain.eventId,
       );
     } catch (e: any) {
-      showErrorToast(e);
+      showErrorDialog(e.toString());
     }
   };
 
@@ -579,21 +563,13 @@ function Hello() {
           </Stack>
         </BottomColumns>
       </Bottom>
-      <Snackbar
-        open={errorToastOpen}
-        autoHideDuration={5000}
-        onClose={handleErrorToastClose}
-        message={errorToastError}
-        action={
-          <IconButton
-            size="small"
-            aria-label="close"
-            color="inherit"
-            onClick={handleErrorToastClose}
-          >
-            <Close fontSize="small" />
-          </IconButton>
-        }
+      <ErrorDialog
+        message={error}
+        onClose={() => {
+          setError('');
+          setErrorDialogOpen(false);
+        }}
+        open={errorDialogOpen}
       />
     </>
   );

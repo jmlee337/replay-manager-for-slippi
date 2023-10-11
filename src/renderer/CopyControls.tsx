@@ -14,6 +14,7 @@ import { ChangeEvent, useState } from 'react';
 import { format } from 'date-fns';
 import { Replay } from '../common/types';
 import { characterNames } from '../common/constants';
+import ErrorDialog from './ErrorDialog';
 
 function LabeledCheckbox({
   checked,
@@ -61,10 +62,7 @@ export default function CopyControls({
   selectedReplays: Replay[];
 }) {
   const [error, setError] = useState('');
-  const showError = (e: string) => {
-    setError(e);
-    setTimeout(() => setError(''), 5000);
-  };
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
 
   const [success, setSuccess] = useState('');
   const showSuccess = () => {
@@ -88,7 +86,6 @@ export default function CopyControls({
   const [isCopying, setIsCopying] = useState(false);
   const onCopy = async () => {
     setIsCopying(true);
-    setError('');
 
     let offsetMs = 0;
     let startDate = new Date(selectedReplays[0].startAt);
@@ -236,7 +233,8 @@ export default function CopyControls({
       );
       showSuccess();
     } catch (e: any) {
-      showError(e.toString());
+      setError(e.toString());
+      setErrorDialogOpen(true);
     } finally {
       setIsCopying(false);
     }
@@ -291,11 +289,14 @@ export default function CopyControls({
           justifyContent="right"
           spacing="8px"
         >
-          {error && (
-            <Typography color="red" variant="caption">
-              {error}
-            </Typography>
-          )}
+          <ErrorDialog
+            message={error}
+            onClose={() => {
+              setError('');
+              setErrorDialogOpen(false);
+            }}
+            open={errorDialogOpen}
+          />
           {success && <Typography variant="caption">{success}</Typography>}
           <Button
             disabled={isCopying || !dir || selectedReplays.length === 0}
