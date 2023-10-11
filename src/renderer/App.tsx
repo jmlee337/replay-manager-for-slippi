@@ -13,6 +13,7 @@ import {
   Snackbar,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { Close, Edit, FolderOpen, Key, Refresh } from '@mui/icons-material';
@@ -341,15 +342,19 @@ function Hello() {
             <InputBase
               disabled
               size="small"
-              value={dir || 'choose replay folder...'}
+              value={dir || 'Set replays folder...'}
               style={{ flexGrow: 1 }}
             />
-            <IconButton aria-label="refresh folder" onClick={refreshReplays}>
-              <Refresh />
-            </IconButton>
-            <IconButton aria-label="choose folder" onClick={chooseDir}>
-              <FolderOpen />
-            </IconButton>
+            <Tooltip arrow title="Refresh replays">
+              <IconButton aria-label="Refresh replays" onClick={refreshReplays}>
+                <Refresh />
+              </IconButton>
+            </Tooltip>
+            <Tooltip arrow title="Set replays folder">
+              <IconButton aria-label="Set replay folder" onClick={chooseDir}>
+                <FolderOpen />
+              </IconButton>
+            </Tooltip>
           </FolderBar>
           {dirExists ? (
             <ReplayList replays={replays} onClick={onReplayClick} />
@@ -371,15 +376,17 @@ function Hello() {
             <InputBase
               disabled
               size="small"
-              value={slug}
+              value={slug || 'Set tournament slug...'}
               style={{ flexGrow: 1 }}
             />
-            <IconButton
-              aria-label="set tournament slug"
-              onClick={() => setSlugDialogOpen(true)}
-            >
-              <Edit />
-            </IconButton>
+            <Tooltip arrow title="Set tournament slug">
+              <IconButton
+                aria-label="Set tournament slug"
+                onClick={() => setSlugDialogOpen(true)}
+              >
+                <Edit />
+              </IconButton>
+            </Tooltip>
             <Dialog
               open={slugDialogOpen}
               onClose={() => setSlugDialogOpen(false)}
@@ -404,12 +411,14 @@ function Hello() {
                 </DialogContentText>
               </DialogContent>
             </Dialog>
-            <IconButton
-              aria-label="set startgg api key"
-              onClick={openStartggKeyDialog}
-            >
-              <Key />
-            </IconButton>
+            <Tooltip arrow title="Set start.gg API key">
+              <IconButton
+                aria-label="Set start.gg API key"
+                onClick={openStartggKeyDialog}
+              >
+                <Key />
+              </IconButton>
+            </Tooltip>
             <Dialog
               open={startggKeyDialogOpen}
               onClose={() => setStartggKeyDialogOpen(false)}
@@ -449,47 +458,71 @@ function Hello() {
         >
           <Stack
             boxSizing="border-box"
-            direction="row"
             flexGrow={1}
             minWidth="600px"
             padding="20px 16px 0 58px"
           >
-            <DroppableChip
-              active={p1Active}
-              displayName={displayName1}
-              port={1}
-              onDrop={(displayName: string, entrantId: number) => {
-                setDisplayName1(displayName);
-                setEntrantId1(entrantId);
-              }}
-            />
-            <DroppableChip
-              active={p2Active}
-              displayName={displayName2}
-              port={2}
-              onDrop={(displayName: string, entrantId: number) => {
-                setDisplayName2(displayName);
-                setEntrantId2(entrantId);
-              }}
-            />
-            <DroppableChip
-              active={p3Active}
-              displayName={displayName3}
-              port={3}
-              onDrop={(displayName: string, entrantId: number) => {
-                setDisplayName3(displayName);
-                setEntrantId3(entrantId);
-              }}
-            />
-            <DroppableChip
-              active={p4Active}
-              displayName={displayName4}
-              port={4}
-              onDrop={(displayName: string, entrantId: number) => {
-                setDisplayName4(displayName);
-                setEntrantId4(entrantId);
-              }}
-            />
+            <Stack direction="row">
+              <DroppableChip
+                active={p1Active}
+                displayName={displayName1}
+                port={1}
+                onDrop={(displayName: string, entrantId: number) => {
+                  setDisplayName1(displayName);
+                  setEntrantId1(entrantId);
+                }}
+              />
+              <DroppableChip
+                active={p2Active}
+                displayName={displayName2}
+                port={2}
+                onDrop={(displayName: string, entrantId: number) => {
+                  setDisplayName2(displayName);
+                  setEntrantId2(entrantId);
+                }}
+              />
+              <DroppableChip
+                active={p3Active}
+                displayName={displayName3}
+                port={3}
+                onDrop={(displayName: string, entrantId: number) => {
+                  setDisplayName3(displayName);
+                  setEntrantId3(entrantId);
+                }}
+              />
+              <DroppableChip
+                active={p4Active}
+                displayName={displayName4}
+                port={4}
+                onDrop={(displayName: string, entrantId: number) => {
+                  setDisplayName4(displayName);
+                  setEntrantId4(entrantId);
+                }}
+              />
+            </Stack>
+            <Stack
+              alignItems="center"
+              direction="row"
+              flexGrow={1}
+              justifyContent="right"
+              marginTop="8px"
+              spacing="1em"
+            >
+              <Stack>
+                <Typography variant="body2">
+                  1. Set replay folder and tournament slug
+                </Typography>
+                <Typography variant="body2">3. Drag players here</Typography>
+              </Stack>
+              <Stack>
+                <Typography variant="body2">
+                  2. Select replays and set
+                </Typography>
+                <Typography variant="body2">
+                  4. Copy replays / save or report set
+                </Typography>
+              </Stack>
+            </Stack>
           </Stack>
           <Stack width="300px">
             {!!selectedSet.id && (
@@ -501,32 +534,40 @@ function Hello() {
                 >
                   {selectedSet.fullRoundText} ({selectedSet.id})
                 </Typography>
-                <Stack direction="row" gap="8px">
-                  <Stack gap="8px" width="50%">
-                    <DraggableChip
-                      displayName={selectedSet.entrant1Names[0].slice(0, 15)}
-                      entrantId={selectedSet.entrant1Id}
-                    />
-                    {selectedSet.entrant1Names.length > 1 && (
+                <Tooltip arrow title="Drag players!">
+                  <Stack direction="row" gap="8px">
+                    <Stack gap="8px" width="50%">
                       <DraggableChip
-                        displayName={selectedSet.entrant1Names[1].slice(0, 15)}
+                        displayName={selectedSet.entrant1Names[0].slice(0, 15)}
                         entrantId={selectedSet.entrant1Id}
                       />
-                    )}
-                  </Stack>
-                  <Stack gap="8px" width="50%">
-                    <DraggableChip
-                      displayName={selectedSet.entrant2Names[0].slice(0, 15)}
-                      entrantId={selectedSet.entrant2Id}
-                    />
-                    {selectedSet.entrant2Names.length > 1 && (
+                      {selectedSet.entrant1Names.length > 1 && (
+                        <DraggableChip
+                          displayName={selectedSet.entrant1Names[1].slice(
+                            0,
+                            15,
+                          )}
+                          entrantId={selectedSet.entrant1Id}
+                        />
+                      )}
+                    </Stack>
+                    <Stack gap="8px" width="50%">
                       <DraggableChip
-                        displayName={selectedSet.entrant2Names[1].slice(0, 15)}
+                        displayName={selectedSet.entrant2Names[0].slice(0, 15)}
                         entrantId={selectedSet.entrant2Id}
                       />
-                    )}
+                      {selectedSet.entrant2Names.length > 1 && (
+                        <DraggableChip
+                          displayName={selectedSet.entrant2Names[1].slice(
+                            0,
+                            15,
+                          )}
+                          entrantId={selectedSet.entrant2Id}
+                        />
+                      )}
+                    </Stack>
                   </Stack>
-                </Stack>
+                </Tooltip>
                 <SetControls
                   entrantIds={[entrantId1, entrantId2, entrantId3, entrantId4]}
                   replays={replays}

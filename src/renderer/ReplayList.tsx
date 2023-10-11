@@ -5,6 +5,7 @@ import {
   List,
   ListItemButton,
   ThemeProvider,
+  Tooltip,
   Typography,
   createTheme,
 } from '@mui/material';
@@ -77,7 +78,8 @@ const ReplayListItem = memo(function ReplayListItem({
   }, [index, onClick]);
 
   const startAtDate = new Date(replay.startAt);
-  const date = format(startAtDate, 'yyyy年MM月dd日');
+  const dateLong = format(startAtDate, 'MMMM do, yyyy');
+  const dateShort = format(startAtDate, 'yyyy年MM月dd日');
   const time = format(startAtDate, 'h:mmaaaaa');
   const duration = format(new Date(replay.lastFrame / 0.05994), "m'm'ss's'");
   const stageName = stageNames.get(replay.stageId) || replay.stageId;
@@ -85,7 +87,11 @@ const ReplayListItem = memo(function ReplayListItem({
   const displayNames = replay.players.map((player) => {
     const key = player.port;
     const displayName = player.playerType === 0 && player.displayName;
-    const trophy = player.isWinner && <EmojiEvents />;
+    const trophy = player.isWinner && (
+      <Tooltip arrow placement="top" title="Winner">
+        <EmojiEvents />
+      </Tooltip>
+    );
     return (
       <QuarterSegment key={key}>
         {trophy}
@@ -143,7 +149,9 @@ const ReplayListItem = memo(function ReplayListItem({
           <QuarterSegment>{duration}</QuarterSegment>
         </Typography>
         <Typography style={typographyStyle} variant="caption">
-          <QuarterSegment>{date}</QuarterSegment>
+          <Tooltip arrow placement="top" title={dateLong}>
+            <QuarterSegment>{dateShort}</QuarterSegment>
+          </Tooltip>
           <QuarterSegment>{replay.fileName}</QuarterSegment>
         </Typography>
       </ReplayContent>

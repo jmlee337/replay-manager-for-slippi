@@ -1,4 +1,4 @@
-import { Chip } from '@mui/material';
+import { Chip, Tooltip } from '@mui/material';
 import { DragEvent } from 'react';
 
 export function DraggableChip({
@@ -52,7 +52,7 @@ export function DroppableChip({
     }
   };
 
-  return (
+  const chip = (
     <Chip
       onDrop={drop}
       onDragEnter={dragEnterOver}
@@ -61,5 +61,13 @@ export function DroppableChip({
       style={{ width: '25%' }}
       variant={active ? 'outlined' : 'filled'}
     />
+  );
+
+  return active ? (
+    <Tooltip arrow title="Drop here!">
+      {chip}
+    </Tooltip>
+  ) : (
+    chip
   );
 }

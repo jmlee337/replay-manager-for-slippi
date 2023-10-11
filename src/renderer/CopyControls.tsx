@@ -7,6 +7,7 @@ import {
   IconButton,
   InputBase,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { ChangeEvent, useState } from 'react';
@@ -243,12 +244,14 @@ export default function CopyControls({
           <InputBase
             disabled
             size="small"
-            value={dir || 'choose copy folder...'}
+            value={dir || 'Set copy folder...'}
             style={{ flexGrow: 1 }}
           />
-          <IconButton aria-label="choose folder" onClick={chooseDir}>
-            <FolderOpen />
-          </IconButton>
+          <Tooltip arrow title="Set copy folder">
+            <IconButton aria-label="Set copy folder" onClick={chooseDir}>
+              <FolderOpen />
+            </IconButton>
+          </Tooltip>
         </Stack>
         <Stack direction="row" justifyContent="right">
           <Stack>

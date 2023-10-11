@@ -91,7 +91,7 @@ export default function SetControls({
   return (
     <Stack direction="row" paddingTop="8px" spacing="8px">
       <Stack direction="row" justifyContent="center" width="50%">
-        <Tooltip title="Save locally">
+        <Tooltip arrow title="Save locally">
           <div>
             <Button
               disabled={disabled}
@@ -106,7 +106,7 @@ export default function SetControls({
         </Tooltip>
       </Stack>
       <Stack direction="row" justifyContent="center" width="50%">
-        <Tooltip title="Report on start.gg">
+        <Tooltip arrow title="Report on start.gg">
           <div>
             <Button
               disabled={disabled}
