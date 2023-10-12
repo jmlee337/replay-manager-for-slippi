@@ -14,7 +14,12 @@ import { memo, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { Replay } from '../common/types';
-import { characterNames, stageNames } from '../common/constants';
+import {
+  characterNames,
+  isValidCharacter,
+  stageNames,
+} from '../common/constants';
+import { DroppableChip } from './DragAndDrop';
 
 const EllipsisText = styled.div`
   flex-grow: 1;
@@ -68,10 +73,12 @@ const ReplayListItem = memo(function ReplayListItem({
   index,
   replay,
   onClick,
+  onOverride,
 }: {
   index: number;
   replay: Replay;
   onClick: (index: number) => void;
+  onOverride: () => void;
 }) {
   const onClickCallback = useCallback(() => {
     onClick(index);
@@ -84,9 +91,11 @@ const ReplayListItem = memo(function ReplayListItem({
   const duration = format(new Date(replay.lastFrame / 0.05994), "m'm'ss's'");
   const stageName = stageNames.get(replay.stageId) || replay.stageId;
 
-  const displayNames = replay.players.map((player) => {
+  const displayNamesToShow = replay.players.map((player) => {
     const key = player.port;
-    const displayName = player.playerType === 0 && player.displayName;
+    const displayName =
+      player.overrides.displayName ||
+      (player.playerType === 0 && player.displayName);
     const trophy = player.isWinner && (
       <Tooltip arrow placement="top" title="Winner">
         <EmojiEvents />
@@ -106,25 +115,32 @@ const ReplayListItem = memo(function ReplayListItem({
       return <Chip key={key} icon={<HideSource />} style={chipStyle} />;
     }
 
-    const avatar = (
+    const avatar = isValidCharacter(player.externalCharacterId) ? (
       <Avatar
         alt={characterNames.get(player.externalCharacterId)}
         src={characterIcons(
           `./${player.externalCharacterId}/${player.costumeIndex}/stock.png`,
         )}
       />
-    );
+    ) : undefined;
     const name =
       player.playerType === 0
         ? player.connectCode || player.nametag || `P${key}`
         : 'CPU';
+    const onDrop = (displayName: string, entrantId: number) => {
+      player.overrides = { displayName, entrantId };
+      onOverride();
+    };
+
     return (
-      <Chip
+      <DroppableChip
+        active={replay.selected}
         avatar={avatar}
         key={key}
         label={name}
+        outlined
         style={chipStyle}
-        variant={player.playerType === 0 ? 'outlined' : 'filled'}
+        onDrop={onDrop}
       />
     );
   });
@@ -138,7 +154,7 @@ const ReplayListItem = memo(function ReplayListItem({
       <Checkbox checked={replay.selected} />
       <ReplayContent>
         <Typography style={typographyStyle} variant="caption">
-          {displayNames}
+          {displayNamesToShow}
         </Typography>
         <PlayersRow>
           <ThemeProvider theme={chipTheme}>{playerChips}</ThemeProvider>
@@ -162,9 +178,11 @@ const ReplayListItem = memo(function ReplayListItem({
 export default function ReplayList({
   replays,
   onClick,
+  onOverride,
 }: {
   replays: Replay[];
   onClick: (index: number) => void;
+  onOverride: () => void;
 }) {
   return (
     <List>
@@ -174,6 +192,7 @@ export default function ReplayList({
           index={index}
           replay={replay}
           onClick={onClick}
+          onOverride={onOverride}
         />
       ))}
     </List>

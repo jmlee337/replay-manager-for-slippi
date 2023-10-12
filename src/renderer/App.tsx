@@ -17,7 +17,13 @@ import {
 } from '@mui/material';
 import { Edit, FolderOpen, Key, Refresh } from '@mui/icons-material';
 import styled from '@emotion/styled';
-import { Replay, Set, StartggSet, Tournament } from '../common/types';
+import {
+  PlayerOverrides,
+  Replay,
+  Set,
+  StartggSet,
+  Tournament,
+} from '../common/types';
 import { DraggableChip, DroppableChip } from './DragAndDrop';
 import ReplayList from './ReplayList';
 import TournamentView from './TournamentView';
@@ -71,18 +77,18 @@ function Hello() {
     setErrorDialogOpen(true);
   };
 
-  const [p1Active, setP1Active] = useState(false);
-  const [p2Active, setP2Active] = useState(false);
-  const [p3Active, setP3Active] = useState(false);
-  const [p4Active, setP4Active] = useState(false);
-  const [displayName1, setDisplayName1] = useState('');
-  const [displayName2, setDisplayName2] = useState('');
-  const [displayName3, setDisplayName3] = useState('');
-  const [displayName4, setDisplayName4] = useState('');
-  const [entrantId1, setEntrantId1] = useState(0);
-  const [entrantId2, setEntrantId2] = useState(0);
-  const [entrantId3, setEntrantId3] = useState(0);
-  const [entrantId4, setEntrantId4] = useState(0);
+  const [batchActives, setBatchActives] = useState([
+    false,
+    false,
+    false,
+    false,
+  ]);
+  const [overrides, setOverrides] = useState([
+    { displayName: '', entrantId: 0 },
+    { displayName: '', entrantId: 0 },
+    { displayName: '', entrantId: 0 },
+    { displayName: '', entrantId: 0 },
+  ] as PlayerOverrides[]);
 
   // Replay list
   const [dir, setDir] = useState('');
@@ -107,15 +113,20 @@ function Hello() {
       setReplays([]);
     }
   };
+  const onPlayerOverride = () => {
+    setReplays(Array.from(replays));
+  };
   const onReplayClick = (index: number) => {
     const newReplays = Array.from(replays);
     newReplays[index].selected = !newReplays[index].selected;
     const newSelectedReplays = newReplays.filter((replay) => replay.selected);
-    let newActive = [false, false, false, false];
+    let newBatchActives = [false, false, false, false];
     if (newSelectedReplays.length > 0) {
-      newActive = newSelectedReplays
+      newBatchActives = newSelectedReplays
         .map((replay) =>
-          replay.players.map((player) => player.playerType === 0),
+          replay.players.map(
+            (player) => player.playerType === 0 || player.playerType === 1,
+          ),
         )
         .reduce(
           (accArr, curArr) => [
@@ -127,30 +138,26 @@ function Hello() {
           [true, true, true, true],
         );
     }
-    if (p1Active && !newActive[0]) {
-      setDisplayName1('');
-      setEntrantId1(0);
-    }
-    setP1Active(newActive[0]);
 
-    if (p2Active && !newActive[1]) {
-      setDisplayName2('');
-      setEntrantId2(0);
+    const newOverrides = Array.from(overrides);
+    for (let i = 0; i < 4; i += 1) {
+      if (batchActives[i] && !newBatchActives[i]) {
+        newOverrides[i] = { displayName: '', entrantId: 0 };
+      }
     }
-    setP2Active(newActive[1]);
 
-    if (p3Active && !newActive[2]) {
-      setDisplayName3('');
-      setEntrantId3(0);
+    if (newReplays[index].selected) {
+      newReplays[index].players.forEach((player, i) => {
+        player.overrides = { ...newOverrides[i] };
+      });
+    } else {
+      newReplays[index].players.forEach((player) => {
+        player.overrides = { displayName: '', entrantId: 0 };
+      });
     }
-    setP3Active(newActive[2]);
 
-    if (p4Active && !newActive[3]) {
-      setDisplayName4('');
-      setEntrantId4(0);
-    }
-    setP4Active(newActive[3]);
-
+    setBatchActives(newBatchActives);
+    setOverrides(newOverrides);
     setReplays(newReplays);
   };
 
@@ -256,6 +263,26 @@ function Hello() {
     }
   };
 
+  // batch chips
+  const batchChip = (index: number) => (
+    <DroppableChip
+      active={batchActives[index]}
+      label={overrides[index].displayName || `P${index + 1}`}
+      outlined={batchActives[index]}
+      style={{ width: '25%' }}
+      onDrop={(displayName: string, entrantId: number) => {
+        const newOverrides = Array.from(overrides);
+        newOverrides[index] = { displayName, entrantId };
+
+        selectedReplays.forEach((replay) => {
+          replay.players[index].overrides = { ...newOverrides[index] };
+        });
+        setOverrides(newOverrides);
+      }}
+    />
+  );
+
+  // set controls
   const [selectedSet, setSelectedSet] = useState({} as Set);
   const [selectedSetChain, setSelectedSetChain] = useState({
     eventId: 0,
@@ -268,15 +295,21 @@ function Hello() {
     phaseId: number,
     eventId: number,
   ) => {
-    setDisplayName1('');
-    setDisplayName2('');
-    setDisplayName3('');
-    setDisplayName4('');
-    setEntrantId1(0);
-    setEntrantId2(0);
-    setEntrantId3(0);
-    setEntrantId4(0);
+    const newOverrides = [
+      { displayName: '', entrantId: 0 },
+      { displayName: '', entrantId: 0 },
+      { displayName: '', entrantId: 0 },
+      { displayName: '', entrantId: 0 },
+    ];
+    selectedReplays.forEach((replay) => {
+      replay.players.forEach((player, i) => {
+        player.overrides = { ...newOverrides[i] };
+      });
+    });
+    const newReplays = Array.from(replays);
 
+    setOverrides(newOverrides);
+    setReplays(newReplays);
     setSelectedSetChain({ eventId, phaseId, phaseGroupId });
     setSelectedSet(set);
   };
@@ -341,19 +374,15 @@ function Hello() {
             </Tooltip>
           </FolderBar>
           {dirExists ? (
-            <ReplayList replays={replays} onClick={onReplayClick} />
+            <ReplayList
+              replays={replays}
+              onClick={onReplayClick}
+              onOverride={onPlayerOverride}
+            />
           ) : (
             <div>Folder not found</div>
           )}
-          <CopyControls
-            displayNames={[
-              displayName1,
-              displayName2,
-              displayName3,
-              displayName4,
-            ]}
-            selectedReplays={selectedReplays}
-          />
+          <CopyControls selectedReplays={selectedReplays} />
         </TopColumn>
         <TopColumn width="300px">
           <TournamentBar>
@@ -447,42 +476,10 @@ function Hello() {
             padding="20px 16px 0 58px"
           >
             <Stack direction="row">
-              <DroppableChip
-                active={p1Active}
-                displayName={displayName1}
-                port={1}
-                onDrop={(displayName: string, entrantId: number) => {
-                  setDisplayName1(displayName);
-                  setEntrantId1(entrantId);
-                }}
-              />
-              <DroppableChip
-                active={p2Active}
-                displayName={displayName2}
-                port={2}
-                onDrop={(displayName: string, entrantId: number) => {
-                  setDisplayName2(displayName);
-                  setEntrantId2(entrantId);
-                }}
-              />
-              <DroppableChip
-                active={p3Active}
-                displayName={displayName3}
-                port={3}
-                onDrop={(displayName: string, entrantId: number) => {
-                  setDisplayName3(displayName);
-                  setEntrantId3(entrantId);
-                }}
-              />
-              <DroppableChip
-                active={p4Active}
-                displayName={displayName4}
-                port={4}
-                onDrop={(displayName: string, entrantId: number) => {
-                  setDisplayName4(displayName);
-                  setEntrantId4(entrantId);
-                }}
-              />
+              {batchChip(0)}
+              {batchChip(1)}
+              {batchChip(2)}
+              {batchChip(3)}
             </Stack>
             <Stack
               alignItems="center"
@@ -553,7 +550,6 @@ function Hello() {
                   </Stack>
                 </Tooltip>
                 <SetControls
-                  entrantIds={[entrantId1, entrantId2, entrantId3, entrantId4]}
                   reportSet={reportSet}
                   selectedReplays={selectedReplays}
                   set={selectedSet}

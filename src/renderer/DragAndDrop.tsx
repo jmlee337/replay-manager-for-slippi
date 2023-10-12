@@ -1,5 +1,5 @@
 import { Chip, Tooltip } from '@mui/material';
-import { DragEvent } from 'react';
+import { CSSProperties, DragEvent, ReactElement } from 'react';
 
 export function DraggableChip({
   displayName,
@@ -29,13 +29,17 @@ export function DraggableChip({
 
 export function DroppableChip({
   active,
-  displayName,
-  port,
+  avatar,
+  label,
+  outlined,
+  style,
   onDrop,
 }: {
   active: boolean;
-  displayName: string;
-  port: number;
+  avatar?: ReactElement | undefined;
+  label: string;
+  outlined: boolean;
+  style: CSSProperties;
   onDrop: (displayName: string, entrantId: number) => void;
 }) {
   const drop = (event: DragEvent<HTMLDivElement>) => {
@@ -54,12 +58,13 @@ export function DroppableChip({
 
   const chip = (
     <Chip
+      avatar={avatar}
       onDrop={drop}
       onDragEnter={dragEnterOver}
       onDragOver={dragEnterOver}
-      label={displayName || `P${port}`}
-      style={{ width: '25%' }}
-      variant={active ? 'outlined' : 'filled'}
+      label={label}
+      style={style}
+      variant={outlined ? 'outlined' : 'filled'}
     />
   );
 
@@ -71,3 +76,7 @@ export function DroppableChip({
     chip
   );
 }
+
+DroppableChip.defaultProps = {
+  avatar: undefined,
+};

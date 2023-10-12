@@ -55,10 +55,8 @@ type NamesObj = {
 };
 
 export default function CopyControls({
-  displayNames,
   selectedReplays,
 }: {
-  displayNames: string[];
   selectedReplays: Replay[];
 }) {
   const [error, setError] = useState('');
@@ -103,12 +101,12 @@ export default function CopyControls({
     let subdir = '';
     if (writeFileNames || makeNewFolder) {
       const nameObjs = selectedReplays.map((replay) =>
-        replay.players.map((player, i) =>
-          player.playerType === 0
+        replay.players.map((player) =>
+          player.playerType === 0 || player.playerType === 1
             ? ({
                 characterName: characterNames.get(player.externalCharacterId),
                 displayName: writeDisplayNames
-                  ? displayNames[i]
+                  ? player.overrides.displayName || player.displayName
                   : player.displayName,
                 nametag: player.nametag,
               } as NameObj)
@@ -225,11 +223,11 @@ export default function CopyControls({
     try {
       await window.electron.writeReplays(
         dir,
-        writeDisplayNames ? displayNames : [],
         fileNames,
         selectedReplays,
         startTimes,
         subdir,
+        writeDisplayNames,
       );
       showSuccess();
     } catch (e: any) {

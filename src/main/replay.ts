@@ -3,7 +3,7 @@ import { mkdir, open, readdir } from 'fs/promises';
 import { join } from 'path';
 import iconv from 'iconv-lite';
 import { Player, Replay } from '../common/types';
-import { legalStages } from '../common/constants';
+import { isValidCharacter, legalStages } from '../common/constants';
 
 const RAW_HEADER_START = Buffer.from([
   0x7b, 0x55, 0x03, 0x72, 0x61, 0x77, 0x5b, 0x24, 0x55, 0x23, 0x6c,
@@ -110,16 +110,18 @@ export async function getReplaysInDir(dir: string) {
         const players: Player[] = new Array<Player>(4);
         for (let i = 0; i < 4; i += 1) {
           const offset = i * 36 + 101;
-          players[i] = {} as Player;
-          players[i].playerType = gameStart[offset + 1];
+          players[i] = {
+            overrides: { displayName: '', entrantId: 0 },
+            playerType: gameStart[offset + 1],
+            port: i + 1,
+          } as Player;
           if (players[i].playerType === 1) {
             isValid = false;
           }
-          players[i].port = i + 1;
           if (players[i].playerType === 0 || players[i].playerType === 1) {
             players[i].costumeIndex = gameStart[offset + 3];
             players[i].externalCharacterId = gameStart[offset];
-            if (players[i].externalCharacterId > 0x19) {
+            if (!isValidCharacter(players[i].externalCharacterId)) {
               isValid = false;
             }
             players[i].teamId = gameStart[offset + 9];
@@ -269,11 +271,11 @@ const START_AT_TAG = Buffer.from([
 
 export async function writeReplays(
   dir: string,
-  displayNames: string[],
   fileNames: string[],
   replays: Replay[],
   startTimes: string[],
   subdir: string,
+  writeDisplayNames: boolean,
 ) {
   if (fileNames.length > 0 && fileNames.length !== replays.length) {
     throw new Error(
@@ -319,11 +321,12 @@ export async function writeReplays(
       }
 
       // display names?
-      if (displayNames.length) {
+      if (writeDisplayNames) {
         const payloadsSize = rawElement[1] - 1;
         const gameStartOffset = payloadsSize + 2;
 
-        displayNames.forEach((displayName, j) => {
+        replay.players.forEach((player, j) => {
+          const { displayName } = player.overrides;
           if (!displayName) {
             return;
           }

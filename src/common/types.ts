@@ -1,3 +1,8 @@
+export type PlayerOverrides = {
+  displayName: string;
+  entrantId: number;
+};
+
 export type Player = {
   connectCode: string;
   costumeIndex: number;
@@ -5,6 +10,7 @@ export type Player = {
   externalCharacterId: number;
   isWinner: boolean;
   nametag: string;
+  overrides: PlayerOverrides;
   playerType: number;
   port: number;
   teamId: number;

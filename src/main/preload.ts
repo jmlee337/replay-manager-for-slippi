@@ -17,20 +17,20 @@ const electronHandler = {
     ipcRenderer.invoke('getReplaysInDir', dir),
   writeReplays: (
     dir: string,
-    displayNames: string[],
     fileNames: string[],
     replays: Replay[],
     startTimes: string[],
     subdir: string,
+    writeDisplayNames: boolean,
   ): Promise<void> =>
     ipcRenderer.invoke(
       'writeReplays',
       dir,
-      displayNames,
       fileNames,
       replays,
       startTimes,
       subdir,
+      writeDisplayNames,
     ),
   getTournament: (slug: string): Promise<Event[]> =>
     ipcRenderer.invoke('getTournament', slug),

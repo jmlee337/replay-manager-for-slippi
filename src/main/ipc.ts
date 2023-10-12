@@ -25,19 +25,19 @@ export default function setupIPCs(): void {
     async (
       event: IpcMainInvokeEvent,
       dir: string,
-      displayNames: string[],
       fileNames: string[],
       replays: Replay[],
       startTimes: string[],
       subdir: string,
+      writeDisplayNames: boolean,
     ) => {
       return writeReplays(
         dir,
-        displayNames,
         fileNames,
         replays,
         startTimes,
         subdir,
+        writeDisplayNames,
       );
     },
   );

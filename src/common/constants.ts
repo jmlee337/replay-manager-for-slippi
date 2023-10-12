@@ -1,3 +1,8 @@
+// Is character external ID tournament legal
+export function isValidCharacter(characterId: number) {
+  return characterId >= 0 && characterId <= 25;
+}
+
 // Character external ID to short name
 export const characterNames = new Map([
   [0, 'Falcon'],

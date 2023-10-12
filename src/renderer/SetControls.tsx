@@ -1,91 +1,94 @@
 import { Backup, Save } from '@mui/icons-material';
 import { Button, Stack, Tooltip } from '@mui/material';
 import {
+  Player,
   Replay,
   Set,
-  StartggGame,
   StartggGameSelection,
   StartggSet,
 } from '../common/types';
-import { characterStartggIds, stageStartggIds } from '../common/constants';
+import {
+  characterStartggIds,
+  isValidCharacter,
+  stageStartggIds,
+} from '../common/constants';
+
+function playerIsValid(player: Player) {
+  return player.playerType === 0 || player.playerType === 1;
+}
+
+function setAndReplaysValid(selectedReplays: Replay[], set: Set) {
+  if (set.state === 3 || selectedReplays.length === 0) {
+    return false;
+  }
+
+  return selectedReplays.every((replay) => {
+    const validPlayers = replay.players.filter(playerIsValid);
+    const numPlayers = set.entrant1Names.length + set.entrant2Names.length;
+    return (
+      numPlayers === validPlayers.length &&
+      validPlayers.every((player) => player.overrides.entrantId) &&
+      validPlayers.find((player) => player.isWinner)
+    );
+  });
+}
+
+function getWinnerId(selectedReplays: Replay[]) {
+  const gameWins = new Map<number, number>();
+  let leaderId = 0;
+  let leaderWins = 0;
+  selectedReplays.forEach((replay) => {
+    const gameWinnerId = replay.players
+      .filter(playerIsValid)
+      .find((player) => player.isWinner)?.overrides.entrantId!;
+
+    const n = (gameWins.get(gameWinnerId) || 0) + 1;
+    if (n > leaderWins) {
+      leaderWins = n;
+      leaderId = gameWinnerId;
+    }
+    gameWins.set(gameWinnerId, n);
+  });
+
+  return leaderWins / selectedReplays.length > 0.5 ? leaderId : 0;
+}
 
 export default function SetControls({
-  entrantIds,
   selectedReplays,
   reportSet,
   set,
 }: {
-  entrantIds: number[];
   selectedReplays: Replay[];
   reportSet: (set: StartggSet) => Promise<void>;
   set: Set;
 }) {
-  let disabled = false;
-  if (set.state === 3 || selectedReplays.length === 0) {
-    disabled = true;
-  }
-
-  const everyPlayerAssigned = selectedReplays.every((replay) => {
-    const humanPlayers = replay.players.filter(
-      (player) => player.playerType === 0,
-    );
-    const validEntrantIds = entrantIds.filter((entrantId) => entrantId !== 0);
-    const numPlayers = set.entrant1Names.length + set.entrant2Names.length;
-    return (
-      numPlayers === validEntrantIds.length &&
-      humanPlayers.every((player) => entrantIds[player.port - 1] !== 0)
-    );
-  });
-  if (!everyPlayerAssigned) {
-    disabled = true;
-  }
-
-  const gameWins = new Map<number, number>();
-  let maxGames = 0;
+  const isValid = setAndReplaysValid(selectedReplays, set);
   let winnerId = 0;
-  selectedReplays.forEach((replay) => {
-    const gameWinnerId =
-      entrantIds[replay.players.findIndex((player) => player.isWinner)];
-    const n = (gameWins.get(gameWinnerId) || 0) + 1;
-    if (n > maxGames) {
-      maxGames = n;
-      winnerId = gameWinnerId;
-    }
-    gameWins.set(gameWinnerId, n);
-  });
-  if (winnerId === 0 || maxGames / selectedReplays.length <= 0.5) {
-    disabled = true;
+  if (isValid) {
+    winnerId = getWinnerId(selectedReplays);
   }
+  const enabled = isValid && winnerId;
 
   const getSet = () => {
     const gameData = selectedReplays.map((replay, i) => {
-      let selections = [] as StartggGameSelection[];
-      if (entrantIds.filter((entrantId) => entrantId).length === 2) {
-        selections = replay.players
-          .map((player, j) => {
-            let characterId = 0;
-            let entrantId = 0;
-            if (player.playerType === 0) {
-              characterId = characterStartggIds.get(
-                player.externalCharacterId,
-              )!;
-              entrantId = entrantIds[j];
-            }
-            return { characterId, entrantId } as StartggGameSelection;
-          })
-          .filter(
-            (selection) =>
-              selection.characterId !== 0 && selection.entrantId !== 0,
-          );
-      }
+      const selections: StartggGameSelection[] = replay.players
+        .filter(
+          (player) =>
+            playerIsValid(player) &&
+            isValidCharacter(player.externalCharacterId),
+        )
+        .map((player) => ({
+          characterId: characterStartggIds.get(player.externalCharacterId)!,
+          entrantId: player.overrides.entrantId,
+        }));
 
       return {
         gameNum: i + 1,
         stageId: stageStartggIds.get(replay.stageId),
         selections,
-        winnerId:
-          entrantIds[replay.players.findIndex((player) => player.isWinner)],
-      } as StartggGame;
+        winnerId: replay.players.find((player) => player.isWinner)?.overrides
+          .entrantId!,
+      };
     });
     return { gameData, setId: set.id, winnerId } as StartggSet;
   };
@@ -96,7 +99,7 @@ export default function SetControls({
         <Tooltip arrow title="Save locally">
           <div>
             <Button
-              disabled={disabled}
+              disabled={!enabled}
               endIcon={<Save />}
               onClick={() => console.log(getSet())}
               size="small"
@@ -111,7 +114,7 @@ export default function SetControls({
         <Tooltip arrow title="Report on start.gg">
           <div>
             <Button
-              disabled={disabled}
+              disabled={!enabled}
               endIcon={<Backup />}
               onClick={() => reportSet(getSet())}
               size="small"
