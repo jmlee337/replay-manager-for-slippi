@@ -8,7 +8,13 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { ExpandLess, ExpandMore, Refresh, Restore } from '@mui/icons-material';
+import {
+  KeyboardArrowDown,
+  KeyboardArrowRight,
+  KeyboardArrowUp,
+  Refresh,
+  Restore,
+} from '@mui/icons-material';
 import { useState } from 'react';
 import { Event, Phase, PhaseGroup, Set, Tournament } from '../common/types';
 
@@ -38,11 +44,6 @@ const SetInnerRow = styled(Stack)`
   align-items: center;
   flex-direction: row;
   justify-content: center;
-`;
-
-const ViewRow = styled(Stack)`
-  align-items: center;
-  flex-direction: row;
 `;
 
 function SetView({
@@ -133,8 +134,10 @@ function PhaseGroupView({
   ) => void;
 }) {
   const [getting, setGetting] = useState(false);
+  const [completedOpen, setCompletedOpen] = useState(false);
   const [open, setOpen] = useState(false);
-  const onClick = async () => {
+
+  const get = async () => {
     setGetting(true);
     await getPhaseGroup(phaseGroup.id, phaseId, eventId);
     setGetting(false);
@@ -142,58 +145,81 @@ function PhaseGroupView({
 
   return (
     <>
-      <ViewRow sx={{ typography: 'caption' }}>
+      <ListItemButton
+        dense
+        disableGutters
+        onClick={() => {
+          if (
+            !open &&
+            phaseGroup.sets.pendingSets.length === 0 &&
+            phaseGroup.sets.completedSets.length === 0
+          ) {
+            get();
+          }
+          setOpen(!open);
+        }}
+        sx={{ typography: 'caption' }}
+      >
+        {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
         <Name>{phaseGroup.name}</Name>
         {'\u00A0'}({phaseGroup.id})
         <IconButton
           aria-label="restore phase"
           disabled={getting}
-          onClick={onClick}
+          onClick={(event) => {
+            event.stopPropagation();
+            get();
+          }}
           size="small"
         >
           {getting ? <CircularProgress size="24px" /> : <Refresh />}
         </IconButton>
-      </ViewRow>
-      <Block>
-        {phaseGroup.sets.pendingSets.map((set) => (
-          <SetView
-            key={set.id}
-            set={set}
-            eventId={eventId}
-            phaseId={phaseId}
-            phaseGroupId={phaseGroup.id}
-            selectSet={selectSet}
-          />
-        ))}
-        {phaseGroup.sets.completedSets.length > 0 && (
-          <>
-            <ListItemButton dense onClick={() => setOpen(!open)}>
-              <Typography
-                alignItems="center"
-                display="flex"
-                justifyContent="right"
-                variant="subtitle2"
-                width="100%"
+      </ListItemButton>
+      <Collapse in={open}>
+        <Block>
+          {phaseGroup.sets.pendingSets.map((set) => (
+            <SetView
+              key={set.id}
+              set={set}
+              eventId={eventId}
+              phaseId={phaseId}
+              phaseGroupId={phaseGroup.id}
+              selectSet={selectSet}
+            />
+          ))}
+          {phaseGroup.sets.completedSets.length > 0 && (
+            <>
+              <ListItemButton
+                dense
+                onClick={() => setCompletedOpen(!completedOpen)}
               >
-                completed
-                {open ? <ExpandLess /> : <ExpandMore />}
-              </Typography>
-            </ListItemButton>
-            <Collapse in={open}>
-              {phaseGroup.sets.completedSets.map((set) => (
-                <SetView
-                  key={set.id}
-                  set={set}
-                  eventId={eventId}
-                  phaseId={phaseId}
-                  phaseGroupId={phaseGroup.id}
-                  selectSet={selectSet}
-                />
-              ))}
-            </Collapse>
-          </>
-        )}
-      </Block>
+                <Typography
+                  alignItems="center"
+                  display="flex"
+                  justifyContent="right"
+                  variant="subtitle2"
+                  width="100%"
+                >
+                  completed
+                  {completedOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+                </Typography>
+              </ListItemButton>
+              <Collapse in={completedOpen}>
+                {phaseGroup.sets.completedSets.map((set) => (
+                  <SetView
+                    key={set.id}
+                    set={set}
+                    eventId={eventId}
+                    phaseId={phaseId}
+                    phaseGroupId={phaseGroup.id}
+                    selectSet={selectSet}
+                  />
+                ))}
+              </Collapse>
+            </>
+          )}
+        </Block>
+      </Collapse>
     </>
   );
 }
@@ -220,31 +246,55 @@ function PhaseView({
     eventId: number,
   ) => void;
 }) {
+  const [getting, setGetting] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const get = async () => {
+    setGetting(true);
+    await getPhase(phase.id, eventId);
+    setGetting(false);
+  };
   return (
     <>
-      <ViewRow sx={{ typography: 'caption' }}>
+      <ListItemButton
+        dense
+        disableGutters
+        onClick={() => {
+          if (!open && phase.phaseGroups.length === 0) {
+            get();
+          }
+          setOpen(!open);
+        }}
+        sx={{ typography: 'caption' }}
+      >
+        {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
         <Name>{phase.name}</Name>
         {'\u00A0'}({phase.id})
         <IconButton
           aria-label="restore phase"
-          onClick={() => getPhase(phase.id, eventId)}
+          onClick={(event) => {
+            event.stopPropagation();
+            get();
+          }}
           size="small"
         >
-          <Restore />
+          {getting ? <CircularProgress size="24px" /> : <Restore />}
         </IconButton>
-      </ViewRow>
-      <Block>
-        {phase.phaseGroups.map((phaseGroup) => (
-          <PhaseGroupView
-            key={phaseGroup.id}
-            phaseGroup={phaseGroup}
-            eventId={eventId}
-            phaseId={phase.id}
-            getPhaseGroup={getPhaseGroup}
-            selectSet={selectSet}
-          />
-        ))}
-      </Block>
+      </ListItemButton>
+      <Collapse in={open}>
+        <Block>
+          {phase.phaseGroups.map((phaseGroup) => (
+            <PhaseGroupView
+              key={phaseGroup.id}
+              phaseGroup={phaseGroup}
+              eventId={eventId}
+              phaseId={phase.id}
+              getPhaseGroup={getPhaseGroup}
+              selectSet={selectSet}
+            />
+          ))}
+        </Block>
+      </Collapse>
     </>
   );
 }
@@ -271,31 +321,55 @@ function EventView({
     eventId: number,
   ) => void;
 }) {
+  const [getting, setGetting] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const get = async () => {
+    setGetting(true);
+    await getEvent(event.id);
+    setGetting(false);
+  };
   return (
     <>
-      <ViewRow sx={{ typography: 'caption' }}>
+      <ListItemButton
+        dense
+        disableGutters
+        onClick={() => {
+          if (!open && event.phases.length === 0) {
+            get();
+          }
+          setOpen(!open);
+        }}
+        sx={{ typography: 'caption' }}
+      >
+        {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
         <Name>{event.name}</Name>
         {'\u00A0'}({event.id})
         <IconButton
           aria-label="restore event"
-          onClick={() => getEvent(event.id)}
+          onClick={(ev) => {
+            ev.stopPropagation();
+            get();
+          }}
           size="small"
         >
-          <Restore />
+          {getting ? <CircularProgress size="24px" /> : <Restore />}
         </IconButton>
-      </ViewRow>
-      <Block>
-        {event.phases.map((phase) => (
-          <PhaseView
-            key={phase.id}
-            phase={phase}
-            eventId={event.id}
-            getPhase={getPhase}
-            getPhaseGroup={getPhaseGroup}
-            selectSet={selectSet}
-          />
-        ))}
-      </Block>
+      </ListItemButton>
+      <Collapse in={open}>
+        <Block>
+          {event.phases.map((phase) => (
+            <PhaseView
+              key={phase.id}
+              phase={phase}
+              eventId={event.id}
+              getPhase={getPhase}
+              getPhaseGroup={getPhaseGroup}
+              selectSet={selectSet}
+            />
+          ))}
+        </Block>
+      </Collapse>
     </>
   );
 }
@@ -323,7 +397,7 @@ export default function TournamentView({
   ) => void;
 }) {
   return (
-    <>
+    <Box>
       {tournament.events.map((event) => (
         <EventView
           key={event.id}
@@ -334,6 +408,6 @@ export default function TournamentView({
           selectSet={selectSet}
         />
       ))}
-    </>
+    </Box>
   );
 }
