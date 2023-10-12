@@ -148,11 +148,12 @@ function Hello() {
 
     if (newReplays[index].selected) {
       newReplays[index].players.forEach((player, i) => {
-        player.overrides = { ...newOverrides[i] };
+        player.playerOverrides = { ...newOverrides[i] };
       });
     } else {
       newReplays[index].players.forEach((player) => {
-        player.overrides = { displayName: '', entrantId: 0 };
+        player.overrideWin = false;
+        player.playerOverrides = { displayName: '', entrantId: 0 };
       });
     }
 
@@ -275,7 +276,7 @@ function Hello() {
         newOverrides[index] = { displayName, entrantId };
 
         selectedReplays.forEach((replay) => {
-          replay.players[index].overrides = { ...newOverrides[index] };
+          replay.players[index].playerOverrides = { ...newOverrides[index] };
         });
         setOverrides(newOverrides);
       }}
@@ -303,7 +304,7 @@ function Hello() {
     ];
     selectedReplays.forEach((replay) => {
       replay.players.forEach((player, i) => {
-        player.overrides = { ...newOverrides[i] };
+        player.playerOverrides = { ...newOverrides[i] };
       });
     });
     const newReplays = Array.from(replays);

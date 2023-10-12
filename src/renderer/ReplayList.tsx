@@ -2,6 +2,7 @@ import {
   Avatar,
   Checkbox,
   Chip,
+  IconButton,
   List,
   ListItemButton,
   ThemeProvider,
@@ -9,7 +10,11 @@ import {
   Typography,
   createTheme,
 } from '@mui/material';
-import { EmojiEvents, HideSource } from '@mui/icons-material';
+import {
+  EmojiEventsOutlined,
+  EmojiEvents,
+  HideSource,
+} from '@mui/icons-material';
 import { memo, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
@@ -91,16 +96,35 @@ const ReplayListItem = memo(function ReplayListItem({
   const duration = format(new Date(replay.lastFrame / 0.05994), "m'm'ss's'");
   const stageName = stageNames.get(replay.stageId) || replay.stageId;
 
+  const needsWinner =
+    replay.players.findIndex(
+      (player) => player.overrideWin || player.isWinner,
+    ) === -1;
   const displayNamesToShow = replay.players.map((player) => {
     const key = player.port;
     const displayName =
-      player.overrides.displayName ||
+      player.playerOverrides.displayName ||
       (player.playerType === 0 && player.displayName);
-    const trophy = player.isWinner && (
-      <Tooltip arrow placement="top" title="Winner">
-        <EmojiEvents />
-      </Tooltip>
-    );
+    const trophy =
+      ((player.overrideWin || player.isWinner) && (
+        <Tooltip arrow placement="top" title="Winner">
+          <EmojiEvents />
+        </Tooltip>
+      )) ||
+      (needsWinner && (
+        <Tooltip arrow placement="top" title="Set as winner">
+          <IconButton
+            onClick={(event) => {
+              event.stopPropagation();
+              player.overrideWin = true;
+              onOverride();
+            }}
+            style={{ margin: '-8px' }}
+          >
+            <EmojiEventsOutlined />
+          </IconButton>
+        </Tooltip>
+      ));
     return (
       <QuarterSegment key={key}>
         {trophy}
@@ -128,7 +152,7 @@ const ReplayListItem = memo(function ReplayListItem({
         ? player.connectCode || player.nametag || `P${key}`
         : 'CPU';
     const onDrop = (displayName: string, entrantId: number) => {
-      player.overrides = { displayName, entrantId };
+      player.playerOverrides = { displayName, entrantId };
       onOverride();
     };
 

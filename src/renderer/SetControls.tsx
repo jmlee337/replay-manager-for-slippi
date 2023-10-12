@@ -13,8 +13,12 @@ import {
   stageStartggIds,
 } from '../common/constants';
 
-function playerIsValid(player: Player) {
+function isValid(player: Player) {
   return player.playerType === 0 || player.playerType === 1;
+}
+
+function isWinner(player: Player) {
+  return player.overrideWin || player.isWinner;
 }
 
 function setAndReplaysValid(selectedReplays: Replay[], set: Set) {
@@ -23,12 +27,12 @@ function setAndReplaysValid(selectedReplays: Replay[], set: Set) {
   }
 
   return selectedReplays.every((replay) => {
-    const validPlayers = replay.players.filter(playerIsValid);
+    const validPlayers = replay.players.filter(isValid);
     const numPlayers = set.entrant1Names.length + set.entrant2Names.length;
     return (
       numPlayers === validPlayers.length &&
-      validPlayers.every((player) => player.overrides.entrantId) &&
-      validPlayers.find((player) => player.isWinner)
+      validPlayers.every((player) => player.playerOverrides.entrantId) &&
+      validPlayers.find(isWinner)
     );
   });
 }
@@ -38,9 +42,8 @@ function getWinnerId(selectedReplays: Replay[]) {
   let leaderId = 0;
   let leaderWins = 0;
   selectedReplays.forEach((replay) => {
-    const gameWinnerId = replay.players
-      .filter(playerIsValid)
-      .find((player) => player.isWinner)?.overrides.entrantId!;
+    const gameWinnerId = replay.players.filter(isValid).find(isWinner)
+      ?.playerOverrides.entrantId!;
 
     const n = (gameWins.get(gameWinnerId) || 0) + 1;
     if (n > leaderWins) {
@@ -62,32 +65,30 @@ export default function SetControls({
   reportSet: (set: StartggSet) => Promise<void>;
   set: Set;
 }) {
-  const isValid = setAndReplaysValid(selectedReplays, set);
+  const validSelections = setAndReplaysValid(selectedReplays, set);
   let winnerId = 0;
-  if (isValid) {
+  if (validSelections) {
     winnerId = getWinnerId(selectedReplays);
   }
-  const enabled = isValid && winnerId;
+  const enabled = validSelections && winnerId;
 
   const getSet = () => {
     const gameData = selectedReplays.map((replay, i) => {
       const selections: StartggGameSelection[] = replay.players
         .filter(
           (player) =>
-            playerIsValid(player) &&
-            isValidCharacter(player.externalCharacterId),
+            isValid(player) && isValidCharacter(player.externalCharacterId),
         )
         .map((player) => ({
           characterId: characterStartggIds.get(player.externalCharacterId)!,
-          entrantId: player.overrides.entrantId,
+          entrantId: player.playerOverrides.entrantId,
         }));
 
       return {
         gameNum: i + 1,
         stageId: stageStartggIds.get(replay.stageId),
         selections,
-        winnerId: replay.players.find((player) => player.isWinner)?.overrides
-          .entrantId!,
+        winnerId: replay.players.find(isWinner)?.playerOverrides.entrantId!,
       };
     });
     return { gameData, setId: set.id, winnerId } as StartggSet;

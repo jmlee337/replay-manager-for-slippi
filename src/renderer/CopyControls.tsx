@@ -106,7 +106,7 @@ export default function CopyControls({
             ? ({
                 characterName: characterNames.get(player.externalCharacterId),
                 displayName: writeDisplayNames
-                  ? player.overrides.displayName || player.displayName
+                  ? player.playerOverrides.displayName || player.displayName
                   : player.displayName,
                 nametag: player.nametag,
               } as NameObj)

@@ -111,7 +111,8 @@ export async function getReplaysInDir(dir: string) {
         for (let i = 0; i < 4; i += 1) {
           const offset = i * 36 + 101;
           players[i] = {
-            overrides: { displayName: '', entrantId: 0 },
+            overrideWin: false,
+            playerOverrides: { displayName: '', entrantId: 0 },
             playerType: gameStart[offset + 1],
             port: i + 1,
           } as Player;
@@ -124,7 +125,6 @@ export async function getReplaysInDir(dir: string) {
             if (!isValidCharacter(players[i].externalCharacterId)) {
               isValid = false;
             }
-            players[i].teamId = gameStart[offset + 9];
           }
         }
 
@@ -326,7 +326,7 @@ export async function writeReplays(
         const gameStartOffset = payloadsSize + 2;
 
         replay.players.forEach((player, j) => {
-          const { displayName } = player.overrides;
+          const { displayName } = player.playerOverrides;
           if (!displayName) {
             return;
           }

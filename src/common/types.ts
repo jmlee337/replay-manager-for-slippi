@@ -10,10 +10,10 @@ export type Player = {
   externalCharacterId: number;
   isWinner: boolean;
   nametag: string;
-  overrides: PlayerOverrides;
+  overrideWin: boolean;
+  playerOverrides: PlayerOverrides;
   playerType: number;
   port: number;
-  teamId: number;
 };
 
 export type Replay = {
