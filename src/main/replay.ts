@@ -2,6 +2,7 @@ import { decode } from '@shelacek/ubjson';
 import { mkdir, open, readdir } from 'fs/promises';
 import { join } from 'path';
 import iconv from 'iconv-lite';
+import sanitize from 'sanitize-filename';
 import { Player, Replay } from '../common/types';
 import { isValidCharacter, legalStages } from '../common/constants';
 
@@ -288,15 +289,20 @@ export async function writeReplays(
     );
   }
 
-  const writeDir = join(dir, subdir);
-  if (subdir) {
+  const sanitizedFileNames = fileNames.map((fileName) => sanitize(fileName));
+  const sanitizedSubdir = sanitize(subdir);
+
+  const writeDir = join(dir, sanitizedSubdir);
+  if (sanitizedSubdir) {
     await mkdir(writeDir);
   }
 
   replays.forEach(async (replay, i) => {
     const readFile = await open(replay.filePath);
 
-    const writeFileName = fileNames.length ? fileNames[i] : replay.fileName;
+    const writeFileName = sanitizedFileNames.length
+      ? sanitizedFileNames[i]
+      : replay.fileName;
     const writeFile = await open(join(writeDir, writeFileName), 'w');
 
     try {
