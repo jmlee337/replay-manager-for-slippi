@@ -13,7 +13,6 @@ import {
   KeyboardArrowRight,
   KeyboardArrowUp,
   Refresh,
-  Restore,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { Event, Phase, PhaseGroup, Set, Tournament } from '../common/types';
@@ -278,7 +277,7 @@ function PhaseView({
           }}
           size="small"
         >
-          {getting ? <CircularProgress size="24px" /> : <Restore />}
+          {getting ? <CircularProgress size="24px" /> : <Refresh />}
         </IconButton>
       </ListItemButton>
       <Collapse in={open}>
@@ -353,7 +352,7 @@ function EventView({
           }}
           size="small"
         >
-          {getting ? <CircularProgress size="24px" /> : <Restore />}
+          {getting ? <CircularProgress size="24px" /> : <Refresh />}
         </IconButton>
       </ListItemButton>
       <Collapse in={open}>

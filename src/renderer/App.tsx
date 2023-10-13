@@ -2,9 +2,9 @@ import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import { FormEvent, useState } from 'react';
 import {
   Button,
+  CircularProgress,
   Dialog,
   DialogContent,
-  DialogContentText,
   DialogTitle,
   Divider,
   IconButton,
@@ -18,6 +18,9 @@ import {
 import { Edit, FolderOpen, Key, Refresh } from '@mui/icons-material';
 import styled from '@emotion/styled';
 import {
+  Event,
+  Phase,
+  PhaseGroup,
   PlayerOverrides,
   Replay,
   Set,
@@ -166,12 +169,39 @@ function Hello() {
   const [slug, setSlug] = useState('');
   const [slugDialogOpen, setSlugDialogOpen] = useState(false);
   const [gettingTournament, setGettingTournament] = useState(false);
-  const [tournamentError, setTournamentError] = useState('');
   const [tournament, setTournament] = useState({
     slug: '',
     events: [],
   } as Tournament);
-  const getTournament = async (event: FormEvent<HTMLFormElement>) => {
+  const getTournament = async (getSlug: string) => {
+    if (!getSlug) {
+      return false;
+    }
+
+    let events;
+    setGettingTournament(true);
+    try {
+      events = await window.electron.getTournament(getSlug);
+    } catch (e: any) {
+      showErrorDialog(e.toString());
+      setGettingTournament(false);
+      return false;
+    }
+
+    if (tournament.slug === getSlug && tournament.events.length > 0) {
+      const eventsMap = new Map<number, Event>();
+      tournament.events.forEach((event) => {
+        eventsMap.set(event.id, event);
+      });
+      events = events.map((event) => eventsMap.get(event.id) || event);
+    }
+    tournament.events = events;
+    tournament.slug = getSlug;
+    setTournament(tournament);
+    setGettingTournament(false);
+    return true;
+  };
+  const getTournamentOnSubmit = async (event: FormEvent<HTMLFormElement>) => {
     const target = event.target as typeof event.target & {
       slug: { value: string };
     };
@@ -179,19 +209,9 @@ function Hello() {
     event.preventDefault();
     event.stopPropagation();
     if (newSlug) {
-      try {
-        setGettingTournament(true);
-        setTournamentError('');
-        setTournament({
-          slug: newSlug,
-          events: await window.electron.getTournament(newSlug),
-        });
+      setSlugDialogOpen(false);
+      if (await getTournament(newSlug)) {
         setSlug(newSlug);
-        setSlugDialogOpen(false);
-      } catch (e: any) {
-        setTournamentError(e.message);
-      } finally {
-        setGettingTournament(false);
       }
     }
   };
@@ -206,6 +226,13 @@ function Hello() {
 
     const editEvent = tournament.events.find((event) => event.id === id);
     if (editEvent) {
+      if (editEvent.phases.length > 0) {
+        const phasesMap = new Map<number, Phase>();
+        editEvent.phases.forEach((phase) => {
+          phasesMap.set(phase.id, phase);
+        });
+        phases = phases.map((phase) => phasesMap.get(phase.id) || phase);
+      }
       editEvent.phases = phases;
       setTournament({ ...tournament });
     }
@@ -227,6 +254,15 @@ function Hello() {
 
     const editPhase = editEvent.phases.find((phase) => phase.id === id);
     if (editPhase) {
+      if (editPhase.phaseGroups.length > 0) {
+        const phaseGroupsMap = new Map<number, PhaseGroup>();
+        editPhase.phaseGroups.forEach((phaseGroup) => {
+          phaseGroupsMap.set(phaseGroup.id, phaseGroup);
+        });
+        phaseGroups = phaseGroups.map(
+          (phaseGroup) => phaseGroupsMap.get(phaseGroup.id) || phaseGroup,
+        );
+      }
       editPhase.phaseGroups = phaseGroups;
       setTournament({ ...tournament });
     }
@@ -393,6 +429,18 @@ function Hello() {
               value={slug || 'Set tournament slug...'}
               style={{ flexGrow: 1 }}
             />
+            <Tooltip arrow title="Refresh tournament">
+              <IconButton
+                aria-label="Refresh tournament"
+                onClick={() => getTournament(slug)}
+              >
+                {gettingTournament ? (
+                  <CircularProgress size="24px" />
+                ) : (
+                  <Refresh />
+                )}
+              </IconButton>
+            </Tooltip>
             <Tooltip arrow title="Set tournament slug">
               <IconButton
                 aria-label="Set tournament slug"
@@ -407,7 +455,7 @@ function Hello() {
             >
               <DialogTitle>Set Tournament Slug</DialogTitle>
               <DialogContent>
-                <Form onSubmit={getTournament}>
+                <Form onSubmit={getTournamentOnSubmit}>
                   <TextField
                     autoFocus
                     label="Tournament Slug"
@@ -416,13 +464,8 @@ function Hello() {
                     size="small"
                     variant="outlined"
                   />
-                  <Button disabled={gettingTournament} type="submit">
-                    {gettingTournament ? 'Getting...' : 'Get!'}
-                  </Button>
+                  <Button type="submit">Get!</Button>
                 </Form>
-                <DialogContentText color="red" variant="caption">
-                  {tournamentError}
-                </DialogContentText>
               </DialogContent>
             </Dialog>
             <Tooltip arrow title="Set start.gg API key">
