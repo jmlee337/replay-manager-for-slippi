@@ -173,16 +173,18 @@ export async function getReplaysInDir(dir: string) {
         if (gameEndRes.bytesRead !== gameEndSize) {
           return null;
         }
-        if (gameEnd[0] !== 0x39) {
-          // TODO maybe support replays with not game end event
-          return null;
-        }
-        if (gameEnd[1] === 1 || gameEnd[1] === 2) {
+        if (
+          gameEnd[0] !== 0x39 ||
+          (gameEnd[1] !== 1 && gameEnd[1] !== 2 && gameEnd[1] !== 3)
+        ) {
+          for (let i = 0; i < 4; i += 1) {
+            players[i].isWinner = false;
+          }
+          isValid = false;
+        } else {
           for (let i = 0; i < 4; i += 1) {
             players[i].isWinner = gameEnd[i + 3] === 0;
           }
-        } else {
-          isValid = false;
         }
 
         // metadata
