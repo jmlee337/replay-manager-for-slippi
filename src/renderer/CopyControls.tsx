@@ -78,7 +78,7 @@ export default function CopyControls({
   };
 
   const [writeDisplayNames, setWriteDisplayNames] = useState(true);
-  const [writeFileNames, setWriteFileNames] = useState(true);
+  const [writeFileNames, setWriteFileNames] = useState(false);
   const [writeStartTimes, setWriteStartTimes] = useState(true);
   const [makeNewFolder, setMakeNewFolder] = useState(true);
   const [isCopying, setIsCopying] = useState(false);
