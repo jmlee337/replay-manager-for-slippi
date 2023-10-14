@@ -7,6 +7,7 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
+  Divider,
   Stack,
 } from '@mui/material';
 import { useState } from 'react';
@@ -15,6 +16,7 @@ import {
   Player,
   Replay,
   Set,
+  StartggGame,
   StartggGameSelection,
   StartggSet,
 } from '../common/types';
@@ -125,16 +127,19 @@ export default function SetControls({
   const entrant2Score = scores.get(set.entrant2Id) || 0;
 
   const getSet = () => {
-    const gameData = selectedReplays.map((replay, i) => {
-      const selections: StartggGameSelection[] = replay.players
-        .filter(
-          (player) =>
-            isValid(player) && isValidCharacter(player.externalCharacterId),
-        )
-        .map((player) => ({
-          characterId: characterStartggIds.get(player.externalCharacterId)!,
-          entrantId: player.playerOverrides.entrantId,
-        }));
+    const gameData: StartggGame[] = selectedReplays.map((replay, i) => {
+      let selections: StartggGameSelection[] = [];
+      if (replay.players.length === 2) {
+        selections = replay.players
+          .filter(
+            (player) =>
+              isValid(player) && isValidCharacter(player.externalCharacterId),
+          )
+          .map((player) => ({
+            characterId: characterStartggIds.get(player.externalCharacterId)!,
+            entrantId: player.playerOverrides.entrantId,
+          }));
+      }
 
       return {
         gameNum: i + 1,
@@ -172,17 +177,16 @@ export default function SetControls({
             fullRoundText={set.fullRoundText}
             state={3}
           />
-          <Stack flexGrow={1} marginTop="8px">
+          <Divider sx={{ marginTop: '8px' }} />
+          <Stack flexGrow={1}>
             {startggSet.gameData.map((gameData) => (
-              <Stack marginTop="8px">
-                <Box sx={{ typography: 'caption' }} textAlign="center">
-                  {stageNames.get(startggStageIds.get(gameData.stageId)!)}
-                </Box>
-                <Stack
-                  direction="row"
-                  key={gameData.gameNum}
-                  sx={{ typography: 'body2' }}
-                >
+              <Stack key={gameData.gameNum} marginTop="8px">
+                {gameData.stageId && (
+                  <Box sx={{ typography: 'caption' }} textAlign="center">
+                    {stageNames.get(startggStageIds.get(gameData.stageId)!)}
+                  </Box>
+                )}
+                <Stack direction="row" sx={{ typography: 'body2' }}>
                   <EntrantSection borderRight={1}>
                     <EntrantText flexGrow={1} textAlign="right">
                       <Name>{set.entrant1Names[0]}</Name>

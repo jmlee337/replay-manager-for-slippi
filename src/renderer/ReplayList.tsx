@@ -5,9 +5,9 @@ import {
   IconButton,
   List,
   ListItemButton,
+  Stack,
   ThemeProvider,
   Tooltip,
-  Typography,
   createTheme,
 } from '@mui/material';
 import {
@@ -40,7 +40,7 @@ const QuarterSegment = styled.div`
   align-items: center;
   box-sizing: border-box;
   display: flex;
-  padding: 0 4px;
+  padding-left: 4px;
   min-width: 25%;
 `;
 
@@ -52,10 +52,6 @@ const ReplayContent = styled.div`
 
 const chipStyle = {
   width: '25%',
-};
-
-const typographyStyle = {
-  display: 'flex',
 };
 
 const chipTheme = createTheme({
@@ -94,7 +90,7 @@ const ReplayListItem = memo(function ReplayListItem({
   const dateShort = format(startAtDate, 'yyyy年MM月dd日');
   const time = format(startAtDate, 'h:mmaaaaa');
   const duration = format(new Date(replay.lastFrame / 0.05994), "m'm'ss's'");
-  const stageName = stageNames.get(replay.stageId) || replay.stageId;
+  const stageName = stageNames.get(replay.stageId) || replay.stageId.toString();
 
   const needsWinner =
     replay.players.findIndex(
@@ -108,7 +104,7 @@ const ReplayListItem = memo(function ReplayListItem({
     const trophy =
       ((player.overrideWin || player.isWinner) && (
         <Tooltip arrow placement="top" title="Winner">
-          <EmojiEvents />
+          <EmojiEvents style={{ marginLeft: '-4px' }} />
         </Tooltip>
       )) ||
       (needsWinner && (
@@ -119,7 +115,7 @@ const ReplayListItem = memo(function ReplayListItem({
               player.overrideWin = true;
               onOverride();
             }}
-            style={{ margin: '-8px' }}
+            style={{ margin: '-8px -8px -8px -12px' }}
           >
             <EmojiEventsOutlined />
           </IconButton>
@@ -178,23 +174,23 @@ const ReplayListItem = memo(function ReplayListItem({
     >
       <Checkbox checked={replay.selected} />
       <ReplayContent>
-        <Typography style={typographyStyle} variant="caption">
+        <Stack direction="row" sx={{ typography: 'caption' }}>
           {displayNamesToShow}
-        </Typography>
+        </Stack>
         <PlayersRow>
           <ThemeProvider theme={chipTheme}>{playerChips}</ThemeProvider>
         </PlayersRow>
-        <Typography style={typographyStyle} variant="subtitle1">
+        <Stack direction="row" sx={{ typography: 'caption' }}>
           <QuarterSegment>{time}</QuarterSegment>
           <QuarterSegment>{stageName}</QuarterSegment>
           <QuarterSegment>{duration}</QuarterSegment>
-        </Typography>
-        <Typography style={typographyStyle} variant="caption">
+        </Stack>
+        <Stack direction="row" sx={{ typography: 'caption' }}>
           <Tooltip arrow placement="top" title={dateLong}>
             <QuarterSegment>{dateShort}</QuarterSegment>
           </Tooltip>
           <QuarterSegment>{replay.fileName}</QuarterSegment>
-        </Typography>
+        </Stack>
       </ReplayContent>
     </ListItemButton>
   );
