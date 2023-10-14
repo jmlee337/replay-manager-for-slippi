@@ -62,6 +62,10 @@ export const characterStartggIds = new Map([
   [25, 7], // Ganon
 ]);
 
+export const startggCharacterIds = new Map(
+  Array.from(characterStartggIds.entries()).map(([key, value]) => [value, key]),
+);
+
 // Stage IDs (not internal stage ID)
 export const legalStages = new Set([2, 3, 8, 28, 31, 32]);
 
@@ -129,3 +133,7 @@ export const stageStartggIds = new Map([
   [31, 19], // BF
   [32, 20], // FD
 ]);
+
+export const startggStageIds = new Map(
+  Array.from(stageStartggIds.entries()).map(([key, value]) => [value, key]),
+);

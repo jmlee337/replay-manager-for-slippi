@@ -321,7 +321,18 @@ function Hello() {
   );
 
   // set controls
-  const [selectedSet, setSelectedSet] = useState({} as Set);
+  const [selectedSet, setSelectedSet] = useState<Set>({
+    id: 0,
+    state: 0,
+    fullRoundText: '',
+    winnerId: 0,
+    entrant1Id: 0,
+    entrant1Names: [''],
+    entrant1Score: null,
+    entrant2Id: 0,
+    entrant2Names: [''],
+    entrant2Score: null,
+  });
   const [selectedSetChain, setSelectedSetChain] = useState({
     eventId: 0,
     phaseId: 0,
@@ -360,6 +371,9 @@ function Hello() {
         selectedSetChain.phaseId,
         selectedSetChain.eventId,
       );
+      const updatedSelectedSet = { ...selectedSet };
+      updatedSelectedSet.state = 3;
+      setSelectedSet(updatedSelectedSet);
     } catch (e: any) {
       showErrorDialog(e.toString());
     }
@@ -498,7 +512,9 @@ function Hello() {
                 <Typography variant="body2">
                   1. Set replay folder and tournament slug
                 </Typography>
-                <Typography variant="body2">3. Drag players here</Typography>
+                <Typography variant="body2">
+                  3. Drag and drop players
+                </Typography>
               </Stack>
               <Stack>
                 <Typography variant="body2">

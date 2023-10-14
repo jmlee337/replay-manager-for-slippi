@@ -145,6 +145,7 @@ const ReplayListItem = memo(function ReplayListItem({
         src={characterIcons(
           `./${player.externalCharacterId}/${player.costumeIndex}/stock.png`,
         )}
+        variant="square"
       />
     ) : undefined;
     const name =
