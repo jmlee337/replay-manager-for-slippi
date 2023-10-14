@@ -1,5 +1,5 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import {
   Button,
   CircularProgress,
@@ -15,7 +15,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Edit, FolderOpen, Key, Refresh } from '@mui/icons-material';
+import { Edit, FolderOpen, Refresh } from '@mui/icons-material';
 import styled from '@emotion/styled';
 import {
   Event,
@@ -34,6 +34,7 @@ import './App.css';
 import CopyControls from './CopyControls';
 import SetControls from './SetControls';
 import ErrorDialog from './ErrorDialog';
+import Settings from './Settings';
 
 const Bottom = styled(Paper)`
   height: 147px;
@@ -365,24 +366,13 @@ function Hello() {
   };
 
   // start.gg key
-  const [startggKey, setStartggKey] = useState('');
-  const [startggKeyDialogOpen, setStartggKeyDialogOpen] = useState(false);
-  const openStartggKeyDialog = async () => {
-    setStartggKey(await window.electron.getStartggKey());
-    setStartggKeyDialogOpen(true);
-  };
-  const setNewStartggKey = async (event: FormEvent<HTMLFormElement>) => {
-    const target = event.target as typeof event.target & {
-      key: { value: string };
+  const [startggApiKey, setStartggApiKey] = useState('');
+  useEffect(() => {
+    const inner = async () => {
+      setStartggApiKey(await window.electron.getStartggKey());
     };
-    const newKey = target.key.value;
-    event.preventDefault();
-    event.stopPropagation();
-    if (newKey) {
-      await window.electron.setStartggKey(newKey);
-      setStartggKeyDialogOpen(false);
-    }
-  };
+    inner();
+  }, []);
 
   return (
     <>
@@ -468,35 +458,6 @@ function Hello() {
                 </Form>
               </DialogContent>
             </Dialog>
-            <Tooltip arrow title="Set start.gg API key">
-              <IconButton
-                aria-label="Set start.gg API key"
-                onClick={openStartggKeyDialog}
-              >
-                <Key />
-              </IconButton>
-            </Tooltip>
-            <Dialog
-              open={startggKeyDialogOpen}
-              onClose={() => setStartggKeyDialogOpen(false)}
-            >
-              <DialogTitle>Set start.gg API key</DialogTitle>
-              <DialogContent>
-                <Form onSubmit={setNewStartggKey}>
-                  <TextField
-                    autoFocus
-                    defaultValue={startggKey}
-                    fullWidth
-                    label="API key"
-                    name="key"
-                    size="small"
-                    type="password"
-                    variant="standard"
-                  />
-                  <Button type="submit">Set!</Button>
-                </Form>
-              </DialogContent>
-            </Dialog>
           </TournamentBar>
           <TournamentView
             tournament={tournament}
@@ -549,57 +510,75 @@ function Hello() {
               </Stack>
             </Stack>
           </Stack>
-          <Stack width="300px">
-            {!!selectedSet.id && (
-              <>
-                <Typography
-                  lineHeight="20px"
-                  textAlign="center"
-                  variant="caption"
-                >
-                  {selectedSet.fullRoundText} ({selectedSet.id})
-                </Typography>
-                <Tooltip arrow title="Drag players!">
-                  <Stack direction="row" gap="8px">
-                    <Stack gap="8px" width="50%">
-                      <DraggableChip
-                        displayName={selectedSet.entrant1Names[0].slice(0, 15)}
-                        entrantId={selectedSet.entrant1Id}
-                      />
-                      {selectedSet.entrant1Names.length > 1 && (
+          <Stack justifyContent="space-between" width="300px">
+            <Stack>
+              {!!selectedSet.id && (
+                <>
+                  <Typography
+                    lineHeight="20px"
+                    textAlign="center"
+                    variant="caption"
+                  >
+                    {selectedSet.fullRoundText} ({selectedSet.id})
+                  </Typography>
+                  <Tooltip arrow title="Drag players!">
+                    <Stack direction="row" gap="8px">
+                      <Stack gap="8px" width="50%">
                         <DraggableChip
-                          displayName={selectedSet.entrant1Names[1].slice(
+                          displayName={selectedSet.entrant1Names[0].slice(
                             0,
                             15,
                           )}
                           entrantId={selectedSet.entrant1Id}
                         />
-                      )}
-                    </Stack>
-                    <Stack gap="8px" width="50%">
-                      <DraggableChip
-                        displayName={selectedSet.entrant2Names[0].slice(0, 15)}
-                        entrantId={selectedSet.entrant2Id}
-                      />
-                      {selectedSet.entrant2Names.length > 1 && (
+                        {selectedSet.entrant1Names.length > 1 && (
+                          <DraggableChip
+                            displayName={selectedSet.entrant1Names[1].slice(
+                              0,
+                              15,
+                            )}
+                            entrantId={selectedSet.entrant1Id}
+                          />
+                        )}
+                      </Stack>
+                      <Stack gap="8px" width="50%">
                         <DraggableChip
-                          displayName={selectedSet.entrant2Names[1].slice(
+                          displayName={selectedSet.entrant2Names[0].slice(
                             0,
                             15,
                           )}
                           entrantId={selectedSet.entrant2Id}
                         />
-                      )}
+                        {selectedSet.entrant2Names.length > 1 && (
+                          <DraggableChip
+                            displayName={selectedSet.entrant2Names[1].slice(
+                              0,
+                              15,
+                            )}
+                            entrantId={selectedSet.entrant2Id}
+                          />
+                        )}
+                      </Stack>
                     </Stack>
-                  </Stack>
-                </Tooltip>
+                  </Tooltip>
+                </>
+              )}
+            </Stack>
+            <Stack direction="row" paddingTop="8px" spacing="8px">
+              <Stack direction="row" justifyContent="center" width="50%">
                 <SetControls
                   reportSet={reportSet}
                   selectedReplays={selectedReplays}
                   set={selectedSet}
                 />
-              </>
-            )}
+              </Stack>
+              <Stack direction="row" justifyContent="center" width="50%">
+                <Settings
+                  startggApiKey={startggApiKey}
+                  setStartggApiKey={setStartggApiKey}
+                />
+              </Stack>
+            </Stack>
           </Stack>
         </BottomColumns>
       </Bottom>

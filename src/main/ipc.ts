@@ -43,7 +43,9 @@ export default function setupIPCs(): void {
   );
 
   const store = new Store();
-  let startggKey = store.get('startggKey') as string;
+  let startggKey = store.has('startggKey')
+    ? (store.get('startggKey') as string)
+    : '';
   ipcMain.handle(
     'getTournament',
     async (event: IpcMainInvokeEvent, slug: string) => getTournament(slug),

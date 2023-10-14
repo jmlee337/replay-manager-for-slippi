@@ -1,5 +1,5 @@
-import { Backup, Save } from '@mui/icons-material';
-import { Button, Stack, Tooltip } from '@mui/material';
+import { Backup } from '@mui/icons-material';
+import { Button, Tooltip } from '@mui/material';
 import {
   Player,
   Replay,
@@ -57,12 +57,12 @@ function getWinnerId(selectedReplays: Replay[]) {
 }
 
 export default function SetControls({
-  selectedReplays,
   reportSet,
+  selectedReplays,
   set,
 }: {
-  selectedReplays: Replay[];
   reportSet: (set: StartggSet) => Promise<void>;
+  selectedReplays: Replay[];
   set: Set;
 }) {
   const validSelections = setAndReplaysValid(selectedReplays, set);
@@ -70,7 +70,6 @@ export default function SetControls({
   if (validSelections) {
     winnerId = getWinnerId(selectedReplays);
   }
-  const enabled = validSelections && winnerId;
 
   const getSet = () => {
     const gameData = selectedReplays.map((replay, i) => {
@@ -95,37 +94,18 @@ export default function SetControls({
   };
 
   return (
-    <Stack direction="row" paddingTop="8px" spacing="8px">
-      <Stack direction="row" justifyContent="center" width="50%">
-        <Tooltip arrow title="Save locally">
-          <div>
-            <Button
-              disabled={!enabled}
-              endIcon={<Save />}
-              onClick={() => console.log(getSet())}
-              size="small"
-              variant="contained"
-            >
-              Save
-            </Button>
-          </div>
-        </Tooltip>
-      </Stack>
-      <Stack direction="row" justifyContent="center" width="50%">
-        <Tooltip arrow title="Report on start.gg">
-          <div>
-            <Button
-              disabled={!enabled}
-              endIcon={<Backup />}
-              onClick={() => reportSet(getSet())}
-              size="small"
-              variant="contained"
-            >
-              Report
-            </Button>
-          </div>
-        </Tooltip>
-      </Stack>
-    </Stack>
+    <Tooltip arrow title="Report on start.gg">
+      <div>
+        <Button
+          disabled={!(validSelections && winnerId)}
+          endIcon={<Backup />}
+          onClick={() => reportSet(getSet())}
+          size="small"
+          variant="contained"
+        >
+          Report
+        </Button>
+      </div>
+    </Tooltip>
   );
 }
