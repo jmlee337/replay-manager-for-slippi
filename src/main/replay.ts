@@ -299,7 +299,7 @@ export async function writeReplays(
     await mkdir(writeDir);
   }
 
-  replays.forEach(async (replay, i) => {
+  const writeFilePromises = replays.map(async (replay, i) => {
     const readFile = await open(replay.filePath);
 
     const writeFileName = sanitizedFileNames.length
@@ -378,10 +378,11 @@ export async function writeReplays(
           Buffer.from(startTimes[i]).copy(metadata, startAtOffset);
         }
       }
-      await writeFile.write(metadata);
+      return await writeFile.write(metadata);
     } finally {
       readFile.close();
       writeFile.close();
     }
   });
+  await Promise.all(writeFilePromises);
 }
