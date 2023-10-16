@@ -45,6 +45,8 @@ const electronHandler = {
   getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
   setStartggKey: (startggKey: string): Promise<void> =>
     ipcRenderer.invoke('setStartggKey', startggKey),
+  copyToClipboard: (text: string): Promise<void> =>
+    ipcRenderer.invoke('copyToClipboard', text),
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

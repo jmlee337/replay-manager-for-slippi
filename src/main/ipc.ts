@@ -1,4 +1,4 @@
-import { dialog, ipcMain, IpcMainInvokeEvent } from 'electron';
+import { clipboard, dialog, ipcMain, IpcMainInvokeEvent } from 'electron';
 import Store from 'electron-store';
 import { Replay, StartggSet } from '../common/types';
 import {
@@ -82,6 +82,12 @@ export default function setupIPCs(): void {
     (event: IpcMainInvokeEvent, newStartggKey: string) => {
       store.set('startggKey', newStartggKey);
       startggKey = newStartggKey;
+    },
+  );
+  ipcMain.handle(
+    'copyToClipboard',
+    (event: IpcMainInvokeEvent, text: string) => {
+      clipboard.writeText(text);
     },
   );
 }
