@@ -181,8 +181,8 @@
     "webpack-merge": "^5.9.0"
   },
   "build": {
-    "productName": "ElectronReact",
-    "appId": "org.erb.ElectronReact",
+    "productName": "ReplayManagerForSlippi",
+    "appId": "org.jmlee337.ReplayManagerForSlippi",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
     "files": [
