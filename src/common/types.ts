@@ -32,7 +32,7 @@ export type Set = {
   id: number;
   state: number;
   fullRoundText: string;
-  winnerId: number;
+  winnerId: number | null;
   entrant1Id: number;
   entrant1Names: string[];
   entrant1Score: string | null;

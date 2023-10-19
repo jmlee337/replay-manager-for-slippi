@@ -76,7 +76,7 @@ export default function setupIPCs(): void {
       return reportSet(startggKey, set);
     },
   );
-  ipcMain.handle('getStartggKey', () => store.get('startggKey') as string);
+  ipcMain.handle('getStartggKey', () => startggKey);
   ipcMain.handle(
     'setStartggKey',
     (event: IpcMainInvokeEvent, newStartggKey: string) => {

@@ -87,17 +87,17 @@ function Hello() {
     false,
     false,
   ]);
-  const [overrides, setOverrides] = useState([
+  const [overrides, setOverrides] = useState<PlayerOverrides[]>([
     { displayName: '', entrantId: 0 },
     { displayName: '', entrantId: 0 },
     { displayName: '', entrantId: 0 },
     { displayName: '', entrantId: 0 },
-  ] as PlayerOverrides[]);
+  ]);
 
   // Replay list
   const [dir, setDir] = useState('');
   const [dirExists, setDirExists] = useState(true);
-  const [replays, setReplays] = useState([] as Replay[]);
+  const [replays, setReplays] = useState<Replay[]>([]);
   const selectedReplays = replays.filter((replay) => replay.selected);
   const chooseDir = async () => {
     const openDialogRes = await window.electron.chooseDir();
@@ -170,10 +170,10 @@ function Hello() {
   const [slug, setSlug] = useState('');
   const [slugDialogOpen, setSlugDialogOpen] = useState(false);
   const [gettingTournament, setGettingTournament] = useState(false);
-  const [tournament, setTournament] = useState({
+  const [tournament, setTournament] = useState<Tournament>({
     slug: '',
     events: [],
-  } as Tournament);
+  });
   const getTournament = async (getSlug: string) => {
     if (!getSlug) {
       return false;
@@ -325,7 +325,7 @@ function Hello() {
     id: 0,
     state: 0,
     fullRoundText: '',
-    winnerId: 0,
+    winnerId: null,
     entrant1Id: 0,
     entrant1Names: [''],
     entrant1Score: null,

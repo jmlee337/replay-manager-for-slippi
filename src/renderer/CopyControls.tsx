@@ -101,16 +101,19 @@ export default function CopyControls({
     let subdir = '';
     if (writeFileNames || makeNewFolder) {
       const nameObjs = selectedReplays.map((replay) =>
-        replay.players.map((player) =>
-          player.playerType === 0 || player.playerType === 1
-            ? ({
-                characterName: characterNames.get(player.externalCharacterId),
-                displayName: writeDisplayNames
-                  ? player.playerOverrides.displayName || player.displayName
-                  : player.displayName,
-                nametag: player.nametag,
-              } as NameObj)
-            : ({ characterName: '', displayName: '', nametag: '' } as NameObj),
+        replay.players.map(
+          (player): NameObj =>
+            player.playerType === 0 || player.playerType === 1
+              ? {
+                  characterName: characterNames.get(
+                    player.externalCharacterId,
+                  )!,
+                  displayName: writeDisplayNames
+                    ? player.playerOverrides.displayName || player.displayName
+                    : player.displayName,
+                  nametag: player.nametag,
+                }
+              : { characterName: '', displayName: '', nametag: '' },
         ),
       );
 
@@ -127,7 +130,7 @@ export default function CopyControls({
       if (makeNewFolder) {
         const folderLabels = nameObjs
           .reduce(
-            (namesObj, game) => {
+            (namesObj, game): NamesObj[] => {
               game.forEach((nameObj, i) => {
                 if (nameObj.characterName) {
                   namesObj[i].displayName = nameObj.displayName;
@@ -151,22 +154,22 @@ export default function CopyControls({
                 characterNames: new Map(),
                 displayName: '',
                 nametags: new Map(),
-              } as NamesObj,
+              },
               {
                 characterNames: new Map(),
                 displayName: '',
                 nametags: new Map(),
-              } as NamesObj,
+              },
               {
                 characterNames: new Map(),
                 displayName: '',
                 nametags: new Map(),
-              } as NamesObj,
+              },
               {
                 characterNames: new Map(),
                 displayName: '',
                 nametags: new Map(),
-              } as NamesObj,
+              },
             ],
           )
           .map((namesObj) => ({

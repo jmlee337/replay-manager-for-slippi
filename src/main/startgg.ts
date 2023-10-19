@@ -34,7 +34,7 @@ export async function getTournament(slug: string): Promise<Event[]> {
       return isMelee && isSinglesOrDoulbes;
     })
     .map(
-      (event: any) => ({ id: event.id, name: event.name, phases: [] }) as Event,
+      (event: any): Event => ({ id: event.id, name: event.name, phases: [] }),
     );
 }
 
@@ -44,12 +44,11 @@ export async function getEvent(id: number): Promise<Phase[]> {
   );
   const json = await response.json();
   return json.entities.phase.map(
-    (phase: any) =>
-      ({
-        id: phase.id,
-        name: phase.name,
-        phaseGroups: [],
-      }) as Phase,
+    (phase: any): Phase => ({
+      id: phase.id,
+      name: phase.name,
+      phaseGroups: [],
+    }),
   );
 }
 
@@ -60,15 +59,14 @@ export async function getPhase(id: number): Promise<PhaseGroup[]> {
   const json = await response.json();
   return json.entities.groups
     .map(
-      (group: any) =>
-        ({
-          id: group.id,
-          name: group.displayIdentifier,
-          sets: {
-            pendingSets: [],
-            completedSets: [],
-          },
-        }) as PhaseGroup,
+      (group: any): PhaseGroup => ({
+        id: group.id,
+        name: group.displayIdentifier,
+        sets: {
+          pendingSets: [],
+          completedSets: [],
+        },
+      }),
     )
     .sort((phaseGroupA: PhaseGroup, phaseGroupB: PhaseGroup) =>
       phaseGroupA.name.localeCompare(phaseGroupB.name),
@@ -140,7 +138,7 @@ export async function getPhaseGroup(key: string, id: number): Promise<Sets> {
     nextData = await fetchGql(key, PHASE_GROUP_QUERY, { id, page });
     const newSets: Set[] = nextData.phaseGroup.sets.nodes
       .filter((set: any) => set.slots[0].entrant && set.slots[1].entrant)
-      .map((set: any) => {
+      .map((set: any): Set => {
         const slot1 = set.slots[0];
         const slot2 = set.slots[1];
         const entrant1Names = slot1.entrant.participants.map(
@@ -156,11 +154,15 @@ export async function getPhaseGroup(key: string, id: number): Promise<Sets> {
           winnerId: set.winnerId,
           entrant1Id: slot1.entrant.id,
           entrant1Names,
-          entrant1Score: slot1.standing.stats.score.displayValue,
+          entrant1Score: slot1.standing
+            ? slot1.standing.stats.score.displayValue
+            : null,
           entrant2Id: slot2.entrant.id,
           entrant2Names,
-          entrant2Score: slot2.standing.stats.score.displayValue,
-        } as Set;
+          entrant2Score: slot2.standing
+            ? slot2.standing.stats.score.displayValue
+            : null,
+        };
       });
     sets.push(...newSets);
 

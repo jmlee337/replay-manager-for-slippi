@@ -126,7 +126,7 @@ export default function SetControls({
   const entrant1Score = scores.get(set.entrant1Id) || 0;
   const entrant2Score = scores.get(set.entrant2Id) || 0;
 
-  const getSet = () => {
+  const getSet = (): StartggSet => {
     const gameData: StartggGame[] = selectedReplays.map((replay, i) => {
       let selections: StartggGameSelection[] = [];
       if (replay.players.length === 2) {
@@ -148,7 +148,7 @@ export default function SetControls({
         winnerId: replay.players.find(isWinner)?.playerOverrides.entrantId!,
       };
     });
-    return { gameData, setId: set.id, winnerId } as StartggSet;
+    return { gameData, setId: set.id, winnerId };
   };
 
   return (
