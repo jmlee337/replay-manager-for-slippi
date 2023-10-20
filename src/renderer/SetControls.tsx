@@ -153,6 +153,9 @@ export default function SetControls({
           characterId: characterStartggIds.get(player.externalCharacterId)!,
           entrantId: player.playerOverrides.entrantId,
         }));
+        if (selections[1].entrantId === set.entrant1Id) {
+          selections = [selections[1], selections[0]];
+        }
       }
 
       return {
