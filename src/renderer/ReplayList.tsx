@@ -92,22 +92,20 @@ const ReplayListItem = memo(function ReplayListItem({
   const duration = format(new Date(replay.lastFrame / 0.05994), "m'm'ss's'");
   const stageName = stageNames.get(replay.stageId) || replay.stageId.toString();
 
-  const needsWinner =
-    replay.players.findIndex(
-      (player) => player.overrideWin || player.isWinner,
-    ) === -1;
+  const noOverrideWinner =
+    replay.players.findIndex((player) => player.overrideWin) === -1;
   const displayNamesToShow = replay.players.map((player) => {
     const key = player.port;
     const displayName =
       player.playerOverrides.displayName ||
       (player.playerType === 0 && player.displayName);
     const trophy =
-      ((player.overrideWin || player.isWinner) && (
+      ((player.overrideWin || (noOverrideWinner && player.isWinner)) && (
         <Tooltip arrow placement="top" title="Winner">
           <EmojiEvents style={{ marginLeft: '-4px' }} />
         </Tooltip>
       )) ||
-      (needsWinner && (
+      (noOverrideWinner && (
         <Tooltip arrow placement="top" title="Set as winner">
           <IconButton
             onClick={(event) => {

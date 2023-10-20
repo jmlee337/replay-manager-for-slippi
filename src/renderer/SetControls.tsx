@@ -57,8 +57,23 @@ function isValid(player: Player) {
   return player.playerType === 0 || player.playerType === 1;
 }
 
-function isWinner(player: Player) {
-  return player.overrideWin || player.isWinner;
+function findWinner(players: Player[]) {
+  let overrideWinnerIndex = -1;
+  let winnerIndex = -1;
+  players.forEach((player, i) => {
+    if (player.overrideWin) {
+      overrideWinnerIndex = i;
+    } else if (player.isWinner) {
+      winnerIndex = i;
+    }
+  });
+  if (overrideWinnerIndex >= 0) {
+    return players[overrideWinnerIndex];
+  }
+  if (winnerIndex >= 0) {
+    return players[winnerIndex];
+  }
+  return undefined;
 }
 
 function setAndReplaysValid(selectedReplays: Replay[], set: Set) {
@@ -72,7 +87,7 @@ function setAndReplaysValid(selectedReplays: Replay[], set: Set) {
     return (
       numPlayers === validPlayers.length &&
       validPlayers.every((player) => player.playerOverrides.entrantId) &&
-      validPlayers.find(isWinner)
+      findWinner(validPlayers)
     );
   });
 }
@@ -82,7 +97,7 @@ function getScoresAndWinnerId(selectedReplays: Replay[]) {
   let leaderId = 0;
   let leaderWins = 0;
   selectedReplays.forEach((replay) => {
-    const gameWinnerId = replay.players.filter(isValid).find(isWinner)
+    const gameWinnerId = findWinner(replay.players.filter(isValid))
       ?.playerOverrides.entrantId!;
 
     const n = (gameWins.get(gameWinnerId) || 0) + 1;
@@ -129,23 +144,22 @@ export default function SetControls({
   const getSet = (): StartggSet => {
     const gameData: StartggGame[] = selectedReplays.map((replay, i) => {
       let selections: StartggGameSelection[] = [];
-      if (replay.players.length === 2) {
-        selections = replay.players
-          .filter(
-            (player) =>
-              isValid(player) && isValidCharacter(player.externalCharacterId),
-          )
-          .map((player) => ({
-            characterId: characterStartggIds.get(player.externalCharacterId)!,
-            entrantId: player.playerOverrides.entrantId,
-          }));
+      const validPlayers = replay.players.filter(
+        (player) =>
+          isValid(player) && isValidCharacter(player.externalCharacterId),
+      );
+      if (validPlayers.length === 2) {
+        selections = validPlayers.map((player) => ({
+          characterId: characterStartggIds.get(player.externalCharacterId)!,
+          entrantId: player.playerOverrides.entrantId,
+        }));
       }
 
       return {
         gameNum: i + 1,
         stageId: stageStartggIds.get(replay.stageId),
         selections,
-        winnerId: replay.players.find(isWinner)?.playerOverrides.entrantId!,
+        winnerId: findWinner(replay.players)?.playerOverrides.entrantId!,
       };
     });
     return { gameData, setId: set.id, winnerId };
@@ -165,7 +179,17 @@ export default function SetControls({
       >
         Report
       </Button>
-      <Dialog open={open} onClose={() => setOpen(false)}>
+      <Dialog
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          setStartggSet({
+            gameData: [],
+            setId: set.id,
+            winnerId: 0,
+          });
+        }}
+      >
         <DialogTitle>Report set on start.gg</DialogTitle>
         <DialogContent>
           <SetView
@@ -261,6 +285,11 @@ export default function SetControls({
                 await reportSet(startggSet);
                 setOpen(false);
                 setReporting(false);
+                setStartggSet({
+                  gameData: [],
+                  setId: set.id,
+                  winnerId: 0,
+                });
               }}
               size="small"
               variant="contained"
