@@ -289,7 +289,6 @@ export default function SetControls({
                 winnerId: 0,
               });
             }}
-            size="small"
             variant="contained"
           >
             Report

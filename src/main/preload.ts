@@ -14,6 +14,8 @@ export type Channels = 'ipc-example';
 const electronHandler = {
   chooseDir: (): Promise<OpenDialogReturnValue> =>
     ipcRenderer.invoke('chooseDir'),
+  deleteDir: (dir: string): Promise<void> =>
+    ipcRenderer.invoke('deleteDir', dir),
   getReplaysInDir: (dir: string): Promise<Replay[]> =>
     ipcRenderer.invoke('getReplaysInDir', dir),
   writeReplays: (

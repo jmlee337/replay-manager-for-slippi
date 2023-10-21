@@ -1,5 +1,6 @@
 import { clipboard, dialog, ipcMain, IpcMainInvokeEvent } from 'electron';
 import Store from 'electron-store';
+import { rm } from 'fs/promises';
 import { Output, Replay, StartggSet } from '../common/types';
 import {
   getEvent,
@@ -13,6 +14,12 @@ import { getReplaysInDir, writeReplays } from './replay';
 export default function setupIPCs(): void {
   ipcMain.handle('chooseDir', async () =>
     dialog.showOpenDialog({ properties: ['openDirectory', 'showHiddenFiles'] }),
+  );
+  ipcMain.handle(
+    'deleteDir',
+    async (event: IpcMainInvokeEvent, dir: string) => {
+      return rm(dir, { recursive: true });
+    },
   );
   ipcMain.handle(
     'getReplaysInDir',

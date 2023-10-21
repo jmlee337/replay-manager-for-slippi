@@ -1,9 +1,11 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import { FormEvent, useEffect, useState } from 'react';
 import {
+  Alert,
   Button,
   CircularProgress,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
@@ -15,7 +17,13 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Edit, FolderOpen, Refresh } from '@mui/icons-material';
+import {
+  DeleteForever,
+  DeleteForeverOutlined,
+  Edit,
+  FolderOpen,
+  Refresh,
+} from '@mui/icons-material';
 import styled from '@emotion/styled';
 import {
   Event,
@@ -96,6 +104,8 @@ function Hello() {
 
   // Replay list
   const [dir, setDir] = useState('');
+  const [dirDeleteDialogOpen, setDirDeleteDialogOpen] = useState(false);
+  const [dirDeleting, setDirDeleting] = useState(false);
   const [dirExists, setDirExists] = useState(true);
   const [replays, setReplays] = useState<Replay[]>([]);
   const selectedReplays = replays.filter((replay) => replay.selected);
@@ -112,10 +122,15 @@ function Hello() {
   const refreshReplays = async () => {
     try {
       setReplays(await window.electron.getReplaysInDir(dir));
+      setDirExists(true);
     } catch (e: any) {
-      setDirExists(false);
       setReplays([]);
+      setDirExists(false);
     }
+  };
+  const deleteDir = async () => {
+    await window.electron.deleteDir(dir);
+    await refreshReplays();
   };
   const onPlayerOverride = () => {
     setReplays(Array.from(replays));
@@ -403,13 +418,55 @@ function Hello() {
               value={dir || 'Set replays folder...'}
               style={{ flexGrow: 1 }}
             />
+            {dir && dirExists && (
+              <>
+                <Tooltip arrow title="Delete replays folder">
+                  <IconButton onClick={() => setDirDeleteDialogOpen(true)}>
+                    <DeleteForeverOutlined />
+                  </IconButton>
+                </Tooltip>
+                <Dialog
+                  open={dirDeleteDialogOpen}
+                  onClose={() => {
+                    setDirDeleteDialogOpen(false);
+                  }}
+                >
+                  <DialogTitle>Delete Replays Folder?</DialogTitle>
+                  <DialogContent>
+                    <Alert severity="warning">
+                      {replays.length} replays will be deleted!
+                    </Alert>
+                  </DialogContent>
+                  <DialogActions>
+                    <Button
+                      endIcon={
+                        dirDeleting ? (
+                          <CircularProgress size="24px" />
+                        ) : (
+                          <DeleteForever />
+                        )
+                      }
+                      onClick={async () => {
+                        setDirDeleting(true);
+                        await deleteDir();
+                        setDirDeleteDialogOpen(false);
+                        setDirDeleting(false);
+                      }}
+                      variant="contained"
+                    >
+                      Delete
+                    </Button>
+                  </DialogActions>
+                </Dialog>
+              </>
+            )}
             <Tooltip arrow title="Refresh replays">
-              <IconButton aria-label="Refresh replays" onClick={refreshReplays}>
+              <IconButton onClick={refreshReplays}>
                 <Refresh />
               </IconButton>
             </Tooltip>
             <Tooltip arrow title="Set replays folder">
-              <IconButton aria-label="Set replay folder" onClick={chooseDir}>
+              <IconButton onClick={chooseDir}>
                 <FolderOpen />
               </IconButton>
             </Tooltip>
@@ -421,7 +478,9 @@ function Hello() {
               onOverride={onPlayerOverride}
             />
           ) : (
-            <div>Folder not found</div>
+            <Alert severity="error" sx={{ mb: '8px', pl: '24px' }}>
+              Folder not found
+            </Alert>
           )}
           <CopyControls selectedReplays={selectedReplays} />
         </TopColumn>
