@@ -1,9 +1,11 @@
 import { decode } from '@shelacek/ubjson';
-import { mkdir, open, readdir } from 'fs/promises';
+import { mkdir, open, readdir, rm } from 'fs/promises';
 import { join } from 'path';
 import iconv from 'iconv-lite';
 import sanitize from 'sanitize-filename';
-import { Player, Replay } from '../common/types';
+import { ZipFile } from 'yazl';
+import { createWriteStream } from 'fs';
+import { Output, Player, Replay } from '../common/types';
 import { isValidCharacter, legalStages } from '../common/constants';
 
 const RAW_HEADER_START = Buffer.from([
@@ -220,7 +222,7 @@ export async function getReplaysInDir(dir: string) {
           isValid,
           lastFrame,
           players,
-          selected: false,
+          selected: true,
           stageId,
           startAt: obj.metadata.startAt,
         };
@@ -275,6 +277,7 @@ const START_AT_TAG = Buffer.from([
 export async function writeReplays(
   dir: string,
   fileNames: string[],
+  output: Output,
   replays: Replay[],
   startTimes: string[],
   subdir: string,
@@ -297,6 +300,8 @@ export async function writeReplays(
   const writeDir = join(dir, sanitizedSubdir);
   if (sanitizedSubdir) {
     await mkdir(writeDir);
+  } else if (output === Output.FOLDER || output === Output.ZIP) {
+    throw new Error('subdir');
   }
 
   const writeFilePromises = replays.map(async (replay, i) => {
@@ -305,16 +310,20 @@ export async function writeReplays(
     const writeFileName = sanitizedFileNames.length
       ? sanitizedFileNames[i]
       : replay.fileName;
-    const writeFile = await open(join(writeDir, writeFileName), 'w');
+    const writeFilePath = join(writeDir, writeFileName);
+    const writeFile = await open(writeFilePath, 'w');
 
     try {
       // raw element
       const rawHeader = Buffer.alloc(15);
       const rawHeaderRes = await readFile.read(rawHeader, 0, 15, 0);
       if (rawHeaderRes.bytesRead !== 15) {
-        throw Error('raw element header');
+        throw new Error('raw element header read');
       }
-      await writeFile.write(rawHeader);
+      const rawHeaderWrite = await writeFile.write(rawHeader);
+      if (rawHeaderWrite.bytesWritten !== 15) {
+        throw new Error('raw element header write');
+      }
 
       const rawElementLength = rawHeader.subarray(11, 15).readUInt32BE();
       const rawElement = Buffer.alloc(rawElementLength);
@@ -325,7 +334,7 @@ export async function writeReplays(
         15,
       );
       if (rawElementRes.bytesRead !== rawElementLength) {
-        throw Error('raw element');
+        throw new Error('raw element read');
       }
 
       // display names?
@@ -353,7 +362,10 @@ export async function writeReplays(
           Buffer.from(fixedDisplayNameArr).copy(rawElement, offset);
         });
       }
-      await writeFile.write(rawElement);
+      const rawElementWrite = await writeFile.write(rawElement);
+      if (rawElementWrite.bytesWritten !== rawElementLength) {
+        throw new Error('raw element write');
+      }
 
       // metadata
       const metadataOffset = rawElementLength + 15;
@@ -366,7 +378,7 @@ export async function writeReplays(
         metadataOffset,
       );
       if (metadataRes.bytesRead !== metadataLength) {
-        throw Error('metadata');
+        throw new Error('metadata read');
       }
 
       // startTimes?
@@ -378,11 +390,31 @@ export async function writeReplays(
           Buffer.from(startTimes[i]).copy(metadata, startAtOffset);
         }
       }
-      return await writeFile.write(metadata);
+      const metadataWrite = await writeFile.write(metadata);
+      if (metadataWrite.bytesWritten !== metadataLength) {
+        throw new Error('metadata write');
+      }
+
+      return { writeFilePath, writeFileName };
     } finally {
       readFile.close();
       writeFile.close();
     }
   });
-  await Promise.all(writeFilePromises);
+
+  const writeFiles = await Promise.all(writeFilePromises);
+  if (output === Output.ZIP && sanitizedSubdir) {
+    const zipFile = new ZipFile();
+    const zipFilePromise = new Promise((resolve) => {
+      zipFile.outputStream
+        .pipe(createWriteStream(`${writeDir}.zip`))
+        .on('close', resolve);
+    });
+    writeFiles.forEach((writeFile) => {
+      zipFile.addFile(writeFile.writeFilePath, writeFile.writeFileName);
+    });
+    zipFile.end();
+    await zipFilePromise;
+    await rm(writeDir, { recursive: true });
+  }
 }

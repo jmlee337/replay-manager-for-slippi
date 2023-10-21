@@ -87,3 +87,9 @@ export type StartggSet = {
   setId: number;
   winnerId: number;
 };
+
+export enum Output {
+  FILES,
+  FOLDER,
+  ZIP,
+}

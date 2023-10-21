@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, OpenDialogReturnValue } from 'electron';
 import {
   Event,
+  Output,
   Phase,
   PhaseGroup,
   Replay,
@@ -18,6 +19,7 @@ const electronHandler = {
   writeReplays: (
     dir: string,
     fileNames: string[],
+    output: Output,
     replays: Replay[],
     startTimes: string[],
     subdir: string,
@@ -27,6 +29,7 @@ const electronHandler = {
       'writeReplays',
       dir,
       fileNames,
+      output,
       replays,
       startTimes,
       subdir,

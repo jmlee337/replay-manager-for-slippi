@@ -6,13 +6,15 @@ import {
   FormControlLabel,
   IconButton,
   InputBase,
+  MenuItem,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
 import { ChangeEvent, useState } from 'react';
 import { format } from 'date-fns';
-import { Replay } from '../common/types';
+import { Output, Replay } from '../common/types';
 import { characterNames } from '../common/constants';
 import ErrorDialog from './ErrorDialog';
 
@@ -80,7 +82,7 @@ export default function CopyControls({
   const [writeDisplayNames, setWriteDisplayNames] = useState(true);
   const [writeFileNames, setWriteFileNames] = useState(false);
   const [writeStartTimes, setWriteStartTimes] = useState(true);
-  const [makeNewFolder, setMakeNewFolder] = useState(true);
+  const [output, setOutput] = useState(Output.ZIP);
   const [isCopying, setIsCopying] = useState(false);
   const onCopy = async () => {
     setIsCopying(true);
@@ -99,7 +101,7 @@ export default function CopyControls({
 
     let fileNames = selectedReplays.map((replay) => replay.fileName);
     let subdir = '';
-    if (writeFileNames || makeNewFolder) {
+    if (writeFileNames || output === Output.FOLDER || output === Output.ZIP) {
       const nameObjs = selectedReplays.map((replay) =>
         replay.players.map(
           (player): NameObj =>
@@ -127,7 +129,7 @@ export default function CopyControls({
         return nameObj.characterName;
       };
 
-      if (makeNewFolder) {
+      if (output === Output.FOLDER || output === Output.ZIP) {
         const folderLabels = nameObjs
           .reduce(
             (namesObj, game): NamesObj[] => {
@@ -199,7 +201,7 @@ export default function CopyControls({
       if (writeFileNames) {
         fileNames = nameObjs.map((game, i) => {
           let prefix = `${i + 1}`;
-          if (!makeNewFolder) {
+          if (output === Output.FILES) {
             const { startAt } = selectedReplays[i];
             const writeStartDate = writeStartTimes
               ? new Date(new Date(startAt).getTime() + offsetMs)
@@ -227,6 +229,7 @@ export default function CopyControls({
       await window.electron.writeReplays(
         dir,
         fileNames,
+        output,
         selectedReplays,
         startTimes,
         subdir,
@@ -277,11 +280,19 @@ export default function CopyControls({
               label="Overwrite Start Times"
               set={setWriteStartTimes}
             />
-            <LabeledCheckbox
-              checked={makeNewFolder}
-              label="Make New Subfolder"
-              set={setMakeNewFolder}
-            />
+            <TextField
+              label="Output"
+              onChange={(event) =>
+                setOutput(parseInt(event.target.value, 10) as Output)
+              }
+              select
+              size="small"
+              value={output}
+            >
+              <MenuItem value={Output.FILES}>Separate Files</MenuItem>
+              <MenuItem value={Output.FOLDER}>Make Subfolder</MenuItem>
+              <MenuItem value={Output.ZIP}>As ZIP file</MenuItem>
+            </TextField>
           </Stack>
         </Stack>
         <Stack

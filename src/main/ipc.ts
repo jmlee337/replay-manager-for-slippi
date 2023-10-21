@@ -1,6 +1,6 @@
 import { clipboard, dialog, ipcMain, IpcMainInvokeEvent } from 'electron';
 import Store from 'electron-store';
-import { Replay, StartggSet } from '../common/types';
+import { Output, Replay, StartggSet } from '../common/types';
 import {
   getEvent,
   getPhase,
@@ -26,6 +26,7 @@ export default function setupIPCs(): void {
       event: IpcMainInvokeEvent,
       dir: string,
       fileNames: string[],
+      output: Output,
       replays: Replay[],
       startTimes: string[],
       subdir: string,
@@ -34,6 +35,7 @@ export default function setupIPCs(): void {
       return writeReplays(
         dir,
         fileNames,
+        output,
         replays,
         startTimes,
         subdir,
