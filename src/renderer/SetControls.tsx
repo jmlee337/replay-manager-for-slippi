@@ -5,6 +5,7 @@ import {
   Button,
   CircularProgress,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
@@ -35,12 +36,12 @@ const characterIcons = require.context('./characters', true);
 
 const EntrantSection = styled(Stack)`
   align-items: center;
-  flex-direction: row;
   width: 50%;
 `;
 
 const EntrantText = styled(Stack)`
   margin: 0 4px;
+  min-width: 0;
 `;
 
 const EntrantScore = styled(EntrantText)`
@@ -194,7 +195,7 @@ export default function SetControls({
         }}
       >
         <DialogTitle>Report set on start.gg</DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ width: '500px' }}>
           <SetView
             entrant1Names={set.entrant1Names}
             entrant1Score={entrant1Score.toString()}
@@ -214,13 +215,10 @@ export default function SetControls({
                   </Box>
                 )}
                 <Stack direction="row" sx={{ typography: 'body2' }}>
-                  <EntrantSection borderRight={1}>
-                    <EntrantText flexGrow={1} textAlign="right">
-                      <Name>{set.entrant1Names[0]}</Name>
-                      {set.entrant1Names.length > 1 && (
-                        <Name>{set.entrant1Names[1]}</Name>
-                      )}
-                    </EntrantText>
+                  <EntrantSection borderRight={1} direction="row-reverse">
+                    <EntrantScore textAlign="right">
+                      {set.entrant1Id === gameData.winnerId ? 'W' : 'L'}
+                    </EntrantScore>
                     {set.entrant1Names.length === 1 && (
                       <Avatar
                         alt={characterNames.get(
@@ -237,11 +235,14 @@ export default function SetControls({
                         variant="square"
                       />
                     )}
-                    <EntrantScore textAlign="right">
-                      {set.entrant1Id === gameData.winnerId ? 'W' : 'L'}
-                    </EntrantScore>
+                    <EntrantText flexGrow={1} textAlign="right">
+                      <Name>{set.entrant1Names[0]}</Name>
+                      {set.entrant1Names.length > 1 && (
+                        <Name>{set.entrant1Names[1]}</Name>
+                      )}
+                    </EntrantText>
                   </EntrantSection>
-                  <EntrantSection borderLeft={1}>
+                  <EntrantSection borderLeft={1} direction="row">
                     <EntrantScore>
                       {set.entrant2Id === gameData.winnerId ? 'W' : 'L'}
                     </EntrantScore>
@@ -272,35 +273,28 @@ export default function SetControls({
               </Stack>
             ))}
           </Stack>
-          <Stack
-            direction="row"
-            flexGrow={1}
-            marginTop="16px"
-            justifyContent="end"
-          >
-            <Button
-              disabled={reporting}
-              endIcon={
-                reporting ? <CircularProgress size="24px" /> : <Backup />
-              }
-              onClick={async () => {
-                setReporting(true);
-                await reportSet(startggSet);
-                setOpen(false);
-                setReporting(false);
-                setStartggSet({
-                  gameData: [],
-                  setId: set.id,
-                  winnerId: 0,
-                });
-              }}
-              size="small"
-              variant="contained"
-            >
-              Report
-            </Button>
-          </Stack>
         </DialogContent>
+        <DialogActions>
+          <Button
+            disabled={reporting}
+            endIcon={reporting ? <CircularProgress size="24px" /> : <Backup />}
+            onClick={async () => {
+              setReporting(true);
+              await reportSet(startggSet);
+              setOpen(false);
+              setReporting(false);
+              setStartggSet({
+                gameData: [],
+                setId: set.id,
+                winnerId: 0,
+              });
+            }}
+            size="small"
+            variant="contained"
+          >
+            Report
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );

@@ -1,9 +1,13 @@
 import styled from '@emotion/styled';
 import { Box, Stack } from '@mui/material';
 
+const EntrantNames = styled(Stack)`
+  flex-grow: 1;
+  min-width: 0;
+`;
+
 const EntrantSection = styled(Stack)`
   align-items: center;
-  flex-direction: row;
   width: 50%;
 `;
 
@@ -58,19 +62,19 @@ export default function SetView({
         {fullRoundText}
       </Box>
       <Stack alignItems="center" direction="row" sx={{ typography: 'body2' }}>
-        <EntrantSection borderRight={1}>
-          <Stack flexGrow={1} textAlign="right">
+        <EntrantSection borderRight={1} direction="row-reverse">
+          <EntrantScore textAlign="right">{leftScore}</EntrantScore>
+          <EntrantNames textAlign="right">
             <Name>{entrant1Names[0]}</Name>
             {entrant1Names.length > 1 && <Name>{entrant1Names[1]}</Name>}
-          </Stack>
-          <EntrantScore textAlign="right">{leftScore}</EntrantScore>
+          </EntrantNames>
         </EntrantSection>
-        <EntrantSection borderLeft={1}>
+        <EntrantSection borderLeft={1} direction="row">
           <EntrantScore>{rightScore}</EntrantScore>
-          <Stack flexGrow={1}>
+          <EntrantNames>
             <Name>{entrant2Names[0]}</Name>
             {entrant2Names.length > 1 && <Name>{entrant2Names[1]}</Name>}
-          </Stack>
+          </EntrantNames>
         </EntrantSection>
       </Stack>
     </Stack>
