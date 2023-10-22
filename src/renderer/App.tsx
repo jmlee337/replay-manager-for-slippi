@@ -381,6 +381,11 @@ function Hello() {
   const reportSet = async (set: StartggSet) => {
     try {
       await window.electron.reportSet(set);
+      await new Promise((resolve) => {
+        // it seems that start.gg needs a moment to settle
+        // before the set will be reflected as completed.
+        setTimeout(resolve, 1000);
+      });
       await getPhaseGroup(
         selectedSetChain.phaseGroupId,
         selectedSetChain.phaseId,
