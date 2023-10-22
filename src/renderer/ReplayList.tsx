@@ -6,9 +6,7 @@ import {
   List,
   ListItemButton,
   Stack,
-  ThemeProvider,
   Tooltip,
-  createTheme,
 } from '@mui/material';
 import {
   EmojiEventsOutlined,
@@ -53,20 +51,6 @@ const ReplayContent = styled.div`
 const chipStyle = {
   width: '25%',
 };
-
-const chipTheme = createTheme({
-  components: {
-    MuiChip: {
-      styleOverrides: {
-        label: {
-          alignItems: 'center',
-          display: 'flex',
-          flexGrow: 1,
-        },
-      },
-    },
-  },
-});
 
 const characterIcons = require.context('./characters', true);
 
@@ -181,9 +165,7 @@ const ReplayListItem = memo(function ReplayListItem({
         <Stack direction="row" sx={{ typography: 'caption' }}>
           {displayNamesToShow}
         </Stack>
-        <PlayersRow>
-          <ThemeProvider theme={chipTheme}>{playerChips}</ThemeProvider>
-        </PlayersRow>
+        <PlayersRow>{playerChips}</PlayersRow>
         <Stack direction="row" sx={{ typography: 'caption' }}>
           <QuarterSegment>{time}</QuarterSegment>
           <QuarterSegment>{stageName}</QuarterSegment>

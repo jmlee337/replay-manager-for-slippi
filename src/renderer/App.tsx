@@ -2,6 +2,7 @@ import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import { FormEvent, useEffect, useState } from 'react';
 import {
   Alert,
+  Backdrop,
   Button,
   CircularProgress,
   Dialog,
@@ -707,6 +708,11 @@ function Hello() {
           </Stack>
         </BottomColumns>
       </Bottom>
+      <Backdrop
+        onClick={resetSelectedChipData}
+        open={!!(selectedChipData.displayName && selectedChipData.entrantId)}
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+      />
       <ErrorDialog
         message={error}
         onClose={() => {

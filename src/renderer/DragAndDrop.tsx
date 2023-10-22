@@ -1,4 +1,10 @@
-import { Chip, ThemeProvider, Tooltip, createTheme } from '@mui/material';
+import {
+  Chip,
+  ThemeOptions,
+  ThemeProvider,
+  Tooltip,
+  createTheme,
+} from '@mui/material';
 import { CSSProperties, DragEvent, ReactElement } from 'react';
 
 export function DraggableChip({
@@ -38,6 +44,14 @@ export function DraggableChip({
             },
           },
         },
+        palette: {
+          primary: {
+            contrastText: '#FFF',
+            light: '#5BCEFA',
+            main: '#5BCEFA',
+            dark: '#5BCEFA',
+          },
+        },
       })}
     >
       <Chip
@@ -54,6 +68,7 @@ export function DraggableChip({
         }}
         onDragStart={dragStart}
         label={displayName}
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 2 }}
         variant={selected ? 'filled' : 'outlined'}
       />
     </ThemeProvider>
@@ -94,9 +109,34 @@ export function DroppableChip({
   const selectedChip =
     selectedChipData.displayName && selectedChipData.entrantId;
 
+  const themeOptions: ThemeOptions = {
+    palette: {
+      secondary: {
+        contrastText: '#FFF',
+        light: '#F5A9B8',
+        main: '#F5A9B8',
+        dark: '#F5A9B8',
+      },
+    },
+  };
+  if (avatar) {
+    themeOptions.components = {
+      MuiChip: {
+        styleOverrides: {
+          label: {
+            alignItems: 'center',
+            display: 'flex',
+            flexGrow: 1,
+          },
+        },
+      },
+    };
+  }
+
   const chip = (
     <Chip
       avatar={avatar}
+      color={active && selectedChip ? 'secondary' : undefined}
       onClick={
         active && selectedChip
           ? (event) => {
@@ -113,23 +153,32 @@ export function DroppableChip({
       onDragOver={dragEnterOver}
       label={label}
       style={style}
-      variant={outlined ? 'outlined' : 'filled'}
+      sx={
+        active && selectedChip
+          ? { zIndex: (theme) => theme.zIndex.drawer + 2 }
+          : undefined
+      }
+      variant={outlined && !selectedChip ? 'outlined' : 'filled'}
     />
   );
 
-  return active ? (
-    <Tooltip
-      arrow
-      title={
-        selectedChip
-          ? `Click to assign ${selectedChipData.displayName}`
-          : 'Drop here!'
-      }
-    >
-      {chip}
-    </Tooltip>
-  ) : (
-    chip
+  return (
+    <ThemeProvider theme={createTheme(themeOptions)}>
+      {active ? (
+        <Tooltip
+          arrow
+          title={
+            selectedChip
+              ? `Click to assign ${selectedChipData.displayName}`
+              : 'Drop here!'
+          }
+        >
+          {chip}
+        </Tooltip>
+      ) : (
+        chip
+      )}
+    </ThemeProvider>
   );
 }
 
