@@ -101,6 +101,14 @@ function Hello() {
     { displayName: '', entrantId: 0 },
     { displayName: '', entrantId: 0 },
   ]);
+  const resetOverrides = () => {
+    setOverrides([
+      { displayName: '', entrantId: 0 },
+      { displayName: '', entrantId: 0 },
+      { displayName: '', entrantId: 0 },
+      { displayName: '', entrantId: 0 },
+    ]);
+  };
 
   // Replay list
   const [dir, setDir] = useState('');
@@ -109,24 +117,47 @@ function Hello() {
   const [dirExists, setDirExists] = useState(true);
   const [replays, setReplays] = useState<Replay[]>([]);
   const selectedReplays = replays.filter((replay) => replay.selected);
+  const getNewBatchActives = (newReplays: Replay[]) =>
+    newReplays.length > 0
+      ? newReplays
+          .map((replay) =>
+            replay.players.map(
+              (player) => player.playerType === 0 || player.playerType === 1,
+            ),
+          )
+          .reduce(
+            (accArr, curArr) => [
+              accArr[0] && curArr[0],
+              accArr[1] && curArr[1],
+              accArr[2] && curArr[2],
+              accArr[3] && curArr[3],
+            ],
+            [true, true, true, true],
+          )
+      : [false, false, false, false];
   const chooseDir = async () => {
     const openDialogRes = await window.electron.chooseDir();
     if (!openDialogRes.canceled) {
       const newDir = openDialogRes.filePaths[0];
       const newReplays = await window.electron.getReplaysInDir(newDir);
+      setBatchActives(getNewBatchActives(newReplays));
       setDir(newDir);
       setDirExists(true);
+      resetOverrides();
       setReplays(newReplays);
     }
   };
   const refreshReplays = async () => {
+    let newReplays: Replay[] = [];
     try {
-      setReplays(await window.electron.getReplaysInDir(dir));
+      newReplays = await window.electron.getReplaysInDir(dir);
       setDirExists(true);
     } catch (e: any) {
-      setReplays([]);
       setDirExists(false);
     }
+    setBatchActives(getNewBatchActives(newReplays));
+    resetOverrides();
+    setReplays(newReplays);
   };
   const deleteDir = async () => {
     await window.electron.deleteDir(dir);
@@ -138,25 +169,9 @@ function Hello() {
   const onReplayClick = (index: number) => {
     const newReplays = Array.from(replays);
     newReplays[index].selected = !newReplays[index].selected;
-    const newSelectedReplays = newReplays.filter((replay) => replay.selected);
-    let newBatchActives = [false, false, false, false];
-    if (newSelectedReplays.length > 0) {
-      newBatchActives = newSelectedReplays
-        .map((replay) =>
-          replay.players.map(
-            (player) => player.playerType === 0 || player.playerType === 1,
-          ),
-        )
-        .reduce(
-          (accArr, curArr) => [
-            accArr[0] && curArr[0],
-            accArr[1] && curArr[1],
-            accArr[2] && curArr[2],
-            accArr[3] && curArr[3],
-          ],
-          [true, true, true, true],
-        );
-    }
+    const newBatchActives = getNewBatchActives(
+      newReplays.filter((replay) => replay.selected),
+    );
 
     const newOverrides = Array.from(overrides);
     for (let i = 0; i < 4; i += 1) {
