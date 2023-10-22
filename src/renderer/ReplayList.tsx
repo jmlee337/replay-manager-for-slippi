@@ -73,13 +73,17 @@ const characterIcons = require.context('./characters', true);
 const ReplayListItem = memo(function ReplayListItem({
   index,
   replay,
+  selectedChipData,
   onClick,
   onOverride,
+  resetSelectedChipData,
 }: {
   index: number;
   replay: Replay;
+  selectedChipData: { displayName: string; entrantId: number };
   onClick: (index: number) => void;
   onOverride: () => void;
+  resetSelectedChipData: () => void;
 }) {
   const onClickCallback = useCallback(() => {
     onClick(index);
@@ -146,9 +150,10 @@ const ReplayListItem = memo(function ReplayListItem({
       player.playerType === 0
         ? player.connectCode || player.nametag || `P${key}`
         : 'CPU';
-    const onDrop = (displayName: string, entrantId: number) => {
+    const onClickOrDrop = (displayName: string, entrantId: number) => {
       player.playerOverrides = { displayName, entrantId };
       onOverride();
+      resetSelectedChipData();
     };
 
     return (
@@ -158,8 +163,9 @@ const ReplayListItem = memo(function ReplayListItem({
         key={key}
         label={name}
         outlined
+        selectedChipData={selectedChipData}
         style={chipStyle}
-        onDrop={onDrop}
+        onClickOrDrop={onClickOrDrop}
       />
     );
   });
@@ -196,12 +202,16 @@ const ReplayListItem = memo(function ReplayListItem({
 
 export default function ReplayList({
   replays,
+  selectedChipData,
   onClick,
   onOverride,
+  resetSelectedChipData,
 }: {
   replays: Replay[];
+  selectedChipData: { displayName: string; entrantId: number };
   onClick: (index: number) => void;
   onOverride: () => void;
+  resetSelectedChipData: () => void;
 }) {
   return (
     <List>
@@ -210,8 +220,10 @@ export default function ReplayList({
           key={replay.filePath}
           index={index}
           replay={replay}
+          selectedChipData={selectedChipData}
           onClick={onClick}
           onOverride={onOverride}
+          resetSelectedChipData={resetSelectedChipData}
         />
       ))}
     </List>

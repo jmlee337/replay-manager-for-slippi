@@ -331,22 +331,43 @@ function Hello() {
     }
   };
 
+  // for click-assigning set participants
+  const [selectedChipData, setSelectedChipData] = useState({
+    displayName: '',
+    entrantId: 0,
+  });
+  const resetSelectedChipData = () => {
+    setSelectedChipData({
+      displayName: '',
+      entrantId: 0,
+    });
+  };
+
   // batch chips
+  const onClickOrDrop = (
+    displayName: string,
+    entrantId: number,
+    index: number,
+  ) => {
+    const newOverrides = Array.from(overrides);
+    newOverrides[index] = { displayName, entrantId };
+
+    selectedReplays.forEach((replay) => {
+      replay.players[index].playerOverrides = { ...newOverrides[index] };
+    });
+    setOverrides(newOverrides);
+    resetSelectedChipData();
+  };
   const batchChip = (index: number) => (
     <DroppableChip
       active={batchActives[index]}
       label={overrides[index].displayName || `P${index + 1}`}
       outlined={batchActives[index]}
+      selectedChipData={selectedChipData}
       style={{ width: '25%' }}
-      onDrop={(displayName: string, entrantId: number) => {
-        const newOverrides = Array.from(overrides);
-        newOverrides[index] = { displayName, entrantId };
-
-        selectedReplays.forEach((replay) => {
-          replay.players[index].playerOverrides = { ...newOverrides[index] };
-        });
-        setOverrides(newOverrides);
-      }}
+      onClickOrDrop={(displayName: string, entrantId: number) =>
+        onClickOrDrop(displayName, entrantId, index)
+      }
     />
   );
 
@@ -392,7 +413,6 @@ function Hello() {
     setSelectedSetChain({ eventId, phaseId, phaseGroupId });
     setSelectedSet(set);
   };
-
   const reportSet = async (set: StartggSet) => {
     try {
       await window.electron.reportSet(set);
@@ -494,8 +514,10 @@ function Hello() {
           {dirExists ? (
             <ReplayList
               replays={replays}
+              selectedChipData={selectedChipData}
               onClick={onReplayClick}
               onOverride={onPlayerOverride}
+              resetSelectedChipData={resetSelectedChipData}
             />
           ) : (
             <Alert severity="error" sx={{ mb: '8px', pl: '24px' }}>
@@ -592,7 +614,7 @@ function Hello() {
                   1. Set replay folder and tournament slug
                 </Typography>
                 <Typography variant="body2">
-                  3. Drag and drop players
+                  3. Drag and drop (or select and assign) players
                 </Typography>
               </Stack>
               <Stack>
@@ -600,7 +622,7 @@ function Hello() {
                   2. Select replays and set
                 </Typography>
                 <Typography variant="body2">
-                  4. Copy replays / save or report set
+                  4. Copy replays / Report set
                 </Typography>
               </Stack>
             </Stack>
@@ -616,7 +638,7 @@ function Hello() {
                   >
                     {selectedSet.fullRoundText} ({selectedSet.id})
                   </Typography>
-                  <Tooltip arrow title="Drag players!">
+                  <Tooltip arrow title="Drag or select players!">
                     <Stack direction="row" gap="8px">
                       <Stack gap="8px" width="50%">
                         <DraggableChip
@@ -625,6 +647,8 @@ function Hello() {
                             15,
                           )}
                           entrantId={selectedSet.entrant1Id}
+                          selectedChipData={selectedChipData}
+                          setSelectedChipData={setSelectedChipData}
                         />
                         {selectedSet.entrant1Names.length > 1 && (
                           <DraggableChip
@@ -633,6 +657,8 @@ function Hello() {
                               15,
                             )}
                             entrantId={selectedSet.entrant1Id}
+                            selectedChipData={selectedChipData}
+                            setSelectedChipData={setSelectedChipData}
                           />
                         )}
                       </Stack>
@@ -643,6 +669,8 @@ function Hello() {
                             15,
                           )}
                           entrantId={selectedSet.entrant2Id}
+                          selectedChipData={selectedChipData}
+                          setSelectedChipData={setSelectedChipData}
                         />
                         {selectedSet.entrant2Names.length > 1 && (
                           <DraggableChip
@@ -651,6 +679,8 @@ function Hello() {
                               15,
                             )}
                             entrantId={selectedSet.entrant2Id}
+                            selectedChipData={selectedChipData}
+                            setSelectedChipData={setSelectedChipData}
                           />
                         )}
                       </Stack>
