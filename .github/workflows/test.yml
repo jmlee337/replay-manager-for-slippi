@@ -37,4 +37,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: installers
-          path: release/build/ReplayManagerForSlippi*[exe|dmg|AppImage]
+          path: |
+            release/build/ReplayManagerForSlippi*.AppImage
+            release/build/ReplayManagerForSlippi*.dmg
+            release/build/ReplayManagerForSlippi*.exe
