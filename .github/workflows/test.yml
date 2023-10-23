@@ -32,3 +32,9 @@ jobs:
           npm run lint
           npm exec tsc
           npm test
+
+      - name: upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: installer
+          path: release/build/ReplayManagerForSlippi*
