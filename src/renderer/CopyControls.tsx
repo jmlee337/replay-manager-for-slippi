@@ -263,23 +263,44 @@ export default function CopyControls({
         </Stack>
         <Stack direction="row" justifyContent="right">
           <Stack>
-            <LabeledCheckbox
-              checked={writeDisplayNames}
-              label="Overwrite Display Names"
-              set={setWriteDisplayNames}
-            />
-            <LabeledCheckbox
-              checked={writeFileNames}
-              label="Overwrite File Names"
-              set={setWriteFileNames}
-            />
+            <Tooltip
+              arrow
+              title="Player tags will appear in the in-game HUD (like Slippi Broadcast/Online) depending on playback settings"
+            >
+              <div>
+                <LabeledCheckbox
+                  checked={writeDisplayNames}
+                  label="Overwrite Display Names"
+                  set={setWriteDisplayNames}
+                />
+              </div>
+            </Tooltip>
+            <Tooltip
+              arrow
+              title="New file names will indicate game start time, player tags, and characters"
+            >
+              <div>
+                <LabeledCheckbox
+                  checked={writeFileNames}
+                  label="Overwrite File Names"
+                  set={setWriteFileNames}
+                />
+              </div>
+            </Tooltip>
           </Stack>
           <Stack>
-            <LabeledCheckbox
-              checked={writeStartTimes}
-              label="Overwrite Start Times"
-              set={setWriteStartTimes}
-            />
+            <Tooltip
+              arrow
+              title="Game start times will be shifted to have the set end exactly now. Useful if your Wii clocks aren't accurate"
+            >
+              <div>
+                <LabeledCheckbox
+                  checked={writeStartTimes}
+                  label="Overwrite Start Times"
+                  set={setWriteStartTimes}
+                />
+              </div>
+            </Tooltip>
             <TextField
               label="Output"
               onChange={(event) =>
@@ -291,7 +312,7 @@ export default function CopyControls({
             >
               <MenuItem value={Output.FILES}>Separate Files</MenuItem>
               <MenuItem value={Output.FOLDER}>Make Subfolder</MenuItem>
-              <MenuItem value={Output.ZIP}>As ZIP file</MenuItem>
+              <MenuItem value={Output.ZIP}>Make ZIP folder</MenuItem>
             </TextField>
           </Stack>
         </Stack>

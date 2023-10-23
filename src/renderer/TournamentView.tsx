@@ -5,6 +5,7 @@ import {
   Collapse,
   IconButton,
   ListItemButton,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import {
@@ -116,17 +117,18 @@ function PhaseGroupView({
         {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
         <Name>{phaseGroup.name}</Name>
         {'\u00A0'}({phaseGroup.id})
-        <IconButton
-          aria-label="restore phase"
-          disabled={getting}
-          onClick={(event) => {
-            event.stopPropagation();
-            get();
-          }}
-          size="small"
-        >
-          {getting ? <CircularProgress size="24px" /> : <Refresh />}
-        </IconButton>
+        <Tooltip arrow title="Refresh phase group">
+          <IconButton
+            disabled={getting}
+            onClick={(event) => {
+              event.stopPropagation();
+              get();
+            }}
+            size="small"
+          >
+            {getting ? <CircularProgress size="24px" /> : <Refresh />}
+          </IconButton>
+        </Tooltip>
       </ListItemButton>
       <Collapse in={open}>
         <Block>
@@ -223,16 +225,17 @@ function PhaseView({
         {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
         <Name>{phase.name}</Name>
         {'\u00A0'}({phase.id})
-        <IconButton
-          aria-label="restore phase"
-          onClick={(event) => {
-            event.stopPropagation();
-            get();
-          }}
-          size="small"
-        >
-          {getting ? <CircularProgress size="24px" /> : <Refresh />}
-        </IconButton>
+        <Tooltip arrow title="Refresh phase">
+          <IconButton
+            onClick={(event) => {
+              event.stopPropagation();
+              get();
+            }}
+            size="small"
+          >
+            {getting ? <CircularProgress size="24px" /> : <Refresh />}
+          </IconButton>
+        </Tooltip>
       </ListItemButton>
       <Collapse in={open}>
         <Block>
@@ -298,16 +301,17 @@ function EventView({
         {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
         <Name>{event.name}</Name>
         {'\u00A0'}({event.id})
-        <IconButton
-          aria-label="restore event"
-          onClick={(ev) => {
-            ev.stopPropagation();
-            get();
-          }}
-          size="small"
-        >
-          {getting ? <CircularProgress size="24px" /> : <Refresh />}
-        </IconButton>
+        <Tooltip arrow title="Refresh event">
+          <IconButton
+            onClick={(ev) => {
+              ev.stopPropagation();
+              get();
+            }}
+            size="small"
+          >
+            {getting ? <CircularProgress size="24px" /> : <Refresh />}
+          </IconButton>
+        </Tooltip>
       </ListItemButton>
       <Collapse in={open}>
         <Block>
