@@ -136,6 +136,21 @@ const ReplayListItem = memo(function ReplayListItem({
         : 'CPU';
     const onClickOrDrop = (displayName: string, entrantId: number) => {
       player.playerOverrides = { displayName, entrantId };
+      replay.players.forEach((otherPlayer) => {
+        if (
+          otherPlayer.port === player.port ||
+          (otherPlayer.playerType !== 0 && otherPlayer.playerType !== 1)
+        ) {
+          return;
+        }
+        if (
+          otherPlayer.playerOverrides.displayName === displayName &&
+          otherPlayer.playerOverrides.entrantId === entrantId
+        ) {
+          otherPlayer.playerOverrides.displayName = '';
+          otherPlayer.playerOverrides.entrantId = 0;
+        }
+      });
       onOverride();
       resetSelectedChipData();
     };

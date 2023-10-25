@@ -352,9 +352,34 @@ function Hello() {
   ) => {
     const newOverrides = Array.from(overrides);
     newOverrides[index] = { displayName, entrantId };
+    newOverrides.forEach((override, i) => {
+      if (
+        i !== index &&
+        override.displayName === displayName &&
+        override.entrantId === entrantId
+      ) {
+        override.displayName = '';
+        override.entrantId = 0;
+      }
+    });
 
     selectedReplays.forEach((replay) => {
       replay.players[index].playerOverrides = { ...newOverrides[index] };
+      replay.players.forEach((otherPlayer) => {
+        if (
+          otherPlayer.port === replay.players[index].port ||
+          (otherPlayer.playerType !== 0 && otherPlayer.playerType !== 1)
+        ) {
+          return;
+        }
+        if (
+          otherPlayer.playerOverrides.displayName === displayName &&
+          otherPlayer.playerOverrides.entrantId
+        ) {
+          otherPlayer.playerOverrides.displayName = '';
+          otherPlayer.playerOverrides.entrantId = 0;
+        }
+      });
     });
     setOverrides(newOverrides);
     resetSelectedChipData();
