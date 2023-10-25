@@ -460,12 +460,16 @@ function Hello() {
     }
   };
 
-  // start.gg key
-  const [startggApiKey, setStartggApiKey] = useState('');
+  // settings
   const [gotStartggApiKey, setGotStartggApiKey] = useState(false);
+  const [startggApiKey, setStartggApiKey] = useState('');
+  const [appVersion, setAppVersion] = useState('');
   useEffect(() => {
     const inner = async () => {
-      setStartggApiKey(await window.electron.getStartggKey());
+      const appVersionPromise = window.electron.getVersion();
+      const startggKeyPromise = window.electron.getStartggKey();
+      setAppVersion(await appVersionPromise);
+      setStartggApiKey(await startggKeyPromise);
       setGotStartggApiKey(true);
     };
     inner();
@@ -727,6 +731,7 @@ function Hello() {
               </Stack>
               <Stack direction="row" justifyContent="center" width="50%">
                 <Settings
+                  appVersion={appVersion}
                   gotStartggApiKey={gotStartggApiKey}
                   startggApiKey={startggApiKey}
                   setStartggApiKey={setStartggApiKey}

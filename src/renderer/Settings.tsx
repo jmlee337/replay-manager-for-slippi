@@ -3,11 +3,13 @@ import { ContentCopy, Settings as SettingsIcon } from '@mui/icons-material';
 import {
   Button,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
   Stack,
   TextField,
+  Typography,
 } from '@mui/material';
 import { FormEvent, useState } from 'react';
 
@@ -15,14 +17,15 @@ const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 8px;
 `;
 
 export default function Settings({
+  appVersion,
   gotStartggApiKey,
   startggApiKey,
   setStartggApiKey,
 }: {
+  appVersion: string;
   gotStartggApiKey: boolean;
   startggApiKey: string;
   setStartggApiKey: (key: string) => void;
@@ -61,8 +64,18 @@ export default function Settings({
         Settings
       </Button>
       <Dialog fullWidth open={open} onClose={() => setOpen(false)}>
-        <DialogTitle>Settings</DialogTitle>
-        <DialogContent>
+        <Stack
+          alignItems="center"
+          direction="row"
+          justifyContent="space-between"
+          marginRight="24px"
+        >
+          <DialogTitle>Settings</DialogTitle>
+          <Typography variant="caption">
+            Replay Manager for Slippi version {appVersion}
+          </Typography>
+        </Stack>
+        <DialogContent sx={{ pt: 0 }}>
           <Form onSubmit={setNewStartggKey}>
             <DialogContentText>
               Get your start.gg API key by clicking “Create new token” in the
@@ -100,12 +113,12 @@ export default function Settings({
                 {copied ? 'Copied!' : 'Copy'}
               </Button>
             </Stack>
-            <Stack direction="row" justifyContent="end">
-              <Button type="submit" variant="contained">
-                Set!
-              </Button>
-            </Stack>
           </Form>
+          <DialogActions sx={{ pl: 0, pr: 0 }}>
+            <Button type="submit" variant="contained">
+              Set!
+            </Button>
+          </DialogActions>
         </DialogContent>
       </Dialog>
     </>

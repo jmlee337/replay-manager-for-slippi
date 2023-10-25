@@ -1,4 +1,4 @@
-import { clipboard, dialog, ipcMain, IpcMainInvokeEvent } from 'electron';
+import { app, clipboard, dialog, ipcMain, IpcMainInvokeEvent } from 'electron';
 import Store from 'electron-store';
 import { rm } from 'fs/promises';
 import { Output, Replay, StartggSet } from '../common/types';
@@ -99,4 +99,5 @@ export default function setupIPCs(): void {
       clipboard.writeText(text);
     },
   );
+  ipcMain.handle('getVersion', () => app.getVersion());
 }
