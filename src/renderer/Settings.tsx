@@ -4,6 +4,7 @@ import {
   Button,
   Dialog,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   Stack,
   TextField,
@@ -18,14 +19,22 @@ const Form = styled.form`
 `;
 
 export default function Settings({
+  gotStartggApiKey,
   startggApiKey,
   setStartggApiKey,
 }: {
+  gotStartggApiKey: boolean;
   startggApiKey: string;
   setStartggApiKey: (key: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [noApiKeyOpened, setNoApiKeyOpened] = useState(false);
+
+  if (gotStartggApiKey && !startggApiKey && !noApiKeyOpened) {
+    setOpen(true);
+    setNoApiKeyOpened(true);
+  }
 
   const setNewStartggKey = async (event: FormEvent<HTMLFormElement>) => {
     const target = event.target as typeof event.target & {
@@ -55,12 +64,24 @@ export default function Settings({
         <DialogTitle>Settings</DialogTitle>
         <DialogContent>
           <Form onSubmit={setNewStartggKey}>
+            <DialogContentText>
+              Get your start.gg API key by clicking “Create new token” in the
+              “Personal Access Tokens” tab of{' '}
+              <a
+                href="https://start.gg/admin/profile/developer"
+                target="_blank"
+                rel="noreferrer"
+              >
+                this page
+              </a>
+              . Keep it private!
+            </DialogContentText>
             <Stack alignItems="center" direction="row" gap="8px">
               <TextField
                 autoFocus
                 defaultValue={startggApiKey}
                 fullWidth
-                label="start.gg API key (Treat this as a password!)"
+                label="start.gg API key (Keep it private!)"
                 name="key"
                 size="small"
                 type="password"

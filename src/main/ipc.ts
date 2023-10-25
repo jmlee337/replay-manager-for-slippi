@@ -52,8 +52,8 @@ export default function setupIPCs(): void {
   );
 
   const store = new Store();
-  let startggKey = store.has('startggKey')
-    ? (store.get('startggKey') as string)
+  let sggApiKey = store.has('sggApiKey')
+    ? (store.get('sggApiKey') as string)
     : '';
   ipcMain.handle(
     'getTournament',
@@ -68,29 +68,29 @@ export default function setupIPCs(): void {
   ipcMain.handle(
     'getPhaseGroup',
     async (event: IpcMainInvokeEvent, id: number) => {
-      if (!startggKey) {
+      if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      return getPhaseGroup(startggKey, id);
+      return getPhaseGroup(sggApiKey, id);
     },
   );
   ipcMain.handle(
     'reportSet',
     async (event: IpcMainInvokeEvent, set: StartggSet) => {
-      if (!startggKey) {
+      if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      return reportSet(startggKey, set);
+      return reportSet(sggApiKey, set);
     },
   );
-  ipcMain.handle('getStartggKey', () => startggKey);
+  ipcMain.handle('getStartggKey', () => sggApiKey);
   ipcMain.handle(
     'setStartggKey',
-    (event: IpcMainInvokeEvent, newStartggKey: string) => {
-      store.set('startggKey', newStartggKey);
-      startggKey = newStartggKey;
+    (event: IpcMainInvokeEvent, newSggApiKey: string) => {
+      store.set('sggApiKey', newSggApiKey);
+      sggApiKey = newSggApiKey;
     },
   );
   ipcMain.handle(

@@ -462,9 +462,11 @@ function Hello() {
 
   // start.gg key
   const [startggApiKey, setStartggApiKey] = useState('');
+  const [gotStartggApiKey, setGotStartggApiKey] = useState(false);
   useEffect(() => {
     const inner = async () => {
       setStartggApiKey(await window.electron.getStartggKey());
+      setGotStartggApiKey(true);
     };
     inner();
   }, []);
@@ -725,6 +727,7 @@ function Hello() {
               </Stack>
               <Stack direction="row" justifyContent="center" width="50%">
                 <Settings
+                  gotStartggApiKey={gotStartggApiKey}
                   startggApiKey={startggApiKey}
                   setStartggApiKey={setStartggApiKey}
                 />
