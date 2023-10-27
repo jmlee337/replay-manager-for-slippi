@@ -384,15 +384,28 @@ export async function writeReplays(
       // startTimes?
       if (startTimes.length) {
         const startAtTagOffset = metadata.indexOf(START_AT_TAG);
-        const startAtLength = metadata[startAtTagOffset + START_AT_TAG.length];
-        if (startAtLength === 24) {
-          const startAtOffset = startAtTagOffset + START_AT_TAG.length + 1;
-          Buffer.from(startTimes[i]).copy(metadata, startAtOffset);
+        const startAtLengthOffset = startAtTagOffset + START_AT_TAG.length;
+        const startAtLength = metadata[startAtLengthOffset];
+        const newStartAtLength = startTimes[i].length;
+        const diff = newStartAtLength - startAtLength;
+        const newMetadata = Buffer.alloc(metadataLength + diff);
+        metadata.copy(newMetadata, 0, 0, startAtLengthOffset);
+        newMetadata[startAtLengthOffset] = newStartAtLength;
+        Buffer.from(startTimes[i]).copy(newMetadata, startAtLengthOffset + 1);
+        metadata.copy(
+          newMetadata,
+          startAtLengthOffset + newStartAtLength + 1,
+          startAtLengthOffset + startAtLength + 1,
+        );
+        const newMetadataWrite = await writeFile.write(newMetadata);
+        if (newMetadataWrite.bytesWritten !== newMetadata.length) {
+          throw new Error('metadata write (with start time override)');
         }
-      }
-      const metadataWrite = await writeFile.write(metadata);
-      if (metadataWrite.bytesWritten !== metadataLength) {
-        throw new Error('metadata write');
+      } else {
+        const metadataWrite = await writeFile.write(metadata);
+        if (metadataWrite.bytesWritten !== metadataLength) {
+          throw new Error('metadata write');
+        }
       }
 
       return { writeFilePath, writeFileName };
