@@ -75,8 +75,8 @@ const ReplayListItem = memo(function ReplayListItem({
 
   const startAtDate = new Date(replay.startAt);
   const dateLong = format(startAtDate, 'MMMM do, yyyy');
-  const dateShort = format(startAtDate, 'yyyy年MM月dd日');
-  const time = format(startAtDate, 'h:mmaaaaa');
+  const dateShort = format(startAtDate, 'yyyy MMM dd');
+  const time = format(startAtDate, 'h:mmaaa');
   const duration = format(new Date(replay.lastFrame / 0.05994), "m'm'ss's'");
   const stageName = stageNames.get(replay.stageId) || replay.stageId.toString();
 
