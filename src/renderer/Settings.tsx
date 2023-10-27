@@ -3,7 +3,6 @@ import { ContentCopy, Settings as SettingsIcon } from '@mui/icons-material';
 import {
   Button,
   Dialog,
-  DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
@@ -113,12 +112,12 @@ export default function Settings({
                 {copied ? 'Copied!' : 'Copy'}
               </Button>
             </Stack>
+            <Stack direction="row" justifyContent="end">
+              <Button type="submit" variant="contained">
+                Set!
+              </Button>
+            </Stack>
           </Form>
-          <DialogActions sx={{ pl: 0, pr: 0 }}>
-            <Button type="submit" variant="contained">
-              Set!
-            </Button>
-          </DialogActions>
         </DialogContent>
       </Dialog>
     </>
