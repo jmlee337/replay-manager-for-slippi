@@ -4,6 +4,7 @@ import {
   Alert,
   Backdrop,
   Button,
+  Checkbox,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -67,11 +68,6 @@ const TopColumn = styled(Stack)`
   padding: 8px 0;
 `;
 
-const FolderBar = styled.div`
-  display: flex;
-  padding-left: 58px;
-`;
-
 const Form = styled.form`
   align-items: center;
   display: flex;
@@ -112,12 +108,17 @@ function Hello() {
   };
 
   // Replay list
+  const [allReplaysSelected, setAllReplaysSelected] = useState(true);
   const [dir, setDir] = useState('');
   const [dirDeleteDialogOpen, setDirDeleteDialogOpen] = useState(false);
   const [dirDeleting, setDirDeleting] = useState(false);
   const [dirExists, setDirExists] = useState(true);
   const [replays, setReplays] = useState<Replay[]>([]);
   const selectedReplays = replays.filter((replay) => replay.selected);
+  const applyAllReplaysSelected = (allReplays: Replay[], selected: boolean) =>
+    allReplays.forEach((replay) => {
+      replay.selected = selected;
+    });
   const getNewBatchActives = (newReplays: Replay[]) =>
     newReplays.length > 0
       ? newReplays
@@ -141,6 +142,7 @@ function Hello() {
     if (!openDialogRes.canceled) {
       const newDir = openDialogRes.filePaths[0];
       const newReplays = await window.electron.getReplaysInDir(newDir);
+      applyAllReplaysSelected(newReplays, allReplaysSelected);
       setBatchActives(getNewBatchActives(newReplays));
       setDir(newDir);
       setDirExists(true);
@@ -156,6 +158,7 @@ function Hello() {
     } catch (e: any) {
       setDirExists(false);
     }
+    applyAllReplaysSelected(newReplays, allReplaysSelected);
     setBatchActives(getNewBatchActives(newReplays));
     resetOverrides();
     setReplays(newReplays);
@@ -483,7 +486,25 @@ function Hello() {
         spacing="8px"
       >
         <TopColumn flexGrow={1} minWidth="600px">
-          <FolderBar>
+          <Stack alignItems="center" direction="row" paddingLeft="16px">
+            <Tooltip
+              arrow
+              title={
+                allReplaysSelected
+                  ? 'Deselect all replays'
+                  : 'Select all replays'
+              }
+            >
+              <Checkbox
+                checked={allReplaysSelected}
+                onClick={() => {
+                  const newAllReplaysSelected = !allReplaysSelected;
+                  setAllReplaysSelected(newAllReplaysSelected);
+                  applyAllReplaysSelected(replays, newAllReplaysSelected);
+                  setReplays(Array.from(replays));
+                }}
+              />
+            </Tooltip>
             <InputBase
               disabled
               size="small"
@@ -542,7 +563,7 @@ function Hello() {
                 <FolderOpen />
               </IconButton>
             </Tooltip>
-          </FolderBar>
+          </Stack>
           {dirExists ? (
             <ReplayList
               replays={replays}
