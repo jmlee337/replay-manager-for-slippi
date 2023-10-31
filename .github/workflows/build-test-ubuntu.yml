@@ -3,7 +3,7 @@ name: Built Test Ubuntu
 on: [push, pull_request]
 
 jobs:
-  test:
+  build_test_upload:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,7 +18,7 @@ jobs:
 
       - name: Install libusb
         run: |
-          sudo apt install -y libusb-1.0-0-dev
+          sudo apt install -y libudev-dev
 
       - name: npm install
         run: |
