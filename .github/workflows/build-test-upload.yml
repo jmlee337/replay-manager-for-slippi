@@ -1,0 +1,113 @@
+name: Build Test Upload
+
+on: [push, pull_request]
+
+jobs:
+  macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js and NPM
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: npm install
+        run: |
+          npm install
+
+      - name: npm test
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm run package
+          npm run lint
+          npm exec tsc
+          npm test
+
+      - name: upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: installers
+          path: |
+            release/build/ReplayManagerForSlippi*.dmg
+  ubuntu:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js and NPM
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: Install libudev
+        run: |
+          sudo apt install -y libudev-dev
+
+      - name: npm install
+        run: |
+          npm install
+
+      - name: npm test
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm run package
+          npm run lint
+          npm exec tsc
+          npm test
+
+      - name: upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: installers
+          path: |
+            release/build/ReplayManagerForSlippi*.AppImage
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v3
+
+      - name: Install Node.js and NPM
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: Install libuv
+        uses: johnwason/vcpkg-action@v5
+        with:
+          pkgs: 'libuv'
+          triplet: 'x64-windows-release'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: npm install
+        run: |
+          npm install
+
+      - name: npm test
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm run package
+          npm run lint
+          npm exec tsc
+          npm test
+
+      - name: upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: installers
+          path: |
+            release/build/ReplayManagerForSlippi*.exe
+
