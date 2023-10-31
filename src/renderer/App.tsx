@@ -116,9 +116,11 @@ function Hello() {
   const [replays, setReplays] = useState<Replay[]>([]);
   const selectedReplays = replays.filter((replay) => replay.selected);
   const applyAllReplaysSelected = (allReplays: Replay[], selected: boolean) =>
-    allReplays.forEach((replay) => {
-      replay.selected = selected;
-    });
+    allReplays
+      .filter((replay) => replay.isValid)
+      .forEach((replay) => {
+        replay.selected = selected;
+      });
   const getNewBatchActives = (newReplays: Replay[]) =>
     newReplays.length > 0
       ? newReplays

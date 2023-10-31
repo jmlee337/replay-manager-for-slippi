@@ -125,7 +125,10 @@ export async function getReplaysInDir(dir: string) {
           if (players[i].playerType === 0 || players[i].playerType === 1) {
             players[i].costumeIndex = gameStart[offset + 3];
             players[i].externalCharacterId = gameStart[offset];
-            if (!isValidCharacter(players[i].externalCharacterId)) {
+            if (
+              !isValidCharacter(players[i].externalCharacterId) ||
+              gameStart[offset + 2] !== 4 // Stock Start Count
+            ) {
               isValid = false;
             }
           }
@@ -222,7 +225,7 @@ export async function getReplaysInDir(dir: string) {
           isValid,
           lastFrame,
           players,
-          selected: true,
+          selected: false,
           stageId,
           startAt: obj.metadata.startAt,
         };
