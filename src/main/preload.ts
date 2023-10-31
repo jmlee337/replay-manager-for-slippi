@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, OpenDialogReturnValue } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 import {
   Event,
   Output,
@@ -12,12 +12,10 @@ import {
 export type Channels = 'ipc-example';
 
 const electronHandler = {
-  chooseDir: (): Promise<OpenDialogReturnValue> =>
-    ipcRenderer.invoke('chooseDir'),
-  deleteDir: (dir: string): Promise<void> =>
-    ipcRenderer.invoke('deleteDir', dir),
-  getReplaysInDir: (dir: string): Promise<Replay[]> =>
-    ipcRenderer.invoke('getReplaysInDir', dir),
+  chooseDir: (): Promise<string> => ipcRenderer.invoke('chooseDir'),
+  deleteDir: (): Promise<void> => ipcRenderer.invoke('deleteDir'),
+  getReplaysInDir: (): Promise<Replay[]> =>
+    ipcRenderer.invoke('getReplaysInDir'),
   writeReplays: (
     dir: string,
     fileNames: string[],
@@ -53,6 +51,10 @@ const electronHandler = {
   copyToClipboard: (text: string): Promise<void> =>
     ipcRenderer.invoke('copyToClipboard', text),
   getVersion: (): Promise<string> => ipcRenderer.invoke('getVersion'),
+  onUsb: (callback: () => void) => {
+    ipcRenderer.removeAllListeners('usbstorage');
+    ipcRenderer.on('usbstorage', callback);
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

@@ -1,5 +1,5 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Backdrop,
@@ -138,10 +138,9 @@ function Hello() {
           )
       : [false, false, false, false];
   const chooseDir = async () => {
-    const openDialogRes = await window.electron.chooseDir();
-    if (!openDialogRes.canceled) {
-      const newDir = openDialogRes.filePaths[0];
-      const newReplays = await window.electron.getReplaysInDir(newDir);
+    const newDir = await window.electron.chooseDir();
+    if (newDir) {
+      const newReplays = await window.electron.getReplaysInDir();
       applyAllReplaysSelected(newReplays, allReplaysSelected);
       setBatchActives(getNewBatchActives(newReplays));
       setDir(newDir);
@@ -150,10 +149,14 @@ function Hello() {
       setReplays(newReplays);
     }
   };
-  const refreshReplays = async () => {
+  const refreshReplays = useCallback(async () => {
+    if (!dir) {
+      return;
+    }
+
     let newReplays: Replay[] = [];
     try {
-      newReplays = await window.electron.getReplaysInDir(dir);
+      newReplays = await window.electron.getReplaysInDir();
       setDirExists(true);
     } catch (e: any) {
       setDirExists(false);
@@ -162,9 +165,13 @@ function Hello() {
     setBatchActives(getNewBatchActives(newReplays));
     resetOverrides();
     setReplays(newReplays);
-  };
+  }, [allReplaysSelected, dir]);
   const deleteDir = async () => {
-    await window.electron.deleteDir(dir);
+    if (!dir) {
+      return;
+    }
+
+    await window.electron.deleteDir();
     await refreshReplays();
   };
   const onPlayerOverride = () => {
@@ -199,6 +206,9 @@ function Hello() {
     setOverrides(newOverrides);
     setReplays(newReplays);
   };
+  useEffect(() => {
+    window.electron.onUsb(refreshReplays);
+  }, [refreshReplays]);
 
   // Tournament view
   const [slug, setSlug] = useState('');
@@ -553,11 +563,13 @@ function Hello() {
                 </Dialog>
               </>
             )}
-            <Tooltip arrow title="Refresh replays">
-              <IconButton onClick={refreshReplays}>
-                <Refresh />
-              </IconButton>
-            </Tooltip>
+            {dir && (
+              <Tooltip arrow title="Refresh replays">
+                <IconButton onClick={refreshReplays}>
+                  <Refresh />
+                </IconButton>
+              </Tooltip>
+            )}
             <Tooltip arrow title="Set replays folder">
               <IconButton onClick={chooseDir}>
                 <FolderOpen />
