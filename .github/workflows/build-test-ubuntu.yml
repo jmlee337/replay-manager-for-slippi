@@ -1,14 +1,10 @@
-name: Test
+name: Built Test Ubuntu
 
 on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out Git repository
@@ -19,6 +15,10 @@ jobs:
         with:
           node-version: 18
           cache: npm
+
+      - name: Install libusb
+        run: |
+          sudo apt install -y libusb-1.0-0-dev
 
       - name: npm install
         run: |
@@ -39,5 +39,3 @@ jobs:
           name: installers
           path: |
             release/build/ReplayManagerForSlippi*.AppImage
-            release/build/ReplayManagerForSlippi*.dmg
-            release/build/ReplayManagerForSlippi*.exe
