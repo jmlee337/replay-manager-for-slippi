@@ -105,11 +105,14 @@ export async function getReplaysInDir(dir: string) {
 
         const isTeams = gameStart[13] === 1;
         const stageId = gameStart.subarray(19, 21).readUint16BE();
+        const gameTimerSeconds = gameStart.subarray(21, 25).readUint32BE();
         let isValid = true;
-        if (!legalStages.has(stageId)) {
+        if (!legalStages.has(stageId) || gameTimerSeconds > 480) {
           isValid = false;
         }
 
+        const teamSizes = new Map<number, number>();
+        let numPlayers = 0;
         const players: Player[] = new Array<Player>(4);
         for (let i = 0; i < 4; i += 1) {
           const offset = i * 36 + 101;
@@ -119,7 +122,14 @@ export async function getReplaysInDir(dir: string) {
             playerType: gameStart[offset + 1],
             port: i + 1,
           } as Player;
-          if (players[i].playerType === 1) {
+          if (players[i].playerType === 0) {
+            numPlayers += 1;
+            if (isTeams) {
+              const teamIndex = gameStart[offset + 9];
+              const currTeamSize = teamSizes.get(teamIndex) || 0;
+              teamSizes.set(teamIndex, currTeamSize + 1);
+            }
+          } else if (players[i].playerType === 1) {
             isValid = false;
           }
           if (players[i].playerType === 0 || players[i].playerType === 1) {
@@ -131,6 +141,23 @@ export async function getReplaysInDir(dir: string) {
             ) {
               isValid = false;
             }
+          }
+        }
+
+        if (numPlayers !== 2 && numPlayers !== 4) {
+          isValid = false;
+        }
+        if (numPlayers === 4) {
+          if (isTeams) {
+            const teamSizesArr = Array.from(teamSizes.values());
+            if (
+              teamSizesArr.length !== 2 ||
+              teamSizesArr[0] !== teamSizesArr[1]
+            ) {
+              isValid = false;
+            }
+          } else {
+            isValid = false;
           }
         }
 
