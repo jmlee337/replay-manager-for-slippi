@@ -107,6 +107,8 @@ const createWindow = async () => {
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
   new AppUpdater();
+
+  setupIPCs(mainWindow);
 };
 
 /**
@@ -124,7 +126,6 @@ app.on('window-all-closed', () => {
 app
   .whenReady()
   .then(() => {
-    setupIPCs();
     createWindow();
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the

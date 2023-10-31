@@ -72,9 +72,8 @@ export default function CopyControls({
 
   const [dir, setDir] = useState('');
   const chooseDir = async () => {
-    const openDialogRes = await window.electron.chooseDir();
-    if (!openDialogRes.canceled) {
-      const newDir = openDialogRes.filePaths[0];
+    const newDir = await window.electron.chooseDir();
+    if (newDir) {
       setDir(newDir);
     }
   };

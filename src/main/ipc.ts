@@ -1,6 +1,14 @@
-import { app, clipboard, dialog, ipcMain, IpcMainInvokeEvent } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  dialog,
+  ipcMain,
+  IpcMainInvokeEvent,
+} from 'electron';
 import Store from 'electron-store';
 import { rm } from 'fs/promises';
+import detectUsb from 'detect-usb';
 import { Output, Replay, StartggSet } from '../common/types';
 import {
   getEvent,
@@ -11,22 +19,41 @@ import {
 } from './startgg';
 import { getReplaysInDir, writeReplays } from './replay';
 
-export default function setupIPCs(): void {
-  ipcMain.handle('chooseDir', async () =>
-    dialog.showOpenDialog({ properties: ['openDirectory', 'showHiddenFiles'] }),
-  );
-  ipcMain.handle(
-    'deleteDir',
-    async (event: IpcMainInvokeEvent, dir: string) => {
-      return rm(dir, { recursive: true });
-    },
-  );
-  ipcMain.handle(
-    'getReplaysInDir',
-    async (event: IpcMainInvokeEvent, dir: string) => {
-      return getReplaysInDir(dir);
-    },
-  );
+export default function setupIPCs(mainWindow: BrowserWindow): void {
+  let chosenDir = '';
+  const usbCallback = (data: any) => {
+    if (
+      (data.event === 'eject' || data.data.isAccessible) &&
+      chosenDir.startsWith(data.data.key)
+    ) {
+      mainWindow.webContents.send('usbstorage');
+    }
+  };
+  detectUsb.startListening();
+  detectUsb.removeAllListeners('insert');
+  detectUsb.on('insert', usbCallback);
+  detectUsb.removeAllListeners('eject');
+  detectUsb.on('eject', usbCallback);
+
+  ipcMain.removeHandler('chooseDir');
+  ipcMain.handle('chooseDir', async () => {
+    const openDialogRes = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'showHiddenFiles'],
+    });
+    if (openDialogRes.canceled) {
+      return '';
+    }
+    [chosenDir] = openDialogRes.filePaths;
+    return chosenDir;
+  });
+
+  ipcMain.removeHandler('deleteDir');
+  ipcMain.handle('deleteDir', async () => rm(chosenDir, { recursive: true }));
+
+  ipcMain.removeHandler('getReplaysInDir');
+  ipcMain.handle('getReplaysInDir', async () => getReplaysInDir(chosenDir));
+
+  ipcMain.removeHandler('writeReplays');
   ipcMain.handle(
     'writeReplays',
     async (
@@ -55,16 +82,24 @@ export default function setupIPCs(): void {
   let sggApiKey = store.has('sggApiKey')
     ? (store.get('sggApiKey') as string)
     : '';
+
+  ipcMain.removeHandler('getTournament');
   ipcMain.handle(
     'getTournament',
     async (event: IpcMainInvokeEvent, slug: string) => getTournament(slug),
   );
+
+  ipcMain.removeHandler('getEvent');
   ipcMain.handle('getEvent', async (event: IpcMainInvokeEvent, id: number) =>
     getEvent(id),
   );
+
+  ipcMain.removeHandler('getPhase');
   ipcMain.handle('getPhase', async (event: IpcMainInvokeEvent, id: number) =>
     getPhase(id),
   );
+
+  ipcMain.removeHandler('getPhaseGroup');
   ipcMain.handle(
     'getPhaseGroup',
     async (event: IpcMainInvokeEvent, id: number) => {
@@ -75,6 +110,8 @@ export default function setupIPCs(): void {
       return getPhaseGroup(sggApiKey, id);
     },
   );
+
+  ipcMain.removeHandler('reportSet');
   ipcMain.handle(
     'reportSet',
     async (event: IpcMainInvokeEvent, set: StartggSet) => {
@@ -85,7 +122,11 @@ export default function setupIPCs(): void {
       return reportSet(sggApiKey, set);
     },
   );
+
+  ipcMain.removeHandler('getStartggKey');
   ipcMain.handle('getStartggKey', () => sggApiKey);
+
+  ipcMain.removeHandler('setStartggKey');
   ipcMain.handle(
     'setStartggKey',
     (event: IpcMainInvokeEvent, newSggApiKey: string) => {
@@ -93,11 +134,15 @@ export default function setupIPCs(): void {
       sggApiKey = newSggApiKey;
     },
   );
+
+  ipcMain.removeHandler('copyToClipboard');
   ipcMain.handle(
     'copyToClipboard',
     (event: IpcMainInvokeEvent, text: string) => {
       clipboard.writeText(text);
     },
   );
+
+  ipcMain.removeHandler('getVersion');
   ipcMain.handle('getVersion', () => app.getVersion());
 }
