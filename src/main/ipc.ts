@@ -16,6 +16,7 @@ import {
   getPhaseGroup,
   getTournament,
   reportSet,
+  updateSet,
 } from './startgg';
 import { getReplaysInDir, writeReplays } from './replay';
 
@@ -120,6 +121,18 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       return reportSet(sggApiKey, set);
+    },
+  );
+
+  ipcMain.removeHandler('updateSet');
+  ipcMain.handle(
+    'updateSet',
+    async (event: IpcMainInvokeEvent, set: StartggSet) => {
+      if (!sggApiKey) {
+        throw new Error('Please set start.gg API key');
+      }
+
+      return updateSet(sggApiKey, set);
     },
   );
 

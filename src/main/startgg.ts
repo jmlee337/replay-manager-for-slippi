@@ -181,7 +181,7 @@ export async function getPhaseGroup(key: string, id: number): Promise<Sets> {
   };
 }
 
-const SET_MUTATION = `
+const REPORT_BRACKET_SET_MUTATION = `
   mutation ReportBracketSet($setId: ID!, $gameData: [BracketSetGameDataInput], $winnerId: ID) {
     reportBracketSet(setId: $setId, gameData: $gameData, winnerId: $winnerId) {
       id
@@ -190,5 +190,17 @@ const SET_MUTATION = `
 `;
 
 export async function reportSet(key: string, set: StartggSet) {
-  await fetchGql(key, SET_MUTATION, set);
+  await fetchGql(key, REPORT_BRACKET_SET_MUTATION, set);
+}
+
+const UPDATE_BRACKET_SET_MUTATION = `
+  mutation UpdateBracketSet($setId: ID!, $gameData: [BracketSetGameDataInput], $winnerId: ID) {
+    updateBracketSet(setId: $setId, gameData: $gameData, winnerId: $winnerId) {
+      id
+    }
+  }
+`;
+
+export async function updateSet(key: string, set: StartggSet) {
+  await fetchGql(key, UPDATE_BRACKET_SET_MUTATION, set);
 }

@@ -78,7 +78,7 @@ function findWinner(players: Player[]) {
 }
 
 function setAndReplaysValid(selectedReplays: Replay[], set: Set) {
-  if (set.state === 3 || selectedReplays.length === 0) {
+  if (selectedReplays.length === 0) {
     return false;
   }
 
@@ -120,7 +120,7 @@ export default function SetControls({
   selectedReplays,
   set,
 }: {
-  reportSet: (set: StartggSet) => Promise<void>;
+  reportSet: (set: StartggSet, update: boolean) => Promise<void>;
   selectedReplays: Replay[];
   set: Set;
 }) {
@@ -280,7 +280,7 @@ export default function SetControls({
             endIcon={reporting ? <CircularProgress size="24px" /> : <Backup />}
             onClick={async () => {
               setReporting(true);
-              await reportSet(startggSet);
+              await reportSet(startggSet, set.state === 3);
               setOpen(false);
               setReporting(false);
               setStartggSet({

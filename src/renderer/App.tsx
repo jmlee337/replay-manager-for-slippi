@@ -454,9 +454,13 @@ function Hello() {
     setSelectedSetChain({ eventId, phaseId, phaseGroupId });
     setSelectedSet(set);
   };
-  const reportSet = async (set: StartggSet) => {
+  const reportSet = async (set: StartggSet, update: boolean) => {
     try {
-      await window.electron.reportSet(set);
+      if (update) {
+        await window.electron.updateSet(set);
+      } else {
+        await window.electron.reportSet(set);
+      }
       await new Promise((resolve) => {
         // it seems that start.gg needs a moment to settle
         // before the set will be reflected as completed.
