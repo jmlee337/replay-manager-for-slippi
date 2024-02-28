@@ -85,7 +85,7 @@ jobs:
           cache: npm
 
       - name: Install libuv
-        uses: johnwason/vcpkg-action@v5
+        uses: johnwason/vcpkg-action@v6
         with:
           pkgs: 'libuv'
           triplet: 'x64-windows-release'
