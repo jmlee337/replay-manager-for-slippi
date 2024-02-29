@@ -32,7 +32,7 @@ jobs:
       - name: upload
         uses: actions/upload-artifact@v4
         with:
-          name: installers
+          name: macos
           path: |
             release/build/ReplayManagerForSlippi*.dmg
   ubuntu:
@@ -68,7 +68,7 @@ jobs:
       - name: upload
         uses: actions/upload-artifact@v4
         with:
-          name: installers
+          name: ubuntu
           path: |
             release/build/ReplayManagerForSlippi*.AppImage
   windows:
@@ -107,7 +107,7 @@ jobs:
       - name: upload
         uses: actions/upload-artifact@v4
         with:
-          name: installers
+          name: windows
           path: |
             release/build/ReplayManagerForSlippi*.exe
 
