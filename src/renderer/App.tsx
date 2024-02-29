@@ -220,100 +220,6 @@ function Hello() {
     slug: '',
     events: [],
   });
-  const getTournament = async (getSlug: string) => {
-    if (!getSlug) {
-      return false;
-    }
-
-    let events;
-    setGettingTournament(true);
-    try {
-      events = await window.electron.getTournament(getSlug);
-    } catch (e: any) {
-      showErrorDialog(e.toString());
-      setGettingTournament(false);
-      return false;
-    }
-
-    if (tournament.slug === getSlug && tournament.events.length > 0) {
-      const eventsMap = new Map<number, Event>();
-      tournament.events.forEach((event) => {
-        eventsMap.set(event.id, event);
-      });
-      events = events.map((event) => eventsMap.get(event.id) || event);
-    }
-    tournament.events = events;
-    tournament.slug = getSlug;
-    setTournament(tournament);
-    setGettingTournament(false);
-    return true;
-  };
-  const getTournamentOnSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    const target = event.target as typeof event.target & {
-      slug: { value: string };
-    };
-    const newSlug = target.slug.value;
-    event.preventDefault();
-    event.stopPropagation();
-    if (newSlug) {
-      setSlugDialogOpen(false);
-      if (await getTournament(newSlug)) {
-        setSlug(newSlug);
-      }
-    }
-  };
-  const getEvent = async (id: number) => {
-    let phases;
-    try {
-      phases = await window.electron.getEvent(id);
-    } catch (e: any) {
-      showErrorDialog(e.toString());
-      return;
-    }
-
-    const editEvent = tournament.events.find((event) => event.id === id);
-    if (editEvent) {
-      if (editEvent.phases.length > 0) {
-        const phasesMap = new Map<number, Phase>();
-        editEvent.phases.forEach((phase) => {
-          phasesMap.set(phase.id, phase);
-        });
-        phases = phases.map((phase) => phasesMap.get(phase.id) || phase);
-      }
-      editEvent.phases = phases;
-      setTournament({ ...tournament });
-    }
-  };
-
-  const getPhase = async (id: number, eventId: number) => {
-    let phaseGroups;
-    try {
-      phaseGroups = await window.electron.getPhase(id);
-    } catch (e: any) {
-      showErrorDialog(e.toString());
-      return;
-    }
-
-    const editEvent = tournament.events.find((event) => event.id === eventId);
-    if (!editEvent) {
-      return;
-    }
-
-    const editPhase = editEvent.phases.find((phase) => phase.id === id);
-    if (editPhase) {
-      if (editPhase.phaseGroups.length > 0) {
-        const phaseGroupsMap = new Map<number, PhaseGroup>();
-        editPhase.phaseGroups.forEach((phaseGroup) => {
-          phaseGroupsMap.set(phaseGroup.id, phaseGroup);
-        });
-        phaseGroups = phaseGroups.map(
-          (phaseGroup) => phaseGroupsMap.get(phaseGroup.id) || phaseGroup,
-        );
-      }
-      editPhase.phaseGroups = phaseGroups;
-      setTournament({ ...tournament });
-    }
-  };
 
   const getPhaseGroup = async (
     id: number,
@@ -411,6 +317,114 @@ function Hello() {
       }
     />
   );
+
+  const getPhase = async (id: number, eventId: number) => {
+    let phaseGroups;
+    try {
+      phaseGroups = await window.electron.getPhase(id);
+    } catch (e: any) {
+      showErrorDialog(e.toString());
+      return;
+    }
+
+    const editEvent = tournament.events.find((event) => event.id === eventId);
+    if (!editEvent) {
+      return;
+    }
+
+    const editPhase = editEvent.phases.find((phase) => phase.id === id);
+    if (editPhase) {
+      if (editPhase.phaseGroups.length > 0) {
+        const phaseGroupsMap = new Map<number, PhaseGroup>();
+        editPhase.phaseGroups.forEach((phaseGroup) => {
+          phaseGroupsMap.set(phaseGroup.id, phaseGroup);
+        });
+        phaseGroups = phaseGroups.map(
+          (phaseGroup) => phaseGroupsMap.get(phaseGroup.id) || phaseGroup,
+        );
+      }
+      editPhase.phaseGroups = phaseGroups;
+      if (phaseGroups.length === 1) {
+        await getPhaseGroup(phaseGroups[0].id, id, eventId);
+      } else {
+        setTournament({ ...tournament });
+      }
+    }
+  };
+
+  const getEvent = async (id: number) => {
+    let phases;
+    try {
+      phases = await window.electron.getEvent(id);
+    } catch (e: any) {
+      showErrorDialog(e.toString());
+      return;
+    }
+
+    const editEvent = tournament.events.find((event) => event.id === id);
+    if (editEvent) {
+      if (editEvent.phases.length > 0) {
+        const phasesMap = new Map<number, Phase>();
+        editEvent.phases.forEach((phase) => {
+          phasesMap.set(phase.id, phase);
+        });
+        phases = phases.map((phase) => phasesMap.get(phase.id) || phase);
+      }
+      editEvent.phases = phases;
+      if (phases.length === 1) {
+        await getPhase(phases[0].id, id);
+      } else {
+        setTournament({ ...tournament });
+      }
+    }
+  };
+
+  const getTournament = async (getSlug: string) => {
+    if (!getSlug) {
+      return false;
+    }
+
+    let events;
+    setGettingTournament(true);
+    try {
+      events = await window.electron.getTournament(getSlug);
+    } catch (e: any) {
+      showErrorDialog(e.toString());
+      setGettingTournament(false);
+      return false;
+    }
+
+    if (tournament.slug === getSlug && tournament.events.length > 0) {
+      const eventsMap = new Map<number, Event>();
+      tournament.events.forEach((event) => {
+        eventsMap.set(event.id, event);
+      });
+      events = events.map((event) => eventsMap.get(event.id) || event);
+    }
+    tournament.events = events;
+    tournament.slug = getSlug;
+    if (events.length === 1) {
+      await getEvent(events[0].id);
+    } else {
+      setTournament(tournament);
+    }
+    setGettingTournament(false);
+    return true;
+  };
+  const getTournamentOnSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    const target = event.target as typeof event.target & {
+      slug: { value: string };
+    };
+    const newSlug = target.slug.value;
+    event.preventDefault();
+    event.stopPropagation();
+    if (newSlug) {
+      setSlugDialogOpen(false);
+      if (await getTournament(newSlug)) {
+        setSlug(newSlug);
+      }
+    }
+  };
 
   // set controls
   const [selectedSet, setSelectedSet] = useState<Set>({

@@ -67,12 +67,14 @@ function SetView({
 
 function PhaseGroupView({
   phaseGroup,
+  initiallyOpen,
   eventId,
   phaseId,
   getPhaseGroup,
   selectSet,
 }: {
   phaseGroup: PhaseGroup;
+  initiallyOpen: boolean;
   eventId: number;
   phaseId: number;
   getPhaseGroup: (
@@ -89,7 +91,7 @@ function PhaseGroupView({
 }) {
   const [getting, setGetting] = useState(false);
   const [completedOpen, setCompletedOpen] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
 
   const get = async () => {
     setGetting(true);
@@ -181,12 +183,14 @@ function PhaseGroupView({
 
 function PhaseView({
   phase,
+  initiallyOpen,
   eventId,
   getPhase,
   getPhaseGroup,
   selectSet,
 }: {
   phase: Phase;
+  initiallyOpen: boolean;
   eventId: number;
   getPhase: (id: number, eventId: number) => Promise<void>;
   getPhaseGroup: (
@@ -202,7 +206,7 @@ function PhaseView({
   ) => void;
 }) {
   const [getting, setGetting] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
 
   const get = async () => {
     setGetting(true);
@@ -243,6 +247,7 @@ function PhaseView({
             <PhaseGroupView
               key={phaseGroup.id}
               phaseGroup={phaseGroup}
+              initiallyOpen={phase.phaseGroups.length === 1}
               eventId={eventId}
               phaseId={phase.id}
               getPhaseGroup={getPhaseGroup}
@@ -257,12 +262,14 @@ function PhaseView({
 
 function EventView({
   event,
+  initiallyOpen,
   getEvent,
   getPhase,
   getPhaseGroup,
   selectSet,
 }: {
   event: Event;
+  initiallyOpen: boolean;
   getEvent: (id: number) => Promise<void>;
   getPhase: (id: number, eventId: number) => Promise<void>;
   getPhaseGroup: (
@@ -278,7 +285,7 @@ function EventView({
   ) => void;
 }) {
   const [getting, setGetting] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
 
   const get = async () => {
     setGetting(true);
@@ -319,6 +326,7 @@ function EventView({
             <PhaseView
               key={phase.id}
               phase={phase}
+              initiallyOpen={event.phases.length === 1}
               eventId={event.id}
               getPhase={getPhase}
               getPhaseGroup={getPhaseGroup}
@@ -359,6 +367,7 @@ export default function TournamentView({
         <EventView
           key={event.id}
           event={event}
+          initiallyOpen={tournament.events.length === 1}
           getEvent={getEvent}
           getPhase={getPhase}
           getPhaseGroup={getPhaseGroup}
