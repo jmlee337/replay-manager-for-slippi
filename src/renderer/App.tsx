@@ -2,6 +2,7 @@ import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import { FormEvent, useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  AppBar,
   Backdrop,
   Button,
   Checkbox,
@@ -16,6 +17,7 @@ import {
   Paper,
   Stack,
   TextField,
+  Toolbar,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -65,7 +67,12 @@ const TopColumns = styled(Stack)`
 const TopColumn = styled(Stack)`
   flex-shrink: 1;
   overflow-y: scroll;
-  padding: 8px 0;
+  padding: 64px 0 8px;
+`;
+
+const AppBarSection = styled(Stack)`
+  flex-shrink: 1;
+  padding: 8px;
 `;
 
 const Form = styled.form`
@@ -510,92 +517,152 @@ function Hello() {
 
   return (
     <>
+      <AppBar position="fixed" style={{ backgroundColor: 'white' }}>
+        <Toolbar disableGutters variant="dense">
+          <AppBarSection flexGrow={1} minWidth={600}>
+            <Stack alignItems="center" direction="row" paddingLeft="16px">
+              <Tooltip
+                arrow
+                title={
+                  allReplaysSelected
+                    ? 'Deselect all replays'
+                    : 'Select all replays'
+                }
+              >
+                <Checkbox
+                  checked={allReplaysSelected}
+                  onClick={() => {
+                    const newAllReplaysSelected = !allReplaysSelected;
+                    setAllReplaysSelected(newAllReplaysSelected);
+                    applyAllReplaysSelected(replays, newAllReplaysSelected);
+                    setReplays(Array.from(replays));
+                  }}
+                />
+              </Tooltip>
+              <InputBase
+                disabled
+                size="small"
+                value={dir || 'Set replays folder...'}
+                style={{ flexGrow: 1 }}
+              />
+              {dir && dirExists && (
+                <>
+                  <Tooltip arrow title="Delete replays folder">
+                    <IconButton onClick={() => setDirDeleteDialogOpen(true)}>
+                      <DeleteForeverOutlined />
+                    </IconButton>
+                  </Tooltip>
+                  <Dialog
+                    open={dirDeleteDialogOpen}
+                    onClose={() => {
+                      setDirDeleteDialogOpen(false);
+                    }}
+                  >
+                    <DialogTitle>Delete Replays Folder?</DialogTitle>
+                    <DialogContent>
+                      <Alert severity="warning">
+                        {replays.length} replays will be deleted!
+                      </Alert>
+                    </DialogContent>
+                    <DialogActions>
+                      <Button
+                        endIcon={
+                          dirDeleting ? (
+                            <CircularProgress size="24px" />
+                          ) : (
+                            <DeleteForever />
+                          )
+                        }
+                        onClick={async () => {
+                          setDirDeleting(true);
+                          await deleteDir();
+                          setDirDeleteDialogOpen(false);
+                          setDirDeleting(false);
+                        }}
+                        variant="contained"
+                      >
+                        Delete
+                      </Button>
+                    </DialogActions>
+                  </Dialog>
+                </>
+              )}
+              {dir && (
+                <Tooltip arrow title="Refresh replays">
+                  <IconButton onClick={refreshReplays}>
+                    <Refresh />
+                  </IconButton>
+                </Tooltip>
+              )}
+              <Tooltip arrow title="Set replays folder">
+                <IconButton onClick={chooseDir}>
+                  <FolderOpen />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          </AppBarSection>
+          <Divider
+            flexItem
+            orientation="vertical"
+            style={{ marginTop: 8, marginBottom: 8 }}
+          />
+          <AppBarSection width={300}>
+            <TournamentBar>
+              <InputBase
+                disabled
+                size="small"
+                value={slug || 'Set tournament slug...'}
+                style={{ flexGrow: 1 }}
+              />
+              <Tooltip arrow title="Refresh tournament">
+                <IconButton
+                  aria-label="Refresh tournament"
+                  onClick={() => getTournament(slug)}
+                >
+                  {gettingTournament ? (
+                    <CircularProgress size="24px" />
+                  ) : (
+                    <Refresh />
+                  )}
+                </IconButton>
+              </Tooltip>
+              <Tooltip arrow title="Set tournament slug">
+                <IconButton
+                  aria-label="Set tournament slug"
+                  onClick={() => setSlugDialogOpen(true)}
+                >
+                  <Edit />
+                </IconButton>
+              </Tooltip>
+              <Dialog
+                open={slugDialogOpen}
+                onClose={() => setSlugDialogOpen(false)}
+              >
+                <DialogTitle>Set Tournament Slug</DialogTitle>
+                <DialogContent>
+                  <Form onSubmit={getTournamentOnSubmit}>
+                    <TextField
+                      autoFocus
+                      label="Tournament Slug"
+                      name="slug"
+                      placeholder="super-smash-con-2023"
+                      size="small"
+                      variant="outlined"
+                    />
+                    <Button type="submit">Get!</Button>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </TournamentBar>
+          </AppBarSection>
+        </Toolbar>
+      </AppBar>
       <TopColumns
         direction="row"
         divider={<Divider flexItem orientation="vertical" />}
         spacing="8px"
       >
         <TopColumn flexGrow={1} minWidth="600px">
-          <Stack alignItems="center" direction="row" paddingLeft="16px">
-            <Tooltip
-              arrow
-              title={
-                allReplaysSelected
-                  ? 'Deselect all replays'
-                  : 'Select all replays'
-              }
-            >
-              <Checkbox
-                checked={allReplaysSelected}
-                onClick={() => {
-                  const newAllReplaysSelected = !allReplaysSelected;
-                  setAllReplaysSelected(newAllReplaysSelected);
-                  applyAllReplaysSelected(replays, newAllReplaysSelected);
-                  setReplays(Array.from(replays));
-                }}
-              />
-            </Tooltip>
-            <InputBase
-              disabled
-              size="small"
-              value={dir || 'Set replays folder...'}
-              style={{ flexGrow: 1 }}
-            />
-            {dir && dirExists && (
-              <>
-                <Tooltip arrow title="Delete replays folder">
-                  <IconButton onClick={() => setDirDeleteDialogOpen(true)}>
-                    <DeleteForeverOutlined />
-                  </IconButton>
-                </Tooltip>
-                <Dialog
-                  open={dirDeleteDialogOpen}
-                  onClose={() => {
-                    setDirDeleteDialogOpen(false);
-                  }}
-                >
-                  <DialogTitle>Delete Replays Folder?</DialogTitle>
-                  <DialogContent>
-                    <Alert severity="warning">
-                      {replays.length} replays will be deleted!
-                    </Alert>
-                  </DialogContent>
-                  <DialogActions>
-                    <Button
-                      endIcon={
-                        dirDeleting ? (
-                          <CircularProgress size="24px" />
-                        ) : (
-                          <DeleteForever />
-                        )
-                      }
-                      onClick={async () => {
-                        setDirDeleting(true);
-                        await deleteDir();
-                        setDirDeleteDialogOpen(false);
-                        setDirDeleting(false);
-                      }}
-                      variant="contained"
-                    >
-                      Delete
-                    </Button>
-                  </DialogActions>
-                </Dialog>
-              </>
-            )}
-            {dir && (
-              <Tooltip arrow title="Refresh replays">
-                <IconButton onClick={refreshReplays}>
-                  <Refresh />
-                </IconButton>
-              </Tooltip>
-            )}
-            <Tooltip arrow title="Set replays folder">
-              <IconButton onClick={chooseDir}>
-                <FolderOpen />
-              </IconButton>
-            </Tooltip>
-          </Stack>
           {dirExists ? (
             <ReplayList
               replays={replays}
@@ -612,53 +679,6 @@ function Hello() {
           <CopyControls selectedReplays={selectedReplays} />
         </TopColumn>
         <TopColumn width="300px">
-          <TournamentBar>
-            <InputBase
-              disabled
-              size="small"
-              value={slug || 'Set tournament slug...'}
-              style={{ flexGrow: 1 }}
-            />
-            <Tooltip arrow title="Refresh tournament">
-              <IconButton
-                aria-label="Refresh tournament"
-                onClick={() => getTournament(slug)}
-              >
-                {gettingTournament ? (
-                  <CircularProgress size="24px" />
-                ) : (
-                  <Refresh />
-                )}
-              </IconButton>
-            </Tooltip>
-            <Tooltip arrow title="Set tournament slug">
-              <IconButton
-                aria-label="Set tournament slug"
-                onClick={() => setSlugDialogOpen(true)}
-              >
-                <Edit />
-              </IconButton>
-            </Tooltip>
-            <Dialog
-              open={slugDialogOpen}
-              onClose={() => setSlugDialogOpen(false)}
-            >
-              <DialogTitle>Set Tournament Slug</DialogTitle>
-              <DialogContent>
-                <Form onSubmit={getTournamentOnSubmit}>
-                  <TextField
-                    autoFocus
-                    label="Tournament Slug"
-                    name="slug"
-                    placeholder="super-smash-con-2023"
-                    size="small"
-                    variant="outlined"
-                  />
-                  <Button type="submit">Get!</Button>
-                </Form>
-              </DialogContent>
-            </Dialog>
-          </TournamentBar>
           <TournamentView
             tournament={tournament}
             getEvent={getEvent}
