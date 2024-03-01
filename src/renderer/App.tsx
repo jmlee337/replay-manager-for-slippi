@@ -872,14 +872,16 @@ function Hello() {
                 spacing="8px"
               >
                 <Tooltip title="Start Match">
-                  <IconButton
-                    color="primary"
-                    disabled={!(selectedSet.id && selectedSet.state < 2)}
-                    size="small"
-                    onClick={() => startSet(selectedSet.id)}
-                  >
-                    <HourglassTop />
-                  </IconButton>
+                  <div>
+                    <IconButton
+                      color="primary"
+                      disabled={!(selectedSet.id && selectedSet.state < 2)}
+                      size="small"
+                      onClick={() => startSet(selectedSet.id)}
+                    >
+                      <HourglassTop />
+                    </IconButton>
+                  </div>
                 </Tooltip>
                 <SetControls
                   reportSet={reportSet}
