@@ -6,8 +6,10 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Fab,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { FormEvent, useState } from 'react';
@@ -54,14 +56,15 @@ export default function Settings({
 
   return (
     <>
-      <Button
-        endIcon={<SettingsIcon />}
-        onClick={() => setOpen(true)}
-        size="small"
-        variant="contained"
-      >
-        Settings
-      </Button>
+      <Tooltip title="Settings">
+        <Fab
+          onClick={() => setOpen(true)}
+          size="small"
+          style={{ position: 'absolute', bottom: 8, left: 8 }}
+        >
+          <SettingsIcon />
+        </Fab>
+      </Tooltip>
       <Dialog fullWidth open={open} onClose={() => setOpen(false)}>
         <Stack
           alignItems="center"

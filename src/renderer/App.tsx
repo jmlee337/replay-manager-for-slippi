@@ -22,10 +22,12 @@ import {
   Typography,
 } from '@mui/material';
 import {
+  Backup,
   DeleteForever,
   DeleteForeverOutlined,
   Edit,
   FolderOpen,
+  HourglassTop,
   Refresh,
 } from '@mui/icons-material';
 import styled from '@emotion/styled';
@@ -112,6 +114,10 @@ function Hello() {
       { displayName: '', entrantId: 0 },
       { displayName: '', entrantId: 0 },
     ]);
+  };
+  const [dq, setDq] = useState({ displayName: '', entrantId: 0 });
+  const resetDq = () => {
+    setDq({ displayName: '', entrantId: 0 });
   };
 
   // Replay list
@@ -214,6 +220,7 @@ function Hello() {
     setBatchActives(newBatchActives);
     setOverrides(newOverrides);
     setReplays(newReplays);
+    resetDq();
   };
   useEffect(() => {
     window.electron.onUsb(refreshReplays);
@@ -310,6 +317,7 @@ function Hello() {
       });
     });
     setOverrides(newOverrides);
+    resetDq();
     resetSelectedChipData();
   };
   const batchChip = (index: number) => (
@@ -475,6 +483,28 @@ function Hello() {
     setSelectedSetChain({ eventId, phaseId, phaseGroupId });
     setSelectedSet(set);
   };
+
+  const startSet = async (setId: number) => {
+    try {
+      await window.electron.startSet(setId);
+      await new Promise((resolve) => {
+        // it seems that start.gg needs a moment to settle
+        // before the set will be reflected as completed.
+        setTimeout(resolve, 1000);
+      });
+      await getPhaseGroup(
+        selectedSetChain.phaseGroupId,
+        selectedSetChain.phaseId,
+        selectedSetChain.eventId,
+      );
+      const updatedSelectedSet = { ...selectedSet };
+      updatedSelectedSet.state = 2;
+      setSelectedSet(updatedSelectedSet);
+    } catch (e: any) {
+      showErrorDialog(e.toString());
+    }
+  };
+
   const reportSet = async (set: StartggSet, update: boolean) => {
     try {
       if (update) {
@@ -520,7 +550,7 @@ function Hello() {
       <AppBar position="fixed" style={{ backgroundColor: 'white' }}>
         <Toolbar disableGutters variant="dense">
           <AppBarSection flexGrow={1} minWidth={600}>
-            <Stack alignItems="center" direction="row" paddingLeft="16px">
+            <Stack alignItems="center" direction="row">
               <Tooltip
                 arrow
                 title={
@@ -698,7 +728,7 @@ function Hello() {
             boxSizing="border-box"
             flexGrow={1}
             minWidth="600px"
-            padding="20px 16px 0 58px"
+            padding="20px 0 0 42px"
           >
             <Stack direction="row">
               {batchChip(0)}
@@ -736,13 +766,25 @@ function Hello() {
             <Stack>
               {!!selectedSet.id && (
                 <>
-                  <Typography
-                    lineHeight="20px"
-                    textAlign="center"
-                    variant="caption"
+                  <Stack
+                    alignItems="center"
+                    justifyContent="center"
+                    direction="row"
                   >
-                    {selectedSet.fullRoundText} ({selectedSet.id})
-                  </Typography>
+                    <Typography lineHeight="20px" variant="caption">
+                      {selectedSet.fullRoundText} ({selectedSet.id})
+                    </Typography>
+                    {selectedSet.state === 2 && (
+                      <Tooltip placement="top" title="Started">
+                        <HourglassTop fontSize="inherit" />
+                      </Tooltip>
+                    )}
+                    {selectedSet.state === 3 && (
+                      <Tooltip placement="top" title="Finished">
+                        <Backup fontSize="inherit" />
+                      </Tooltip>
+                    )}
+                  </Stack>
                   <Tooltip arrow title="Drag or select players!">
                     <Stack direction="row" gap="8px">
                       <Stack gap="8px" width="50%">
@@ -795,19 +837,55 @@ function Hello() {
               )}
             </Stack>
             <Stack direction="row" paddingTop="8px" spacing="8px">
-              <Stack direction="row" justifyContent="center" width="50%">
-                <SetControls
-                  reportSet={reportSet}
-                  selectedReplays={selectedReplays}
-                  set={selectedSet}
+              <Stack direction="row" width="50%">
+                <DroppableChip
+                  active
+                  label={dq.displayName || 'DQ'}
+                  outlined
+                  selectedChipData={selectedChipData}
+                  style={{ width: '100%' }}
+                  onClickOrDrop={(displayName: string, entrantId: number) => {
+                    const newOverrides = [
+                      { displayName: '', entrantId: 0 },
+                      { displayName: '', entrantId: 0 },
+                      { displayName: '', entrantId: 0 },
+                      { displayName: '', entrantId: 0 },
+                    ];
+                    selectedReplays.forEach((replay) => {
+                      replay.selected = false;
+                      replay.players.forEach((player, i) => {
+                        player.playerOverrides = { ...newOverrides[i] };
+                      });
+                    });
+                    const newReplays = Array.from(replays);
+                    setOverrides(newOverrides);
+                    setReplays(newReplays);
+                    setDq({ displayName, entrantId });
+                    resetSelectedChipData();
+                  }}
                 />
               </Stack>
-              <Stack direction="row" justifyContent="center" width="50%">
-                <Settings
-                  appVersion={appVersion}
-                  gotStartggApiKey={gotStartggApiKey}
-                  startggApiKey={startggApiKey}
-                  setStartggApiKey={setStartggApiKey}
+              <Stack
+                direction="row"
+                justifyContent="flex-end"
+                flexGrow={1}
+                spacing="8px"
+              >
+                <Tooltip title="Start Match">
+                  <IconButton
+                    color="primary"
+                    disabled={!(selectedSet.id && selectedSet.state < 2)}
+                    size="small"
+                    onClick={() => startSet(selectedSet.id)}
+                  >
+                    <HourglassTop />
+                  </IconButton>
+                </Tooltip>
+                <SetControls
+                  reportSet={reportSet}
+                  dqId={dq.entrantId}
+                  selectedReplays={selectedReplays}
+                  set={selectedSet}
                 />
               </Stack>
             </Stack>
@@ -826,6 +904,12 @@ function Hello() {
           setErrorDialogOpen(false);
         }}
         open={errorDialogOpen}
+      />
+      <Settings
+        appVersion={appVersion}
+        gotStartggApiKey={gotStartggApiKey}
+        startggApiKey={startggApiKey}
+        setStartggApiKey={setStartggApiKey}
       />
     </>
   );

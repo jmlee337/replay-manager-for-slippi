@@ -60,6 +60,7 @@ function SetView({
         entrant2Score={set.entrant2Score}
         fullRoundText={set.fullRoundText}
         state={set.state}
+        showScores={set.state === 3}
       />
     </ListItemButton>
   );

@@ -15,6 +15,7 @@ import {
   getPhase,
   getPhaseGroup,
   getTournament,
+  startSet,
   reportSet,
   updateSet,
 } from './startgg';
@@ -109,6 +110,18 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       return getPhaseGroup(sggApiKey, id);
+    },
+  );
+
+  ipcMain.removeHandler('startSet');
+  ipcMain.handle(
+    'startSet',
+    async (event: IpcMainInvokeEvent, setId: number) => {
+      if (!sggApiKey) {
+        throw new Error('Please set start.gg API key');
+      }
+
+      return startSet(sggApiKey, setId);
     },
   );
 

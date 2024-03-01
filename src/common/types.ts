@@ -83,9 +83,10 @@ export type StartggGame = {
 };
 
 export type StartggSet = {
-  gameData: StartggGame[];
   setId: number;
   winnerId: number;
+  isDQ: boolean;
+  gameData: StartggGame[];
 };
 
 export enum Output {

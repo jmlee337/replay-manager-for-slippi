@@ -117,32 +117,50 @@ function getScoresAndWinnerId(selectedReplays: Replay[]) {
 
 export default function SetControls({
   reportSet,
+  dqId,
   selectedReplays,
   set,
 }: {
   reportSet: (set: StartggSet, update: boolean) => Promise<void>;
+  dqId: number;
   selectedReplays: Replay[];
   set: Set;
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [startggSet, setStartggSet] = useState<StartggSet>({
-    gameData: [],
     setId: set.id,
     winnerId: 0,
+    isDQ: false,
+    gameData: [],
   });
 
+  const isDq = dqId === set.entrant1Id || dqId === set.entrant2Id;
   const validSelections = setAndReplaysValid(selectedReplays, set);
   let scores = new Map<number, number>();
   let winnerId = 0;
   if (validSelections) {
     ({ scores, winnerId } = getScoresAndWinnerId(selectedReplays));
+  } else if (isDq) {
+    if (dqId === set.entrant1Id) {
+      scores.set(set.entrant1Id, -1);
+      scores.set(set.entrant2Id, 0);
+      winnerId = set.entrant2Id;
+    } else {
+      scores.set(set.entrant1Id, 0);
+      scores.set(set.entrant2Id, -1);
+      winnerId = set.entrant1Id;
+    }
   }
 
   const entrant1Score = scores.get(set.entrant1Id) || 0;
   const entrant2Score = scores.get(set.entrant2Id) || 0;
 
   const getSet = (): StartggSet => {
+    if (isDq) {
+      return { setId: set.id, winnerId, isDQ: true, gameData: [] };
+    }
+
     const gameData: StartggGame[] = selectedReplays.map((replay, i) => {
       let selections: StartggGameSelection[] = [];
       const validPlayers = replay.players.filter(
@@ -166,13 +184,13 @@ export default function SetControls({
         winnerId: findWinner(replay.players)?.playerOverrides.entrantId!,
       };
     });
-    return { gameData, setId: set.id, winnerId };
+    return { setId: set.id, winnerId, isDQ: false, gameData };
   };
 
   return (
     <>
       <Button
-        disabled={!(validSelections && winnerId)}
+        disabled={!(validSelections && winnerId) && !isDq}
         endIcon={<Backup />}
         onClick={() => {
           setStartggSet(getSet());
@@ -188,9 +206,10 @@ export default function SetControls({
         onClose={() => {
           setOpen(false);
           setStartggSet({
-            gameData: [],
             setId: set.id,
             winnerId: 0,
+            isDQ: false,
+            gameData: [],
           });
         }}
       >
@@ -203,7 +222,8 @@ export default function SetControls({
             entrant2Names={set.entrant2Names}
             entrant2Score={entrant2Score.toString()}
             fullRoundText={set.fullRoundText}
-            state={3}
+            state={set.state}
+            showScores
           />
           <Divider sx={{ marginTop: '8px' }} />
           <Stack flexGrow={1}>
@@ -284,9 +304,10 @@ export default function SetControls({
               setOpen(false);
               setReporting(false);
               setStartggSet({
-                gameData: [],
                 setId: set.id,
                 winnerId: 0,
+                isDQ: false,
+                gameData: [],
               });
             }}
             variant="contained"

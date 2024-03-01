@@ -181,26 +181,35 @@ export async function getPhaseGroup(key: string, id: number): Promise<Sets> {
   };
 }
 
-const REPORT_BRACKET_SET_MUTATION = `
-  mutation ReportBracketSet($setId: ID!, $gameData: [BracketSetGameDataInput], $winnerId: ID) {
-    reportBracketSet(setId: $setId, gameData: $gameData, winnerId: $winnerId) {
+const MARK_SET_IN_PROGRESS_MUTATION = `
+  mutation MarkSetInProgress($setId: ID!) {
+    markSetInProgress(setId: $setId) {
       id
     }
   }
 `;
+export async function startSet(key: string, setId: number) {
+  await fetchGql(key, MARK_SET_IN_PROGRESS_MUTATION, { setId });
+}
 
+const REPORT_BRACKET_SET_MUTATION = `
+  mutation ReportBracketSet($setId: ID!, $winnerId: ID, $isDQ: Boolean, $gameData: [BracketSetGameDataInput]) {
+    reportBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {
+      id
+    }
+  }
+`;
 export async function reportSet(key: string, set: StartggSet) {
   await fetchGql(key, REPORT_BRACKET_SET_MUTATION, set);
 }
 
 const UPDATE_BRACKET_SET_MUTATION = `
-  mutation UpdateBracketSet($setId: ID!, $gameData: [BracketSetGameDataInput], $winnerId: ID) {
-    updateBracketSet(setId: $setId, gameData: $gameData, winnerId: $winnerId) {
+  mutation UpdateBracketSet($setId: ID!, $winnerId: ID, $isDQ: Boolean, $gameData: [BracketSetGameDataInput]) {
+    updateBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {
       id
     }
   }
 `;
-
 export async function updateSet(key: string, set: StartggSet) {
   await fetchGql(key, UPDATE_BRACKET_SET_MUTATION, set);
 }
