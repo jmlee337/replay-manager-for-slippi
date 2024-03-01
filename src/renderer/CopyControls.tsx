@@ -246,7 +246,7 @@ export default function CopyControls({
   return (
     <>
       <Divider />
-      <Stack paddingLeft="58px">
+      <Stack paddingLeft="42px">
         <Stack direction="row">
           <InputBase
             disabled
