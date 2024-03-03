@@ -9,7 +9,7 @@ import {
 import Store from 'electron-store';
 import { rm } from 'fs/promises';
 import detectUsb from 'detect-usb';
-import { Output, Replay, StartggSet } from '../common/types';
+import { Output, Replay, Set, StartggSet } from '../common/types';
 import {
   getEvent,
   getPhase,
@@ -116,7 +116,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('startSet');
   ipcMain.handle(
     'startSet',
-    async (event: IpcMainInvokeEvent, setId: number) => {
+    async (event: IpcMainInvokeEvent, setId: number): Promise<Set> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
@@ -128,7 +128,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('reportSet');
   ipcMain.handle(
     'reportSet',
-    async (event: IpcMainInvokeEvent, set: StartggSet) => {
+    async (event: IpcMainInvokeEvent, set: StartggSet): Promise<Set[]> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
@@ -140,7 +140,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('updateSet');
   ipcMain.handle(
     'updateSet',
-    async (event: IpcMainInvokeEvent, set: StartggSet) => {
+    async (event: IpcMainInvokeEvent, set: StartggSet): Promise<Set> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }

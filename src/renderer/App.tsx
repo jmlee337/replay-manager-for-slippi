@@ -239,6 +239,7 @@ function Hello() {
     id: number,
     phaseId: number,
     eventId: number,
+    updatedSets?: Map<number, Set>,
   ) => {
     let sets;
     try {
@@ -262,6 +263,20 @@ function Hello() {
       (phaseGroup) => phaseGroup.id === id,
     );
     if (editPhaseGroup) {
+      if (updatedSets) {
+        for (let i = 0; i < sets.completedSets.length; i += 1) {
+          const updatedSet = updatedSets.get(sets.completedSets[i].id);
+          if (updatedSet) {
+            sets.completedSets[i] = updatedSet;
+          }
+        }
+        for (let i = 0; i < sets.pendingSets.length; i += 1) {
+          const updatedSet = updatedSets.get(sets.pendingSets[i].id);
+          if (updatedSet) {
+            sets.pendingSets[i] = updatedSet;
+          }
+        }
+      }
       editPhaseGroup.sets = sets;
       setTournament({ ...tournament });
     }
@@ -486,20 +501,14 @@ function Hello() {
 
   const startSet = async (setId: number) => {
     try {
-      await window.electron.startSet(setId);
-      await new Promise((resolve) => {
-        // it seems that start.gg needs a moment to settle
-        // before the set will be reflected as completed.
-        setTimeout(resolve, 1000);
-      });
+      const updatedSet = await window.electron.startSet(setId);
       await getPhaseGroup(
         selectedSetChain.phaseGroupId,
         selectedSetChain.phaseId,
         selectedSetChain.eventId,
+        new Map([[updatedSet.id, updatedSet]]),
       );
-      const updatedSelectedSet = { ...selectedSet };
-      updatedSelectedSet.state = 2;
-      setSelectedSet(updatedSelectedSet);
+      setSelectedSet(updatedSet);
     } catch (e: any) {
       showErrorDialog(e.toString());
     }
@@ -507,24 +516,22 @@ function Hello() {
 
   const reportSet = async (set: StartggSet, update: boolean) => {
     try {
+      const updatedSets = new Map<number, Set>();
       if (update) {
-        await window.electron.updateSet(set);
+        const updatedSet = await window.electron.updateSet(set);
+        updatedSets.set(updatedSet.id, updatedSet);
       } else {
-        await window.electron.reportSet(set);
+        (await window.electron.reportSet(set)).forEach((updatedSet) => {
+          updatedSets.set(updatedSet.id, updatedSet);
+        });
       }
-      await new Promise((resolve) => {
-        // it seems that start.gg needs a moment to settle
-        // before the set will be reflected as completed.
-        setTimeout(resolve, 1000);
-      });
       await getPhaseGroup(
         selectedSetChain.phaseGroupId,
         selectedSetChain.phaseId,
         selectedSetChain.eventId,
+        updatedSets,
       );
-      const updatedSelectedSet = { ...selectedSet };
-      updatedSelectedSet.state = 3;
-      setSelectedSet(updatedSelectedSet);
+      setSelectedSet(updatedSets.get(set.setId)!);
     } catch (e: any) {
       showErrorDialog(e.toString());
     }

@@ -5,6 +5,7 @@ import {
   Phase,
   PhaseGroup,
   Replay,
+  Set,
   Sets,
   StartggSet,
 } from '../common/types';
@@ -43,10 +44,10 @@ const electronHandler = {
     ipcRenderer.invoke('getPhase', id),
   getPhaseGroup: (id: number): Promise<Sets> =>
     ipcRenderer.invoke('getPhaseGroup', id),
-  startSet: (id: number): Promise<void> => ipcRenderer.invoke('startSet', id),
-  reportSet: (set: StartggSet): Promise<void> =>
+  startSet: (id: number): Promise<Set> => ipcRenderer.invoke('startSet', id),
+  reportSet: (set: StartggSet): Promise<Set[]> =>
     ipcRenderer.invoke('reportSet', set),
-  updateSet: (set: StartggSet): Promise<void> =>
+  updateSet: (set: StartggSet): Promise<Set> =>
     ipcRenderer.invoke('updateSet', set),
   getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
   setStartggKey: (startggKey: string): Promise<void> =>

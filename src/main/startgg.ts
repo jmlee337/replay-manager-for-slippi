@@ -90,6 +90,33 @@ async function fetchGql(key: string, query: string, variables: any) {
   return json.data;
 }
 
+function apiSetToSet(set: any): Set {
+  const slot1 = set.slots[0];
+  const slot2 = set.slots[1];
+  const entrant1Names = slot1.entrant.participants.map(
+    (participant: { gamerTag: string }) => participant.gamerTag,
+  );
+  const entrant2Names = slot2.entrant.participants.map(
+    (participant: { gamerTag: string }) => participant.gamerTag,
+  );
+  return {
+    id: set.id,
+    state: set.state,
+    fullRoundText: set.fullRoundText,
+    winnerId: set.winnerId,
+    entrant1Id: slot1.entrant.id,
+    entrant1Names,
+    entrant1Score: slot1.standing
+      ? slot1.standing.stats.score.displayValue
+      : null,
+    entrant2Id: slot2.entrant.id,
+    entrant2Names,
+    entrant2Score: slot2.standing
+      ? slot2.standing.stats.score.displayValue
+      : null,
+  };
+}
+
 const PHASE_GROUP_QUERY = `
   query PhaseGroupQuery($id: ID!, $page: Int) {
     phaseGroup(id: $id) {
@@ -138,32 +165,7 @@ export async function getPhaseGroup(key: string, id: number): Promise<Sets> {
     nextData = await fetchGql(key, PHASE_GROUP_QUERY, { id, page });
     const newSets: Set[] = nextData.phaseGroup.sets.nodes
       .filter((set: any) => set.slots[0].entrant && set.slots[1].entrant)
-      .map((set: any): Set => {
-        const slot1 = set.slots[0];
-        const slot2 = set.slots[1];
-        const entrant1Names = slot1.entrant.participants.map(
-          (participant: { gamerTag: string }) => participant.gamerTag,
-        );
-        const entrant2Names = slot2.entrant.participants.map(
-          (participant: { gamerTag: string }) => participant.gamerTag,
-        );
-        return {
-          id: set.id,
-          state: set.state,
-          fullRoundText: set.fullRoundText,
-          winnerId: set.winnerId,
-          entrant1Id: slot1.entrant.id,
-          entrant1Names,
-          entrant1Score: slot1.standing
-            ? slot1.standing.stats.score.displayValue
-            : null,
-          entrant2Id: slot2.entrant.id,
-          entrant2Names,
-          entrant2Score: slot2.standing
-            ? slot2.standing.stats.score.displayValue
-            : null,
-        };
-      });
+      .map(apiSetToSet);
     sets.push(...newSets);
 
     page += 1;
@@ -185,31 +187,93 @@ const MARK_SET_IN_PROGRESS_MUTATION = `
   mutation MarkSetInProgress($setId: ID!) {
     markSetInProgress(setId: $setId) {
       id
+      slots {
+        entrant {
+          id
+          participants {
+            gamerTag
+          }
+        }
+        standing {
+          stats {
+            score {
+              displayValue
+            }
+          }
+        }
+      }
+      state
+      fullRoundText
+      winnerId
     }
   }
 `;
 export async function startSet(key: string, setId: number) {
-  await fetchGql(key, MARK_SET_IN_PROGRESS_MUTATION, { setId });
+  const data = await fetchGql(key, MARK_SET_IN_PROGRESS_MUTATION, { setId });
+  return apiSetToSet(data.markSetInProgress);
 }
 
 const REPORT_BRACKET_SET_MUTATION = `
   mutation ReportBracketSet($setId: ID!, $winnerId: ID, $isDQ: Boolean, $gameData: [BracketSetGameDataInput]) {
     reportBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {
       id
+      slots {
+        entrant {
+          id
+          participants {
+            gamerTag
+          }
+        }
+        standing {
+          stats {
+            score {
+              displayValue
+            }
+          }
+        }
+      }
+      state
+      fullRoundText
+      winnerId
     }
   }
 `;
-export async function reportSet(key: string, set: StartggSet) {
-  await fetchGql(key, REPORT_BRACKET_SET_MUTATION, set);
+export async function reportSet(key: string, set: StartggSet): Promise<Set[]> {
+  const data = await fetchGql(key, REPORT_BRACKET_SET_MUTATION, set);
+  return data.reportBracketSet
+    .filter(
+      (bracketSet: any) =>
+        bracketSet.slots[0].entrant && bracketSet.slots[1].entrant,
+    )
+    .map(apiSetToSet);
 }
 
 const UPDATE_BRACKET_SET_MUTATION = `
   mutation UpdateBracketSet($setId: ID!, $winnerId: ID, $isDQ: Boolean, $gameData: [BracketSetGameDataInput]) {
     updateBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {
       id
+      slots {
+        entrant {
+          id
+          participants {
+            gamerTag
+          }
+        }
+        standing {
+          stats {
+            score {
+              displayValue
+            }
+          }
+        }
+      }
+      state
+      fullRoundText
+      winnerId
     }
   }
 `;
-export async function updateSet(key: string, set: StartggSet) {
-  await fetchGql(key, UPDATE_BRACKET_SET_MUTATION, set);
+export async function updateSet(key: string, set: StartggSet): Promise<Set> {
+  const data = await fetchGql(key, UPDATE_BRACKET_SET_MUTATION, set);
+  return apiSetToSet(data.updateBracketSet);
 }
