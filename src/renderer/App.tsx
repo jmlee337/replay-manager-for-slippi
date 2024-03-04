@@ -531,7 +531,23 @@ function Hello() {
         selectedSetChain.eventId,
         updatedSets,
       );
-      setSelectedSet(updatedSets.get(set.setId)!);
+
+      const updatedSelectedSet = updatedSets.get(set.setId);
+      setSelectedSet(
+        updatedSelectedSet || {
+          id: 0,
+          state: 0,
+          fullRoundText: '',
+          winnerId: null,
+          entrant1Id: 0,
+          entrant1Names: [''],
+          entrant1Score: null,
+          entrant2Id: 0,
+          entrant2Names: [''],
+          entrant2Score: null,
+        },
+      );
+      resetDq();
     } catch (e: any) {
       showErrorDialog(e.toString());
     }
