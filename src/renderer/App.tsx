@@ -486,7 +486,9 @@ function Hello() {
     setSelectedSet(set);
   };
 
+  const [startingSet, setStartingSet] = useState(false);
   const startSet = async (setId: number) => {
+    setStartingSet(true);
     try {
       const updatedSet = await window.electron.startSet(setId);
       await getPhaseGroup(
@@ -498,6 +500,8 @@ function Hello() {
       setSelectedSet(updatedSet);
     } catch (e: any) {
       showErrorDialog(e.toString());
+    } finally {
+      setStartingSet(false);
     }
   };
 
@@ -606,6 +610,7 @@ function Hello() {
                     </DialogContent>
                     <DialogActions>
                       <Button
+                        disabled={dirDeleting}
                         endIcon={
                           dirDeleting ? (
                             <CircularProgress size="24px" />
@@ -654,17 +659,19 @@ function Hello() {
                 value={slug || 'Set tournament slug...'}
                 style={{ flexGrow: 1 }}
               />
-              <Tooltip arrow title="Refresh tournament">
-                <IconButton
-                  aria-label="Refresh tournament"
-                  onClick={() => getTournament(slug)}
-                >
-                  {gettingTournament ? (
-                    <CircularProgress size="24px" />
-                  ) : (
-                    <Refresh />
-                  )}
-                </IconButton>
+              <Tooltip arrow title="Refresh Tournament">
+                <div>
+                  <IconButton
+                    disabled={gettingTournament}
+                    onClick={() => getTournament(slug)}
+                  >
+                    {gettingTournament ? (
+                      <CircularProgress size="24px" />
+                    ) : (
+                      <Refresh />
+                    )}
+                  </IconButton>
+                </div>
               </Tooltip>
               <Tooltip arrow title="Set tournament slug">
                 <IconButton
@@ -858,15 +865,21 @@ function Hello() {
               paddingTop="8px"
               spacing="8px"
             >
-              <Tooltip title="Start Match">
+              <Tooltip title="Start set">
                 <div>
                   <IconButton
                     color="primary"
-                    disabled={!(selectedSet.id && selectedSet.state < 2)}
+                    disabled={
+                      !(selectedSet.id && selectedSet.state < 2) || startingSet
+                    }
                     size="small"
                     onClick={() => startSet(selectedSet.id)}
                   >
-                    <HourglassTop />
+                    {startingSet ? (
+                      <CircularProgress size="24px" />
+                    ) : (
+                      <HourglassTop />
+                    )}
                   </IconButton>
                 </div>
               </Tooltip>
