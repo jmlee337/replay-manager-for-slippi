@@ -49,6 +49,7 @@ import CopyControls from './CopyControls';
 import SetControls from './SetControls';
 import ErrorDialog from './ErrorDialog';
 import Settings from './Settings';
+import ManualReport from './ManualReport';
 
 const Bottom = styled(Paper)`
   height: 147px;
@@ -784,14 +785,20 @@ function Hello() {
                       {selectedSet.fullRoundText} ({selectedSet.id})
                     </Typography>
                     {selectedSet.state === 2 && (
-                      <Tooltip placement="top" title="Started">
-                        <HourglassTop fontSize="inherit" />
-                      </Tooltip>
+                      <>
+                        &nbsp;
+                        <Tooltip title="Started">
+                          <HourglassTop fontSize="inherit" />
+                        </Tooltip>
+                      </>
                     )}
                     {selectedSet.state === 3 && (
-                      <Tooltip placement="top" title="Finished">
-                        <Backup fontSize="inherit" />
-                      </Tooltip>
+                      <>
+                        &nbsp;
+                        <Tooltip placement="top" title="Finished">
+                          <Backup fontSize="inherit" />
+                        </Tooltip>
+                      </>
                     )}
                   </Stack>
                   <Tooltip arrow title="Drag or select players!">
@@ -845,60 +852,31 @@ function Hello() {
                 </>
               )}
             </Stack>
-            <Stack direction="row" paddingTop="8px" spacing="8px">
-              <Stack direction="row" width="50%">
-                <DroppableChip
-                  active
-                  label={dq.displayName || 'DQ'}
-                  outlined
-                  selectedChipData={selectedChipData}
-                  style={{ width: '100%' }}
-                  onClickOrDrop={(displayName: string, entrantId: number) => {
-                    const newOverrides = [
-                      { displayName: '', entrantId: 0 },
-                      { displayName: '', entrantId: 0 },
-                      { displayName: '', entrantId: 0 },
-                      { displayName: '', entrantId: 0 },
-                    ];
-                    selectedReplays.forEach((replay) => {
-                      replay.selected = false;
-                      replay.players.forEach((player, i) => {
-                        player.playerOverrides = { ...newOverrides[i] };
-                      });
-                    });
-                    const newReplays = Array.from(replays);
-                    setOverrides(newOverrides);
-                    setReplays(newReplays);
-                    setDq({ displayName, entrantId });
-                    resetSelectedChipData();
-                  }}
-                />
-              </Stack>
-              <Stack
-                direction="row"
-                justifyContent="flex-end"
-                flexGrow={1}
-                spacing="8px"
-              >
-                <Tooltip title="Start Match">
-                  <div>
-                    <IconButton
-                      color="primary"
-                      disabled={!(selectedSet.id && selectedSet.state < 2)}
-                      size="small"
-                      onClick={() => startSet(selectedSet.id)}
-                    >
-                      <HourglassTop />
-                    </IconButton>
-                  </div>
-                </Tooltip>
-                <SetControls
-                  reportSet={reportSet}
-                  dqId={dq.entrantId}
-                  selectedReplays={selectedReplays}
-                  set={selectedSet}
-                />
-              </Stack>
+            <Stack
+              direction="row"
+              justifyContent="flex-end"
+              paddingTop="8px"
+              spacing="8px"
+            >
+              <Tooltip title="Start Match">
+                <div>
+                  <IconButton
+                    color="primary"
+                    disabled={!(selectedSet.id && selectedSet.state < 2)}
+                    size="small"
+                    onClick={() => startSet(selectedSet.id)}
+                  >
+                    <HourglassTop />
+                  </IconButton>
+                </div>
+              </Tooltip>
+              <ManualReport reportSet={reportSet} selectedSet={selectedSet} />
+              <SetControls
+                reportSet={reportSet}
+                dqId={dq.entrantId}
+                selectedReplays={selectedReplays}
+                set={selectedSet}
+              />
             </Stack>
           </Stack>
         </BottomColumns>
