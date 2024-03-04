@@ -104,12 +104,16 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('getPhaseGroup');
   ipcMain.handle(
     'getPhaseGroup',
-    async (event: IpcMainInvokeEvent, id: number) => {
+    async (
+      event: IpcMainInvokeEvent,
+      id: number,
+      updatedSets?: Map<number, Set>,
+    ) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      return getPhaseGroup(sggApiKey, id);
+      return getPhaseGroup(sggApiKey, id, updatedSets);
     },
   );
 

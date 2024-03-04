@@ -120,7 +120,7 @@ function apiSetToSet(set: any): Set {
 const PHASE_GROUP_QUERY = `
   query PhaseGroupQuery($id: ID!, $page: Int) {
     phaseGroup(id: $id) {
-      sets(page: $page, perPage: 52, sortType: CALL_ORDER, filters: {hideEmpty: true}) {
+      sets(page: $page, perPage: 52, sortType: CALL_ORDER) {
         pageInfo {
           totalPages
         }
@@ -156,7 +156,11 @@ const PHASE_GROUP_QUERY = `
 // 2139098 the-off-season-2-2 1-000-melee-doubles
 // state {1: not started, 2: started, 3: completed}
 // sort: completed reverse chronological, then call order
-export async function getPhaseGroup(key: string, id: number): Promise<Sets> {
+export async function getPhaseGroup(
+  key: string,
+  id: number,
+  updatedSets: Map<number, Set> = new Map(),
+): Promise<Sets> {
   let page = 1;
   let nextData;
   const sets: Set[] = [];
@@ -164,23 +168,27 @@ export async function getPhaseGroup(key: string, id: number): Promise<Sets> {
     // eslint-disable-next-line no-await-in-loop
     nextData = await fetchGql(key, PHASE_GROUP_QUERY, { id, page });
     const newSets: Set[] = nextData.phaseGroup.sets.nodes
-      .filter((set: any) => set.slots[0].entrant && set.slots[1].entrant)
-      .map(apiSetToSet);
+      .filter(
+        (set: any) =>
+          (set.slots[0].entrant && set.slots[1].entrant) ||
+          updatedSets.has(set.id),
+      )
+      .map((set: any) => updatedSets.get(set.id) || apiSetToSet(set));
     sets.push(...newSets);
 
     page += 1;
   } while (page <= nextData.phaseGroup.sets.pageInfo.totalPages);
 
-  const partIndex = sets.findIndex(
-    (set: any) => set.state === 1 || set.state === 2,
-  );
-  if (partIndex === -1) {
-    return { pendingSets: [], completedSets: sets };
-  }
-  return {
-    pendingSets: sets.slice(partIndex),
-    completedSets: sets.slice(0, partIndex),
-  };
+  const pendingSets: Set[] = [];
+  const completedSets: Set[] = [];
+  sets.forEach((set) => {
+    if (set.state === 3) {
+      completedSets.push(set);
+    } else {
+      pendingSets.push(set);
+    }
+  });
+  return { pendingSets, completedSets };
 }
 
 const MARK_SET_IN_PROGRESS_MUTATION = `

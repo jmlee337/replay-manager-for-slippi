@@ -243,7 +243,7 @@ function Hello() {
   ) => {
     let sets;
     try {
-      sets = await window.electron.getPhaseGroup(id);
+      sets = await window.electron.getPhaseGroup(id, updatedSets);
     } catch (e: any) {
       showErrorDialog(e.toString());
       return;
@@ -263,20 +263,6 @@ function Hello() {
       (phaseGroup) => phaseGroup.id === id,
     );
     if (editPhaseGroup) {
-      if (updatedSets) {
-        for (let i = 0; i < sets.completedSets.length; i += 1) {
-          const updatedSet = updatedSets.get(sets.completedSets[i].id);
-          if (updatedSet) {
-            sets.completedSets[i] = updatedSet;
-          }
-        }
-        for (let i = 0; i < sets.pendingSets.length; i += 1) {
-          const updatedSet = updatedSets.get(sets.pendingSets[i].id);
-          if (updatedSet) {
-            sets.pendingSets[i] = updatedSet;
-          }
-        }
-      }
       editPhaseGroup.sets = sets;
       setTournament({ ...tournament });
     }
