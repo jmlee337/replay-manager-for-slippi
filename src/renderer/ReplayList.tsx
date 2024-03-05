@@ -172,7 +172,12 @@ const ReplayListItem = memo(function ReplayListItem({
   return (
     <ListItemButton
       disableGutters
-      style={replay.isValid ? {} : { opacity: '50%' }}
+      style={
+        replay.isValid ||
+        (selectedChipData.displayName && selectedChipData.entrantId)
+          ? {}
+          : { opacity: '50%' }
+      }
       selected={replay.selected}
       onClick={onClickCallback}
     >
