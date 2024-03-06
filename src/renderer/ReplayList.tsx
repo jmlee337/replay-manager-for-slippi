@@ -16,7 +16,7 @@ import {
 import { memo, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
-import { Replay } from '../common/types';
+import { PlayerOverrides, Replay } from '../common/types';
 import {
   characterNames,
   isValidCharacter,
@@ -56,15 +56,21 @@ const characterIcons = require.context('./characters', true);
 
 const ReplayListItem = memo(function ReplayListItem({
   index,
+  numAvailablePlayers,
   replay,
   selectedChipData,
+  findUnusedPlayer,
   onClick,
   onOverride,
   resetSelectedChipData,
 }: {
   index: number;
+  numAvailablePlayers: number;
   replay: Replay;
   selectedChipData: { displayName: string; entrantId: number };
+  findUnusedPlayer: (
+    overrideDisplayNameEntrantIds: Map<string, boolean>,
+  ) => PlayerOverrides;
   onClick: (index: number) => void;
   onOverride: () => void;
   resetSelectedChipData: () => void;
@@ -136,11 +142,12 @@ const ReplayListItem = memo(function ReplayListItem({
         : 'CPU';
     const onClickOrDrop = (displayName: string, entrantId: number) => {
       player.playerOverrides = { displayName, entrantId };
-      replay.players.forEach((otherPlayer) => {
-        if (
-          otherPlayer.port === player.port ||
-          (otherPlayer.playerType !== 0 && otherPlayer.playerType !== 1)
-        ) {
+      const validPlayers = replay.players.filter(
+        (otherPlayer) =>
+          otherPlayer.playerType === 0 || otherPlayer.playerType === 1,
+      );
+      validPlayers.forEach((otherPlayer) => {
+        if (otherPlayer.port === player.port) {
           return;
         }
         if (
@@ -151,6 +158,34 @@ const ReplayListItem = memo(function ReplayListItem({
           otherPlayer.playerOverrides.entrantId = 0;
         }
       });
+
+      // pigeonhole remaining player if possible
+      if (numAvailablePlayers === validPlayers.length) {
+        const overrideDisplayNameEntrantIds = new Map<string, boolean>();
+        const remainingPorts: number[] = [];
+        validPlayers.forEach((validPlayer) => {
+          if (
+            validPlayer.playerOverrides.displayName === '' &&
+            validPlayer.playerOverrides.entrantId === 0
+          ) {
+            remainingPorts.push(validPlayer.port);
+          } else {
+            overrideDisplayNameEntrantIds.set(
+              validPlayer.playerOverrides.displayName +
+                validPlayer.playerOverrides.entrantId,
+              true,
+            );
+          }
+        });
+        if (remainingPorts.length === 1) {
+          const unusedPlayer = findUnusedPlayer(overrideDisplayNameEntrantIds);
+          if (unusedPlayer.displayName && unusedPlayer.entrantId) {
+            replay.players[remainingPorts[0] - 1].playerOverrides =
+              unusedPlayer;
+          }
+        }
+      }
+
       onOverride();
       resetSelectedChipData();
     };
@@ -204,14 +239,20 @@ const ReplayListItem = memo(function ReplayListItem({
 });
 
 export default function ReplayList({
+  numAvailablePlayers,
   replays,
   selectedChipData,
+  findUnusedPlayer,
   onClick,
   onOverride,
   resetSelectedChipData,
 }: {
+  numAvailablePlayers: number;
   replays: Replay[];
   selectedChipData: { displayName: string; entrantId: number };
+  findUnusedPlayer: (
+    overrideDisplayNameEntrantIds: Map<string, boolean>,
+  ) => PlayerOverrides;
   onClick: (index: number) => void;
   onOverride: () => void;
   resetSelectedChipData: () => void;
@@ -222,6 +263,8 @@ export default function ReplayList({
         <ReplayListItem
           key={replay.filePath}
           index={index}
+          findUnusedPlayer={findUnusedPlayer}
+          numAvailablePlayers={numAvailablePlayers}
           replay={replay}
           selectedChipData={selectedChipData}
           onClick={onClick}

@@ -285,6 +285,38 @@ function Hello() {
     entrant2Names: [''],
     entrant2Score: null,
   });
+  const availablePlayers: PlayerOverrides[] = [];
+  selectedSet.entrant1Names.forEach((entrantName) => {
+    availablePlayers.push({
+      displayName: entrantName,
+      entrantId: selectedSet.entrant1Id,
+    });
+  });
+  selectedSet.entrant2Names.forEach((entrantName) => {
+    availablePlayers.push({
+      displayName: entrantName,
+      entrantId: selectedSet.entrant2Id,
+    });
+  });
+
+  const findUnusedPlayer = (
+    // Had problems using Set because we also import Set type in this file lol.
+    overrideDisplayNameEntrantIds: Map<string, boolean>,
+  ): PlayerOverrides => {
+    for (let i = 0; i < availablePlayers.length; i += 1) {
+      if (
+        !overrideDisplayNameEntrantIds.has(
+          availablePlayers[i].displayName + availablePlayers[i].entrantId,
+        )
+      ) {
+        return {
+          displayName: availablePlayers[i].displayName,
+          entrantId: availablePlayers[i].entrantId,
+        };
+      }
+    }
+    return { displayName: '', entrantId: 0 };
+  };
 
   // for click-assigning set participants
   const [selectedChipData, setSelectedChipData] = useState({
@@ -317,11 +349,11 @@ function Hello() {
       }
     });
 
+    // pigeonhole remaining player if possible
     if (
       batchActives.filter((batchActive) => batchActive).length ===
-      selectedSet.entrant1Names.length + selectedSet.entrant2Names.length
+      availablePlayers.length
     ) {
-      // Had problems using Set because we also import Set type in this file lol.
       const overrideDisplayNameEntrantIds = new Map<string, boolean>();
       const remainingIndices: number[] = [];
       for (let i = 0; i < 4; i += 1) {
@@ -340,39 +372,10 @@ function Hello() {
         }
       }
       if (remainingIndices.length === 1) {
-        const findUnusedEntrantIdAndName = () => {
-          for (let i = 0; i < selectedSet.entrant1Names.length; i += 1) {
-            if (
-              !overrideDisplayNameEntrantIds.has(
-                selectedSet.entrant1Names[i] + selectedSet.entrant1Id,
-              )
-            ) {
-              return {
-                displayName: selectedSet.entrant1Names[i],
-                entrantId: selectedSet.entrant1Id,
-              };
-            }
-          }
-          for (let i = 0; i < selectedSet.entrant2Names.length; i += 1) {
-            if (
-              !overrideDisplayNameEntrantIds.has(
-                selectedSet.entrant2Names[i] + selectedSet.entrant2Id,
-              )
-            ) {
-              return {
-                displayName: selectedSet.entrant2Names[i],
-                entrantId: selectedSet.entrant2Id,
-              };
-            }
-          }
-          return { displayName: '', entrantId: 0 };
-        };
-        const { displayName: unusedDisplayName, entrantId: unusedEntrantId } =
-          findUnusedEntrantIdAndName();
-        newOverrides[remainingIndices[0]] = {
-          displayName: unusedDisplayName,
-          entrantId: unusedEntrantId,
-        };
+        const unusedPlayer = findUnusedPlayer(overrideDisplayNameEntrantIds);
+        if (unusedPlayer.displayName && unusedPlayer.entrantId) {
+          newOverrides[remainingIndices[0]] = unusedPlayer;
+        }
       }
     }
 
@@ -794,8 +797,10 @@ function Hello() {
         <TopColumn flexGrow={1} minWidth="600px">
           {dirExists ? (
             <ReplayList
+              numAvailablePlayers={availablePlayers.length}
               replays={replays}
               selectedChipData={selectedChipData}
+              findUnusedPlayer={findUnusedPlayer}
               onClick={onReplayClick}
               onOverride={onPlayerOverride}
               resetSelectedChipData={resetSelectedChipData}
