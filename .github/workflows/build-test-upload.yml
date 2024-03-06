@@ -10,6 +10,12 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v4
 
+      - name: Install Python and distutils
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python3 -m pip install distutils
+
       - name: Install Node.js and NPM
         uses: actions/setup-node@v4
         with:
