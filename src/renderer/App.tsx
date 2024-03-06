@@ -158,7 +158,9 @@ function Hello() {
     if (newDir) {
       const newReplays = await window.electron.getReplaysInDir();
       applyAllReplaysSelected(newReplays, allReplaysSelected);
-      setBatchActives(getNewBatchActives(newReplays));
+      setBatchActives(
+        getNewBatchActives(newReplays.filter((replay) => replay.selected)),
+      );
       setDir(newDir);
       setDirExists(true);
       resetOverrides();
@@ -178,7 +180,9 @@ function Hello() {
       setDirExists(false);
     }
     applyAllReplaysSelected(newReplays, allReplaysSelected);
-    setBatchActives(getNewBatchActives(newReplays));
+    setBatchActives(
+      getNewBatchActives(newReplays.filter((replay) => replay.selected)),
+    );
     resetOverrides();
     setReplays(newReplays);
   }, [allReplaysSelected, dir]);
@@ -269,6 +273,19 @@ function Hello() {
     }
   };
 
+  const [selectedSet, setSelectedSet] = useState<Set>({
+    id: 0,
+    state: 0,
+    fullRoundText: '',
+    winnerId: null,
+    entrant1Id: 0,
+    entrant1Names: [''],
+    entrant1Score: null,
+    entrant2Id: 0,
+    entrant2Names: [''],
+    entrant2Score: null,
+  });
+
   // for click-assigning set participants
   const [selectedChipData, setSelectedChipData] = useState({
     displayName: '',
@@ -300,6 +317,65 @@ function Hello() {
       }
     });
 
+    if (
+      batchActives.filter((batchActive) => batchActive).length ===
+      selectedSet.entrant1Names.length + selectedSet.entrant2Names.length
+    ) {
+      // Had problems using Set because we also import Set type in this file lol.
+      const overrideDisplayNameEntrantIds = new Map<string, boolean>();
+      const remainingIndices: number[] = [];
+      for (let i = 0; i < 4; i += 1) {
+        if (batchActives[i]) {
+          if (
+            newOverrides[i].displayName === '' &&
+            newOverrides[i].entrantId === 0
+          ) {
+            remainingIndices.push(i);
+          } else {
+            overrideDisplayNameEntrantIds.set(
+              newOverrides[i].displayName + newOverrides[i].entrantId,
+              true,
+            );
+          }
+        }
+      }
+      if (remainingIndices.length === 1) {
+        const findUnusedEntrantIdAndName = () => {
+          for (let i = 0; i < selectedSet.entrant1Names.length; i += 1) {
+            if (
+              !overrideDisplayNameEntrantIds.has(
+                selectedSet.entrant1Names[i] + selectedSet.entrant1Id,
+              )
+            ) {
+              return {
+                displayName: selectedSet.entrant1Names[i],
+                entrantId: selectedSet.entrant1Id,
+              };
+            }
+          }
+          for (let i = 0; i < selectedSet.entrant2Names.length; i += 1) {
+            if (
+              !overrideDisplayNameEntrantIds.has(
+                selectedSet.entrant2Names[i] + selectedSet.entrant2Id,
+              )
+            ) {
+              return {
+                displayName: selectedSet.entrant2Names[i],
+                entrantId: selectedSet.entrant2Id,
+              };
+            }
+          }
+          return { displayName: '', entrantId: 0 };
+        };
+        const { displayName: unusedDisplayName, entrantId: unusedEntrantId } =
+          findUnusedEntrantIdAndName();
+        newOverrides[remainingIndices[0]] = {
+          displayName: unusedDisplayName,
+          entrantId: unusedEntrantId,
+        };
+      }
+    }
+
     selectedReplays.forEach((replay) => {
       replay.players[index].playerOverrides = { ...newOverrides[index] };
       replay.players.forEach((otherPlayer) => {
@@ -317,6 +393,9 @@ function Hello() {
           otherPlayer.playerOverrides.entrantId = 0;
         }
       });
+      for (let i = 0; i < 4; i += 1) {
+        replay.players[i].playerOverrides = { ...newOverrides[i] };
+      }
     });
     setOverrides(newOverrides);
     resetDq();
@@ -444,18 +523,6 @@ function Hello() {
   };
 
   // set controls
-  const [selectedSet, setSelectedSet] = useState<Set>({
-    id: 0,
-    state: 0,
-    fullRoundText: '',
-    winnerId: null,
-    entrant1Id: 0,
-    entrant1Names: [''],
-    entrant1Score: null,
-    entrant2Id: 0,
-    entrant2Names: [''],
-    entrant2Score: null,
-  });
   const [selectedSetChain, setSelectedSetChain] = useState({
     eventId: 0,
     phaseId: 0,
@@ -579,6 +646,21 @@ function Hello() {
                     const newAllReplaysSelected = !allReplaysSelected;
                     setAllReplaysSelected(newAllReplaysSelected);
                     applyAllReplaysSelected(replays, newAllReplaysSelected);
+                    replays.forEach((replay) => {
+                      replay.players.forEach((player) => {
+                        player.playerOverrides = {
+                          displayName: '',
+                          entrantId: 0,
+                        };
+                        player.overrideWin = false;
+                      });
+                    });
+                    resetOverrides();
+                    setBatchActives(
+                      getNewBatchActives(
+                        replays.filter((replay) => replay.selected),
+                      ),
+                    );
                     setReplays(Array.from(replays));
                   }}
                 />
