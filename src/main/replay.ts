@@ -116,18 +116,19 @@ export async function getReplaysInDir(dir: string) {
         const players: Player[] = new Array<Player>(4);
         for (let i = 0; i < 4; i += 1) {
           const offset = i * 36 + 101;
+          const teamId = isTeams ? gameStart[offset + 9] : -1;
           players[i] = {
             overrideWin: false,
             playerOverrides: { displayName: '', entrantId: 0 },
             playerType: gameStart[offset + 1],
             port: i + 1,
+            teamId,
           } as Player;
           if (players[i].playerType === 0) {
             numPlayers += 1;
             if (isTeams) {
-              const teamIndex = gameStart[offset + 9];
-              const currTeamSize = teamSizes.get(teamIndex) || 0;
-              teamSizes.set(teamIndex, currTeamSize + 1);
+              const currTeamSize = teamSizes.get(teamId) || 0;
+              teamSizes.set(teamId, currTeamSize + 1);
             }
           } else if (players[i].playerType === 1) {
             isValid = false;

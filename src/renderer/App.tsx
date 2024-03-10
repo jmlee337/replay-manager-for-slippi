@@ -135,24 +135,40 @@ function Hello() {
       .forEach((replay) => {
         replay.selected = selected;
       });
-  const getNewBatchActives = (newReplays: Replay[]) =>
-    newReplays.length > 0
-      ? newReplays
-          .map((replay) =>
-            replay.players.map(
-              (player) => player.playerType === 0 || player.playerType === 1,
-            ),
-          )
-          .reduce(
-            (accArr, curArr) => [
-              accArr[0] && curArr[0],
-              accArr[1] && curArr[1],
-              accArr[2] && curArr[2],
-              accArr[3] && curArr[3],
-            ],
-            [true, true, true, true],
-          )
-      : [false, false, false, false];
+  const getNewBatchActives = (newReplays: Replay[]) => {
+    const isPlayerArr =
+      newReplays.length > 0
+        ? newReplays
+            .map((replay) =>
+              replay.players.map(
+                (player) => player.playerType === 0 || player.playerType === 1,
+              ),
+            )
+            .reduce(
+              (accArr, curArr) => [
+                accArr[0] && curArr[0],
+                accArr[1] && curArr[1],
+                accArr[2] && curArr[2],
+                accArr[3] && curArr[3],
+              ],
+              [true, true, true, true],
+            )
+        : [false, false, false, false];
+    const teamIdsArr = [
+      new Map<number, boolean>(),
+      new Map<number, boolean>(),
+      new Map<number, boolean>(),
+      new Map<number, boolean>(),
+    ];
+    newReplays.forEach((replay) => {
+      for (let i = 0; i < 4; i += 1) {
+        teamIdsArr[i].set(replay.players[i].teamId, true);
+      }
+    });
+    return isPlayerArr.map(
+      (isPlayer, i) => isPlayer && teamIdsArr[i].size === 1,
+    );
+  };
   const chooseDir = async () => {
     const newDir = await window.electron.chooseDir();
     if (newDir) {
