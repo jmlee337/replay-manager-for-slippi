@@ -250,6 +250,32 @@ function Hello() {
     window.electron.onUsb(refreshReplays);
   }, [refreshReplays]);
 
+  const [selectedSet, setSelectedSet] = useState<Set>({
+    id: 0,
+    state: 0,
+    fullRoundText: '',
+    winnerId: null,
+    entrant1Id: 0,
+    entrant1Names: [''],
+    entrant1Score: null,
+    entrant2Id: 0,
+    entrant2Names: [''],
+    entrant2Score: null,
+  });
+  const availablePlayers: PlayerOverrides[] = [];
+  selectedSet.entrant1Names.forEach((entrantName) => {
+    availablePlayers.push({
+      displayName: entrantName,
+      entrantId: selectedSet.entrant1Id,
+    });
+  });
+  selectedSet.entrant2Names.forEach((entrantName) => {
+    availablePlayers.push({
+      displayName: entrantName,
+      entrantId: selectedSet.entrant2Id,
+    });
+  });
+
   // Tournament view
   const [slug, setSlug] = useState('');
   const [slugDialogOpen, setSlugDialogOpen] = useState(false);
@@ -289,34 +315,16 @@ function Hello() {
     if (editPhaseGroup) {
       editPhaseGroup.sets = sets;
       setTournament({ ...tournament });
+      if (selectedSet.id) {
+        const updatedSelectedSet =
+          sets.completedSets.find((set) => set.id === selectedSet.id) ||
+          sets.pendingSets.find((set) => set.id === selectedSet.id);
+        if (updatedSelectedSet) {
+          setSelectedSet(updatedSelectedSet);
+        }
+      }
     }
   };
-
-  const [selectedSet, setSelectedSet] = useState<Set>({
-    id: 0,
-    state: 0,
-    fullRoundText: '',
-    winnerId: null,
-    entrant1Id: 0,
-    entrant1Names: [''],
-    entrant1Score: null,
-    entrant2Id: 0,
-    entrant2Names: [''],
-    entrant2Score: null,
-  });
-  const availablePlayers: PlayerOverrides[] = [];
-  selectedSet.entrant1Names.forEach((entrantName) => {
-    availablePlayers.push({
-      displayName: entrantName,
-      entrantId: selectedSet.entrant1Id,
-    });
-  });
-  selectedSet.entrant2Names.forEach((entrantName) => {
-    availablePlayers.push({
-      displayName: entrantName,
-      entrantId: selectedSet.entrant2Id,
-    });
-  });
 
   const findUnusedPlayer = (
     displayName: string,
