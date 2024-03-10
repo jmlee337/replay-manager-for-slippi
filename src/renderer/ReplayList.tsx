@@ -69,6 +69,8 @@ const ReplayListItem = memo(function ReplayListItem({
   replay: Replay;
   selectedChipData: { displayName: string; entrantId: number };
   findUnusedPlayer: (
+    displayName: string,
+    entrantId: number,
     overrideDisplayNameEntrantIds: Map<string, boolean>,
   ) => PlayerOverrides;
   onClick: (index: number) => void;
@@ -163,22 +165,35 @@ const ReplayListItem = memo(function ReplayListItem({
       if (numAvailablePlayers === validPlayers.length) {
         const overrideDisplayNameEntrantIds = new Map<string, boolean>();
         const remainingPorts: number[] = [];
-        validPlayers.forEach((validPlayer) => {
+        const { teamId } = player;
+        const isTeams = numAvailablePlayers === 4 && teamId !== -1;
+
+        // find if there's exactly one hole to pigeon
+        const playersToCheck = validPlayers.filter(
+          (validPlayer) => !isTeams || validPlayer.teamId === teamId,
+        );
+        playersToCheck.forEach((playerToCheck) => {
           if (
-            validPlayer.playerOverrides.displayName === '' &&
-            validPlayer.playerOverrides.entrantId === 0
+            playerToCheck.playerOverrides.displayName === '' &&
+            playerToCheck.playerOverrides.entrantId === 0
           ) {
-            remainingPorts.push(validPlayer.port);
+            remainingPorts.push(playerToCheck.port);
           } else {
             overrideDisplayNameEntrantIds.set(
-              validPlayer.playerOverrides.displayName +
-                validPlayer.playerOverrides.entrantId,
+              playerToCheck.playerOverrides.displayName +
+                playerToCheck.playerOverrides.entrantId,
               true,
             );
           }
         });
+
+        // find the player to put in the hole
         if (remainingPorts.length === 1) {
-          const unusedPlayer = findUnusedPlayer(overrideDisplayNameEntrantIds);
+          const unusedPlayer = findUnusedPlayer(
+            displayName,
+            entrantId,
+            overrideDisplayNameEntrantIds,
+          );
           if (unusedPlayer.displayName && unusedPlayer.entrantId) {
             replay.players[remainingPorts[0] - 1].playerOverrides =
               unusedPlayer;
@@ -251,6 +266,8 @@ export default function ReplayList({
   replays: Replay[];
   selectedChipData: { displayName: string; entrantId: number };
   findUnusedPlayer: (
+    displayName: string,
+    entrantId: number,
     overrideDisplayNameEntrantIds: Map<string, boolean>,
   ) => PlayerOverrides;
   onClick: (index: number) => void;

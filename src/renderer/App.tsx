@@ -97,10 +97,10 @@ function Hello() {
   };
 
   const [batchActives, setBatchActives] = useState([
-    false,
-    false,
-    false,
-    false,
+    { active: false, teamId: -1 },
+    { active: false, teamId: -1 },
+    { active: false, teamId: -1 },
+    { active: false, teamId: -1 },
   ]);
   const [overrides, setOverrides] = useState<PlayerOverrides[]>([
     { displayName: '', entrantId: 0 },
@@ -165,9 +165,12 @@ function Hello() {
         teamIdsArr[i].set(replay.players[i].teamId, true);
       }
     });
-    return isPlayerArr.map(
-      (isPlayer, i) => isPlayer && teamIdsArr[i].size === 1,
-    );
+    return isPlayerArr.map((isPlayer, i) => {
+      const teamIds = teamIdsArr[i];
+      const oneTeam = teamIds.size === 1;
+      const teamId = oneTeam ? Array.from(teamIds.keys())[0] : -1;
+      return { active: isPlayer && oneTeam, teamId };
+    });
   };
   const chooseDir = async () => {
     const newDir = await window.electron.chooseDir();
@@ -222,7 +225,7 @@ function Hello() {
 
     const newOverrides = Array.from(overrides);
     for (let i = 0; i < 4; i += 1) {
-      if (batchActives[i] && !newBatchActives[i]) {
+      if (batchActives[i].active && !newBatchActives[i].active) {
         newOverrides[i] = { displayName: '', entrantId: 0 };
       }
     }
@@ -316,20 +319,39 @@ function Hello() {
   });
 
   const findUnusedPlayer = (
+    displayName: string,
+    entrantId: number,
     // Had problems using Set because we also import Set type in this file lol.
     overrideDisplayNameEntrantIds: Map<string, boolean>,
   ): PlayerOverrides => {
-    for (let i = 0; i < availablePlayers.length; i += 1) {
-      if (
-        !overrideDisplayNameEntrantIds.has(
-          availablePlayers[i].displayName + availablePlayers[i].entrantId,
-        )
-      ) {
-        return {
-          displayName: availablePlayers[i].displayName,
-          entrantId: availablePlayers[i].entrantId,
-        };
-      }
+    const isEntrant1 = entrantId === selectedSet.entrant1Id;
+    const isTeams = selectedSet.entrant1Names.length > 1;
+    let displayNameToCheck = '';
+    let entrantIdToCheck = 0;
+    if (isEntrant1 && isTeams) {
+      displayNameToCheck =
+        selectedSet.entrant1Names.find((name) => name !== displayName) ||
+        displayName;
+      entrantIdToCheck = selectedSet.entrant1Id;
+    } else if (!isEntrant1 && isTeams) {
+      displayNameToCheck =
+        selectedSet.entrant2Names.find((name) => name !== displayName) ||
+        displayName;
+      entrantIdToCheck = selectedSet.entrant2Id;
+    } else if (isEntrant1 && !isTeams) {
+      [displayNameToCheck] = selectedSet.entrant2Names;
+      entrantIdToCheck = selectedSet.entrant2Id;
+    } else if (!isEntrant1 && !isTeams) {
+      [displayNameToCheck] = selectedSet.entrant1Names;
+      entrantIdToCheck = selectedSet.entrant1Id;
+    }
+    if (
+      !overrideDisplayNameEntrantIds.has(displayNameToCheck + entrantIdToCheck)
+    ) {
+      return {
+        displayName: displayNameToCheck,
+        entrantId: entrantIdToCheck,
+      };
     }
     return { displayName: '', entrantId: 0 };
   };
@@ -367,28 +389,48 @@ function Hello() {
 
     // pigeonhole remaining player if possible
     if (
-      batchActives.filter((batchActive) => batchActive).length ===
+      batchActives.filter((batchActive) => batchActive.active).length ===
       availablePlayers.length
     ) {
       const overrideDisplayNameEntrantIds = new Map<string, boolean>();
       const remainingIndices: number[] = [];
-      for (let i = 0; i < 4; i += 1) {
-        if (batchActives[i]) {
-          if (
-            newOverrides[i].displayName === '' &&
-            newOverrides[i].entrantId === 0
-          ) {
-            remainingIndices.push(i);
-          } else {
-            overrideDisplayNameEntrantIds.set(
-              newOverrides[i].displayName + newOverrides[i].entrantId,
-              true,
-            );
-          }
+      const { teamId } = batchActives[index];
+      const isTeams = availablePlayers.length === 4 && teamId !== -1;
+
+      // find if there's exactly one hole to pigeon
+      const batchActivesWithIndex = batchActives
+        .map((batchActive, i) => ({
+          active: batchActive.active,
+          teamId: batchActive.teamId,
+          i,
+        }))
+        .filter(
+          (batchActiveWithIndex) =>
+            batchActiveWithIndex.active &&
+            (!isTeams || batchActiveWithIndex.teamId === teamId),
+        );
+      batchActivesWithIndex.forEach((batchActiveWithIndex) => {
+        const { i } = batchActiveWithIndex;
+        if (
+          newOverrides[i].displayName === '' &&
+          newOverrides[i].entrantId === 0
+        ) {
+          remainingIndices.push(i);
+        } else {
+          overrideDisplayNameEntrantIds.set(
+            newOverrides[i].displayName + newOverrides[i].entrantId,
+            true,
+          );
         }
-      }
+      });
+
+      // find the player to put in the hole
       if (remainingIndices.length === 1) {
-        const unusedPlayer = findUnusedPlayer(overrideDisplayNameEntrantIds);
+        const unusedPlayer = findUnusedPlayer(
+          displayName,
+          entrantId,
+          overrideDisplayNameEntrantIds,
+        );
         if (unusedPlayer.displayName && unusedPlayer.entrantId) {
           newOverrides[remainingIndices[0]] = unusedPlayer;
         }
@@ -420,18 +462,21 @@ function Hello() {
     resetDq();
     resetSelectedChipData();
   };
-  const batchChip = (index: number) => (
-    <DroppableChip
-      active={batchActives[index]}
-      label={overrides[index].displayName || `P${index + 1}`}
-      outlined={batchActives[index]}
-      selectedChipData={selectedChipData}
-      style={{ width: '25%' }}
-      onClickOrDrop={(displayName: string, entrantId: number) =>
-        onClickOrDrop(displayName, entrantId, index)
-      }
-    />
-  );
+  const batchChip = (index: number) => {
+    const { active } = batchActives[index];
+    return (
+      <DroppableChip
+        active={active}
+        label={overrides[index].displayName || `P${index + 1}`}
+        outlined={active}
+        selectedChipData={selectedChipData}
+        style={{ width: '25%' }}
+        onClickOrDrop={(displayName: string, entrantId: number) =>
+          onClickOrDrop(displayName, entrantId, index)
+        }
+      />
+    );
+  };
 
   const getPhase = async (id: number, eventId: number) => {
     let phaseGroups;
