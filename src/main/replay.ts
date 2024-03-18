@@ -390,6 +390,11 @@ export async function writeReplays(
               fixedDisplayNameArr.push(byte);
             }
           });
+          if (fixedDisplayNameArr.length < 31) {
+            const oldLength = fixedDisplayNameArr.length;
+            fixedDisplayNameArr.length = 31;
+            fixedDisplayNameArr.fill(0, oldLength);
+          }
           Buffer.from(fixedDisplayNameArr).copy(rawElement, offset);
         });
       }
