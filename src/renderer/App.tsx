@@ -31,8 +31,10 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import styled from '@emotion/styled';
+import { format } from 'date-fns';
 import {
   Event,
+  Output,
   Phase,
   PhaseGroup,
   PlayerOverrides,
@@ -50,6 +52,7 @@ import SetControls from './SetControls';
 import ErrorDialog from './ErrorDialog';
 import Settings from './Settings';
 import ManualReport from './ManualReport';
+import { characterNames } from '../common/constants';
 
 const Bottom = styled(Paper)`
   height: 147px;
@@ -698,6 +701,193 @@ function Hello() {
     inner();
   }, []);
 
+  // copy
+  type NameObj = {
+    characterName: string;
+    displayName: string;
+    nametag: string;
+  };
+  type NamesObj = {
+    characterNames: Map<string, number>;
+    displayName: string;
+    nametags: Map<string, number>;
+  };
+
+  const [isCopying, setIsCopying] = useState(false);
+  const [copyDir, setCopyDir] = useState('');
+  const [copyError, setCopyError] = useState('');
+  const [copyErrorDialogOpen, setCopyErrorDialogOpen] = useState(false);
+  const [copyOutput, setCopyOutput] = useState(Output.ZIP);
+  const [copySuccess, setCopySuccess] = useState('');
+  const [copyWriteDisplayNames, setCopyWriteDisplayNames] = useState(true);
+  const [copyWriteFileNames, setCopyWriteFileNames] = useState(false);
+  const [copyWriteStartTimes, setCopyWriteStartTimes] = useState(true);
+
+  const onCopy = async () => {
+    setIsCopying(true);
+
+    let offsetMs = 0;
+    let startDate = new Date(selectedReplays[0].startAt);
+    if (copyWriteStartTimes) {
+      const lastReplay = selectedReplays[selectedReplays.length - 1];
+      const lastStartMs = new Date(lastReplay.startAt).getTime();
+      const lastDurationMs = Math.round((lastReplay.lastFrame + 124) / 0.05994);
+      offsetMs = Date.now() - lastStartMs - lastDurationMs;
+      startDate = new Date(
+        new Date(selectedReplays[0].startAt).getTime() + offsetMs,
+      );
+    }
+
+    let fileNames = selectedReplays.map((replay) => replay.fileName);
+    let subdir = '';
+    if (
+      copyWriteFileNames ||
+      copyOutput === Output.FOLDER ||
+      copyOutput === Output.ZIP
+    ) {
+      const nameObjs = selectedReplays.map((replay) =>
+        replay.players.map(
+          (player): NameObj =>
+            player.playerType === 0 || player.playerType === 1
+              ? {
+                  characterName: characterNames.get(
+                    player.externalCharacterId,
+                  )!,
+                  displayName: copyWriteDisplayNames
+                    ? player.playerOverrides.displayName || player.displayName
+                    : player.displayName,
+                  nametag: player.nametag,
+                }
+              : { characterName: '', displayName: '', nametag: '' },
+        ),
+      );
+
+      const toLabel = (nameObj: NameObj) => {
+        if (nameObj.displayName) {
+          return `${nameObj.displayName} (${nameObj.characterName})`;
+        }
+        if (nameObj.nametag) {
+          return `${nameObj.characterName} (${nameObj.nametag})`;
+        }
+        return nameObj.characterName;
+      };
+
+      if (copyOutput === Output.FOLDER || copyOutput === Output.ZIP) {
+        const folderLabels = nameObjs
+          .reduce(
+            (namesObj, game): NamesObj[] => {
+              game.forEach((nameObj, i) => {
+                if (nameObj.characterName) {
+                  namesObj[i].displayName = nameObj.displayName;
+
+                  const charCount =
+                    namesObj[i].characterNames.get(nameObj.characterName) || 0;
+                  namesObj[i].characterNames.set(
+                    nameObj.characterName,
+                    charCount + 1,
+                  );
+
+                  const nameCount =
+                    namesObj[i].nametags.get(nameObj.nametag) || 0;
+                  namesObj[i].nametags.set(nameObj.nametag, nameCount + 1);
+                }
+              });
+              return namesObj;
+            },
+            [
+              {
+                characterNames: new Map(),
+                displayName: '',
+                nametags: new Map(),
+              },
+              {
+                characterNames: new Map(),
+                displayName: '',
+                nametags: new Map(),
+              },
+              {
+                characterNames: new Map(),
+                displayName: '',
+                nametags: new Map(),
+              },
+              {
+                characterNames: new Map(),
+                displayName: '',
+                nametags: new Map(),
+              },
+            ],
+          )
+          .map((namesObj) => ({
+            displayName: namesObj.displayName,
+            characterName: [...namesObj.characterNames.entries()]
+              .sort(
+                (entryA: [string, number], entryB: [string, number]) =>
+                  entryB[1] - entryA[1],
+              )
+              .map((entry) => entry[0])
+              .join(', '),
+            nametag: [...namesObj.nametags.entries()]
+              .sort(
+                (entryA: [string, number], entryB: [string, number]) =>
+                  entryB[1] - entryA[1],
+              )
+              .map((entry) => entry[0])
+              .join(', '),
+          }))
+          .filter((nameObj) => nameObj.characterName)
+          .map(toLabel)
+          .join(', ');
+        const writeStartAt = format(startDate, "yyyyMMdd'T'HHmmss");
+        subdir = `${writeStartAt} ${folderLabels}`;
+      }
+
+      if (copyWriteFileNames) {
+        fileNames = nameObjs.map((game, i) => {
+          let prefix = `${i + 1}`;
+          if (copyOutput === Output.FILES) {
+            const { startAt } = selectedReplays[i];
+            const writeStartDate = copyWriteStartTimes
+              ? new Date(new Date(startAt).getTime() + offsetMs)
+              : new Date(startAt);
+            const writeStartAt = format(writeStartDate, "yyyyMMdd'T'HHmmss");
+            prefix = `${writeStartAt}_${prefix}`;
+          }
+          const labels = game
+            .filter((nameObj) => nameObj.characterName)
+            .map(toLabel)
+            .join(', ');
+          return `${prefix} ${labels}.slp`;
+        });
+      }
+    }
+
+    let startTimes: string[] = [];
+    if (copyWriteStartTimes) {
+      startTimes = selectedReplays.map((replay) =>
+        new Date(new Date(replay.startAt).getTime() + offsetMs).toISOString(),
+      );
+    }
+
+    try {
+      await window.electron.writeReplays(
+        copyDir,
+        fileNames,
+        copyOutput,
+        selectedReplays,
+        startTimes,
+        subdir,
+        copyWriteDisplayNames,
+      );
+      setCopySuccess('Success!');
+      setTimeout(() => setCopySuccess(''), 5000);
+    } catch (e: any) {
+      setCopyError(e.toString());
+      setCopyErrorDialogOpen(true);
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
   return (
     <>
       <AppBar position="fixed" style={{ backgroundColor: 'white' }}>
@@ -879,7 +1069,26 @@ function Hello() {
               Folder not found
             </Alert>
           )}
-          <CopyControls selectedReplays={selectedReplays} />
+          <CopyControls
+            dir={copyDir}
+            setDir={setCopyDir}
+            error={copyError}
+            setError={setCopyError}
+            errorDialogOpen={copyErrorDialogOpen}
+            setErrorDialogOpen={setCopyErrorDialogOpen}
+            hasSelectedReplays={selectedReplays.length > 0}
+            isCopying={isCopying}
+            onCopy={onCopy}
+            output={copyOutput}
+            setOutput={setCopyOutput}
+            success={copySuccess}
+            writeDisplayNames={copyWriteDisplayNames}
+            setWriteDisplayNames={setCopyWriteDisplayNames}
+            writeFileNames={copyWriteFileNames}
+            setWriteFileNames={setCopyWriteFileNames}
+            writeStartTimes={copyWriteStartTimes}
+            setWriteStartTimes={setCopyWriteStartTimes}
+          />
         </TopColumn>
         <TopColumn width="300px">
           <TournamentView
