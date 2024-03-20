@@ -31,6 +31,7 @@ import {
   startggStageIds,
 } from '../common/constants';
 import SetView from './SetView';
+import LabeledCheckbox from './LabeledCheckbox';
 
 const characterIcons = require.context('./characters', true);
 
@@ -116,12 +117,18 @@ function getScoresAndWinnerId(selectedReplays: Replay[]) {
 }
 
 export default function SetControls({
+  copyReplays,
+  deleteReplays,
   reportSet,
+  copyDisabled,
   dqId,
   selectedReplays,
   set,
 }: {
+  copyReplays: () => Promise<void>;
+  deleteReplays: () => Promise<void>;
   reportSet: (set: StartggSet, update: boolean) => Promise<void>;
+  copyDisabled: boolean;
   dqId: number;
   selectedReplays: Replay[];
   set: Set;
@@ -134,6 +141,9 @@ export default function SetControls({
     isDQ: false,
     gameData: [],
   });
+
+  const [alsoCopy, setAlsoCopy] = useState(false);
+  const [alsoDelete, setAlsoDelete] = useState(false);
 
   const isDq = dqId === set.entrant1Id || dqId === set.entrant2Id;
   const validSelections = setAndReplaysValid(selectedReplays, set);
@@ -293,14 +303,37 @@ export default function SetControls({
               </Stack>
             ))}
           </Stack>
+          <Divider sx={{ marginTop: '8px' }} />
+          <Stack justifyContent="flex-end">
+            <LabeledCheckbox
+              checked={alsoCopy}
+              label="Also Copy"
+              labelPlacement="start"
+              set={setAlsoCopy}
+            />
+            <LabeledCheckbox
+              checked={alsoDelete}
+              disabled={!alsoCopy}
+              label="Also Delete"
+              labelPlacement="start"
+              set={setAlsoDelete}
+            />
+          </Stack>
         </DialogContent>
         <DialogActions>
           <Button
-            disabled={reporting}
+            disabled={reporting || (alsoCopy && copyDisabled)}
             endIcon={reporting ? <CircularProgress size="24px" /> : <Backup />}
             onClick={async () => {
               setReporting(true);
-              await reportSet(startggSet, set.state === 3);
+              const promises = [reportSet(startggSet, set.state === 3)];
+              if (alsoCopy) {
+                promises.push(copyReplays());
+              }
+              await Promise.all(promises);
+              if (alsoCopy && alsoDelete) {
+                await deleteReplays();
+              }
               setOpen(false);
               setReporting(false);
               setStartggSet({
@@ -312,7 +345,8 @@ export default function SetControls({
             }}
             variant="contained"
           >
-            Report
+            Report{alsoCopy && ', Copy'}
+            {alsoCopy && alsoDelete && ', Delete'}
           </Button>
         </DialogActions>
       </Dialog>

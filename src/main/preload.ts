@@ -13,8 +13,9 @@ import {
 export type Channels = 'ipc-example';
 
 const electronHandler = {
-  chooseDir: (): Promise<string> => ipcRenderer.invoke('chooseDir'),
-  deleteDir: (): Promise<void> => ipcRenderer.invoke('deleteDir'),
+  chooseReplaysDir: (): Promise<string> =>
+    ipcRenderer.invoke('chooseReplaysDir'),
+  deleteReplaysDir: (): Promise<void> => ipcRenderer.invoke('deleteReplaysDir'),
   getReplaysInDir: (): Promise<Replay[]> =>
     ipcRenderer.invoke('getReplaysInDir'),
   writeReplays: (
@@ -36,6 +37,7 @@ const electronHandler = {
       subdir,
       writeDisplayNames,
     ),
+  chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
   getTournament: (slug: string): Promise<Event[]> =>
     ipcRenderer.invoke('getTournament', slug),
   getEvent: (id: number): Promise<Phase[]> =>

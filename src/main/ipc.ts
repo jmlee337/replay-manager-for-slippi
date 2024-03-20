@@ -22,11 +22,11 @@ import {
 import { getReplaysInDir, writeReplays } from './replay';
 
 export default function setupIPCs(mainWindow: BrowserWindow): void {
-  let chosenDir = '';
+  let chosenReplaysDir = '';
   const usbCallback = (data: any) => {
     if (
       (data.event === 'eject' || data.data.isAccessible) &&
-      chosenDir.startsWith(data.data.key)
+      chosenReplaysDir.startsWith(data.data.key)
     ) {
       mainWindow.webContents.send('usbstorage');
     }
@@ -37,23 +37,27 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   detectUsb.removeAllListeners('eject');
   detectUsb.on('eject', usbCallback);
 
-  ipcMain.removeHandler('chooseDir');
-  ipcMain.handle('chooseDir', async () => {
+  ipcMain.removeHandler('chooseReplaysDir');
+  ipcMain.handle('chooseReplaysDir', async () => {
     const openDialogRes = await dialog.showOpenDialog({
       properties: ['openDirectory', 'showHiddenFiles'],
     });
     if (openDialogRes.canceled) {
       return '';
     }
-    [chosenDir] = openDialogRes.filePaths;
-    return chosenDir;
+    [chosenReplaysDir] = openDialogRes.filePaths;
+    return chosenReplaysDir;
   });
 
-  ipcMain.removeHandler('deleteDir');
-  ipcMain.handle('deleteDir', async () => rm(chosenDir, { recursive: true }));
+  ipcMain.removeHandler('deleteReplaysDir');
+  ipcMain.handle('deleteReplaysDir', async () =>
+    rm(chosenReplaysDir, { recursive: true }),
+  );
 
   ipcMain.removeHandler('getReplaysInDir');
-  ipcMain.handle('getReplaysInDir', async () => getReplaysInDir(chosenDir));
+  ipcMain.handle('getReplaysInDir', async () =>
+    getReplaysInDir(chosenReplaysDir),
+  );
 
   ipcMain.removeHandler('writeReplays');
   ipcMain.handle(
@@ -79,6 +83,17 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       );
     },
   );
+
+  ipcMain.removeHandler('chooseCopyDir');
+  ipcMain.handle('chooseCopyDir', async () => {
+    const openDialogRes = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'showHiddenFiles'],
+    });
+    if (openDialogRes.canceled) {
+      return '';
+    }
+    return openDialogRes.filePaths[0];
+  });
 
   const store = new Store();
   let sggApiKey = store.has('sggApiKey')

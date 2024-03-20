@@ -1,9 +1,7 @@
 import { FolderOpen } from '@mui/icons-material';
 import {
   Button,
-  Checkbox,
   Divider,
-  FormControlLabel,
   IconButton,
   InputBase,
   MenuItem,
@@ -12,35 +10,9 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { ChangeEvent } from 'react';
 import { Output } from '../common/types';
 import ErrorDialog from './ErrorDialog';
-
-function LabeledCheckbox({
-  checked,
-  label,
-  set,
-}: {
-  checked: boolean;
-  label: string;
-  set: (checked: boolean) => void;
-}) {
-  return (
-    <FormControlLabel
-      control={
-        <Checkbox
-          checked={checked}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            set(event.target.checked);
-          }}
-        />
-      }
-      disableTypography
-      label={label}
-      sx={{ typography: 'caption' }}
-    />
-  );
-}
+import LabeledCheckbox from './LabeledCheckbox';
 
 export default function CopyControls({
   dir,
@@ -82,7 +54,7 @@ export default function CopyControls({
   setWriteStartTimes: (writeStartTimes: boolean) => void;
 }) {
   const chooseDir = async () => {
-    const newDir = await window.electron.chooseDir();
+    const newDir = await window.electron.chooseCopyDir();
     if (newDir) {
       setDir(newDir);
     }

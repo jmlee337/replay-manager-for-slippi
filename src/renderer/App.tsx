@@ -176,7 +176,7 @@ function Hello() {
     });
   };
   const chooseDir = async () => {
-    const newDir = await window.electron.chooseDir();
+    const newDir = await window.electron.chooseReplaysDir();
     if (newDir) {
       const newReplays = await window.electron.getReplaysInDir();
       applyAllReplaysSelected(newReplays, allReplaysSelected);
@@ -213,7 +213,7 @@ function Hello() {
       return;
     }
 
-    await window.electron.deleteDir();
+    await window.electron.deleteReplaysDir();
     await refreshReplays();
   };
   const onPlayerOverride = () => {
@@ -1250,7 +1250,12 @@ function Hello() {
               </Tooltip>
               <ManualReport reportSet={reportSet} selectedSet={selectedSet} />
               <SetControls
+                copyReplays={onCopy}
+                deleteReplays={deleteDir}
                 reportSet={reportSet}
+                copyDisabled={
+                  isCopying || !copyDir || selectedReplays.length === 0
+                }
                 dqId={dq.entrantId}
                 selectedReplays={selectedReplays}
                 set={selectedSet}
