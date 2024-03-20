@@ -200,7 +200,7 @@ export default function SetControls({
   return (
     <>
       <Button
-        disabled={!(validSelections && winnerId) && !isDq}
+        disabled={!(validSelections && (winnerId || isDq))}
         endIcon={<Backup />}
         onClick={() => {
           setStartggSet(getSet());
