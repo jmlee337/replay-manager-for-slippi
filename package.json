@@ -102,6 +102,7 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.16.0",
     "sanitize-filename": "^1.6.3",
+    "slp-enforcer": "^0.4.1",
     "yazl": "^2.5.1"
   },
   "devDependencies": {
