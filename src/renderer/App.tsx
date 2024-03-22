@@ -689,13 +689,16 @@ function Hello() {
   // settings
   const [gotStartggApiKey, setGotStartggApiKey] = useState(false);
   const [startggApiKey, setStartggApiKey] = useState('');
+  const [useEnforcer, setUseEnforcer] = useState(false);
   const [appVersion, setAppVersion] = useState('');
   useEffect(() => {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
       const startggKeyPromise = window.electron.getStartggKey();
+      const useEnforcerPromise = window.electron.getUseEnforcer();
       setAppVersion(await appVersionPromise);
       setStartggApiKey(await startggKeyPromise);
+      setUseEnforcer(await useEnforcerPromise);
       setGotStartggApiKey(true);
     };
     inner();
@@ -1282,6 +1285,8 @@ function Hello() {
         gotStartggApiKey={gotStartggApiKey}
         startggApiKey={startggApiKey}
         setStartggApiKey={setStartggApiKey}
+        useEnforcer={useEnforcer}
+        setUseEnforcer={setUseEnforcer}
       />
     </>
   );

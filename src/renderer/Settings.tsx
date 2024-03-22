@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Divider,
   Fab,
   Stack,
   TextField,
@@ -13,6 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import { FormEvent, useState } from 'react';
+import LabeledCheckbox from './LabeledCheckbox';
 
 const Form = styled.form`
   display: flex;
@@ -25,11 +27,15 @@ export default function Settings({
   gotStartggApiKey,
   startggApiKey,
   setStartggApiKey,
+  useEnforcer,
+  setUseEnforcer,
 }: {
   appVersion: string;
   gotStartggApiKey: boolean;
   startggApiKey: string;
   setStartggApiKey: (key: string) => void;
+  useEnforcer: boolean;
+  setUseEnforcer: (useEnforcer: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -121,6 +127,15 @@ export default function Settings({
               </Button>
             </Stack>
           </Form>
+          <Divider sx={{ marginTop: '8px' }} />
+          <Stack justifyContent="flex-end">
+            <LabeledCheckbox
+              checked={useEnforcer}
+              label="Use SLP Enforcer"
+              labelPlacement="start"
+              set={setUseEnforcer}
+            />
+          </Stack>
         </DialogContent>
       </Dialog>
     </>

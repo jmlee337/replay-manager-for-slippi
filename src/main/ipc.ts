@@ -186,6 +186,23 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
+  ipcMain.removeHandler('getUseEnforcer');
+  ipcMain.handle('getUseEnforcer', () => {
+    if (store.has('useEnforcer')) {
+      return store.get('useEnforcer') as boolean;
+    }
+    store.set('useEnforcer', true);
+    return true;
+  });
+
+  ipcMain.removeHandler('setUseEnforcer');
+  ipcMain.handle(
+    'setUseEnforcer',
+    (event: IpcMainInvokeEvent, newUseEnforcer: boolean) => {
+      store.set('useEnforcer', newUseEnforcer);
+    },
+  );
+
   ipcMain.removeHandler('copyToClipboard');
   ipcMain.handle(
     'copyToClipboard',
