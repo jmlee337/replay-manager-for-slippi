@@ -19,7 +19,7 @@ import {
   reportSet,
   updateSet,
 } from './startgg';
-import { getReplaysInDir, writeReplays } from './replay';
+import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
 
 export default function setupIPCs(mainWindow: BrowserWindow): void {
   let chosenReplaysDir = '';
@@ -71,8 +71,8 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       startTimes: string[],
       subdir: string,
       writeDisplayNames: boolean,
-    ) => {
-      return writeReplays(
+    ) =>
+      writeReplays(
         dir,
         fileNames,
         output,
@@ -80,8 +80,14 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         startTimes,
         subdir,
         writeDisplayNames,
-      );
-    },
+      ),
+  );
+
+  ipcMain.removeHandler('enforceReplays');
+  ipcMain.handle(
+    'enforceReplays',
+    async (event: IpcMainInvokeEvent, replays: Replay[]) =>
+      enforceReplays(replays),
   );
 
   ipcMain.removeHandler('chooseCopyDir');

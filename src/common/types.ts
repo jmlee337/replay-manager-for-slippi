@@ -95,3 +95,14 @@ export enum Output {
   FOLDER,
   ZIP,
 }
+
+export type EnforcePlayerFailure = {
+  checkNames: string[];
+  displayName: string | undefined;
+  port: number;
+};
+
+export type EnforceResult = {
+  fileName: string;
+  playerFailures: EnforcePlayerFailure[];
+};

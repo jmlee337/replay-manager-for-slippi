@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import {
+  EnforceResult,
   Event,
   Output,
   Phase,
@@ -37,6 +38,8 @@ const electronHandler = {
       subdir,
       writeDisplayNames,
     ),
+  enforceReplays: (replays: Replay[]): Promise<EnforceResult[]> =>
+    ipcRenderer.invoke('enforceReplays', replays),
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
   getTournament: (slug: string): Promise<Event[]> =>
     ipcRenderer.invoke('getTournament', slug),

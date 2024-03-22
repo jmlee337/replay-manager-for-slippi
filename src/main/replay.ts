@@ -1,11 +1,24 @@
 import { decode } from '@shelacek/ubjson';
-import { mkdir, open, readdir, rm } from 'fs/promises';
+import { mkdir, open, readFile as fsReadFile, readdir, rm } from 'fs/promises';
 import { join } from 'path';
 import iconv from 'iconv-lite';
 import sanitize from 'sanitize-filename';
 import { ZipFile } from 'yazl';
 import { createWriteStream } from 'fs';
-import { Output, Player, Replay } from '../common/types';
+import {
+  ListChecks,
+  SlippiGame,
+  getCoordListFromGame,
+  isBoxController,
+  isSlpMinVersion,
+} from 'slp-enforcer';
+import {
+  EnforcePlayerFailure,
+  EnforceResult,
+  Output,
+  Player,
+  Replay,
+} from '../common/types';
 import { isValidCharacter, legalStages } from '../common/constants';
 
 const RAW_HEADER_START = Buffer.from([
@@ -466,4 +479,60 @@ export async function writeReplays(
     await zipFilePromise;
     await rm(writeDir, { recursive: true });
   }
+}
+
+export async function enforceReplays(
+  replays: Replay[],
+): Promise<EnforceResult[]> {
+  const checks = ListChecks();
+  return Promise.all(
+    replays.map(async (replay) => {
+      const buffer = await fsReadFile(replay.filePath);
+      const game = new SlippiGame(buffer.buffer);
+
+      const playerFailures: EnforcePlayerFailure[] = [];
+      const ret = { playerFailures, fileName: replay.fileName };
+      if (isSlpMinVersion(game)) {
+        return ret;
+      }
+
+      const validPorts = new Set(
+        game
+          .getSettings()
+          ?.players.filter((player) => player.type === 0)
+          .map((player) => player.port),
+      );
+      for (let port = 1; port < 5; port += 1) {
+        if (validPorts.has(port)) {
+          const replayPlayer = replay.players.find(
+            (player) => player.port === port,
+          );
+          const playerFailure: EnforcePlayerFailure = {
+            checkNames: [],
+            displayName:
+              replayPlayer?.playerOverrides?.displayName ||
+              replayPlayer?.displayName,
+            port,
+          };
+          for (let i = 0; i < checks.length; i += 1) {
+            const checkName = checks[i].name;
+            const isMainStick =
+              checkName !== 'Disallowed Analog C-Stick Values';
+            const coords = getCoordListFromGame(game, port, isMainStick);
+            if (
+              isBoxController(
+                isMainStick ? coords : getCoordListFromGame(game, port, true),
+              )
+            ) {
+              if (checks[i].checkFunction(game, port, coords)) {
+                playerFailure.checkNames.push(checkName);
+              }
+            }
+          }
+          playerFailures.push(playerFailure);
+        }
+      }
+      return ret;
+    }),
+  );
 }
