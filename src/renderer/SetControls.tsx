@@ -14,6 +14,7 @@ import {
 import { useState } from 'react';
 import styled from '@emotion/styled';
 import {
+  EnforceResult,
   Player,
   Replay,
   Set,
@@ -145,6 +146,10 @@ export default function SetControls({
   const [alsoCopy, setAlsoCopy] = useState(false);
   const [alsoDelete, setAlsoDelete] = useState(false);
 
+  const [enforcing, setEnforcing] = useState(false);
+  const [enforcerErrors, setEnforcerErrors] = useState<EnforceResult[]>([]);
+  const [enforcerErrorOpen, setEnforcerErrorOpen] = useState(false);
+
   const isDq = dqId === set.entrant1Id || dqId === set.entrant2Id;
   const validSelections = setAndReplaysValid(selectedReplays, set);
   let scores = new Map<number, number>();
@@ -204,6 +209,21 @@ export default function SetControls({
         endIcon={<Backup />}
         onClick={() => {
           setStartggSet(getSet());
+          setEnforcing(true);
+          window.electron
+            .enforceReplays(selectedReplays)
+            .then((enforceResults) => {
+              const gameFailures = enforceResults.filter(
+                (enforceResult) => enforceResult.playerFailures.length > 0,
+              );
+              // eslint-disable-next-line promise/always-return
+              if (gameFailures.length > 0) {
+                setEnforcerErrors(gameFailures);
+                setEnforcerErrorOpen(true);
+              }
+              setEnforcing(false);
+            })
+            .catch(() => {});
           setOpen(true);
         }}
         size="small"
@@ -322,8 +342,14 @@ export default function SetControls({
         </DialogContent>
         <DialogActions>
           <Button
-            disabled={reporting || (alsoCopy && copyDisabled)}
-            endIcon={reporting ? <CircularProgress size="24px" /> : <Backup />}
+            disabled={reporting || (alsoCopy && copyDisabled) || enforcing}
+            endIcon={
+              reporting || enforcing ? (
+                <CircularProgress size="24px" />
+              ) : (
+                <Backup />
+              )
+            }
             onClick={async () => {
               setReporting(true);
               const promises = [reportSet(startggSet, set.state === 3)];
@@ -347,6 +373,42 @@ export default function SetControls({
           >
             Report{alsoCopy && ', Copy'}
             {alsoCopy && alsoDelete && ', Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={enforcerErrorOpen}
+        onClose={() => {
+          setEnforcerErrorOpen(false);
+          setEnforcerErrors([]);
+        }}
+      >
+        <DialogTitle>SLP Enforcer!</DialogTitle>
+        <DialogContent sx={{ width: '500px' }}>
+          {enforcerErrors.map((enforcerResult) => (
+            <Stack key={enforcerResult.fileName}>
+              <Box typography="body2">{enforcerResult.fileName}</Box>
+              {enforcerResult.playerFailures.map((enforcePlayerFailure) => (
+                <Box
+                  key={enforcePlayerFailure.port}
+                  marginLeft="8px"
+                  typography="caption"
+                >
+                  {enforcePlayerFailure.displayName}:{' '}
+                  {enforcePlayerFailure.checkNames.join(', ')}
+                </Box>
+              ))}
+            </Stack>
+          ))}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setEnforcerErrorOpen(false);
+              setEnforcerErrors([]);
+            }}
+          >
+            Close
           </Button>
         </DialogActions>
       </Dialog>

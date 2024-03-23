@@ -518,18 +518,22 @@ export async function enforceReplays(
             const checkName = checks[i].name;
             const isMainStick =
               checkName !== 'Disallowed Analog C-Stick Values';
-            const coords = getCoordListFromGame(game, port, isMainStick);
+            const coords = getCoordListFromGame(game, port - 1, isMainStick);
             if (
               isBoxController(
-                isMainStick ? coords : getCoordListFromGame(game, port, true),
+                isMainStick
+                  ? coords
+                  : getCoordListFromGame(game, port - 1, true),
               )
             ) {
-              if (checks[i].checkFunction(game, port, coords)) {
+              if (checks[i].checkFunction(game, port - 1, coords)) {
                 playerFailure.checkNames.push(checkName);
               }
             }
           }
-          playerFailures.push(playerFailure);
+          if (playerFailure.checkNames.length > 0) {
+            playerFailures.push(playerFailure);
+          }
         }
       }
       return ret;
