@@ -125,6 +125,7 @@ export default function SetControls({
   dqId,
   selectedReplays,
   set,
+  useEnforcer,
 }: {
   copyReplays: () => Promise<void>;
   deleteReplays: () => Promise<void>;
@@ -133,6 +134,7 @@ export default function SetControls({
   dqId: number;
   selectedReplays: Replay[];
   set: Set;
+  useEnforcer: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -209,21 +211,23 @@ export default function SetControls({
         endIcon={<Backup />}
         onClick={() => {
           setStartggSet(getSet());
-          setEnforcing(true);
-          window.electron
-            .enforceReplays(selectedReplays)
-            .then((enforceResults) => {
-              const gameFailures = enforceResults.filter(
-                (enforceResult) => enforceResult.playerFailures.length > 0,
-              );
-              // eslint-disable-next-line promise/always-return
-              if (gameFailures.length > 0) {
-                setEnforcerErrors(gameFailures);
-                setEnforcerErrorOpen(true);
-              }
-              setEnforcing(false);
-            })
-            .catch(() => {});
+          if (useEnforcer) {
+            setEnforcing(true);
+            window.electron
+              .enforceReplays(selectedReplays)
+              .then((enforceResults) => {
+                const gameFailures = enforceResults.filter(
+                  (enforceResult) => enforceResult.playerFailures.length > 0,
+                );
+                // eslint-disable-next-line promise/always-return
+                if (gameFailures.length > 0) {
+                  setEnforcerErrors(gameFailures);
+                  setEnforcerErrorOpen(true);
+                }
+                setEnforcing(false);
+              })
+              .catch(() => {});
+          }
           setOpen(true);
         }}
         size="small"

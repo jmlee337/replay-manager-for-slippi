@@ -1267,6 +1267,7 @@ function Hello() {
                 dqId={dq.entrantId}
                 selectedReplays={selectedReplays}
                 set={selectedSet}
+                useEnforcer={useEnforcer}
               />
             </Stack>
           </Stack>
