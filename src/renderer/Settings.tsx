@@ -27,6 +27,8 @@ export default function Settings({
   gotStartggApiKey,
   startggApiKey,
   setStartggApiKey,
+  autoDetectUsb,
+  setAutoDetectUsb,
   useEnforcer,
   setUseEnforcer,
 }: {
@@ -34,6 +36,8 @@ export default function Settings({
   gotStartggApiKey: boolean;
   startggApiKey: string;
   setStartggApiKey: (key: string) => void;
+  autoDetectUsb: boolean;
+  setAutoDetectUsb: (autoDetectUsb: boolean) => void;
   useEnforcer: boolean;
   setUseEnforcer: (useEnforcer: boolean) => void;
 }) {
@@ -130,10 +134,22 @@ export default function Settings({
           <Divider sx={{ marginTop: '8px' }} />
           <Stack justifyContent="flex-end">
             <LabeledCheckbox
+              checked={autoDetectUsb}
+              label="Auto-detect USB"
+              labelPlacement="start"
+              set={async (checked) => {
+                await window.electron.setAutoDetectUsb(checked);
+                setAutoDetectUsb(checked);
+              }}
+            />
+            <LabeledCheckbox
               checked={useEnforcer}
               label="Use SLP Enforcer"
               labelPlacement="start"
-              set={setUseEnforcer}
+              set={async (checked) => {
+                await window.electron.setUseEnforcer(checked);
+                setUseEnforcer(checked);
+              }}
             />
           </Stack>
         </DialogContent>

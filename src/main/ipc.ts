@@ -9,6 +9,7 @@ import {
 import Store from 'electron-store';
 import { rm } from 'fs/promises';
 import detectUsb from 'detect-usb';
+import path from 'path';
 import { Output, Replay, Set, StartggSet } from '../common/types';
 import {
   getEvent,
@@ -22,20 +23,59 @@ import {
 import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
 
 export default function setupIPCs(mainWindow: BrowserWindow): void {
+  const store = new Store();
+  let autoDetectUsb = store.has('autoDetectUsb')
+    ? (store.get('autoDetectUsb') as boolean)
+    : true;
   let chosenReplaysDir = '';
-  const usbCallback = (data: any) => {
+  const onInsertEjectFallback = (e: any) => {
     if (
-      (data.event === 'eject' || data.data.isAccessible) &&
-      chosenReplaysDir.startsWith(data.data.key)
+      (e.event === 'eject' || e.data.isAccessible) &&
+      chosenReplaysDir.startsWith(e.data.key)
     ) {
-      mainWindow.webContents.send('usbstorage');
+      mainWindow.webContents.send('usbstorage', '');
     }
   };
-  detectUsb.startListening();
+  const knownUsbs: string[] = [];
+  const onInsert = (e: any) => {
+    if (!autoDetectUsb) {
+      onInsertEjectFallback(e);
+      return;
+    }
+
+    if (e.data.isAccessible) {
+      knownUsbs.push(e.data.key);
+      chosenReplaysDir = path.join(e.data.key, 'Slippi');
+      mainWindow.webContents.send('usbstorage', chosenReplaysDir);
+    }
+  };
+  const onEject = (e: any) => {
+    if (!autoDetectUsb) {
+      onInsertEjectFallback(e);
+      return;
+    }
+
+    const i = knownUsbs.findIndex((val) => val === e.data.key);
+    if (i >= 0) {
+      knownUsbs.splice(i, 1);
+      if (chosenReplaysDir.startsWith(e.data.key)) {
+        if (knownUsbs.length > 0) {
+          chosenReplaysDir = path.join(
+            knownUsbs[knownUsbs.length - 1],
+            'Slippi',
+          );
+          mainWindow.webContents.send('usbstorage', chosenReplaysDir);
+        } else {
+          mainWindow.webContents.send('usbstorage', '');
+        }
+      }
+    }
+  };
   detectUsb.removeAllListeners('insert');
-  detectUsb.on('insert', usbCallback);
+  detectUsb.on('insert', onInsert);
   detectUsb.removeAllListeners('eject');
-  detectUsb.on('eject', usbCallback);
+  detectUsb.on('eject', onEject);
+  detectUsb.startListening();
 
   ipcMain.removeHandler('chooseReplaysDir');
   ipcMain.handle('chooseReplaysDir', async () => {
@@ -101,7 +141,6 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     return openDialogRes.filePaths[0];
   });
 
-  const store = new Store();
   let sggApiKey = store.has('sggApiKey')
     ? (store.get('sggApiKey') as string)
     : '';
@@ -183,6 +222,18 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     (event: IpcMainInvokeEvent, newSggApiKey: string) => {
       store.set('sggApiKey', newSggApiKey);
       sggApiKey = newSggApiKey;
+    },
+  );
+
+  ipcMain.removeHandler('getAutoDetectUsb');
+  ipcMain.handle('getAutoDetectUsb', () => autoDetectUsb);
+
+  ipcMain.removeHandler('setAutoDetectUsb');
+  ipcMain.handle(
+    'setAutoDetectUsb',
+    (event: IpcMainInvokeEvent, newAutoDetectUsb: boolean) => {
+      store.set('autoDetectUsb', newAutoDetectUsb);
+      autoDetectUsb = newAutoDetectUsb;
     },
   );
 

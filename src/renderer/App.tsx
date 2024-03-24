@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
+import { IpcRendererEvent } from 'electron';
 import {
   Event,
   Output,
@@ -190,10 +191,6 @@ function Hello() {
     }
   };
   const refreshReplays = useCallback(async () => {
-    if (!dir) {
-      return;
-    }
-
     let newReplays: Replay[] = [];
     try {
       newReplays = await window.electron.getReplaysInDir();
@@ -207,7 +204,7 @@ function Hello() {
     );
     resetOverrides();
     setReplays(newReplays);
-  }, [allReplaysSelected, dir]);
+  }, [allReplaysSelected]);
   const deleteDir = async () => {
     if (!dir) {
       return;
@@ -250,7 +247,12 @@ function Hello() {
     resetDq();
   };
   useEffect(() => {
-    window.electron.onUsb(refreshReplays);
+    window.electron.onUsb((event: IpcRendererEvent, newDir: string) => {
+      if (newDir) {
+        setDir(newDir);
+      }
+      refreshReplays();
+    });
   }, [refreshReplays]);
 
   const [selectedSet, setSelectedSet] = useState<Set>({
@@ -689,15 +691,18 @@ function Hello() {
   // settings
   const [gotStartggApiKey, setGotStartggApiKey] = useState(false);
   const [startggApiKey, setStartggApiKey] = useState('');
+  const [autoDetectUsb, setAutoDetectUsb] = useState(false);
   const [useEnforcer, setUseEnforcer] = useState(false);
   const [appVersion, setAppVersion] = useState('');
   useEffect(() => {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
       const startggKeyPromise = window.electron.getStartggKey();
+      const autoDetectUsbPromise = window.electron.getAutoDetectUsb();
       const useEnforcerPromise = window.electron.getUseEnforcer();
       setAppVersion(await appVersionPromise);
       setStartggApiKey(await startggKeyPromise);
+      setAutoDetectUsb(await autoDetectUsbPromise);
       setUseEnforcer(await useEnforcerPromise);
       setGotStartggApiKey(true);
     };
@@ -1285,6 +1290,8 @@ function Hello() {
         gotStartggApiKey={gotStartggApiKey}
         startggApiKey={startggApiKey}
         setStartggApiKey={setStartggApiKey}
+        autoDetectUsb={autoDetectUsb}
+        setAutoDetectUsb={setAutoDetectUsb}
         useEnforcer={useEnforcer}
         setUseEnforcer={setUseEnforcer}
       />

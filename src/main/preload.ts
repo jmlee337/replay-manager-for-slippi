@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { IpcRendererEvent, contextBridge, ipcRenderer } from 'electron';
 import {
   EnforceResult,
   Event,
@@ -57,13 +57,17 @@ const electronHandler = {
   getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
   setStartggKey: (startggKey: string): Promise<void> =>
     ipcRenderer.invoke('setStartggKey', startggKey),
+  getAutoDetectUsb: (): Promise<boolean> =>
+    ipcRenderer.invoke('getAutoDetectUsb'),
+  setAutoDetectUsb: (autoDetectUsb: boolean): Promise<void> =>
+    ipcRenderer.invoke('setAutoDetectUsb', autoDetectUsb),
   getUseEnforcer: (): Promise<boolean> => ipcRenderer.invoke('getUseEnforcer'),
   setUseEnforcer: (useEnforcer: boolean): Promise<void> =>
     ipcRenderer.invoke('setUseEnforcer', useEnforcer),
   copyToClipboard: (text: string): Promise<void> =>
     ipcRenderer.invoke('copyToClipboard', text),
   getVersion: (): Promise<string> => ipcRenderer.invoke('getVersion'),
-  onUsb: (callback: () => void) => {
+  onUsb: (callback: (event: IpcRendererEvent, newDir: string) => void) => {
     ipcRenderer.removeAllListeners('usbstorage');
     ipcRenderer.on('usbstorage', callback);
   },
