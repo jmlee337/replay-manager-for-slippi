@@ -34,6 +34,9 @@ import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { IpcRendererEvent } from 'electron';
 import {
+  Context,
+  ContextScore,
+  ContextSlot,
   Event,
   Output,
   Phase,
@@ -258,6 +261,7 @@ function Hello() {
   const [selectedSet, setSelectedSet] = useState<Set>({
     id: 0,
     state: 0,
+    round: 0,
     fullRoundText: '',
     winnerId: null,
     entrant1Id: 0,
@@ -287,6 +291,7 @@ function Hello() {
   const [gettingTournament, setGettingTournament] = useState(false);
   const [tournament, setTournament] = useState<Tournament>({
     slug: '',
+    name: '',
     events: [],
   });
 
@@ -557,10 +562,10 @@ function Hello() {
       return false;
     }
 
-    let events;
+    let newTournament;
     setGettingTournament(true);
     try {
-      events = await window.electron.getTournament(getSlug);
+      newTournament = await window.electron.getTournament(getSlug);
     } catch (e: any) {
       showErrorDialog(e.toString());
       setGettingTournament(false);
@@ -572,12 +577,15 @@ function Hello() {
       tournament.events.forEach((event) => {
         eventsMap.set(event.id, event);
       });
-      events = events.map((event) => eventsMap.get(event.id) || event);
+      newTournament.events = newTournament.events.map(
+        (event) => eventsMap.get(event.id) || event,
+      );
     }
-    tournament.events = events;
+    tournament.events = newTournament.events;
+    tournament.name = newTournament.name;
     tournament.slug = getSlug;
-    if (events.length === 1) {
-      await getEvent(events[0].id);
+    if (newTournament.events.length === 1) {
+      await getEvent(newTournament.events[0].id);
     } else {
       setTournament(tournament);
     }
@@ -672,6 +680,7 @@ function Hello() {
         updatedSelectedSet || {
           id: 0,
           state: 0,
+          round: 0,
           fullRoundText: '',
           winnerId: null,
           entrant1Id: 0,
@@ -727,6 +736,7 @@ function Hello() {
   const [copyErrorDialogOpen, setCopyErrorDialogOpen] = useState(false);
   const [copyOutput, setCopyOutput] = useState(Output.ZIP);
   const [copySuccess, setCopySuccess] = useState('');
+  const [copyWriteContext, setCopyWriteContext] = useState(false);
   const [copyWriteDisplayNames, setCopyWriteDisplayNames] = useState(true);
   const [copyWriteFileNames, setCopyWriteFileNames] = useState(false);
   const [copyWriteStartTimes, setCopyWriteStartTimes] = useState(true);
@@ -748,6 +758,7 @@ function Hello() {
 
     let fileNames = selectedReplays.map((replay) => replay.fileName);
     let subdir = '';
+    let context: Context | undefined;
     if (
       copyWriteFileNames ||
       copyOutput === Output.FOLDER ||
@@ -867,6 +878,92 @@ function Hello() {
           return `${prefix} ${labels}.slp`;
         });
       }
+
+      if (selectedSet.id && copyWriteContext) {
+        const contextEvent = tournament.events.find(
+          (event) => event.id === selectedSetChain.eventId,
+        )!;
+        const contextPhase = contextEvent.phases.find(
+          (phase) => phase.id === selectedSetChain.phaseId,
+        )!;
+        const contextPhaseGroup = contextPhase.phaseGroups.find(
+          (phaseGroup) => phaseGroup.id === selectedSetChain.phaseGroupId,
+        )!;
+
+        const scores: ContextScore[] = [];
+        const gameScores = [0, 0];
+        selectedReplays.forEach((replay, i) => {
+          const slots: ContextSlot[] = [];
+          const usedK = new Map<number, boolean>();
+          const hasOverrideWin =
+            replay.players.findIndex((player) => player.overrideWin) !== -1;
+          const currentGameScores = Array.from(gameScores);
+          for (let j = 0; j < 2; j += 1) {
+            const displayNames: string[] = [];
+            const ports: number[] = [];
+            let teamId: number | undefined;
+            for (let k = 0; k < replay.players.length; k += 1) {
+              const player = replay.players[k];
+              if (
+                (player.playerType === 0 || player.playerType === 1) &&
+                !usedK.has(k) &&
+                (!teamId || teamId === player.teamId)
+              ) {
+                displayNames.push(
+                  player.playerOverrides.displayName || player.displayName,
+                );
+                ports.push(player.port);
+                if (
+                  player.overrideWin ||
+                  (!hasOverrideWin && player.isWinner)
+                ) {
+                  gameScores[j] += 1;
+                }
+                usedK.set(k, true);
+                if (replay.isTeams) {
+                  if (!teamId) {
+                    teamId = player.teamId;
+                  }
+                } else {
+                  break;
+                }
+              }
+            }
+            slots[j] = {
+              displayNames,
+              ports,
+              score: currentGameScores[j],
+            };
+          }
+
+          scores.push({ game: i + 1, slots });
+        });
+
+        context = {
+          tournament: {
+            slug: tournament.slug,
+            name: tournament.name,
+          },
+          event: {
+            id: contextEvent.id,
+            name: contextEvent.name,
+          },
+          phase: {
+            id: contextPhase.id,
+            name: contextPhase.name,
+          },
+          phaseGroup: {
+            id: contextPhaseGroup.id,
+            name: contextPhaseGroup.name,
+          },
+          set: {
+            id: selectedSet.id,
+            fullRoundText: selectedSet.fullRoundText,
+            round: selectedSet.round,
+            scores,
+          },
+        };
+      }
     }
 
     let startTimes: string[] = [];
@@ -885,6 +982,7 @@ function Hello() {
         startTimes,
         subdir,
         copyWriteDisplayNames,
+        context,
       );
       setCopySuccess('Success!');
       setTimeout(() => setCopySuccess(''), 5000);
@@ -1090,6 +1188,8 @@ function Hello() {
             output={copyOutput}
             setOutput={setCopyOutput}
             success={copySuccess}
+            writeContext={copyWriteContext}
+            setWriteContext={setCopyWriteContext}
             writeDisplayNames={copyWriteDisplayNames}
             setWriteDisplayNames={setCopyWriteDisplayNames}
             writeFileNames={copyWriteFileNames}

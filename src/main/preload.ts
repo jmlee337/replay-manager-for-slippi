@@ -1,5 +1,6 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer } from 'electron';
 import {
+  Context,
   EnforceResult,
   Event,
   Output,
@@ -27,6 +28,7 @@ const electronHandler = {
     startTimes: string[],
     subdir: string,
     writeDisplayNames: boolean,
+    context: Context | undefined,
   ): Promise<void> =>
     ipcRenderer.invoke(
       'writeReplays',
@@ -37,11 +39,12 @@ const electronHandler = {
       startTimes,
       subdir,
       writeDisplayNames,
+      context,
     ),
   enforceReplays: (replays: Replay[]): Promise<EnforceResult[]> =>
     ipcRenderer.invoke('enforceReplays', replays),
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
-  getTournament: (slug: string): Promise<Event[]> =>
+  getTournament: (slug: string): Promise<{ name: string; events: Event[] }> =>
     ipcRenderer.invoke('getTournament', slug),
   getEvent: (id: number): Promise<Phase[]> =>
     ipcRenderer.invoke('getEvent', id),

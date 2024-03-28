@@ -32,6 +32,7 @@ export type Replay = {
 export type Set = {
   id: number;
   state: number;
+  round: number;
   fullRoundText: string;
   winnerId: number | null;
   entrant1Id: number;
@@ -67,6 +68,7 @@ export type Event = {
 
 export type Tournament = {
   slug: string;
+  name: string;
   events: Event[];
 };
 
@@ -105,4 +107,40 @@ export type EnforcePlayerFailure = {
 export type EnforceResult = {
   fileName: string;
   playerFailures: EnforcePlayerFailure[];
+};
+
+export type ContextSlot = {
+  displayNames: string[];
+  ports: number[];
+  score: number;
+};
+
+export type ContextScore = {
+  game: number;
+  slots: ContextSlot[];
+};
+
+export type Context = {
+  tournament: {
+    slug: string;
+    name: string;
+  };
+  event: {
+    id: number;
+    name: string;
+  };
+  phase: {
+    id: number;
+    name: string;
+  };
+  phaseGroup: {
+    id: number;
+    name: string;
+  };
+  set: {
+    id: number;
+    fullRoundText: string;
+    round: number;
+    scores: ContextScore[];
+  };
 };

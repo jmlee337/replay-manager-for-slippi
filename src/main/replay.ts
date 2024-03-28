@@ -13,6 +13,7 @@ import {
   isSlpMinVersion,
 } from 'slp-enforcer';
 import {
+  Context,
   EnforcePlayerFailure,
   EnforceResult,
   Output,
@@ -326,6 +327,7 @@ export async function writeReplays(
   startTimes: string[],
   subdir: string,
   writeDisplayNames: boolean,
+  context: Context | undefined,
 ) {
   if (fileNames.length > 0 && fileNames.length !== replays.length) {
     throw new Error(
@@ -344,6 +346,12 @@ export async function writeReplays(
   const writeDir = join(dir, sanitizedSubdir);
   if (sanitizedSubdir) {
     await mkdir(writeDir);
+    if (context) {
+      const contextFilePath = join(writeDir, 'context.json');
+      const contextFile = await open(contextFilePath, 'w');
+      await contextFile.writeFile(JSON.stringify(context));
+      await contextFile.close();
+    }
   } else if (output === Output.FOLDER || output === Output.ZIP) {
     throw new Error('subdir');
   }

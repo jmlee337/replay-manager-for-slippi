@@ -27,6 +27,8 @@ export default function CopyControls({
   output,
   setOutput,
   success,
+  writeContext,
+  setWriteContext,
   writeDisplayNames,
   setWriteDisplayNames,
   writeFileNames,
@@ -46,6 +48,8 @@ export default function CopyControls({
   output: Output;
   setOutput: (output: Output) => void;
   success: string;
+  writeContext: boolean;
+  setWriteContext: (writeContext: boolean) => void;
   writeDisplayNames: boolean;
   setWriteDisplayNames: (writeDisplayNames: boolean) => void;
   writeFileNames: boolean;
@@ -78,6 +82,21 @@ export default function CopyControls({
           </Tooltip>
         </Stack>
         <Stack direction="row" justifyContent="right">
+          <Stack>
+            <Tooltip
+              arrow
+              title="A file containing set metadata will be included in the copy folder/zip"
+            >
+              <div>
+                <LabeledCheckbox
+                  checked={writeContext}
+                  disabled={output === Output.FILES}
+                  label="Write context.json"
+                  set={setWriteContext}
+                />
+              </div>
+            </Tooltip>
+          </Stack>
           <Stack>
             <Tooltip
               arrow

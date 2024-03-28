@@ -19,23 +19,28 @@ async function wrappedFetch(
   return response;
 }
 
-export async function getTournament(slug: string): Promise<Event[]> {
+export async function getTournament(
+  slug: string,
+): Promise<{ name: string; events: Event[] }> {
   const response = await wrappedFetch(
     `https://api.smash.gg/tournament/${slug}?expand%5B%5D=event`,
   );
   const json = await response.json();
-  return json.entities.event
-    .filter((event: any) => {
-      const isMelee = event.videogameId === 1;
-      const isSinglesOrDoulbes =
-        event.teamRosterSize === null ||
-        (event.teamRosterSize.minPlayers === 2 &&
-          event.teamRosterSize.maxPlayers === 2);
-      return isMelee && isSinglesOrDoulbes;
-    })
-    .map(
-      (event: any): Event => ({ id: event.id, name: event.name, phases: [] }),
-    );
+  return {
+    name: json.entities.tournament.name,
+    events: json.entities.event
+      .filter((event: any) => {
+        const isMelee = event.videogameId === 1;
+        const isSinglesOrDoulbes =
+          event.teamRosterSize === null ||
+          (event.teamRosterSize.minPlayers === 2 &&
+            event.teamRosterSize.maxPlayers === 2);
+        return isMelee && isSinglesOrDoulbes;
+      })
+      .map(
+        (event: any): Event => ({ id: event.id, name: event.name, phases: [] }),
+      ),
+  };
 }
 
 export async function getEvent(id: number): Promise<Phase[]> {
@@ -102,6 +107,7 @@ function apiSetToSet(set: any): Set {
   return {
     id: set.id,
     state: set.state,
+    round: set.round,
     fullRoundText: set.fullRoundText,
     winnerId: set.winnerId,
     entrant1Id: slot1.entrant.id,
@@ -126,6 +132,8 @@ const PHASE_GROUP_QUERY = `
         }
         nodes {
           id
+          fullRoundText
+          round
           slots {
             entrant {
               id
@@ -142,7 +150,6 @@ const PHASE_GROUP_QUERY = `
             }
           }
           state
-          fullRoundText
           winnerId
         }
       }

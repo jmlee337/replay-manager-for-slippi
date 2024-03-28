@@ -10,7 +10,7 @@ import Store from 'electron-store';
 import { rm } from 'fs/promises';
 import detectUsb from 'detect-usb';
 import path from 'path';
-import { Output, Replay, Set, StartggSet } from '../common/types';
+import { Context, Output, Replay, Set, StartggSet } from '../common/types';
 import {
   getEvent,
   getPhase,
@@ -111,6 +111,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       startTimes: string[],
       subdir: string,
       writeDisplayNames: boolean,
+      context: Context | undefined,
     ) =>
       writeReplays(
         dir,
@@ -120,6 +121,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         startTimes,
         subdir,
         writeDisplayNames,
+        context,
       ),
   );
 
