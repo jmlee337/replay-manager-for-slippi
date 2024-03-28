@@ -101,20 +101,21 @@ const ReplayListItem = memo(function ReplayListItem({
           <EmojiEvents style={{ marginLeft: '-4px' }} />
         </Tooltip>
       )) ||
-      (noOverrideWinner && (
-        <Tooltip arrow placement="top" title="Set as winner">
-          <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
-              player.overrideWin = true;
-              onOverride();
-            }}
-            style={{ margin: '-8px -8px -8px -12px' }}
-          >
-            <EmojiEventsOutlined />
-          </IconButton>
-        </Tooltip>
-      ));
+      ((player.playerType === 0 || player.playerType === 1) &&
+        noOverrideWinner && (
+          <Tooltip arrow placement="top" title="Set as winner">
+            <IconButton
+              onClick={(event) => {
+                event.stopPropagation();
+                player.overrideWin = true;
+                onOverride();
+              }}
+              style={{ margin: '-8px -8px -8px -12px' }}
+            >
+              <EmojiEventsOutlined />
+            </IconButton>
+          </Tooltip>
+        ));
     return (
       <QuarterSegment key={key}>
         {trophy}
