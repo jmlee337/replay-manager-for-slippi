@@ -114,9 +114,9 @@ export default function ManualReport({
               width="100%"
             >
               <EntrantNames>
-                <Name>{selectedSet.entrant1Names[0]}</Name>
-                {selectedSet.entrant1Names.length > 1 && (
-                  <Name>{selectedSet.entrant1Names[1]}</Name>
+                <Name>{selectedSet.entrant1Participants[0].displayName}</Name>
+                {selectedSet.entrant1Participants.length > 1 && (
+                  <Name>{selectedSet.entrant1Participants[1].displayName}</Name>
                 )}
               </EntrantNames>
               <Stack direction="row" spacing="8px">
@@ -149,9 +149,9 @@ export default function ManualReport({
               width="100%"
             >
               <EntrantNames>
-                <Name>{selectedSet.entrant2Names[0]}</Name>
-                {selectedSet.entrant2Names.length > 1 && (
-                  <Name>{selectedSet.entrant2Names[1]}</Name>
+                <Name>{selectedSet.entrant2Participants[0].displayName}</Name>
+                {selectedSet.entrant2Participants.length > 1 && (
+                  <Name>{selectedSet.entrant2Participants[1].displayName}</Name>
                 )}
               </EntrantNames>
               <Stack direction="row" spacing="8px">

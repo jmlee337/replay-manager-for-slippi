@@ -1,6 +1,8 @@
 export type PlayerOverrides = {
   displayName: string;
   entrantId: number;
+  prefix: string;
+  pronouns: string;
 };
 
 export type Player = {
@@ -29,6 +31,12 @@ export type Replay = {
   startAt: string;
 };
 
+export type Participant = {
+  displayName: string;
+  prefix: string;
+  pronouns: string;
+};
+
 export type Set = {
   id: number;
   state: number;
@@ -36,10 +44,10 @@ export type Set = {
   fullRoundText: string;
   winnerId: number | null;
   entrant1Id: number;
-  entrant1Names: string[];
+  entrant1Participants: Participant[];
   entrant1Score: string | null;
   entrant2Id: number;
-  entrant2Names: string[];
+  entrant2Participants: Participant[];
   entrant2Score: string | null;
 };
 
@@ -63,6 +71,7 @@ export type Phase = {
 export type Event = {
   id: number;
   name: string;
+  slug: string;
   phases: Phase[];
 };
 
@@ -112,6 +121,8 @@ export type EnforceResult = {
 export type ContextSlot = {
   displayNames: string[];
   ports: number[];
+  prefixes: string[];
+  pronouns: string[];
   score: number;
 };
 
@@ -122,12 +133,12 @@ export type ContextScore = {
 
 export type Context = {
   tournament: {
-    slug: string;
     name: string;
   };
   event: {
     id: number;
     name: string;
+    slug: string;
   };
   phase: {
     id: number;

@@ -401,7 +401,10 @@ export async function writeReplays(
           }
 
           const offset = j * 31 + 421 + gameStartOffset;
-          const newDisplayNameBuffer = iconv.encode(displayName, 'Shift_JIS');
+          const newDisplayNameBuffer = iconv.encode(
+            displayName.slice(0, 15),
+            'Shift_JIS',
+          );
           const fixedDisplayNameArr: number[] = [];
           newDisplayNameBuffer.forEach((byte) => {
             const fixedByte = narrowSpecialChars.get(byte);

@@ -53,10 +53,14 @@ function SetView({
       onClick={() => selectSet(set, phaseGroupId, phaseId, eventId)}
     >
       <SetViewInner
-        entrant1Names={set.entrant1Names}
+        entrant1Names={set.entrant1Participants.map(
+          (participant) => participant.displayName,
+        )}
         entrant1Score={set.entrant1Score}
         entrant1Win={set.entrant1Id === set.winnerId}
-        entrant2Names={set.entrant2Names}
+        entrant2Names={set.entrant2Participants.map(
+          (participant) => participant.displayName,
+        )}
         entrant2Score={set.entrant2Score}
         fullRoundText={set.fullRoundText}
         state={set.state}

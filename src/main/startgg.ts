@@ -1,5 +1,6 @@
 import {
   Event,
+  Participant,
   Phase,
   PhaseGroup,
   Set,
@@ -38,7 +39,12 @@ export async function getTournament(
         return isMelee && isSinglesOrDoulbes;
       })
       .map(
-        (event: any): Event => ({ id: event.id, name: event.name, phases: [] }),
+        (event: any): Event => ({
+          id: event.id,
+          name: event.name,
+          slug: event.slug,
+          phases: [],
+        }),
       ),
   };
 }
@@ -95,14 +101,30 @@ async function fetchGql(key: string, query: string, variables: any) {
   return json.data;
 }
 
+type ApiParticipant = {
+  gamerTag: string;
+  prefix: string | null;
+  player: {
+    user: {
+      genderPronoun: string | null;
+    } | null;
+  };
+};
+const apiParticipantToParticipant = (
+  participant: ApiParticipant,
+): Participant => ({
+  displayName: participant.gamerTag,
+  pronouns: participant.player.user?.genderPronoun || '',
+  prefix: participant.prefix || '',
+});
 function apiSetToSet(set: any): Set {
   const slot1 = set.slots[0];
   const slot2 = set.slots[1];
-  const entrant1Names = slot1.entrant.participants.map(
-    (participant: { gamerTag: string }) => participant.gamerTag,
+  const entrant1Participants: Participant[] = slot1.entrant.participants.map(
+    apiParticipantToParticipant,
   );
-  const entrant2Names = slot2.entrant.participants.map(
-    (participant: { gamerTag: string }) => participant.gamerTag,
+  const entrant2Participants: Participant[] = slot2.entrant.participants.map(
+    apiParticipantToParticipant,
   );
   return {
     id: set.id,
@@ -111,12 +133,12 @@ function apiSetToSet(set: any): Set {
     fullRoundText: set.fullRoundText,
     winnerId: set.winnerId,
     entrant1Id: slot1.entrant.id,
-    entrant1Names,
+    entrant1Participants,
     entrant1Score: slot1.standing
       ? slot1.standing.stats.score.displayValue
       : null,
     entrant2Id: slot2.entrant.id,
-    entrant2Names,
+    entrant2Participants,
     entrant2Score: slot2.standing
       ? slot2.standing.stats.score.displayValue
       : null,
@@ -126,7 +148,7 @@ function apiSetToSet(set: any): Set {
 const PHASE_GROUP_QUERY = `
   query PhaseGroupQuery($id: ID!, $page: Int) {
     phaseGroup(id: $id) {
-      sets(page: $page, perPage: 52, sortType: CALL_ORDER) {
+      sets(page: $page, perPage: 36, sortType: CALL_ORDER) {
         pageInfo {
           totalPages
         }
@@ -139,6 +161,12 @@ const PHASE_GROUP_QUERY = `
               id
               participants {
                 gamerTag
+                prefix
+                player {
+                  user {
+                    genderPronoun
+                  }
+                }
               }
             }
             standing {

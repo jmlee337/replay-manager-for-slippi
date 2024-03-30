@@ -1,5 +1,6 @@
 import {
   Avatar,
+  Box,
   Checkbox,
   Chip,
   IconButton,
@@ -23,12 +24,6 @@ import {
   stageNames,
 } from '../common/constants';
 import { DroppableChip } from './DragAndDrop';
-
-const EllipsisText = styled.div`
-  flex-grow: 1;
-  overflow-x: hidden;
-  text-overflow: ellipsis;
-`;
 
 const PlayersRow = styled.div`
   display: flex;
@@ -67,11 +62,13 @@ const ReplayListItem = memo(function ReplayListItem({
   index: number;
   numAvailablePlayers: number;
   replay: Replay;
-  selectedChipData: { displayName: string; entrantId: number };
+  selectedChipData: PlayerOverrides;
   findUnusedPlayer: (
     displayName: string,
     entrantId: number,
-    overrideDisplayNameEntrantIds: Map<string, boolean>,
+    prefix: string,
+    pronouns: string,
+    overrideSet: Map<string, boolean>,
   ) => PlayerOverrides;
   onClick: (index: number) => void;
   onOverride: () => void;
@@ -94,7 +91,8 @@ const ReplayListItem = memo(function ReplayListItem({
     const key = player.port;
     const displayName =
       player.playerOverrides.displayName ||
-      (player.playerType === 0 && player.displayName);
+      (player.playerType === 0 && player.displayName) ||
+      '';
     const trophy =
       ((player.overrideWin || (noOverrideWinner && player.isWinner)) && (
         <Tooltip arrow placement="top" title="Winner">
@@ -119,7 +117,7 @@ const ReplayListItem = memo(function ReplayListItem({
     return (
       <QuarterSegment key={key}>
         {trophy}
-        <EllipsisText>{displayName}</EllipsisText>
+        <Box flexGrow={1}>{displayName.slice(0, 15)}</Box>
       </QuarterSegment>
     );
   });
@@ -143,8 +141,13 @@ const ReplayListItem = memo(function ReplayListItem({
       player.playerType === 0
         ? player.connectCode || player.nametag || `P${key}`
         : 'CPU';
-    const onClickOrDrop = (displayName: string, entrantId: number) => {
-      player.playerOverrides = { displayName, entrantId };
+    const onClickOrDrop = (
+      displayName: string,
+      entrantId: number,
+      prefix: string,
+      pronouns: string,
+    ) => {
+      player.playerOverrides = { displayName, entrantId, prefix, pronouns };
       const validPlayers = replay.players.filter(
         (otherPlayer) =>
           otherPlayer.playerType === 0 || otherPlayer.playerType === 1,
@@ -164,7 +167,7 @@ const ReplayListItem = memo(function ReplayListItem({
 
       // pigeonhole remaining player if possible
       if (numAvailablePlayers === validPlayers.length) {
-        const overrideDisplayNameEntrantIds = new Map<string, boolean>();
+        const overrideSet = new Map<string, boolean>();
         const remainingPorts: number[] = [];
         const { teamId } = player;
         const isTeams = numAvailablePlayers === 4 && teamId !== -1;
@@ -180,9 +183,11 @@ const ReplayListItem = memo(function ReplayListItem({
           ) {
             remainingPorts.push(playerToCheck.port);
           } else {
-            overrideDisplayNameEntrantIds.set(
+            overrideSet.set(
               playerToCheck.playerOverrides.displayName +
-                playerToCheck.playerOverrides.entrantId,
+                playerToCheck.playerOverrides.entrantId +
+                playerToCheck.playerOverrides.prefix +
+                playerToCheck.playerOverrides.pronouns,
               true,
             );
           }
@@ -193,7 +198,9 @@ const ReplayListItem = memo(function ReplayListItem({
           const unusedPlayer = findUnusedPlayer(
             displayName,
             entrantId,
-            overrideDisplayNameEntrantIds,
+            prefix,
+            pronouns,
+            overrideSet,
           );
           if (unusedPlayer.displayName && unusedPlayer.entrantId) {
             replay.players[remainingPorts[0] - 1].playerOverrides =
@@ -265,11 +272,13 @@ export default function ReplayList({
 }: {
   numAvailablePlayers: number;
   replays: Replay[];
-  selectedChipData: { displayName: string; entrantId: number };
+  selectedChipData: PlayerOverrides;
   findUnusedPlayer: (
     displayName: string,
     entrantId: number,
-    overrideDisplayNameEntrantIds: Map<string, boolean>,
+    prefix: string,
+    pronouns: string,
+    overrideSet: Map<string, boolean>,
   ) => PlayerOverrides;
   onClick: (index: number) => void;
   onOverride: () => void;

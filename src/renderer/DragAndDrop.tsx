@@ -6,28 +6,42 @@ import {
   createTheme,
 } from '@mui/material';
 import { CSSProperties, DragEvent, ReactElement } from 'react';
+import { PlayerOverrides } from '../common/types';
 
 export function DraggableChip({
   displayName,
   entrantId,
+  prefix,
+  pronouns,
   selectedChipData,
   setSelectedChipData,
 }: {
   displayName: string;
   entrantId: number;
-  selectedChipData: { displayName: string; entrantId: number };
+  prefix: string;
+  pronouns: string;
+  selectedChipData: PlayerOverrides;
   setSelectedChipData: ({
     displayName,
     entrantId,
+    prefix,
+    pronouns,
   }: {
     displayName: string;
     entrantId: number;
+    prefix: string;
+    pronouns: string;
   }) => void;
 }) {
   const dragStart = (event: DragEvent<HTMLDivElement>) => {
     event.dataTransfer.setData(
       'text/plain',
-      `${event.currentTarget.dataset.entrantId}/${event.currentTarget.dataset.displayName}`,
+      JSON.stringify({
+        displayName: event.currentTarget.dataset.displayName,
+        entrantId: event.currentTarget.dataset.entrantId,
+        prefix: event.currentTarget.dataset.prefix,
+        pronouns: event.currentTarget.dataset.pronouns,
+      }),
     );
   };
   const selected =
@@ -58,12 +72,19 @@ export function DraggableChip({
         color={selected ? 'primary' : undefined}
         data-display-name={displayName}
         data-entrant-id={entrantId.toString(10)}
+        data-prefix={prefix}
+        data-pronouns={pronouns}
         draggable
         onClick={() => {
           if (selected) {
-            setSelectedChipData({ displayName: '', entrantId: 0 });
+            setSelectedChipData({
+              displayName: '',
+              entrantId: 0,
+              prefix: '',
+              pronouns: '',
+            });
           } else {
-            setSelectedChipData({ displayName, entrantId });
+            setSelectedChipData({ displayName, entrantId, prefix, pronouns });
           }
         }}
         onDragStart={dragStart}
@@ -88,16 +109,23 @@ export function DroppableChip({
   avatar?: ReactElement | undefined;
   label: string;
   outlined: boolean;
-  selectedChipData: { displayName: string; entrantId: number };
+  selectedChipData: PlayerOverrides;
   style: CSSProperties;
-  onClickOrDrop: (displayName: string, entrantId: number) => void;
+  onClickOrDrop: (
+    displayName: string,
+    entrantId: number,
+    prefix: string,
+    pronouns: string,
+  ) => void;
 }) {
   const drop = (event: DragEvent<HTMLDivElement>) => {
-    const dataString = event.dataTransfer.getData('text/plain');
-    const index = dataString.indexOf('/');
-    const newDisplayName = dataString.slice(index + 1);
-    const newEntrantId = parseInt(dataString.slice(0, index), 10);
-    onClickOrDrop(newDisplayName, newEntrantId);
+    const json = JSON.parse(event.dataTransfer.getData('text/plain'));
+    onClickOrDrop(
+      json.displayName,
+      parseInt(json.entrantId, 10),
+      json.prefix,
+      json.pronouns,
+    );
   };
 
   const dragEnterOver = (event: DragEvent<HTMLDivElement>) => {
@@ -143,6 +171,8 @@ export function DroppableChip({
               onClickOrDrop(
                 selectedChipData.displayName,
                 selectedChipData.entrantId,
+                selectedChipData.prefix,
+                selectedChipData.pronouns,
               );
               event.stopPropagation();
             }

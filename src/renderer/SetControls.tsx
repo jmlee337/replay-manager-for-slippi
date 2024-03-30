@@ -86,7 +86,8 @@ function setAndReplaysValid(selectedReplays: Replay[], set: Set) {
 
   return selectedReplays.every((replay) => {
     const validPlayers = replay.players.filter(isValid);
-    const numPlayers = set.entrant1Names.length + set.entrant2Names.length;
+    const numPlayers =
+      set.entrant1Participants.length + set.entrant2Participants.length;
     return (
       numPlayers === validPlayers.length &&
       validPlayers.every((player) => player.playerOverrides.entrantId) &&
@@ -250,10 +251,14 @@ export default function SetControls({
         <DialogTitle>Report set on start.gg</DialogTitle>
         <DialogContent sx={{ width: '500px' }}>
           <SetView
-            entrant1Names={set.entrant1Names}
+            entrant1Names={set.entrant1Participants.map(
+              (participant) => participant.displayName,
+            )}
             entrant1Score={entrant1Score.toString()}
             entrant1Win={set.entrant1Id === winnerId}
-            entrant2Names={set.entrant2Names}
+            entrant2Names={set.entrant2Participants.map(
+              (participant) => participant.displayName,
+            )}
             entrant2Score={entrant2Score.toString()}
             fullRoundText={set.fullRoundText}
             state={set.state}
@@ -273,7 +278,7 @@ export default function SetControls({
                     <EntrantScore textAlign="right">
                       {set.entrant1Id === gameData.winnerId ? 'W' : 'L'}
                     </EntrantScore>
-                    {set.entrant1Names.length === 1 && (
+                    {set.entrant1Participants.length === 1 && (
                       <Avatar
                         alt={characterNames.get(
                           startggCharacterIds.get(
@@ -290,9 +295,9 @@ export default function SetControls({
                       />
                     )}
                     <EntrantText flexGrow={1} textAlign="right">
-                      <Name>{set.entrant1Names[0]}</Name>
-                      {set.entrant1Names.length > 1 && (
-                        <Name>{set.entrant1Names[1]}</Name>
+                      <Name>{set.entrant1Participants[0].displayName}</Name>
+                      {set.entrant1Participants.length > 1 && (
+                        <Name>{set.entrant1Participants[1].displayName}</Name>
                       )}
                     </EntrantText>
                   </EntrantSection>
@@ -300,7 +305,7 @@ export default function SetControls({
                     <EntrantScore>
                       {set.entrant2Id === gameData.winnerId ? 'W' : 'L'}
                     </EntrantScore>
-                    {set.entrant1Names.length === 1 && (
+                    {set.entrant2Participants.length === 1 && (
                       <Avatar
                         alt={characterNames.get(
                           startggCharacterIds.get(
@@ -317,9 +322,9 @@ export default function SetControls({
                       />
                     )}
                     <EntrantText flexGrow={1}>
-                      <Name>{set.entrant2Names[0]}</Name>
-                      {set.entrant2Names.length > 1 && (
-                        <Name>{set.entrant2Names[1]}</Name>
+                      <Name>{set.entrant2Participants[0].displayName}</Name>
+                      {set.entrant2Participants.length > 1 && (
+                        <Name>{set.entrant2Participants[1].displayName}</Name>
                       )}
                     </EntrantText>
                   </EntrantSection>
