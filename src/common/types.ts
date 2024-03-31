@@ -150,6 +150,7 @@ export type Context = {
   };
   set: {
     id: number;
+    bestOf: number;
     fullRoundText: string;
     round: number;
     scores: ContextScore[];

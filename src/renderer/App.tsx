@@ -1035,6 +1035,7 @@ function Hello() {
           },
           set: {
             id: selectedSet.id,
+            bestOf: Math.max(gameScores[0], gameScores[1]) * 2 - 1,
             fullRoundText: selectedSet.fullRoundText,
             round: selectedSet.round,
             scores,
