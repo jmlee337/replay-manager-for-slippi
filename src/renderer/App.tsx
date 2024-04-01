@@ -325,6 +325,7 @@ function Hello() {
     id: number,
     phaseId: number,
     eventId: number,
+    isRoot: boolean,
     updatedSets?: Map<number, Set>,
   ) => {
     const editEvent = tournament.events.find((event) => event.id === eventId);
@@ -354,7 +355,6 @@ function Hello() {
     );
     if (editPhaseGroup) {
       editPhaseGroup.sets = sets;
-      setTournament({ ...tournament });
       if (selectedSet.id) {
         const updatedSelectedSet =
           sets.completedSets.find((set) => set.id === selectedSet.id) ||
@@ -362,6 +362,9 @@ function Hello() {
         if (updatedSelectedSet) {
           setSelectedSet(updatedSelectedSet);
         }
+      }
+      if (isRoot) {
+        setTournament({ ...tournament });
       }
     }
   };
@@ -564,7 +567,7 @@ function Hello() {
     );
   };
 
-  const getPhase = async (id: number, eventId: number) => {
+  const getPhase = async (id: number, eventId: number, isRoot: boolean) => {
     let phaseGroups;
     try {
       phaseGroups = await window.electron.getPhase(id);
@@ -590,15 +593,27 @@ function Hello() {
         );
       }
       editPhase.phaseGroups = phaseGroups;
-      if (phaseGroups.length === 1) {
-        await getPhaseGroup(phaseGroups[0].id, id, eventId);
-      } else {
+      const phaseGroupsWithChildren = phaseGroups.filter(
+        (phaseGroup) =>
+          phaseGroup.sets.completedSets.length > 0 ||
+          phaseGroup.sets.pendingSets.length > 0,
+      );
+      if (phaseGroupsWithChildren.length > 0) {
+        await Promise.all(
+          phaseGroupsWithChildren.map(async (phaseGroup) =>
+            getPhaseGroup(phaseGroup.id, id, eventId, false),
+          ),
+        );
+      } else if (phaseGroups.length === 1) {
+        await getPhaseGroup(phaseGroups[0].id, id, eventId, false);
+      }
+      if (isRoot) {
         setTournament({ ...tournament });
       }
     }
   };
 
-  const getEvent = async (id: number) => {
+  const getEvent = async (id: number, isRoot: boolean) => {
     let phases;
     try {
       phases = await window.electron.getEvent(id);
@@ -617,9 +632,19 @@ function Hello() {
         phases = phases.map((phase) => phasesMap.get(phase.id) || phase);
       }
       editEvent.phases = phases;
-      if (phases.length === 1) {
-        await getPhase(phases[0].id, id);
-      } else {
+      const phasesWithChildren = phases.filter(
+        (phase) => phase.phaseGroups.length > 0,
+      );
+      if (phasesWithChildren.length > 0) {
+        await Promise.all(
+          phasesWithChildren.map(async (phase) =>
+            getPhase(phase.id, id, false),
+          ),
+        );
+      } else if (phases.length === 1) {
+        await getPhase(phases[0].id, id, false);
+      }
+      if (isRoot) {
         setTournament({ ...tournament });
       }
     }
@@ -652,11 +677,17 @@ function Hello() {
     tournament.events = newTournament.events;
     tournament.name = newTournament.name;
     tournament.slug = getSlug;
-    if (newTournament.events.length === 1) {
-      await getEvent(newTournament.events[0].id);
-    } else {
-      setTournament(tournament);
+    const eventsWithChildren = newTournament.events.filter(
+      (event) => event.phases.length > 0,
+    );
+    if (eventsWithChildren.length > 0) {
+      await Promise.all(
+        eventsWithChildren.map(async (event) => getEvent(event.id, false)),
+      );
+    } else if (newTournament.events.length === 1) {
+      await getEvent(newTournament.events[0].id, false);
     }
+    setTournament(tournament);
     setGettingTournament(false);
     return true;
   };
@@ -715,6 +746,7 @@ function Hello() {
         selectedSetChain.phaseGroupId,
         selectedSetChain.phaseId,
         selectedSetChain.eventId,
+        true,
         new Map([[updatedSet.id, updatedSet]]),
       );
       setSelectedSet(updatedSet);
@@ -740,6 +772,7 @@ function Hello() {
         selectedSetChain.phaseGroupId,
         selectedSetChain.phaseId,
         selectedSetChain.eventId,
+        true,
         updatedSets,
       );
 
@@ -1193,7 +1226,7 @@ function Hello() {
                 value={slug || 'Set tournament slug...'}
                 style={{ flexGrow: 1 }}
               />
-              <Tooltip arrow title="Refresh Tournament">
+              <Tooltip arrow title="Refresh tournament and all descendants">
                 <div>
                   <IconButton
                     disabled={gettingTournament}
@@ -1285,9 +1318,13 @@ function Hello() {
         <TopColumn width="300px">
           <TournamentView
             tournament={tournament}
-            getEvent={getEvent}
-            getPhase={getPhase}
-            getPhaseGroup={getPhaseGroup}
+            getEvent={(id: number) => getEvent(id, true)}
+            getPhase={(id: number, eventId: number) =>
+              getPhase(id, eventId, true)
+            }
+            getPhaseGroup={(id: number, phaseId: number, eventId: number) =>
+              getPhaseGroup(id, phaseId, eventId, true)
+            }
             selectSet={selectSet}
           />
         </TopColumn>
