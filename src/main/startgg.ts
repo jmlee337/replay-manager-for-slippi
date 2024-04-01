@@ -246,6 +246,12 @@ const MARK_SET_IN_PROGRESS_MUTATION = `
           id
           participants {
             gamerTag
+            prefix
+            player {
+              user {
+                genderPronoun
+              }
+            }
           }
         }
         standing {
@@ -276,6 +282,12 @@ const REPORT_BRACKET_SET_MUTATION = `
           id
           participants {
             gamerTag
+            prefix
+            player {
+              user {
+                genderPronoun
+              }
+            }
           }
         }
         standing {
@@ -311,6 +323,12 @@ const UPDATE_BRACKET_SET_MUTATION = `
           id
           participants {
             gamerTag
+            prefix
+            player {
+              user {
+                genderPronoun
+              }
+            }
           }
         }
         standing {
