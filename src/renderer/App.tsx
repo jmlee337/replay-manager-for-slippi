@@ -104,25 +104,28 @@ function Hello() {
   };
 
   // settings
-  const [gotStartggApiKey, setGotStartggApiKey] = useState(false);
+  const [gotSettings, setGotSettings] = useState(false);
   const [startggApiKey, setStartggApiKey] = useState('');
   const [autoDetectUsb, setAutoDetectUsb] = useState(false);
   const [scrollToBottom, setScrollToBottom] = useState(false);
   const [useEnforcer, setUseEnforcer] = useState(false);
   const [appVersion, setAppVersion] = useState('');
+  const [latestAppVersion, setLatestAppVersion] = useState('');
   useEffect(() => {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
+      const latestAppVersionPromise = window.electron.getLatestVersion();
       const startggKeyPromise = window.electron.getStartggKey();
       const autoDetectUsbPromise = window.electron.getAutoDetectUsb();
       const scrollToBottomPromise = window.electron.getScrollToBottom();
       const useEnforcerPromise = window.electron.getUseEnforcer();
       setAppVersion(await appVersionPromise);
+      setLatestAppVersion(await latestAppVersionPromise);
       setStartggApiKey(await startggKeyPromise);
       setAutoDetectUsb(await autoDetectUsbPromise);
       setScrollToBottom(await scrollToBottomPromise);
       setUseEnforcer(await useEnforcerPromise);
-      setGotStartggApiKey(true);
+      setGotSettings(true);
     };
     inner();
   }, []);
@@ -1534,7 +1537,8 @@ function Hello() {
       />
       <Settings
         appVersion={appVersion}
-        gotStartggApiKey={gotStartggApiKey}
+        latestAppVersion={latestAppVersion}
+        gotSettings={gotSettings}
         startggApiKey={startggApiKey}
         setStartggApiKey={setStartggApiKey}
         autoDetectUsb={autoDetectUsb}

@@ -77,6 +77,8 @@ const electronHandler = {
   copyToClipboard: (text: string): Promise<void> =>
     ipcRenderer.invoke('copyToClipboard', text),
   getVersion: (): Promise<string> => ipcRenderer.invoke('getVersion'),
+  getLatestVersion: (): Promise<string> =>
+    ipcRenderer.invoke('getLatestVersion'),
   onUsb: (callback: (event: IpcRendererEvent, newDir: string) => void) => {
     ipcRenderer.removeAllListeners('usbstorage');
     ipcRenderer.on('usbstorage', callback);

@@ -284,4 +284,13 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
 
   ipcMain.removeHandler('getVersion');
   ipcMain.handle('getVersion', () => app.getVersion());
+
+  ipcMain.removeHandler('getLatestVersion');
+  ipcMain.handle('getLatestVersion', async () => {
+    const response = await fetch(
+      'https://api.github.com/repos/jmlee337/replay-manager-for-slippi/releases',
+    );
+    const json = await response.json();
+    return json[0].tag_name;
+  });
 }

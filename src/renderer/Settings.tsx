@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 import { ContentCopy, Settings as SettingsIcon } from '@mui/icons-material';
 import {
+  Alert,
   Button,
   Dialog,
   DialogContent,
@@ -13,7 +14,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import LabeledCheckbox from './LabeledCheckbox';
 
 const Form = styled.form`
@@ -24,7 +25,8 @@ const Form = styled.form`
 
 export default function Settings({
   appVersion,
-  gotStartggApiKey,
+  latestAppVersion,
+  gotSettings,
   startggApiKey,
   setStartggApiKey,
   autoDetectUsb,
@@ -35,7 +37,8 @@ export default function Settings({
   setUseEnforcer,
 }: {
   appVersion: string;
-  gotStartggApiKey: boolean;
+  latestAppVersion: string;
+  gotSettings: boolean;
   startggApiKey: string;
   setStartggApiKey: (key: string) => void;
   autoDetectUsb: boolean;
@@ -47,11 +50,33 @@ export default function Settings({
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [noApiKeyOpened, setNoApiKeyOpened] = useState(false);
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
 
-  if (gotStartggApiKey && !startggApiKey && !noApiKeyOpened) {
+  const needUpdate = useMemo(() => {
+    if (!appVersion || !latestAppVersion) {
+      return false;
+    }
+
+    const versionArr = appVersion.split('.');
+    const latestVersionArr = latestAppVersion.split('.');
+    if (versionArr.length !== 3 || latestVersionArr.length !== 3) {
+      return false;
+    }
+
+    if (versionArr[0] < latestVersionArr[0]) {
+      return true;
+    }
+    if (versionArr[1] < latestVersionArr[1]) {
+      return true;
+    }
+    if (versionArr[2] < latestVersionArr[2]) {
+      return true;
+    }
+    return false;
+  }, [appVersion, latestAppVersion]);
+  if (gotSettings && !hasAutoOpened && (!startggApiKey || needUpdate)) {
     setOpen(true);
-    setNoApiKeyOpened(true);
+    setHasAutoOpened(true);
   }
 
   const setNewStartggKey = async (event: FormEvent<HTMLFormElement>) => {
@@ -165,6 +190,18 @@ export default function Settings({
               }}
             />
           </Stack>
+          {needUpdate && (
+            <Alert severity="warning">
+              Update available!{' '}
+              <a
+                href="https://github.com/jmlee337/replay-manager-for-slippi/releases/latest"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Version {latestAppVersion}
+              </a>
+            </Alert>
+          )}
         </DialogContent>
       </Dialog>
     </>
