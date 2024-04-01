@@ -1,5 +1,5 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   AppBar,
@@ -179,6 +179,13 @@ function Hello() {
       return { active: isPlayer && oneTeam, teamId };
     });
   };
+  const [replayLoadCount, setReplayLoadCount] = useState(0);
+  const copyControlsRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (copyControlsRef.current) {
+      copyControlsRef.current.scrollIntoView();
+    }
+  }, [replayLoadCount]);
   const chooseDir = async () => {
     const newDir = await window.electron.chooseReplaysDir();
     if (newDir) {
@@ -191,6 +198,7 @@ function Hello() {
       setDirExists(true);
       resetOverrides();
       setReplays(newReplays);
+      setReplayLoadCount((r) => r + 1);
     }
   };
   const refreshReplays = useCallback(async () => {
@@ -207,6 +215,7 @@ function Hello() {
     );
     resetOverrides();
     setReplays(newReplays);
+    setReplayLoadCount((r) => r + 1);
   }, [allReplaysSelected]);
   const deleteDir = async () => {
     if (!dir) {
@@ -1314,6 +1323,7 @@ function Hello() {
             writeStartTimes={copyWriteStartTimes}
             setWriteStartTimes={setCopyWriteStartTimes}
           />
+          <div ref={copyControlsRef} />
         </TopColumn>
         <TopColumn width="300px">
           <TournamentView
