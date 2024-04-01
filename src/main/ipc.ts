@@ -240,6 +240,23 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
+  ipcMain.removeHandler('getScrollToBottom');
+  ipcMain.handle('getScrollToBottom', () => {
+    if (store.has('scrollToBottom')) {
+      return store.get('scrollToBottom') as boolean;
+    }
+    store.set('scrollToBottom', true);
+    return true;
+  });
+
+  ipcMain.removeHandler('setScrollToBottom');
+  ipcMain.handle(
+    'setScrollToBottom',
+    (event: IpcMainInvokeEvent, newScrollToBottom: boolean) => {
+      store.set('scrollToBottom', newScrollToBottom);
+    },
+  );
+
   ipcMain.removeHandler('getUseEnforcer');
   ipcMain.handle('getUseEnforcer', () => {
     if (store.has('useEnforcer')) {

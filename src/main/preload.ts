@@ -67,6 +67,10 @@ const electronHandler = {
     ipcRenderer.invoke('getAutoDetectUsb'),
   setAutoDetectUsb: (autoDetectUsb: boolean): Promise<void> =>
     ipcRenderer.invoke('setAutoDetectUsb', autoDetectUsb),
+  getScrollToBottom: (): Promise<boolean> =>
+    ipcRenderer.invoke('getScrollToBottom'),
+  setScrollToBottom: (scrollToBottom: boolean): Promise<void> =>
+    ipcRenderer.invoke('setScrollToBottom', scrollToBottom),
   getUseEnforcer: (): Promise<boolean> => ipcRenderer.invoke('getUseEnforcer'),
   setUseEnforcer: (useEnforcer: boolean): Promise<void> =>
     ipcRenderer.invoke('setUseEnforcer', useEnforcer),

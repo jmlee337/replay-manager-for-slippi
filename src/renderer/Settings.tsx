@@ -29,6 +29,8 @@ export default function Settings({
   setStartggApiKey,
   autoDetectUsb,
   setAutoDetectUsb,
+  scrollToBottom,
+  setScrollToBottom,
   useEnforcer,
   setUseEnforcer,
 }: {
@@ -38,6 +40,8 @@ export default function Settings({
   setStartggApiKey: (key: string) => void;
   autoDetectUsb: boolean;
   setAutoDetectUsb: (autoDetectUsb: boolean) => void;
+  scrollToBottom: boolean;
+  setScrollToBottom: (scrollToBottom: boolean) => void;
   useEnforcer: boolean;
   setUseEnforcer: (useEnforcer: boolean) => void;
 }) {
@@ -140,6 +144,15 @@ export default function Settings({
               set={async (checked) => {
                 await window.electron.setAutoDetectUsb(checked);
                 setAutoDetectUsb(checked);
+              }}
+            />
+            <LabeledCheckbox
+              checked={scrollToBottom}
+              label="Auto-scroll to end of replay list"
+              labelPlacement="start"
+              set={async (checked) => {
+                await window.electron.setScrollToBottom(checked);
+                setScrollToBottom(checked);
               }}
             />
             <LabeledCheckbox

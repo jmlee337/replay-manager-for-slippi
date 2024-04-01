@@ -103,6 +103,30 @@ function Hello() {
     setErrorDialogOpen(true);
   };
 
+  // settings
+  const [gotStartggApiKey, setGotStartggApiKey] = useState(false);
+  const [startggApiKey, setStartggApiKey] = useState('');
+  const [autoDetectUsb, setAutoDetectUsb] = useState(false);
+  const [scrollToBottom, setScrollToBottom] = useState(false);
+  const [useEnforcer, setUseEnforcer] = useState(false);
+  const [appVersion, setAppVersion] = useState('');
+  useEffect(() => {
+    const inner = async () => {
+      const appVersionPromise = window.electron.getVersion();
+      const startggKeyPromise = window.electron.getStartggKey();
+      const autoDetectUsbPromise = window.electron.getAutoDetectUsb();
+      const scrollToBottomPromise = window.electron.getScrollToBottom();
+      const useEnforcerPromise = window.electron.getUseEnforcer();
+      setAppVersion(await appVersionPromise);
+      setStartggApiKey(await startggKeyPromise);
+      setAutoDetectUsb(await autoDetectUsbPromise);
+      setScrollToBottom(await scrollToBottomPromise);
+      setUseEnforcer(await useEnforcerPromise);
+      setGotStartggApiKey(true);
+    };
+    inner();
+  }, []);
+
   const [batchActives, setBatchActives] = useState([
     { active: false, teamId: -1 },
     { active: false, teamId: -1 },
@@ -182,10 +206,10 @@ function Hello() {
   const [replayLoadCount, setReplayLoadCount] = useState(0);
   const copyControlsRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (copyControlsRef.current) {
+    if (scrollToBottom && copyControlsRef.current) {
       copyControlsRef.current.scrollIntoView();
     }
-  }, [replayLoadCount]);
+  }, [replayLoadCount, scrollToBottom]);
   const chooseDir = async () => {
     const newDir = await window.electron.chooseReplaysDir();
     if (newDir) {
@@ -818,27 +842,6 @@ function Hello() {
       showErrorDialog(e.toString());
     }
   };
-
-  // settings
-  const [gotStartggApiKey, setGotStartggApiKey] = useState(false);
-  const [startggApiKey, setStartggApiKey] = useState('');
-  const [autoDetectUsb, setAutoDetectUsb] = useState(false);
-  const [useEnforcer, setUseEnforcer] = useState(false);
-  const [appVersion, setAppVersion] = useState('');
-  useEffect(() => {
-    const inner = async () => {
-      const appVersionPromise = window.electron.getVersion();
-      const startggKeyPromise = window.electron.getStartggKey();
-      const autoDetectUsbPromise = window.electron.getAutoDetectUsb();
-      const useEnforcerPromise = window.electron.getUseEnforcer();
-      setAppVersion(await appVersionPromise);
-      setStartggApiKey(await startggKeyPromise);
-      setAutoDetectUsb(await autoDetectUsbPromise);
-      setUseEnforcer(await useEnforcerPromise);
-      setGotStartggApiKey(true);
-    };
-    inner();
-  }, []);
 
   // copy
   type NameObj = {
@@ -1536,6 +1539,8 @@ function Hello() {
         setStartggApiKey={setStartggApiKey}
         autoDetectUsb={autoDetectUsb}
         setAutoDetectUsb={setAutoDetectUsb}
+        scrollToBottom={scrollToBottom}
+        setScrollToBottom={setScrollToBottom}
         useEnforcer={useEnforcer}
         setUseEnforcer={setUseEnforcer}
       />
