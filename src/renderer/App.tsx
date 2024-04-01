@@ -327,16 +327,20 @@ function Hello() {
     eventId: number,
     updatedSets?: Map<number, Set>,
   ) => {
-    let sets;
-    try {
-      sets = await window.electron.getPhaseGroup(id, updatedSets);
-    } catch (e: any) {
-      showErrorDialog(e.toString());
+    const editEvent = tournament.events.find((event) => event.id === eventId);
+    if (!editEvent) {
       return;
     }
 
-    const editEvent = tournament.events.find((event) => event.id === eventId);
-    if (!editEvent) {
+    let sets;
+    try {
+      sets = await window.electron.getPhaseGroup(
+        id,
+        editEvent.isDoubles,
+        updatedSets,
+      );
+    } catch (e: any) {
+      showErrorDialog(e.toString());
       return;
     }
 

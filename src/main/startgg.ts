@@ -32,17 +32,21 @@ export async function getTournament(
     events: json.entities.event
       .filter((event: any) => {
         const isMelee = event.videogameId === 1;
-        const isSinglesOrDoulbes =
+        const isSinglesOrDoubles =
           event.teamRosterSize === null ||
           (event.teamRosterSize.minPlayers === 2 &&
             event.teamRosterSize.maxPlayers === 2);
-        return isMelee && isSinglesOrDoulbes;
+        return isMelee && isSinglesOrDoubles;
       })
       .map(
         (event: any): Event => ({
           id: event.id,
           name: event.name,
           slug: event.slug,
+          isDoubles:
+            event.teamRosterSize &&
+            event.teamRosterSize.minPlayers === 2 &&
+            event.teamRosterSize.maxPlayers === 2,
           phases: [],
         }),
       ),
@@ -145,10 +149,12 @@ function apiSetToSet(set: any): Set {
   };
 }
 
+const DOUBLES_PAGE_SIZE = 36;
+const SINGLES_PAGE_SIZE = 46;
 const PHASE_GROUP_QUERY = `
-  query PhaseGroupQuery($id: ID!, $page: Int) {
+  query PhaseGroupQuery($id: ID!, $page: Int, $pageSize: Int) {
     phaseGroup(id: $id) {
-      sets(page: $page, perPage: 36, sortType: CALL_ORDER) {
+      sets(page: $page, perPage: $pageSize, sortType: CALL_ORDER) {
         pageInfo {
           totalPages
         }
@@ -194,6 +200,7 @@ const PHASE_GROUP_QUERY = `
 export async function getPhaseGroup(
   key: string,
   id: number,
+  isDoubles: boolean,
   updatedSets: Map<number, Set> = new Map(),
 ): Promise<Sets> {
   let page = 1;
@@ -201,7 +208,11 @@ export async function getPhaseGroup(
   const sets: Set[] = [];
   do {
     // eslint-disable-next-line no-await-in-loop
-    nextData = await fetchGql(key, PHASE_GROUP_QUERY, { id, page });
+    nextData = await fetchGql(key, PHASE_GROUP_QUERY, {
+      id,
+      page,
+      pageSize: isDoubles ? DOUBLES_PAGE_SIZE : SINGLES_PAGE_SIZE,
+    });
     const newSets: Set[] = nextData.phaseGroup.sets.nodes
       .filter(
         (set: any) =>

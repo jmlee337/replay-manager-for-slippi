@@ -169,13 +169,14 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     async (
       event: IpcMainInvokeEvent,
       id: number,
+      isDoubles: boolean,
       updatedSets?: Map<number, Set>,
     ) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      return getPhaseGroup(sggApiKey, id, updatedSets);
+      return getPhaseGroup(sggApiKey, id, isDoubles, updatedSets);
     },
   );
 

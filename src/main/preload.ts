@@ -50,8 +50,11 @@ const electronHandler = {
     ipcRenderer.invoke('getEvent', id),
   getPhase: (id: number): Promise<PhaseGroup[]> =>
     ipcRenderer.invoke('getPhase', id),
-  getPhaseGroup: (id: number, updatedSets?: Map<number, Set>): Promise<Sets> =>
-    ipcRenderer.invoke('getPhaseGroup', id, updatedSets),
+  getPhaseGroup: (
+    id: number,
+    isDoubles: boolean,
+    updatedSets?: Map<number, Set>,
+  ): Promise<Sets> => ipcRenderer.invoke('getPhaseGroup', id, updatedSets),
   startSet: (id: number): Promise<Set> => ipcRenderer.invoke('startSet', id),
   reportSet: (set: StartggSet): Promise<Set[]> =>
     ipcRenderer.invoke('reportSet', set),

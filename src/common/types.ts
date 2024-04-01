@@ -72,6 +72,7 @@ export type Event = {
   id: number;
   name: string;
   slug: string;
+  isDoubles: boolean;
   phases: Phase[];
 };
 
