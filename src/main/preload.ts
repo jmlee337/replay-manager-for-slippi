@@ -1,6 +1,7 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer } from 'electron';
 import {
   Context,
+  CopySettings,
   EnforceResult,
   Event,
   Output,
@@ -74,6 +75,10 @@ const electronHandler = {
   getUseEnforcer: (): Promise<boolean> => ipcRenderer.invoke('getUseEnforcer'),
   setUseEnforcer: (useEnforcer: boolean): Promise<void> =>
     ipcRenderer.invoke('setUseEnforcer', useEnforcer),
+  getCopySettings: (): Promise<CopySettings> =>
+    ipcRenderer.invoke('getCopySettings'),
+  setCopySettings: (copySettings: CopySettings): Promise<void> =>
+    ipcRenderer.invoke('setCopySettings', copySettings),
   copyToClipboard: (text: string): Promise<void> =>
     ipcRenderer.invoke('copyToClipboard', text),
   getVersion: (): Promise<string> => ipcRenderer.invoke('getVersion'),

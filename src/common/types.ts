@@ -157,3 +157,11 @@ export type Context = {
     scores: ContextScore[];
   };
 };
+
+export type CopySettings = {
+  output: Output;
+  writeContext: boolean;
+  writeDisplayNames: boolean;
+  writeFileNames: boolean;
+  writeStartTimes: boolean;
+};

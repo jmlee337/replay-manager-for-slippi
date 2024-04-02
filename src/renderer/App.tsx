@@ -37,6 +37,7 @@ import {
   Context,
   ContextScore,
   ContextSlot,
+  CopySettings,
   Event,
   Output,
   Phase,
@@ -111,6 +112,14 @@ function Hello() {
   const [useEnforcer, setUseEnforcer] = useState(false);
   const [appVersion, setAppVersion] = useState('');
   const [latestAppVersion, setLatestAppVersion] = useState('');
+  // copy settigns
+  const [copySettings, setCopySettings] = useState<CopySettings>({
+    output: Output.FILES,
+    writeContext: false,
+    writeDisplayNames: false,
+    writeFileNames: false,
+    writeStartTimes: false,
+  });
   useEffect(() => {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
@@ -119,12 +128,14 @@ function Hello() {
       const autoDetectUsbPromise = window.electron.getAutoDetectUsb();
       const scrollToBottomPromise = window.electron.getScrollToBottom();
       const useEnforcerPromise = window.electron.getUseEnforcer();
+      const copySettingsPromise = window.electron.getCopySettings();
       setAppVersion(await appVersionPromise);
       setLatestAppVersion(await latestAppVersionPromise);
       setStartggApiKey(await startggKeyPromise);
       setAutoDetectUsb(await autoDetectUsbPromise);
       setScrollToBottom(await scrollToBottomPromise);
       setUseEnforcer(await useEnforcerPromise);
+      setCopySettings(await copySettingsPromise);
       setGotSettings(true);
     };
     inner();
@@ -862,19 +873,14 @@ function Hello() {
   const [copyDir, setCopyDir] = useState('');
   const [copyError, setCopyError] = useState('');
   const [copyErrorDialogOpen, setCopyErrorDialogOpen] = useState(false);
-  const [copyOutput, setCopyOutput] = useState(Output.ZIP);
   const [copySuccess, setCopySuccess] = useState('');
-  const [copyWriteContext, setCopyWriteContext] = useState(false);
-  const [copyWriteDisplayNames, setCopyWriteDisplayNames] = useState(true);
-  const [copyWriteFileNames, setCopyWriteFileNames] = useState(false);
-  const [copyWriteStartTimes, setCopyWriteStartTimes] = useState(true);
 
   const onCopy = async () => {
     setIsCopying(true);
 
     let offsetMs = 0;
     let startDate = new Date(selectedReplays[0].startAt);
-    if (copyWriteStartTimes) {
+    if (copySettings.writeStartTimes) {
       const lastReplay = selectedReplays[selectedReplays.length - 1];
       const lastStartMs = new Date(lastReplay.startAt).getTime();
       const lastDurationMs = Math.round((lastReplay.lastFrame + 124) / 0.05994);
@@ -888,9 +894,9 @@ function Hello() {
     let subdir = '';
     let context: Context | undefined;
     if (
-      copyWriteFileNames ||
-      copyOutput === Output.FOLDER ||
-      copyOutput === Output.ZIP
+      copySettings.writeFileNames ||
+      copySettings.output === Output.FOLDER ||
+      copySettings.output === Output.ZIP
     ) {
       const nameObjs = selectedReplays.map((replay) =>
         replay.players.map(
@@ -900,7 +906,7 @@ function Hello() {
                   characterName: characterNames.get(
                     player.externalCharacterId,
                   )!,
-                  displayName: copyWriteDisplayNames
+                  displayName: copySettings.writeDisplayNames
                     ? player.playerOverrides.displayName || player.displayName
                     : player.displayName,
                   nametag: player.nametag,
@@ -919,7 +925,10 @@ function Hello() {
         return nameObj.characterName;
       };
 
-      if (copyOutput === Output.FOLDER || copyOutput === Output.ZIP) {
+      if (
+        copySettings.output === Output.FOLDER ||
+        copySettings.output === Output.ZIP
+      ) {
         const folderLabels = nameObjs
           .reduce(
             (namesObj, game): NamesObj[] => {
@@ -988,12 +997,12 @@ function Hello() {
         subdir = `${writeStartAt} ${folderLabels}`;
       }
 
-      if (copyWriteFileNames) {
+      if (copySettings.writeFileNames) {
         fileNames = nameObjs.map((game, i) => {
           let prefix = `${i + 1}`;
-          if (copyOutput === Output.FILES) {
+          if (copySettings.output === Output.FILES) {
             const { startAt } = selectedReplays[i];
-            const writeStartDate = copyWriteStartTimes
+            const writeStartDate = copySettings.writeStartTimes
               ? new Date(new Date(startAt).getTime() + offsetMs)
               : new Date(startAt);
             const writeStartAt = format(writeStartDate, "yyyyMMdd'T'HHmmss");
@@ -1007,7 +1016,7 @@ function Hello() {
         });
       }
 
-      if (selectedSet.id && copyWriteContext) {
+      if (selectedSet.id && copySettings.writeContext) {
         const contextEvent = tournament.events.find(
           (event) => event.id === selectedSetChain.eventId,
         )!;
@@ -1097,7 +1106,7 @@ function Hello() {
     }
 
     let startTimes: string[] = [];
-    if (copyWriteStartTimes) {
+    if (copySettings.writeStartTimes) {
       startTimes = selectedReplays.map((replay) =>
         new Date(new Date(replay.startAt).getTime() + offsetMs).toISOString(),
       );
@@ -1107,11 +1116,11 @@ function Hello() {
       await window.electron.writeReplays(
         copyDir,
         fileNames,
-        copyOutput,
+        copySettings.output,
         selectedReplays,
         startTimes,
         subdir,
-        copyWriteDisplayNames,
+        copySettings.writeDisplayNames,
         context,
       );
       setCopySuccess('Success!');
@@ -1317,17 +1326,12 @@ function Hello() {
             hasSelectedReplays={selectedReplays.length > 0}
             isCopying={isCopying}
             onCopy={onCopy}
-            output={copyOutput}
-            setOutput={setCopyOutput}
             success={copySuccess}
-            writeContext={copyWriteContext}
-            setWriteContext={setCopyWriteContext}
-            writeDisplayNames={copyWriteDisplayNames}
-            setWriteDisplayNames={setCopyWriteDisplayNames}
-            writeFileNames={copyWriteFileNames}
-            setWriteFileNames={setCopyWriteFileNames}
-            writeStartTimes={copyWriteStartTimes}
-            setWriteStartTimes={setCopyWriteStartTimes}
+            copySettings={copySettings}
+            setCopySettings={async (newCopySettings: CopySettings) => {
+              await window.electron.setCopySettings(newCopySettings);
+              setCopySettings(newCopySettings);
+            }}
           />
           <div ref={copyControlsRef} />
         </TopColumn>

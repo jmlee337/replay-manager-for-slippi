@@ -10,7 +10,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { Output } from '../common/types';
+import { CopySettings, Output } from '../common/types';
 import ErrorDialog from './ErrorDialog';
 import LabeledCheckbox from './LabeledCheckbox';
 
@@ -24,17 +24,9 @@ export default function CopyControls({
   hasSelectedReplays,
   isCopying,
   onCopy,
-  output,
-  setOutput,
   success,
-  writeContext,
-  setWriteContext,
-  writeDisplayNames,
-  setWriteDisplayNames,
-  writeFileNames,
-  setWriteFileNames,
-  writeStartTimes,
-  setWriteStartTimes,
+  copySettings,
+  setCopySettings,
 }: {
   dir: string;
   setDir: (dir: string) => void;
@@ -45,17 +37,9 @@ export default function CopyControls({
   hasSelectedReplays: boolean;
   isCopying: boolean;
   onCopy: () => Promise<void>;
-  output: Output;
-  setOutput: (output: Output) => void;
   success: string;
-  writeContext: boolean;
-  setWriteContext: (writeContext: boolean) => void;
-  writeDisplayNames: boolean;
-  setWriteDisplayNames: (writeDisplayNames: boolean) => void;
-  writeFileNames: boolean;
-  setWriteFileNames: (writeFileNames: boolean) => void;
-  writeStartTimes: boolean;
-  setWriteStartTimes: (writeStartTimes: boolean) => void;
+  copySettings: CopySettings;
+  setCopySettings: (newCopySettings: CopySettings) => Promise<void>;
 }) {
   const chooseDir = async () => {
     const newDir = await window.electron.chooseCopyDir();
@@ -89,10 +73,14 @@ export default function CopyControls({
             >
               <div>
                 <LabeledCheckbox
-                  checked={writeContext}
-                  disabled={output === Output.FILES}
+                  checked={copySettings.writeContext}
+                  disabled={copySettings.output === Output.FILES}
                   label="Write context.json"
-                  set={setWriteContext}
+                  set={(checked: boolean) => {
+                    const newCopySettings = { ...copySettings };
+                    newCopySettings.writeContext = checked;
+                    setCopySettings(newCopySettings);
+                  }}
                 />
               </div>
             </Tooltip>
@@ -104,9 +92,13 @@ export default function CopyControls({
             >
               <div>
                 <LabeledCheckbox
-                  checked={writeDisplayNames}
+                  checked={copySettings.writeDisplayNames}
                   label="Overwrite Display Names"
-                  set={setWriteDisplayNames}
+                  set={(checked: boolean) => {
+                    const newCopySettings = { ...copySettings };
+                    newCopySettings.writeDisplayNames = checked;
+                    setCopySettings(newCopySettings);
+                  }}
                 />
               </div>
             </Tooltip>
@@ -116,9 +108,13 @@ export default function CopyControls({
             >
               <div>
                 <LabeledCheckbox
-                  checked={writeFileNames}
+                  checked={copySettings.writeFileNames}
                   label="Overwrite File Names"
-                  set={setWriteFileNames}
+                  set={(checked: boolean) => {
+                    const newCopySettings = { ...copySettings };
+                    newCopySettings.writeFileNames = checked;
+                    setCopySettings(newCopySettings);
+                  }}
                 />
               </div>
             </Tooltip>
@@ -130,20 +126,26 @@ export default function CopyControls({
             >
               <div>
                 <LabeledCheckbox
-                  checked={writeStartTimes}
+                  checked={copySettings.writeStartTimes}
                   label="Overwrite Start Times"
-                  set={setWriteStartTimes}
+                  set={(checked: boolean) => {
+                    const newCopySettings = { ...copySettings };
+                    newCopySettings.writeStartTimes = checked;
+                    setCopySettings(newCopySettings);
+                  }}
                 />
               </div>
             </Tooltip>
             <TextField
               label="Output"
-              onChange={(event) =>
-                setOutput(parseInt(event.target.value, 10) as Output)
-              }
+              onChange={(event) => {
+                const newCopySettings = { ...copySettings };
+                newCopySettings.output = parseInt(event.target.value, 10);
+                setCopySettings(newCopySettings);
+              }}
               select
               size="small"
-              value={output}
+              value={copySettings.output}
             >
               <MenuItem value={Output.FILES}>Separate Files</MenuItem>
               <MenuItem value={Output.FOLDER}>Make Subfolder</MenuItem>

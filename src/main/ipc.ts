@@ -10,7 +10,14 @@ import Store from 'electron-store';
 import { rm } from 'fs/promises';
 import detectUsb from 'detect-usb';
 import path from 'path';
-import { Context, Output, Replay, Set, StartggSet } from '../common/types';
+import {
+  Context,
+  CopySettings,
+  Output,
+  Replay,
+  Set,
+  StartggSet,
+} from '../common/types';
 import {
   getEvent,
   getPhase,
@@ -271,6 +278,30 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     'setUseEnforcer',
     (event: IpcMainInvokeEvent, newUseEnforcer: boolean) => {
       store.set('useEnforcer', newUseEnforcer);
+    },
+  );
+
+  ipcMain.removeHandler('getCopySettings');
+  ipcMain.handle('getCopySettings', () => {
+    if (store.has('copySettings')) {
+      return store.get('copySettings') as CopySettings;
+    }
+    const newCopySettings: CopySettings = {
+      output: Output.ZIP,
+      writeContext: false,
+      writeDisplayNames: true,
+      writeFileNames: false,
+      writeStartTimes: true,
+    };
+    store.set('copySettings', newCopySettings);
+    return newCopySettings;
+  });
+
+  ipcMain.removeHandler('setCopySettings');
+  ipcMain.handle(
+    'setCopySettings',
+    (event: IpcMainInvokeEvent, newCopySettings: CopySettings) => {
+      store.set('copySettings', newCopySettings);
     },
   );
 
