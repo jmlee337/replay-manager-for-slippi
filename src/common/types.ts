@@ -165,3 +165,8 @@ export type CopySettings = {
   writeFileNames: boolean;
   writeStartTimes: boolean;
 };
+
+export type ReportSettings = {
+  alsoCopy: boolean;
+  alsoDelete: boolean;
+};

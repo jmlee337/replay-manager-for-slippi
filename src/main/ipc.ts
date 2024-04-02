@@ -15,6 +15,7 @@ import {
   CopySettings,
   Output,
   Replay,
+  ReportSettings,
   Set,
   StartggSet,
 } from '../common/types';
@@ -302,6 +303,27 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     'setCopySettings',
     (event: IpcMainInvokeEvent, newCopySettings: CopySettings) => {
       store.set('copySettings', newCopySettings);
+    },
+  );
+
+  ipcMain.removeHandler('getReportSettings');
+  ipcMain.handle('getReportSettings', () => {
+    if (store.has('reportSettings')) {
+      return store.get('reportSettings') as ReportSettings;
+    }
+    const newReportSettings: ReportSettings = {
+      alsoCopy: false,
+      alsoDelete: false,
+    };
+    store.set('reportSettings', newReportSettings);
+    return newReportSettings;
+  });
+
+  ipcMain.removeHandler('setReportSettings');
+  ipcMain.handle(
+    'setReportSettings',
+    (event: IpcMainInvokeEvent, newReportSettings: ReportSettings) => {
+      store.set('reportSettings', newReportSettings);
     },
   );
 

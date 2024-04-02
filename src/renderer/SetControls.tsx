@@ -17,6 +17,7 @@ import {
   EnforceResult,
   Player,
   Replay,
+  ReportSettings,
   Set,
   StartggGame,
   StartggGameSelection,
@@ -122,8 +123,10 @@ export default function SetControls({
   copyReplays,
   deleteReplays,
   reportSet,
+  setReportSettings,
   copyDisabled,
   dqId,
+  reportSettings,
   selectedReplays,
   set,
   useEnforcer,
@@ -131,8 +134,10 @@ export default function SetControls({
   copyReplays: () => Promise<void>;
   deleteReplays: () => Promise<void>;
   reportSet: (set: StartggSet, update: boolean) => Promise<void>;
+  setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
   copyDisabled: boolean;
   dqId: number;
+  reportSettings: ReportSettings;
   selectedReplays: Replay[];
   set: Set;
   useEnforcer: boolean;
@@ -145,9 +150,6 @@ export default function SetControls({
     isDQ: false,
     gameData: [],
   });
-
-  const [alsoCopy, setAlsoCopy] = useState(false);
-  const [alsoDelete, setAlsoDelete] = useState(false);
 
   const [enforcing, setEnforcing] = useState(false);
   const [enforcerErrors, setEnforcerErrors] = useState<EnforceResult[]>([]);
@@ -335,23 +337,35 @@ export default function SetControls({
           <Divider sx={{ marginTop: '8px' }} />
           <Stack justifyContent="flex-end">
             <LabeledCheckbox
-              checked={alsoCopy}
+              checked={reportSettings.alsoCopy}
               label="Also Copy"
               labelPlacement="start"
-              set={setAlsoCopy}
+              set={(checked: boolean) => {
+                const newReportSettings = { ...reportSettings };
+                newReportSettings.alsoCopy = checked;
+                setReportSettings(newReportSettings);
+              }}
             />
             <LabeledCheckbox
-              checked={alsoDelete}
-              disabled={!alsoCopy}
+              checked={reportSettings.alsoDelete}
+              disabled={!reportSettings.alsoCopy}
               label="Also Delete"
               labelPlacement="start"
-              set={setAlsoDelete}
+              set={(checked: boolean) => {
+                const newReportSettings = { ...reportSettings };
+                newReportSettings.alsoDelete = checked;
+                setReportSettings(newReportSettings);
+              }}
             />
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button
-            disabled={reporting || (alsoCopy && copyDisabled) || enforcing}
+            disabled={
+              reporting ||
+              (reportSettings.alsoCopy && copyDisabled) ||
+              enforcing
+            }
             endIcon={
               reporting || enforcing ? (
                 <CircularProgress size="24px" />
@@ -362,11 +376,11 @@ export default function SetControls({
             onClick={async () => {
               setReporting(true);
               const promises = [reportSet(startggSet, set.state === 3)];
-              if (alsoCopy) {
+              if (reportSettings.alsoCopy) {
                 promises.push(copyReplays());
               }
               await Promise.all(promises);
-              if (alsoCopy && alsoDelete) {
+              if (reportSettings.alsoCopy && reportSettings.alsoDelete) {
                 await deleteReplays();
               }
               setOpen(false);
@@ -380,8 +394,8 @@ export default function SetControls({
             }}
             variant="contained"
           >
-            Report{alsoCopy && ', Copy'}
-            {alsoCopy && alsoDelete && ', Delete'}
+            Report{reportSettings.alsoCopy && ', Copy'}
+            {reportSettings.alsoCopy && reportSettings.alsoDelete && ', Delete'}
           </Button>
         </DialogActions>
       </Dialog>

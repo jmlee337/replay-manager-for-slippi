@@ -8,6 +8,7 @@ import {
   Phase,
   PhaseGroup,
   Replay,
+  ReportSettings,
   Set,
   Sets,
   StartggSet,
@@ -79,6 +80,10 @@ const electronHandler = {
     ipcRenderer.invoke('getCopySettings'),
   setCopySettings: (copySettings: CopySettings): Promise<void> =>
     ipcRenderer.invoke('setCopySettings', copySettings),
+  getReportSettings: (): Promise<ReportSettings> =>
+    ipcRenderer.invoke('getReportSettings'),
+  setReportSettings: (reportSettings: ReportSettings): Promise<void> =>
+    ipcRenderer.invoke('setReportSettings', reportSettings),
   copyToClipboard: (text: string): Promise<void> =>
     ipcRenderer.invoke('copyToClipboard', text),
   getVersion: (): Promise<string> => ipcRenderer.invoke('getVersion'),

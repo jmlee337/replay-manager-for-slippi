@@ -44,6 +44,7 @@ import {
   PhaseGroup,
   PlayerOverrides,
   Replay,
+  ReportSettings,
   Set,
   StartggSet,
   Tournament,
@@ -112,13 +113,18 @@ function Hello() {
   const [useEnforcer, setUseEnforcer] = useState(false);
   const [appVersion, setAppVersion] = useState('');
   const [latestAppVersion, setLatestAppVersion] = useState('');
-  // copy settigns
+  // copy settings
   const [copySettings, setCopySettings] = useState<CopySettings>({
     output: Output.FILES,
     writeContext: false,
     writeDisplayNames: false,
     writeFileNames: false,
     writeStartTimes: false,
+  });
+  // report settings
+  const [reportSettings, setReportSettings] = useState<ReportSettings>({
+    alsoCopy: false,
+    alsoDelete: false,
   });
   useEffect(() => {
     const inner = async () => {
@@ -129,6 +135,7 @@ function Hello() {
       const scrollToBottomPromise = window.electron.getScrollToBottom();
       const useEnforcerPromise = window.electron.getUseEnforcer();
       const copySettingsPromise = window.electron.getCopySettings();
+      const reportSettingsPromise = window.electron.getReportSettings();
       setAppVersion(await appVersionPromise);
       setLatestAppVersion(await latestAppVersionPromise);
       setStartggApiKey(await startggKeyPromise);
@@ -136,6 +143,7 @@ function Hello() {
       setScrollToBottom(await scrollToBottomPromise);
       setUseEnforcer(await useEnforcerPromise);
       setCopySettings(await copySettingsPromise);
+      setReportSettings(await reportSettingsPromise);
       setGotSettings(true);
     };
     inner();
@@ -1514,10 +1522,17 @@ function Hello() {
                 copyReplays={onCopy}
                 deleteReplays={deleteDir}
                 reportSet={reportSet}
+                setReportSettings={async (
+                  newReportSettings: ReportSettings,
+                ) => {
+                  await window.electron.setReportSettings(newReportSettings);
+                  setReportSettings(newReportSettings);
+                }}
                 copyDisabled={
                   isCopying || !copyDir || selectedReplays.length === 0
                 }
                 dqId={dq.entrantId}
+                reportSettings={reportSettings}
                 selectedReplays={selectedReplays}
                 set={selectedSet}
                 useEnforcer={useEnforcer}
