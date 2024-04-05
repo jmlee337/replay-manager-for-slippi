@@ -14,8 +14,6 @@ import {
   StartggSet,
 } from '../common/types';
 
-export type Channels = 'ipc-example';
-
 const electronHandler = {
   chooseReplaysDir: (): Promise<string> =>
     ipcRenderer.invoke('chooseReplaysDir'),

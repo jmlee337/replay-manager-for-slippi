@@ -91,7 +91,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       properties: ['openDirectory', 'showHiddenFiles'],
     });
     if (openDialogRes.canceled) {
-      return '';
+      return chosenReplaysDir;
     }
     [chosenReplaysDir] = openDialogRes.filePaths;
     return chosenReplaysDir;
