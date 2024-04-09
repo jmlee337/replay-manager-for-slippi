@@ -344,6 +344,10 @@ export async function writeReplays(
   const sanitizedSubdir = sanitize(subdir);
 
   const writeDir = join(dir, sanitizedSubdir);
+  const writeFilePromises: Promise<{
+    writeFilePath: string;
+    writeFileName: string;
+  }>[] = [];
   if (sanitizedSubdir) {
     await mkdir(writeDir);
     if (context) {
@@ -351,12 +355,18 @@ export async function writeReplays(
       const contextFile = await open(contextFilePath, 'w');
       await contextFile.writeFile(JSON.stringify(context));
       await contextFile.close();
+      writeFilePromises.push(
+        Promise.resolve({
+          writeFilePath: contextFilePath,
+          writeFileName: 'context.json',
+        }),
+      );
     }
   } else if (output === Output.FOLDER || output === Output.ZIP) {
     throw new Error('subdir');
   }
 
-  const writeFilePromises = replays.map(async (replay, i) => {
+  const replayFilePromises = replays.map(async (replay, i) => {
     const readFile = await open(replay.filePath);
 
     const writeFileName = sanitizedFileNames.length
@@ -474,6 +484,7 @@ export async function writeReplays(
       writeFile.close();
     }
   });
+  writeFilePromises.push(...replayFilePromises);
 
   const writeFiles = await Promise.all(writeFilePromises);
   if (output === Output.ZIP && sanitizedSubdir) {
