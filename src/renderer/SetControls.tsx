@@ -37,6 +37,13 @@ import SetView from './SetView';
 import LabeledCheckbox from './LabeledCheckbox';
 
 const characterIcons = require.context('./characters', true);
+const getCharacterIcon = (characterId?: number) => {
+  try {
+    return characterIcons(`./${characterId}/0/stock.png`);
+  } catch (e: any) {
+    return characterIcons('./31/0/stock.png');
+  }
+};
 
 const EntrantSection = styled(Stack)`
   align-items: center;
@@ -293,10 +300,10 @@ export default function SetControls({
                             gameData.selections[0].characterId,
                           )!,
                         )}
-                        src={characterIcons(
-                          `./${startggCharacterIds.get(
+                        src={getCharacterIcon(
+                          startggCharacterIds.get(
                             gameData.selections[0].characterId,
-                          )}/0/stock.png`,
+                          ),
                         )}
                         sx={{ height: 24, width: 24 }}
                         variant="square"
@@ -320,10 +327,10 @@ export default function SetControls({
                             gameData.selections[1].characterId,
                           )!,
                         )}
-                        src={characterIcons(
-                          `./${startggCharacterIds.get(
+                        src={getCharacterIcon(
+                          startggCharacterIds.get(
                             gameData.selections[1].characterId,
-                          )}/0/stock.png`,
+                          ),
                         )}
                         sx={{ height: 24, width: 24 }}
                         variant="square"
