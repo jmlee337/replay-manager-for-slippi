@@ -170,7 +170,15 @@ export default function CopyControls({
           {success && <Typography variant="caption">{success}</Typography>}
           <Button
             disabled={isCopying || !dir || !hasSelectedReplays}
-            onClick={onCopy}
+            onClick={async () => {
+              try {
+                await onCopy();
+              } catch (e: any) {
+                const message = e instanceof Error ? e.message : e;
+                setError(message);
+                setErrorDialogOpen(true);
+              }
+            }}
             variant="contained"
           >
             {isCopying ? 'Copying...' : 'Copy'}

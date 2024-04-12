@@ -813,56 +813,52 @@ function Hello() {
   };
 
   const reportSet = async (set: StartggSet, update: boolean) => {
-    try {
-      const updatedSets = new Map<number, Set>();
-      if (update) {
-        const updatedSet = await window.electron.updateSet(set);
+    const updatedSets = new Map<number, Set>();
+    if (update) {
+      const updatedSet = await window.electron.updateSet(set);
+      updatedSets.set(updatedSet.id, updatedSet);
+    } else {
+      (await window.electron.reportSet(set)).forEach((updatedSet) => {
         updatedSets.set(updatedSet.id, updatedSet);
-      } else {
-        (await window.electron.reportSet(set)).forEach((updatedSet) => {
-          updatedSets.set(updatedSet.id, updatedSet);
-        });
-      }
-      await getPhaseGroup(
-        selectedSetChain.phaseGroupId,
-        selectedSetChain.phaseId,
-        selectedSetChain.eventId,
-        true,
-        updatedSets,
-      );
-
-      const updatedSelectedSet = updatedSets.get(set.setId);
-      setSelectedSet(
-        updatedSelectedSet || {
-          id: 0,
-          state: 0,
-          round: 0,
-          fullRoundText: '',
-          winnerId: null,
-          entrant1Id: 0,
-          entrant1Participants: [
-            {
-              displayName: '',
-              prefix: '',
-              pronouns: '',
-            },
-          ],
-          entrant1Score: null,
-          entrant2Id: 0,
-          entrant2Participants: [
-            {
-              displayName: '',
-              prefix: '',
-              pronouns: '',
-            },
-          ],
-          entrant2Score: null,
-        },
-      );
-      resetDq();
-    } catch (e: any) {
-      showErrorDialog(e.toString());
+      });
     }
+    await getPhaseGroup(
+      selectedSetChain.phaseGroupId,
+      selectedSetChain.phaseId,
+      selectedSetChain.eventId,
+      true,
+      updatedSets,
+    );
+
+    const updatedSelectedSet = updatedSets.get(set.setId);
+    setSelectedSet(
+      updatedSelectedSet || {
+        id: 0,
+        state: 0,
+        round: 0,
+        fullRoundText: '',
+        winnerId: null,
+        entrant1Id: 0,
+        entrant1Participants: [
+          {
+            displayName: '',
+            prefix: '',
+            pronouns: '',
+          },
+        ],
+        entrant1Score: null,
+        entrant2Id: 0,
+        entrant2Participants: [
+          {
+            displayName: '',
+            prefix: '',
+            pronouns: '',
+          },
+        ],
+        entrant2Score: null,
+      },
+    );
+    resetDq();
   };
 
   // copy
@@ -1133,9 +1129,6 @@ function Hello() {
       );
       setCopySuccess('Success!');
       setTimeout(() => setCopySuccess(''), 5000);
-    } catch (e: any) {
-      setCopyError(e.toString());
-      setCopyErrorDialogOpen(true);
     } finally {
       setIsCopying(false);
     }

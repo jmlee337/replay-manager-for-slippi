@@ -7,6 +7,7 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   Divider,
   Stack,
@@ -144,6 +145,8 @@ export default function SetControls({
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [reportError, setReportError] = useState('');
+  const [reportErrorOpen, setReportErrorOpen] = useState(false);
   const [startggSet, setStartggSet] = useState<StartggSet>({
     setId: set.id,
     winnerId: 0,
@@ -207,6 +210,9 @@ export default function SetControls({
     return { setId: set.id, winnerId, isDQ: false, gameData };
   };
 
+  const reportCopyDelete = `Report${reportSettings.alsoCopy ? ', Copy' : ''}${
+    reportSettings.alsoCopy && reportSettings.alsoDelete ? ', Delete' : ''
+  }`;
   return (
     <>
       <Button
@@ -375,27 +381,55 @@ export default function SetControls({
             }
             onClick={async () => {
               setReporting(true);
-              const promises = [reportSet(startggSet, set.state === 3)];
-              if (reportSettings.alsoCopy) {
-                promises.push(copyReplays());
+              try {
+                const promises = [reportSet(startggSet, set.state === 3)];
+                if (reportSettings.alsoCopy) {
+                  promises.push(copyReplays());
+                }
+                await Promise.all(promises);
+                if (reportSettings.alsoCopy && reportSettings.alsoDelete) {
+                  await deleteReplays();
+                }
+                setOpen(false);
+                setStartggSet({
+                  setId: set.id,
+                  winnerId: 0,
+                  isDQ: false,
+                  gameData: [],
+                });
+              } catch (e: any) {
+                const message = e instanceof Error ? e.message : e;
+                setReportError(message);
+                setReportErrorOpen(true);
+              } finally {
+                setReporting(false);
               }
-              await Promise.all(promises);
-              if (reportSettings.alsoCopy && reportSettings.alsoDelete) {
-                await deleteReplays();
-              }
-              setOpen(false);
-              setReporting(false);
-              setStartggSet({
-                setId: set.id,
-                winnerId: 0,
-                isDQ: false,
-                gameData: [],
-              });
             }}
             variant="contained"
           >
-            Report{reportSettings.alsoCopy && ', Copy'}
-            {reportSettings.alsoCopy && reportSettings.alsoDelete && ', Delete'}
+            {reportCopyDelete}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={reportErrorOpen}
+        onClose={() => {
+          setReportErrorOpen(false);
+          setReportError('');
+        }}
+      >
+        <DialogTitle>{reportCopyDelete} error!</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{reportError}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setReportErrorOpen(false);
+              setReportError('');
+            }}
+          >
+            Close
           </Button>
         </DialogActions>
       </Dialog>

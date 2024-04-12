@@ -1,5 +1,12 @@
 import { decode } from '@shelacek/ubjson';
-import { mkdir, open, readFile as fsReadFile, readdir, rm } from 'fs/promises';
+import {
+  mkdir,
+  open,
+  readFile as fsReadFile,
+  readdir,
+  rm,
+  access,
+} from 'fs/promises';
 import { join } from 'path';
 import iconv from 'iconv-lite';
 import sanitize from 'sanitize-filename';
@@ -12,6 +19,7 @@ import {
   isBoxController,
   isSlpMinVersion,
 } from 'slp-enforcer';
+import { app } from 'electron';
 import {
   Context,
   EnforcePlayerFailure,
@@ -343,12 +351,19 @@ export async function writeReplays(
   const sanitizedFileNames = fileNames.map((fileName) => sanitize(fileName));
   const sanitizedSubdir = sanitize(subdir);
 
-  const writeDir = join(dir, sanitizedSubdir);
+  const writeDir =
+    output === Output.ZIP
+      ? join(app.getPath('temp'), sanitizedSubdir)
+      : join(dir, sanitizedSubdir);
   const writeFilePromises: Promise<{
     writeFilePath: string;
     writeFileName: string;
   }>[] = [];
   if (sanitizedSubdir) {
+    if (output === Output.ZIP) {
+      const tempDir = app.getPath('temp');
+      await access(tempDir).catch(() => mkdir(tempDir));
+    }
     await mkdir(writeDir);
     if (context) {
       const contextFilePath = join(writeDir, 'context.json');
@@ -491,7 +506,7 @@ export async function writeReplays(
     const zipFile = new ZipFile();
     const zipFilePromise = new Promise((resolve) => {
       zipFile.outputStream
-        .pipe(createWriteStream(`${writeDir}.zip`))
+        .pipe(createWriteStream(`${join(dir, sanitizedSubdir)}.zip`))
         .on('close', resolve);
     });
     writeFiles.forEach((writeFile) => {

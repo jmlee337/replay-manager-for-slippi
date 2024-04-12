@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   IconButton,
   Stack,
@@ -43,6 +44,9 @@ export default function ManualReport({
     setEntrant1Win(false);
     setEntrant2Win(false);
   };
+
+  const [reportError, setReportError] = useState('');
+  const [reportErrorOpen, setReportErrorOpen] = useState(false);
 
   let winnerId = 0;
   if (entrant1Win || entrant2Dq) {
@@ -185,14 +189,43 @@ export default function ManualReport({
             endIcon={reporting ? <CircularProgress size="24px" /> : <SaveAs />}
             onClick={async () => {
               setReporting(true);
-              await reportSet(startggSet, selectedSet.state === 3);
-              resetForm();
-              setOpen(false);
-              setReporting(false);
+              try {
+                await reportSet(startggSet, selectedSet.state === 3);
+                resetForm();
+                setOpen(false);
+              } catch (e: any) {
+                const message = e instanceof Error ? e.message : e;
+                setReportError(message);
+                setReportErrorOpen(true);
+              } finally {
+                setReporting(false);
+              }
             }}
             variant="contained"
           >
             Report Manually
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={reportErrorOpen}
+        onClose={() => {
+          setReportErrorOpen(false);
+          setReportError('');
+        }}
+      >
+        <DialogTitle>Report error!</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{reportError}</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setReportErrorOpen(false);
+              setReportError('');
+            }}
+          >
+            Close
           </Button>
         </DialogActions>
       </Dialog>
