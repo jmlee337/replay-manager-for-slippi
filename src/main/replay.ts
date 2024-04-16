@@ -264,7 +264,7 @@ export async function getReplaysInDir(dir: string) {
         const metadataUbjson = Buffer.concat([concatBuffer, metadata]);
         const obj = decode(metadataUbjson);
         const { lastFrame } = obj.metadata;
-        if (lastFrame < 3596) {
+        if (lastFrame <= 3600) {
           isValid = false;
         }
 
