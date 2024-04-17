@@ -57,19 +57,28 @@ export default function Settings({
       return false;
     }
 
-    const versionArr = appVersion.split('.');
-    const latestVersionArr = latestAppVersion.split('.');
-    if (versionArr.length !== 3 || latestVersionArr.length !== 3) {
+    const versionStrArr = appVersion.split('.');
+    const latestVersionStrArr = latestAppVersion.split('.');
+    if (versionStrArr.length !== 3 || latestVersionStrArr.length !== 3) {
       return false;
     }
 
-    if (versionArr[0] < latestVersionArr[0]) {
+    const mapPred = (versionPartStr: string) =>
+      Number.parseInt(versionPartStr, 10);
+    const versionNumArr = versionStrArr.map(mapPred);
+    const latestVersionNumArr = latestVersionStrArr.map(mapPred);
+    const somePred = (versionPart: number) => Number.isNaN(versionPart);
+    if (versionNumArr.some(somePred) || latestVersionNumArr.some(somePred)) {
+      return false;
+    }
+
+    if (versionNumArr[0] < latestVersionNumArr[0]) {
       return true;
     }
-    if (versionArr[1] < latestVersionArr[1]) {
+    if (versionNumArr[1] < latestVersionNumArr[1]) {
       return true;
     }
-    if (versionArr[2] < latestVersionArr[2]) {
+    if (versionNumArr[2] < latestVersionNumArr[2]) {
       return true;
     }
     return false;
