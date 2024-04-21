@@ -264,6 +264,7 @@ const MARK_SET_IN_PROGRESS_MUTATION = `
       }
       state
       fullRoundText
+      round
       winnerId
     }
   }
@@ -300,6 +301,7 @@ const REPORT_BRACKET_SET_MUTATION = `
       }
       state
       fullRoundText
+      round
       winnerId
     }
   }
@@ -341,6 +343,7 @@ const UPDATE_BRACKET_SET_MUTATION = `
       }
       state
       fullRoundText
+      round
       winnerId
     }
   }
