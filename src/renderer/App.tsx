@@ -1052,7 +1052,7 @@ function Hello() {
               if (
                 (player.playerType === 0 || player.playerType === 1) &&
                 !usedK.has(k) &&
-                (!teamId || teamId === player.teamId)
+                (teamId === undefined || teamId === player.teamId)
               ) {
                 slots[j].displayNames.push(
                   player.playerOverrides.displayName || player.displayName,
@@ -1068,7 +1068,7 @@ function Hello() {
                 }
                 usedK.set(k, true);
                 if (replay.isTeams) {
-                  if (!teamId) {
+                  if (teamId === undefined) {
                     teamId = player.teamId;
                   }
                 } else {
