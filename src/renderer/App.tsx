@@ -60,6 +60,8 @@ import ErrorDialog from './ErrorDialog';
 import Settings from './Settings';
 import ManualReport from './ManualReport';
 import { characterNames } from '../common/constants';
+import ManualView from './ManualView';
+import ManualBar from './ManualBar';
 
 const Bottom = styled(Paper)`
   height: 147px;
@@ -92,10 +94,6 @@ const Form = styled.form`
   align-items: center;
   display: flex;
   margin-top: 8px;
-`;
-
-const TournamentBar = styled.div`
-  display: flex;
 `;
 
 function Hello() {
@@ -765,6 +763,9 @@ function Hello() {
     }
   };
 
+  const [manualNames, setManualNames] = useState<string[]>([]);
+  const [manualDialogOpen, setManualDialogOpen] = useState(false);
+
   // set controls
   const [selectedSetChain, setSelectedSetChain] = useState({
     eventId: 0,
@@ -1248,55 +1249,65 @@ function Hello() {
             style={{ marginTop: 8, marginBottom: 8 }}
           />
           <AppBarSection width={300}>
-            <TournamentBar>
-              <InputBase
-                disabled
-                size="small"
-                value={slug || 'Set tournament slug...'}
-                style={{ flexGrow: 1 }}
-              />
-              <Tooltip arrow title="Refresh tournament and all descendants">
-                <div>
+            {mode === Mode.STARTGG && (
+              <Stack direction="row">
+                <InputBase
+                  disabled
+                  size="small"
+                  value={slug || 'Set tournament slug...'}
+                  style={{ flexGrow: 1 }}
+                />
+                <Tooltip arrow title="Refresh tournament and all descendants">
+                  <div>
+                    <IconButton
+                      disabled={gettingTournament}
+                      onClick={() => getTournament(slug)}
+                    >
+                      {gettingTournament ? (
+                        <CircularProgress size="24px" />
+                      ) : (
+                        <Refresh />
+                      )}
+                    </IconButton>
+                  </div>
+                </Tooltip>
+                <Tooltip arrow title="Set tournament slug">
                   <IconButton
-                    disabled={gettingTournament}
-                    onClick={() => getTournament(slug)}
+                    aria-label="Set tournament slug"
+                    onClick={() => setSlugDialogOpen(true)}
                   >
-                    {gettingTournament ? (
-                      <CircularProgress size="24px" />
-                    ) : (
-                      <Refresh />
-                    )}
+                    <Edit />
                   </IconButton>
-                </div>
-              </Tooltip>
-              <Tooltip arrow title="Set tournament slug">
-                <IconButton
-                  aria-label="Set tournament slug"
-                  onClick={() => setSlugDialogOpen(true)}
+                </Tooltip>
+                <Dialog
+                  open={slugDialogOpen}
+                  onClose={() => setSlugDialogOpen(false)}
                 >
-                  <Edit />
-                </IconButton>
-              </Tooltip>
-              <Dialog
-                open={slugDialogOpen}
-                onClose={() => setSlugDialogOpen(false)}
-              >
-                <DialogTitle>Set Tournament Slug</DialogTitle>
-                <DialogContent>
-                  <Form onSubmit={getTournamentOnSubmit}>
-                    <TextField
-                      autoFocus
-                      label="Tournament Slug"
-                      name="slug"
-                      placeholder="super-smash-con-2023"
-                      size="small"
-                      variant="outlined"
-                    />
-                    <Button type="submit">Get!</Button>
-                  </Form>
-                </DialogContent>
-              </Dialog>
-            </TournamentBar>
+                  <DialogTitle>Set Tournament Slug</DialogTitle>
+                  <DialogContent>
+                    <Form onSubmit={getTournamentOnSubmit}>
+                      <TextField
+                        autoFocus
+                        label="Tournament Slug"
+                        name="slug"
+                        placeholder="super-smash-con-2023"
+                        size="small"
+                        variant="outlined"
+                      />
+                      <Button type="submit">Get!</Button>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
+              </Stack>
+            )}
+            {mode === Mode.MANUAL && (
+              <ManualBar
+                manualDialogOpen={manualDialogOpen}
+                setManualDialogOpen={setManualDialogOpen}
+                manualNames={manualNames}
+                setManualNames={setManualNames}
+              />
+            )}
           </AppBarSection>
         </Toolbar>
       </AppBar>
@@ -1341,17 +1352,26 @@ function Hello() {
           <div ref={copyControlsRef} />
         </TopColumn>
         <TopColumn width="300px">
-          <StartggView
-            tournament={tournament}
-            getEvent={(id: number) => getEvent(id, true)}
-            getPhase={(id: number, eventId: number) =>
-              getPhase(id, eventId, true)
-            }
-            getPhaseGroup={(id: number, phaseId: number, eventId: number) =>
-              getPhaseGroup(id, phaseId, eventId, true)
-            }
-            selectSet={selectSet}
-          />
+          {mode === Mode.STARTGG && (
+            <StartggView
+              tournament={tournament}
+              getEvent={(id: number) => getEvent(id, true)}
+              getPhase={(id: number, eventId: number) =>
+                getPhase(id, eventId, true)
+              }
+              getPhaseGroup={(id: number, phaseId: number, eventId: number) =>
+                getPhaseGroup(id, phaseId, eventId, true)
+              }
+              selectSet={selectSet}
+            />
+          )}
+          {mode === Mode.MANUAL && (
+            <ManualView
+              manualNames={manualNames}
+              selectedChipData={selectedChipData}
+              setSelectedChipData={setSelectedChipData}
+            />
+          )}
         </TopColumn>
       </TopColumns>
       <Bottom elevation={3}>
