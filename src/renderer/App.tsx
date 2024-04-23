@@ -1025,20 +1025,10 @@ function Hello() {
         });
       }
 
-      if (selectedSet.id && copySettings.writeContext) {
-        const contextEvent = tournament.events.find(
-          (event) => event.id === selectedSetChain.eventId,
-        )!;
-        const contextPhase = contextEvent.phases.find(
-          (phase) => phase.id === selectedSetChain.phaseId,
-        )!;
-        const contextPhaseGroup = contextPhase.phaseGroups.find(
-          (phaseGroup) => phaseGroup.id === selectedSetChain.phaseGroupId,
-        )!;
-
+      if (copySettings.writeContext) {
         const scores: ContextScore[] = [];
         const gameScores = [0, 0];
-        selectedReplays.forEach((replay, i) => {
+        selectedReplays.forEach((replay) => {
           const slots: ContextSlot[] = [];
           const usedK = new Map<number, boolean>();
           const hasOverrideWin =
@@ -1082,35 +1072,48 @@ function Hello() {
               }
             }
           }
-
-          scores.push({ game: i + 1, slots });
+          scores.push({ slots });
         });
-
         context = {
-          tournament: {
-            name: tournament.name,
-          },
-          event: {
-            id: contextEvent.id,
-            name: contextEvent.name,
-            slug: contextEvent.slug,
-          },
-          phase: {
-            id: contextPhase.id,
-            name: contextPhase.name,
-          },
-          phaseGroup: {
-            id: contextPhaseGroup.id,
-            name: contextPhaseGroup.name,
-          },
-          set: {
-            id: selectedSet.id,
-            bestOf: Math.max(gameScores[0], gameScores[1]) * 2 - 1,
-            fullRoundText: selectedSet.fullRoundText,
-            round: selectedSet.round,
-            scores,
-          },
+          bestOf: Math.max(gameScores[0], gameScores[1]) * 2 - 1,
+          scores,
         };
+
+        if (selectedSet.id) {
+          const contextEvent = tournament.events.find(
+            (event) => event.id === selectedSetChain.eventId,
+          )!;
+          const contextPhase = contextEvent.phases.find(
+            (phase) => phase.id === selectedSetChain.phaseId,
+          )!;
+          const contextPhaseGroup = contextPhase.phaseGroups.find(
+            (phaseGroup) => phaseGroup.id === selectedSetChain.phaseGroupId,
+          )!;
+
+          context.startgg = {
+            tournament: {
+              name: tournament.name,
+            },
+            event: {
+              id: contextEvent.id,
+              name: contextEvent.name,
+              slug: contextEvent.slug,
+            },
+            phase: {
+              id: contextPhase.id,
+              name: contextPhase.name,
+            },
+            phaseGroup: {
+              id: contextPhaseGroup.id,
+              name: contextPhaseGroup.name,
+            },
+            set: {
+              id: selectedSet.id,
+              fullRoundText: selectedSet.fullRoundText,
+              round: selectedSet.round,
+            },
+          };
+        }
       }
     }
 

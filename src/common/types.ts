@@ -128,33 +128,35 @@ export type ContextSlot = {
 };
 
 export type ContextScore = {
-  game: number;
+  // slots.length === 2
   slots: ContextSlot[];
 };
 
 export type Context = {
-  tournament: {
-    name: string;
-  };
-  event: {
-    id: number;
-    name: string;
-    slug: string;
-  };
-  phase: {
-    id: number;
-    name: string;
-  };
-  phaseGroup: {
-    id: number;
-    name: string;
-  };
-  set: {
-    id: number;
-    bestOf: number;
-    fullRoundText: string;
-    round: number;
-    scores: ContextScore[];
+  bestOf: number;
+  scores: ContextScore[];
+  startgg?: {
+    tournament: {
+      name: string;
+    };
+    event: {
+      id: number;
+      name: string;
+      slug: string;
+    };
+    phase: {
+      id: number;
+      name: string;
+    };
+    phaseGroup: {
+      id: number;
+      name: string;
+    };
+    set: {
+      id: number;
+      fullRoundText: string;
+      round: number;
+    };
   };
 };
 
