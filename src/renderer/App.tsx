@@ -52,7 +52,7 @@ import {
 } from '../common/types';
 import { DraggableChip, DroppableChip } from './DragAndDrop';
 import ReplayList from './ReplayList';
-import TournamentView from './TournamentView';
+import StartggView from './StartggView';
 import './App.css';
 import CopyControls from './CopyControls';
 import SetControls from './SetControls';
@@ -1341,7 +1341,7 @@ function Hello() {
           <div ref={copyControlsRef} />
         </TopColumn>
         <TopColumn width="300px">
-          <TournamentView
+          <StartggView
             tournament={tournament}
             getEvent={(id: number) => getEvent(id, true)}
             getPhase={(id: number, eventId: number) =>

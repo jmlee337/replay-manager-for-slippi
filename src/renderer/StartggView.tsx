@@ -344,7 +344,7 @@ function EventView({
   );
 }
 
-export default function TournamentView({
+export default function StartggView({
   tournament,
   getEvent,
   getPhase,
