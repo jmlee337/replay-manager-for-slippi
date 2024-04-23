@@ -96,6 +96,32 @@ const Form = styled.form`
   margin-top: 8px;
 `;
 
+const EMPTY_SET: Set = {
+  id: 0,
+  state: 0,
+  round: 0,
+  fullRoundText: '',
+  winnerId: null,
+  entrant1Id: 0,
+  entrant1Participants: [
+    {
+      displayName: '',
+      prefix: '',
+      pronouns: '',
+    },
+  ],
+  entrant1Score: null,
+  entrant2Id: 0,
+  entrant2Participants: [
+    {
+      displayName: '',
+      prefix: '',
+      pronouns: '',
+    },
+  ],
+  entrant2Score: null,
+};
+
 function Hello() {
   const [error, setError] = useState('');
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
@@ -325,31 +351,7 @@ function Hello() {
     });
   }, [refreshReplays]);
 
-  const [selectedSet, setSelectedSet] = useState<Set>({
-    id: 0,
-    state: 0,
-    round: 0,
-    fullRoundText: '',
-    winnerId: null,
-    entrant1Id: 0,
-    entrant1Participants: [
-      {
-        displayName: '',
-        prefix: '',
-        pronouns: '',
-      },
-    ],
-    entrant1Score: null,
-    entrant2Id: 0,
-    entrant2Participants: [
-      {
-        displayName: '',
-        prefix: '',
-        pronouns: '',
-      },
-    ],
-    entrant2Score: null,
-  });
+  const [selectedSet, setSelectedSet] = useState<Set>(EMPTY_SET);
   const availablePlayers: PlayerOverrides[] = [];
   selectedSet.entrant1Participants.forEach((participant) => {
     availablePlayers.push({
@@ -1579,7 +1581,10 @@ function Hello() {
         latestAppVersion={latestAppVersion}
         gotSettings={gotSettings}
         mode={mode}
-        setMode={setMode}
+        setMode={(newMode: Mode) => {
+          setMode(newMode);
+          setSelectedSet(EMPTY_SET);
+        }}
         startggApiKey={startggApiKey}
         setStartggApiKey={setStartggApiKey}
         autoDetectUsb={autoDetectUsb}
