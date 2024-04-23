@@ -9,24 +9,46 @@ import {
   DialogTitle,
   Divider,
   Fab,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  Radio,
+  RadioGroup,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-import { FormEvent, useMemo, useState } from 'react';
+import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
 import LabeledCheckbox from './LabeledCheckbox';
+import { Mode } from '../common/types';
 
 const Form = styled.form`
   display: flex;
+  align-items: end;
   flex-direction: column;
   gap: 8px;
 `;
+
+function LabeledRadioButton({ label, value }: { label: string; value: Mode }) {
+  return (
+    <FormControlLabel
+      disableTypography
+      label={label}
+      labelPlacement="start"
+      value={value}
+      control={<Radio />}
+      sx={{ typography: 'caption' }}
+    />
+  );
+}
 
 export default function Settings({
   appVersion,
   latestAppVersion,
   gotSettings,
+  mode,
+  setMode,
   startggApiKey,
   setStartggApiKey,
   autoDetectUsb,
@@ -39,6 +61,8 @@ export default function Settings({
   appVersion: string;
   latestAppVersion: string;
   gotSettings: boolean;
+  mode: Mode;
+  setMode: (mode: Mode) => void;
   startggApiKey: string;
   setStartggApiKey: (key: string) => void;
   autoDetectUsb: boolean;
@@ -126,49 +150,70 @@ export default function Settings({
           </Typography>
         </Stack>
         <DialogContent sx={{ pt: 0 }}>
-          <Form onSubmit={setNewStartggKey}>
-            <DialogContentText>
-              Get your start.gg API key by clicking “Create new token” in the
-              “Personal Access Tokens” tab of{' '}
-              <a
-                href="https://start.gg/admin/profile/developer"
-                target="_blank"
-                rel="noreferrer"
-              >
-                this page
-              </a>
-              . Keep it private!
-            </DialogContentText>
-            <Stack alignItems="center" direction="row" gap="8px">
-              <TextField
-                autoFocus
-                defaultValue={startggApiKey}
-                fullWidth
-                label="start.gg API key (Keep it private!)"
-                name="key"
-                size="small"
-                type="password"
-                variant="standard"
-              />
-              <Button
-                disabled={copied}
-                endIcon={copied ? undefined : <ContentCopy />}
-                onClick={async () => {
-                  await window.electron.copyToClipboard(startggApiKey);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 5000);
+          <Stack>
+            <FormControl style={{ alignItems: 'end' }}>
+              <FormLabel id="mode-radio-group-label">Mode</FormLabel>
+              <RadioGroup
+                aria-labelledby="mode-radio-group-label"
+                name="mode-radio-group"
+                value={mode}
+                onChange={async (event: ChangeEvent<HTMLInputElement>) => {
+                  const newMode = event.target.value as Mode;
+                  await window.electron.setMode(newMode);
+                  setMode(newMode);
                 }}
-                variant="contained"
               >
-                {copied ? 'Copied!' : 'Copy'}
-              </Button>
-            </Stack>
-            <Stack direction="row" justifyContent="end">
-              <Button type="submit" variant="contained">
-                Set!
-              </Button>
-            </Stack>
-          </Form>
+                <LabeledRadioButton label="start.gg" value={Mode.STARTGG} />
+                <LabeledRadioButton label="Manual" value={Mode.MANUAL} />
+              </RadioGroup>
+            </FormControl>
+          </Stack>
+          {mode === Mode.STARTGG && (
+            <Form onSubmit={setNewStartggKey}>
+              <DialogContentText textAlign="end">
+                Get your start.gg API key by clicking “Create new token” in the
+                <br />
+                “Personal Access Tokens” tab of{' '}
+                <a
+                  href="https://start.gg/admin/profile/developer"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  this page
+                </a>
+                . Keep it private!
+              </DialogContentText>
+              <Stack alignItems="center" direction="row" gap="8px">
+                <TextField
+                  autoFocus
+                  defaultValue={startggApiKey}
+                  fullWidth
+                  label="start.gg API key (Keep it private!)"
+                  name="key"
+                  size="small"
+                  type="password"
+                  variant="standard"
+                />
+                <Button
+                  disabled={copied}
+                  endIcon={copied ? undefined : <ContentCopy />}
+                  onClick={async () => {
+                    await window.electron.copyToClipboard(startggApiKey);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 5000);
+                  }}
+                  variant="contained"
+                >
+                  {copied ? 'Copied!' : 'Copy'}
+                </Button>
+              </Stack>
+              <Stack direction="row" justifyContent="end">
+                <Button type="submit" variant="contained">
+                  Set!
+                </Button>
+              </Stack>
+            </Form>
+          )}
           <Divider sx={{ marginTop: '8px' }} />
           <Stack justifyContent="flex-end">
             <LabeledCheckbox

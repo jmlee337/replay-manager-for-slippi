@@ -39,6 +39,7 @@ import {
   ContextSlot,
   CopySettings,
   Event,
+  Mode,
   Output,
   Phase,
   PhaseGroup,
@@ -107,6 +108,7 @@ function Hello() {
 
   // settings
   const [gotSettings, setGotSettings] = useState(false);
+  const [mode, setMode] = useState<Mode>(Mode.STARTGG);
   const [startggApiKey, setStartggApiKey] = useState('');
   const [autoDetectUsb, setAutoDetectUsb] = useState(false);
   const [scrollToBottom, setScrollToBottom] = useState(false);
@@ -130,6 +132,7 @@ function Hello() {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
       const latestAppVersionPromise = window.electron.getLatestVersion();
+      const modePromise = window.electron.getMode();
       const startggKeyPromise = window.electron.getStartggKey();
       const autoDetectUsbPromise = window.electron.getAutoDetectUsb();
       const scrollToBottomPromise = window.electron.getScrollToBottom();
@@ -138,6 +141,7 @@ function Hello() {
       const reportSettingsPromise = window.electron.getReportSettings();
       setAppVersion(await appVersionPromise);
       setLatestAppVersion(await latestAppVersionPromise);
+      setMode(await modePromise);
       setStartggApiKey(await startggKeyPromise);
       setAutoDetectUsb(await autoDetectUsbPromise);
       setScrollToBottom(await scrollToBottomPromise);
@@ -1551,6 +1555,8 @@ function Hello() {
         appVersion={appVersion}
         latestAppVersion={latestAppVersion}
         gotSettings={gotSettings}
+        mode={mode}
+        setMode={setMode}
         startggApiKey={startggApiKey}
         setStartggApiKey={setStartggApiKey}
         autoDetectUsb={autoDetectUsb}

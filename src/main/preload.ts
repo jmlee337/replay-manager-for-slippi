@@ -4,6 +4,7 @@ import {
   CopySettings,
   EnforceResult,
   Event,
+  Mode,
   Output,
   Phase,
   PhaseGroup,
@@ -61,6 +62,8 @@ const electronHandler = {
     ipcRenderer.invoke('reportSet', set),
   updateSet: (set: StartggSet): Promise<Set> =>
     ipcRenderer.invoke('updateSet', set),
+  getMode: (): Promise<Mode> => ipcRenderer.invoke('getMode'),
+  setMode: (mode: Mode): Promise<void> => ipcRenderer.invoke('setMode', mode),
   getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
   setStartggKey: (startggKey: string): Promise<void> =>
     ipcRenderer.invoke('setStartggKey', startggKey),

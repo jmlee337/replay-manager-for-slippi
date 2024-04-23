@@ -13,6 +13,7 @@ import path from 'path';
 import {
   Context,
   CopySettings,
+  Mode,
   Output,
   Replay,
   ReportSettings,
@@ -223,6 +224,21 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       return updateSet(sggApiKey, set);
     },
   );
+
+  ipcMain.removeHandler('getMode');
+  ipcMain.handle('getMode', () => {
+    if (store.has('mode')) {
+      return store.get('mode') as Mode;
+    }
+
+    store.set('mode', Mode.STARTGG);
+    return Mode.STARTGG;
+  });
+
+  ipcMain.removeHandler('setMode');
+  ipcMain.handle('setMode', (event: IpcMainInvokeEvent, newMode: Mode) => {
+    store.set('mode', newMode);
+  });
 
   ipcMain.removeHandler('getStartggKey');
   ipcMain.handle('getStartggKey', () => sggApiKey);

@@ -170,3 +170,8 @@ export type ReportSettings = {
   alsoCopy: boolean;
   alsoDelete: boolean;
 };
+
+export enum Mode {
+  MANUAL = 'manual',
+  STARTGG = 'start.gg',
+}
