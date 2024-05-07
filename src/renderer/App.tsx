@@ -137,6 +137,8 @@ function Hello() {
   const [autoDetectUsb, setAutoDetectUsb] = useState(false);
   const [scrollToBottom, setScrollToBottom] = useState(false);
   const [useEnforcer, setUseEnforcer] = useState(false);
+  const [fileNameFormat, setFileNameFormat] = useState('');
+  const [folderNameFormat, setFolderNameFormat] = useState('');
   const [appVersion, setAppVersion] = useState('');
   const [latestAppVersion, setLatestAppVersion] = useState('');
   // copy settings
@@ -161,6 +163,8 @@ function Hello() {
       const autoDetectUsbPromise = window.electron.getAutoDetectUsb();
       const scrollToBottomPromise = window.electron.getScrollToBottom();
       const useEnforcerPromise = window.electron.getUseEnforcer();
+      const fileNameFormatPromise = window.electron.getFileNameFormat();
+      const folderNameFormatPromise = window.electron.getFolderNameFormat();
       const copySettingsPromise = window.electron.getCopySettings();
       const reportSettingsPromise = window.electron.getReportSettings();
       setAppVersion(await appVersionPromise);
@@ -170,6 +174,8 @@ function Hello() {
       setAutoDetectUsb(await autoDetectUsbPromise);
       setScrollToBottom(await scrollToBottomPromise);
       setUseEnforcer(await useEnforcerPromise);
+      setFileNameFormat(await fileNameFormatPromise);
+      setFolderNameFormat(await folderNameFormatPromise);
       setCopySettings(await copySettingsPromise);
       setReportSettings(await reportSettingsPromise);
       setGotSettings(true);
@@ -1593,6 +1599,10 @@ function Hello() {
         setScrollToBottom={setScrollToBottom}
         useEnforcer={useEnforcer}
         setUseEnforcer={setUseEnforcer}
+        fileNameFormat={fileNameFormat}
+        setFileNameFormat={setFileNameFormat}
+        folderNameFormat={folderNameFormat}
+        setFolderNameFormat={setFolderNameFormat}
       />
     </>
   );

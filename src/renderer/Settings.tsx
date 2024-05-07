@@ -1,4 +1,3 @@
-import styled from '@emotion/styled';
 import { ContentCopy, Settings as SettingsIcon } from '@mui/icons-material';
 import {
   Alert,
@@ -19,23 +18,16 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { ChangeEvent, FormEvent, useMemo, useState } from 'react';
+import { ChangeEvent, useMemo, useState } from 'react';
 import LabeledCheckbox from './LabeledCheckbox';
 import { Mode } from '../common/types';
-
-const Form = styled.form`
-  display: flex;
-  align-items: end;
-  flex-direction: column;
-  gap: 8px;
-`;
 
 function LabeledRadioButton({ label, value }: { label: string; value: Mode }) {
   return (
     <FormControlLabel
       disableTypography
       label={label}
-      labelPlacement="start"
+      labelPlacement="end"
       value={value}
       control={<Radio />}
       sx={{ typography: 'caption' }}
@@ -57,6 +49,10 @@ export default function Settings({
   setScrollToBottom,
   useEnforcer,
   setUseEnforcer,
+  fileNameFormat,
+  setFileNameFormat,
+  folderNameFormat,
+  setFolderNameFormat,
 }: {
   appVersion: string;
   latestAppVersion: string;
@@ -71,6 +67,10 @@ export default function Settings({
   setScrollToBottom: (scrollToBottom: boolean) => void;
   useEnforcer: boolean;
   setUseEnforcer: (useEnforcer: boolean) => void;
+  fileNameFormat: string;
+  setFileNameFormat: (fileNameFormat: string) => void;
+  folderNameFormat: string;
+  setFolderNameFormat: (folderNameFormat: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -112,20 +112,6 @@ export default function Settings({
     setHasAutoOpened(true);
   }
 
-  const setNewStartggKey = async (event: FormEvent<HTMLFormElement>) => {
-    const target = event.target as typeof event.target & {
-      key: { value: string };
-    };
-    const newKey = target.key.value;
-    event.preventDefault();
-    event.stopPropagation();
-    if (newKey) {
-      await window.electron.setStartggKey(newKey);
-      setStartggApiKey(newKey);
-      setOpen(false);
-    }
-  };
-
   return (
     <>
       <Tooltip title="Settings">
@@ -137,7 +123,18 @@ export default function Settings({
           <SettingsIcon />
         </Fab>
       </Tooltip>
-      <Dialog fullWidth open={open} onClose={() => setOpen(false)}>
+      <Dialog
+        fullWidth
+        open={open}
+        onClose={async () => {
+          await Promise.all([
+            window.electron.setStartggKey(startggApiKey),
+            window.electron.setFileNameFormat(fileNameFormat),
+            window.electron.setFolderNameFormat(folderNameFormat),
+          ]);
+          setOpen(false);
+        }}
+      >
         <Stack
           alignItems="center"
           direction="row"
@@ -151,7 +148,7 @@ export default function Settings({
         </Stack>
         <DialogContent sx={{ pt: 0 }}>
           <Stack>
-            <FormControl style={{ alignItems: 'end' }}>
+            <FormControl>
               <FormLabel id="mode-radio-group-label">Mode</FormLabel>
               <RadioGroup
                 aria-labelledby="mode-radio-group-label"
@@ -169,8 +166,8 @@ export default function Settings({
             </FormControl>
           </Stack>
           {mode === Mode.STARTGG && (
-            <Form onSubmit={setNewStartggKey}>
-              <DialogContentText textAlign="end">
+            <>
+              <DialogContentText>
                 Get your start.gg API key by clicking “Create new token” in the
                 <br />
                 “Personal Access Tokens” tab of{' '}
@@ -186,12 +183,14 @@ export default function Settings({
               <Stack alignItems="center" direction="row" gap="8px">
                 <TextField
                   autoFocus
-                  defaultValue={startggApiKey}
                   fullWidth
                   label="start.gg API key (Keep it private!)"
-                  name="key"
+                  onChange={(event) => {
+                    setStartggApiKey(event.target.value);
+                  }}
                   size="small"
                   type="password"
+                  value={startggApiKey}
                   variant="standard"
                 />
                 <Button
@@ -207,19 +206,14 @@ export default function Settings({
                   {copied ? 'Copied!' : 'Copy'}
                 </Button>
               </Stack>
-              <Stack direction="row" justifyContent="end">
-                <Button type="submit" variant="contained">
-                  Set!
-                </Button>
-              </Stack>
-            </Form>
+            </>
           )}
           <Divider sx={{ marginTop: '8px' }} />
-          <Stack justifyContent="flex-end">
+          <Stack>
             <LabeledCheckbox
               checked={autoDetectUsb}
               label="Auto-detect USB"
-              labelPlacement="start"
+              labelPlacement="end"
               set={async (checked) => {
                 await window.electron.setAutoDetectUsb(checked);
                 setAutoDetectUsb(checked);
@@ -228,7 +222,7 @@ export default function Settings({
             <LabeledCheckbox
               checked={scrollToBottom}
               label="Auto-scroll to end of replay list"
-              labelPlacement="start"
+              labelPlacement="end"
               set={async (checked) => {
                 await window.electron.setScrollToBottom(checked);
                 setScrollToBottom(checked);
@@ -237,11 +231,34 @@ export default function Settings({
             <LabeledCheckbox
               checked={useEnforcer}
               label="Use SLP Enforcer"
-              labelPlacement="start"
+              labelPlacement="end"
               set={async (checked) => {
                 await window.electron.setUseEnforcer(checked);
                 setUseEnforcer(checked);
               }}
+            />
+            <Stack alignItems="end" direction="row" gap="8px">
+              <TextField
+                fullWidth
+                label="File name format"
+                onChange={(event) => {
+                  setFileNameFormat(event.target.value);
+                }}
+                size="small"
+                value={fileNameFormat}
+                variant="standard"
+              />
+              <DialogContentText paddingBottom="5px">.slp</DialogContentText>
+            </Stack>
+            <TextField
+              fullWidth
+              label="Folder name format"
+              onChange={(event) => {
+                setFolderNameFormat(event.target.value);
+              }}
+              size="small"
+              value={folderNameFormat}
+              variant="standard"
             />
           </Stack>
           {needUpdate && (

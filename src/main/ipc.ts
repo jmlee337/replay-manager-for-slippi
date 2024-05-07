@@ -298,6 +298,60 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
+  // {date}
+  // {time}
+  // {roundShort}
+  // {roundLong}
+  // {playersOnly}
+  // {playersChars}
+  // {singlesChars}
+  // {stage}
+  ipcMain.removeHandler('getFileNameFormat');
+  ipcMain.handle('getFileNameFormat', () => {
+    if (store.has('fileNameFormat')) {
+      return store.get('fileNameFormat') as string;
+    }
+
+    const initialFileNameFormat = '{time} {playersChars} {stage}';
+    store.set('fileNameFormat', initialFileNameFormat);
+    return initialFileNameFormat;
+  });
+
+  ipcMain.removeHandler('setFileNameFormat');
+  ipcMain.handle(
+    'setFileNameFormat',
+    (event: IpcMainInvokeEvent, newFileNameFormat: string) => {
+      store.set('fileNameFormat', newFileNameFormat);
+    },
+  );
+
+  // {date}
+  // {time}
+  // {roundShort}
+  // {roundLong}
+  // {playersOnly}
+  // {playersChars}
+  // {singlesChars}
+  // {games}
+  ipcMain.removeHandler('getFolderNameFormat');
+  ipcMain.handle('getFolderNameFormat', () => {
+    if (store.has('folderNameFormat')) {
+      return store.get('folderNameFormat');
+    }
+
+    const initialFolderNameFormat = '{time} {roundShort} {playersChars}';
+    store.set('folderNameFormat', initialFolderNameFormat);
+    return initialFolderNameFormat;
+  });
+
+  ipcMain.removeHandler('setFolderNameFormat');
+  ipcMain.handle(
+    'setFolderNameFormat',
+    (event: IpcMainInvokeEvent, newFolderNameFormat: string) => {
+      store.set('folderNameFormat', newFolderNameFormat);
+    },
+  );
+
   ipcMain.removeHandler('getCopySettings');
   ipcMain.handle('getCopySettings', () => {
     if (store.has('copySettings')) {
