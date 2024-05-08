@@ -306,13 +306,14 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   // {playersChars}
   // {singlesChars}
   // {stage}
+  // {ordinal}
   ipcMain.removeHandler('getFileNameFormat');
   ipcMain.handle('getFileNameFormat', () => {
     if (store.has('fileNameFormat')) {
       return store.get('fileNameFormat') as string;
     }
 
-    const initialFileNameFormat = '{time} {playersChars} {stage}';
+    const initialFileNameFormat = '{ordinal} - {playersChars} - {stage}';
     store.set('fileNameFormat', initialFileNameFormat);
     return initialFileNameFormat;
   });
@@ -339,7 +340,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       return store.get('folderNameFormat');
     }
 
-    const initialFolderNameFormat = '{time} {roundShort} {playersChars}';
+    const initialFolderNameFormat = '{time} - {roundShort} - {playersChars}';
     store.set('folderNameFormat', initialFolderNameFormat);
     return initialFolderNameFormat;
   });

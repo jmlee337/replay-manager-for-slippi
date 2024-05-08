@@ -59,7 +59,7 @@ import SetControls from './SetControls';
 import ErrorDialog from './ErrorDialog';
 import Settings from './Settings';
 import ManualReport from './ManualReport';
-import { characterNames } from '../common/constants';
+import { characterNames, stageNames } from '../common/constants';
 import ManualView from './ManualView';
 import ManualBar from './ManualBar';
 
@@ -932,7 +932,16 @@ function Hello() {
         ),
       );
 
-      const toLabel = (nameObj: NameObj) => {
+      const toPlayerOnly = (nameObj: NameObj) => {
+        if (nameObj.displayName) {
+          return nameObj.displayName;
+        }
+        if (nameObj.nametag) {
+          return nameObj.nametag;
+        }
+        return nameObj.characterName;
+      };
+      const toPlayerChar = (nameObj: NameObj) => {
         if (nameObj.displayName) {
           return `${nameObj.displayName} (${nameObj.characterName})`;
         }
@@ -942,11 +951,19 @@ function Hello() {
         return nameObj.characterName;
       };
 
+      let roundShort = '';
+      const regex = /([A-Z]|[0-9])/g;
+      let regexRes = regex.exec(selectedSet.fullRoundText);
+      while (regexRes) {
+        roundShort += regexRes[0];
+        regexRes = regex.exec(selectedSet.fullRoundText);
+      }
+      const roundLong = String(selectedSet.fullRoundText);
       if (
         copySettings.output === Output.FOLDER ||
         copySettings.output === Output.ZIP
       ) {
-        const folderLabels = nameObjs
+        const combinedNameObjs = nameObjs
           .reduce(
             (namesObj, game): NamesObj[] => {
               game.forEach((nameObj, i) => {
@@ -1007,29 +1024,53 @@ function Hello() {
               .map((entry) => entry[0])
               .join(', '),
           }))
-          .filter((nameObj) => nameObj.characterName)
-          .map(toLabel)
-          .join(', ');
-        const writeStartAt = format(startDate, "yyyyMMdd'T'HHmmss");
-        subdir = `${writeStartAt} ${folderLabels}`;
+          .filter((nameObj) => nameObj.characterName);
+        const playersOnly = combinedNameObjs.map(toPlayerOnly).join(', ');
+        const playersChars = combinedNameObjs.map(toPlayerChar).join(', ');
+        const singlesChars =
+          combinedNameObjs.length === 4 ? playersOnly : playersChars;
+        subdir = String(folderNameFormat);
+        subdir = subdir.replace('{date}', format(startDate, 'yyyyMMdd'));
+        subdir = subdir.replace('{time}', format(startDate, 'HHmm'));
+        subdir = subdir.replace('{roundShort}', roundShort);
+        subdir = subdir.replace('{roundLong}', roundLong);
+        subdir = subdir.replace('{games}', selectedReplays.length.toString(10));
+        // do last in case player names contain template strings LOL
+        subdir = subdir.replace('{playersOnly}', playersOnly);
+        subdir = subdir.replace('{playersChars}', playersChars);
+        subdir = subdir.replace('{singlesChars}', singlesChars);
       }
 
       if (copySettings.writeFileNames) {
         fileNames = nameObjs.map((game, i) => {
-          let prefix = `${i + 1}`;
-          if (copySettings.output === Output.FILES) {
-            const { startAt } = selectedReplays[i];
-            const writeStartDate = copySettings.writeStartTimes
-              ? new Date(new Date(startAt).getTime() + offsetMs)
-              : new Date(startAt);
-            const writeStartAt = format(writeStartDate, "yyyyMMdd'T'HHmmss");
-            prefix = `${writeStartAt}_${prefix}`;
-          }
-          const labels = game
-            .filter((nameObj) => nameObj.characterName)
-            .map(toLabel)
-            .join(', ');
-          return `${prefix} ${labels}.slp`;
+          const { stageId, startAt } = selectedReplays[i];
+          const writeStartDate = copySettings.writeStartTimes
+            ? new Date(new Date(startAt).getTime() + offsetMs)
+            : new Date(startAt);
+          const names = game.filter((nameObj) => nameObj.characterName);
+          const playersOnly = names.map(toPlayerOnly).join(', ');
+          const playersChars = names.map(toPlayerChar).join(', ');
+          const singlesChars =
+            nameObjs.length === 4 ? playersOnly : playersChars;
+
+          let fileName = String(fileNameFormat);
+          fileName = fileName.replace(
+            '{date}',
+            format(writeStartDate, 'yyyyMMdd'),
+          );
+          fileName = fileName.replace(
+            '{time}',
+            format(writeStartDate, 'HHmmss'),
+          );
+          fileName = fileName.replace('{roundShort}', roundShort);
+          fileName = fileName.replace('{roundLong}', roundLong);
+          fileName = fileName.replace('{stage}', stageNames.get(stageId) || '');
+          fileName = fileName.replace('{ordinal}', (i + 1).toString(10));
+          // do last in case player names contain template strings LOL
+          fileName = fileName.replace('{playersOnly}', playersOnly);
+          fileName = fileName.replace('{playersChars}', playersChars);
+          fileName = fileName.replace('{singlesChars}', singlesChars);
+          return `${fileName}.slp`;
         });
       }
 
