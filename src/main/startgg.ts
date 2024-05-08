@@ -14,6 +14,27 @@ async function wrappedFetch(
 ): Promise<Response> {
   const response = await fetch(input, init);
   if (!response.ok) {
+    if (
+      response.status === 500 ||
+      response.status === 502 ||
+      response.status === 503 ||
+      response.status === 504
+    ) {
+      return new Promise((resolve, reject) => {
+        setTimeout(async () => {
+          const retryResponse = await fetch(input, init);
+          if (!retryResponse.ok) {
+            reject(
+              new Error(
+                `${retryResponse.status} - ${retryResponse.statusText}`,
+              ),
+            );
+          } else {
+            resolve(retryResponse);
+          }
+        }, 1000);
+      });
+    }
     throw new Error(`${response.status} - ${response.statusText}`);
   }
 

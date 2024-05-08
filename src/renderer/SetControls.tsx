@@ -390,11 +390,10 @@ export default function SetControls({
             onClick={async () => {
               setReporting(true);
               try {
-                const promises = [reportSet(startggSet, set.state === 3)];
+                await reportSet(startggSet, set.state === 3);
                 if (reportSettings.alsoCopy) {
-                  promises.push(copyReplays());
+                  await copyReplays();
                 }
-                await Promise.all(promises);
                 if (reportSettings.alsoCopy && reportSettings.alsoDelete) {
                   await deleteReplays();
                 }
