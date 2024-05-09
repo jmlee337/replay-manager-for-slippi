@@ -237,6 +237,17 @@ export default function Settings({
                 setUseEnforcer(checked);
               }}
             />
+            <DialogContentText>
+              File/Folder name format placeholders documented{' '}
+              <a
+                href="https://github.com/jmlee337/replay-manager-for-slippi/blob/main/src/docs/format.md"
+                target="_blank"
+                rel="noreferrer"
+              >
+                here
+              </a>
+              .
+            </DialogContentText>
             <Stack alignItems="end" direction="row" gap="8px">
               <TextField
                 fullWidth
