@@ -134,6 +134,7 @@ export type ContextScore = {
 
 export type Context = {
   bestOf: number;
+  durationMs: number;
   scores: ContextScore[];
   startgg?: {
     tournament: {

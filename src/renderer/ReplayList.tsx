@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import { PlayerOverrides, Replay } from '../common/types';
 import {
   characterNames,
+  frameMsDivisor,
   isValidCharacter,
   stageNames,
 } from '../common/constants';
@@ -96,7 +97,10 @@ const ReplayListItem = memo(function ReplayListItem({
   const dateLong = format(startAtDate, 'MMMM do, yyyy');
   const dateShort = format(startAtDate, 'yyyy MMM dd');
   const time = format(startAtDate, 'h:mmaaa');
-  const duration = format(new Date(replay.lastFrame / 0.05994), "m'm'ss's'");
+  const duration = format(
+    new Date(replay.lastFrame / frameMsDivisor),
+    "m'm'ss's'",
+  );
   const stageName = stageNames.get(replay.stageId) || replay.stageId.toString();
 
   const noOverrideWinner =

@@ -137,3 +137,5 @@ export const stageStartggIds = new Map([
 export const startggStageIds = new Map(
   Array.from(stageStartggIds.entries()).map(([key, value]) => [value, key]),
 );
+
+export const frameMsDivisor = 0.05994;

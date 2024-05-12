@@ -59,7 +59,11 @@ import SetControls from './SetControls';
 import ErrorDialog from './ErrorDialog';
 import Settings from './Settings';
 import ManualReport from './ManualReport';
-import { characterNames, stageNames } from '../common/constants';
+import {
+  characterNames,
+  frameMsDivisor,
+  stageNames,
+} from '../common/constants';
 import ManualView from './ManualView';
 import ManualBar from './ManualBar';
 
@@ -900,8 +904,10 @@ function Hello() {
     if (copySettings.writeStartTimes) {
       const lastReplay = selectedReplays[selectedReplays.length - 1];
       const lastStartMs = new Date(lastReplay.startAt).getTime();
-      const lastDurationMs = Math.round((lastReplay.lastFrame + 124) / 0.05994);
-      offsetMs = Date.now() - lastStartMs - lastDurationMs;
+      offsetMs =
+        Date.now() -
+        lastStartMs -
+        Math.round((lastReplay.lastFrame + 124) / frameMsDivisor);
       startDate = new Date(
         new Date(selectedReplays[0].startAt).getTime() + offsetMs,
       );
@@ -1125,6 +1131,11 @@ function Hello() {
         });
         context = {
           bestOf: Math.max(gameScores[0], gameScores[1]) * 2 - 1,
+          durationMs: selectedReplays
+            .map((replay) =>
+              Math.ceil((replay.lastFrame + 124) / frameMsDivisor),
+            )
+            .reduce((prev, curr) => prev + curr, 0),
           scores,
         };
 
