@@ -10,6 +10,7 @@ import Store from 'electron-store';
 import { rm } from 'fs/promises';
 import detectUsb from 'detect-usb';
 import path from 'path';
+import { eject } from 'eject-media';
 import {
   Context,
   CopySettings,
@@ -99,9 +100,23 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   });
 
   ipcMain.removeHandler('deleteReplaysDir');
-  ipcMain.handle('deleteReplaysDir', async () =>
-    rm(chosenReplaysDir, { recursive: true }),
-  );
+  ipcMain.handle('deleteReplaysDir', async () => {
+    await rm(chosenReplaysDir, { recursive: true });
+    if (
+      knownUsbs.length > 0 &&
+      chosenReplaysDir.startsWith(knownUsbs[knownUsbs.length - 1])
+    ) {
+      await new Promise<void>((resolve, reject) => {
+        eject(knownUsbs[knownUsbs.length - 1], (error: Error) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve();
+          }
+        });
+      });
+    }
+  });
 
   ipcMain.removeHandler('getReplaysInDir');
   ipcMain.handle('getReplaysInDir', async () =>
