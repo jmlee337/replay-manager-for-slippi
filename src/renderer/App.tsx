@@ -784,14 +784,22 @@ function Hello() {
   // set controls
   const [selectedSetChain, setSelectedSetChain] = useState({
     eventId: 0,
+    eventName: '',
+    eventSlug: '',
     phaseId: 0,
+    phaseName: '',
     phaseGroupId: 0,
+    phaseGroupName: '',
   });
   const selectSet = (
     set: Set,
     phaseGroupId: number,
+    phaseGroupName: string,
     phaseId: number,
+    phaseName: string,
     eventId: number,
+    eventName: string,
+    eventSlug: string,
   ) => {
     const newOverrides = [
       { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
@@ -808,7 +816,15 @@ function Hello() {
 
     setOverrides(newOverrides);
     setReplays(newReplays);
-    setSelectedSetChain({ eventId, phaseId, phaseGroupId });
+    setSelectedSetChain({
+      eventId,
+      eventName,
+      eventSlug,
+      phaseId,
+      phaseName,
+      phaseGroupId,
+      phaseGroupName,
+    });
     setSelectedSet(set);
   };
 
@@ -1018,6 +1034,13 @@ function Hello() {
           '{callOrder}',
           selectedSet.callOrder.toString(10),
         );
+        // do last in case event/phase/phase group names contain template strings LOL
+        subdir = subdir.replace('{event}', selectedSetChain.eventName);
+        subdir = subdir.replace('{phase}', selectedSetChain.phaseName);
+        subdir = subdir.replace(
+          '{phaseGroup}',
+          selectedSetChain.phaseGroupName,
+        );
         // do last in case player names contain template strings LOL
         subdir = subdir.replace('{playersOnly}', playersOnly);
         subdir = subdir.replace('{playersChars}', playersChars);
@@ -1117,32 +1140,22 @@ function Hello() {
         };
 
         if (selectedSet.id) {
-          const contextEvent = tournament.events.find(
-            (event) => event.id === selectedSetChain.eventId,
-          )!;
-          const contextPhase = contextEvent.phases.find(
-            (phase) => phase.id === selectedSetChain.phaseId,
-          )!;
-          const contextPhaseGroup = contextPhase.phaseGroups.find(
-            (phaseGroup) => phaseGroup.id === selectedSetChain.phaseGroupId,
-          )!;
-
           context.startgg = {
             tournament: {
               name: tournament.name,
             },
             event: {
-              id: contextEvent.id,
-              name: contextEvent.name,
-              slug: contextEvent.slug,
+              id: selectedSetChain.eventId,
+              name: selectedSetChain.eventName,
+              slug: selectedSetChain.eventSlug,
             },
             phase: {
-              id: contextPhase.id,
-              name: contextPhase.name,
+              id: selectedSetChain.phaseId,
+              name: selectedSetChain.phaseName,
             },
             phaseGroup: {
-              id: contextPhaseGroup.id,
-              name: contextPhaseGroup.name,
+              id: selectedSetChain.phaseGroupId,
+              name: selectedSetChain.phaseGroupName,
             },
             set: {
               id: selectedSet.id,

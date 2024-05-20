@@ -31,26 +31,49 @@ const Name = styled.div`
 function SetView({
   set,
   eventId,
+  eventName,
+  eventSlug,
   phaseId,
+  phaseName,
   phaseGroupId,
+  phaseGroupName,
   selectSet,
 }: {
   set: Set;
   eventId: number;
+  eventName: string;
+  eventSlug: string;
   phaseId: number;
+  phaseName: string;
   phaseGroupId: number;
+  phaseGroupName: string;
   selectSet: (
     set: Set,
     phaseGroupId: number,
+    phaseGroupName: string,
     phaseId: number,
+    phaseName: string,
     eventId: number,
+    eventName: string,
+    eventSlug: string,
   ) => void;
 }) {
   return (
     <ListItemButton
       dense
       disableGutters
-      onClick={() => selectSet(set, phaseGroupId, phaseId, eventId)}
+      onClick={() =>
+        selectSet(
+          set,
+          phaseGroupId,
+          phaseGroupName,
+          phaseId,
+          phaseName,
+          eventId,
+          eventName,
+          eventSlug,
+        )
+      }
     >
       <SetViewInner
         entrant1Names={set.entrant1Participants.map(
@@ -74,14 +97,20 @@ function PhaseGroupView({
   phaseGroup,
   initiallyOpen,
   eventId,
+  eventName,
+  eventSlug,
   phaseId,
+  phaseName,
   getPhaseGroup,
   selectSet,
 }: {
   phaseGroup: PhaseGroup;
   initiallyOpen: boolean;
   eventId: number;
+  eventName: string;
+  eventSlug: string;
   phaseId: number;
+  phaseName: string;
   getPhaseGroup: (
     id: number,
     phaseId: number,
@@ -90,8 +119,12 @@ function PhaseGroupView({
   selectSet: (
     set: Set,
     phaseGroupId: number,
+    phaseGroupName: string,
     phaseId: number,
+    phaseName: string,
     eventId: number,
+    eventName: string,
+    eventSlug: string,
   ) => void;
 }) {
   const [getting, setGetting] = useState(false);
@@ -144,8 +177,12 @@ function PhaseGroupView({
               key={set.id}
               set={set}
               eventId={eventId}
+              eventName={eventName}
+              eventSlug={eventSlug}
               phaseId={phaseId}
+              phaseName={phaseName}
               phaseGroupId={phaseGroup.id}
+              phaseGroupName={phaseGroup.name}
               selectSet={selectSet}
             />
           ))}
@@ -172,8 +209,12 @@ function PhaseGroupView({
                     key={set.id}
                     set={set}
                     eventId={eventId}
+                    eventName={eventName}
+                    eventSlug={eventSlug}
                     phaseId={phaseId}
+                    phaseName={phaseName}
                     phaseGroupId={phaseGroup.id}
+                    phaseGroupName={phaseGroup.name}
                     selectSet={selectSet}
                   />
                 ))}
@@ -190,6 +231,8 @@ function PhaseView({
   phase,
   initiallyOpen,
   eventId,
+  eventName,
+  eventSlug,
   getPhase,
   getPhaseGroup,
   selectSet,
@@ -197,6 +240,8 @@ function PhaseView({
   phase: Phase;
   initiallyOpen: boolean;
   eventId: number;
+  eventName: string;
+  eventSlug: string;
   getPhase: (id: number, eventId: number) => Promise<void>;
   getPhaseGroup: (
     id: number,
@@ -206,8 +251,12 @@ function PhaseView({
   selectSet: (
     set: Set,
     phaseGroupId: number,
+    phaseGroupName: string,
     phaseId: number,
+    phaseName: string,
     eventId: number,
+    eventName: string,
+    eventSlug: string,
   ) => void;
 }) {
   const [getting, setGetting] = useState(false);
@@ -254,7 +303,10 @@ function PhaseView({
               phaseGroup={phaseGroup}
               initiallyOpen={phase.phaseGroups.length === 1}
               eventId={eventId}
+              eventName={eventName}
+              eventSlug={eventSlug}
               phaseId={phase.id}
+              phaseName={phase.name}
               getPhaseGroup={getPhaseGroup}
               selectSet={selectSet}
             />
@@ -285,8 +337,12 @@ function EventView({
   selectSet: (
     set: Set,
     phaseGroupId: number,
+    phaseGroupName: string,
     phaseId: number,
+    phaseName: string,
     eventId: number,
+    eventName: string,
+    eventSlug: string,
   ) => void;
 }) {
   const [getting, setGetting] = useState(false);
@@ -333,6 +389,8 @@ function EventView({
               phase={phase}
               initiallyOpen={event.phases.length === 1}
               eventId={event.id}
+              eventName={event.name}
+              eventSlug={event.slug}
               getPhase={getPhase}
               getPhaseGroup={getPhaseGroup}
               selectSet={selectSet}
@@ -362,8 +420,12 @@ export default function StartggView({
   selectSet: (
     set: Set,
     phaseGroupId: number,
+    phaseGroupName: string,
     phaseId: number,
+    phaseName: string,
     eventId: number,
+    eventName: string,
+    eventSlug: string,
   ) => void;
 }) {
   return (

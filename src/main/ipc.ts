@@ -350,6 +350,9 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   // {singlesChars}
   // {games}
   // {callOrder}
+  // {phaseGroup}
+  // {phase}
+  // {event}
   ipcMain.removeHandler('getFolderNameFormat');
   ipcMain.handle('getFolderNameFormat', () => {
     if (store.has('folderNameFormat')) {
