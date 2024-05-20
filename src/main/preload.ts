@@ -1,5 +1,6 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer } from 'electron';
 import {
+  ApiSet,
   Context,
   CopySettings,
   EnforceResult,
@@ -10,7 +11,6 @@ import {
   PhaseGroup,
   Replay,
   ReportSettings,
-  Set,
   Sets,
   StartggSet,
 } from '../common/types';
@@ -54,13 +54,13 @@ const electronHandler = {
   getPhaseGroup: (
     id: number,
     isDoubles: boolean,
-    updatedSets?: Map<number, Set>,
+    updatedApiSets?: Map<number, ApiSet>,
   ): Promise<Sets> =>
-    ipcRenderer.invoke('getPhaseGroup', id, isDoubles, updatedSets),
-  startSet: (id: number): Promise<Set> => ipcRenderer.invoke('startSet', id),
-  reportSet: (set: StartggSet): Promise<Set[]> =>
+    ipcRenderer.invoke('getPhaseGroup', id, isDoubles, updatedApiSets),
+  startSet: (id: number): Promise<ApiSet> => ipcRenderer.invoke('startSet', id),
+  reportSet: (set: StartggSet): Promise<ApiSet[]> =>
     ipcRenderer.invoke('reportSet', set),
-  updateSet: (set: StartggSet): Promise<Set> =>
+  updateSet: (set: StartggSet): Promise<ApiSet> =>
     ipcRenderer.invoke('updateSet', set),
   getMode: (): Promise<Mode> => ipcRenderer.invoke('getMode'),
   setMode: (mode: Mode): Promise<void> => ipcRenderer.invoke('setMode', mode),

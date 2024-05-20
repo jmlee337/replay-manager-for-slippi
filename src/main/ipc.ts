@@ -12,13 +12,13 @@ import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
 import {
+  ApiSet,
   Context,
   CopySettings,
   Mode,
   Output,
   Replay,
   ReportSettings,
-  Set,
   StartggSet,
 } from '../common/types';
 import {
@@ -194,20 +194,20 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       event: IpcMainInvokeEvent,
       id: number,
       isDoubles: boolean,
-      updatedSets?: Map<number, Set>,
+      updatedApiSets?: Map<number, ApiSet>,
     ) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      return getPhaseGroup(sggApiKey, id, isDoubles, updatedSets);
+      return getPhaseGroup(sggApiKey, id, isDoubles, updatedApiSets);
     },
   );
 
   ipcMain.removeHandler('startSet');
   ipcMain.handle(
     'startSet',
-    async (event: IpcMainInvokeEvent, setId: number): Promise<Set> => {
+    async (event: IpcMainInvokeEvent, setId: number): Promise<ApiSet> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
@@ -219,7 +219,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('reportSet');
   ipcMain.handle(
     'reportSet',
-    async (event: IpcMainInvokeEvent, set: StartggSet): Promise<Set[]> => {
+    async (event: IpcMainInvokeEvent, set: StartggSet): Promise<ApiSet[]> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
@@ -231,7 +231,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('updateSet');
   ipcMain.handle(
     'updateSet',
-    async (event: IpcMainInvokeEvent, set: StartggSet): Promise<Set> => {
+    async (event: IpcMainInvokeEvent, set: StartggSet): Promise<ApiSet> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
@@ -349,6 +349,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   // {playersChars}
   // {singlesChars}
   // {games}
+  // {callOrder}
   ipcMain.removeHandler('getFolderNameFormat');
   ipcMain.handle('getFolderNameFormat', () => {
     if (store.has('folderNameFormat')) {
