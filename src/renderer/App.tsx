@@ -837,7 +837,6 @@ function Hello() {
         true,
         new Map([[updatedSet.id, updatedSet]]),
       );
-      setSelectedSet(updatedSet);
     } catch (e: any) {
       showErrorDialog(e.toString());
     } finally {
@@ -861,35 +860,6 @@ function Hello() {
       selectedSetChain.eventId,
       true,
       updatedSets,
-    );
-
-    const updatedSelectedSet = updatedSets.get(set.setId);
-    setSelectedSet(
-      updatedSelectedSet || {
-        id: 0,
-        state: 0,
-        round: 0,
-        fullRoundText: '',
-        winnerId: null,
-        entrant1Id: 0,
-        entrant1Participants: [
-          {
-            displayName: '',
-            prefix: '',
-            pronouns: '',
-          },
-        ],
-        entrant1Score: null,
-        entrant2Id: 0,
-        entrant2Participants: [
-          {
-            displayName: '',
-            prefix: '',
-            pronouns: '',
-          },
-        ],
-        entrant2Score: null,
-      },
     );
     resetDq();
   };
