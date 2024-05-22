@@ -1,6 +1,4 @@
 import {
-  ApiParticipant,
-  ApiSet,
   Event,
   Participant,
   Phase,
@@ -111,23 +109,6 @@ export async function getPhase(id: number): Promise<PhaseGroup[]> {
     );
 }
 
-export async function getPhaseGroupCallOrder(
-  id: number,
-): Promise<Map<number, number>> {
-  const response = await wrappedFetch(
-    `https://api.smash.gg/phase_group/${id}?expand=sets`,
-  );
-  const json = await response.json();
-  const setIdToCallOrder = new Map<number, number>();
-  json.entities.sets.forEach((set: any) => {
-    const { id: setId, callOrder } = set;
-    if (Number.isInteger(setId) && Number.isFinite(callOrder)) {
-      setIdToCallOrder.set(setId, callOrder);
-    }
-  });
-  return setIdToCallOrder;
-}
-
 async function fetchGql(key: string, query: string, variables: any) {
   const response = await wrappedFetch('https://api.start.gg/gql/alpha', {
     method: 'POST',
@@ -145,6 +126,15 @@ async function fetchGql(key: string, query: string, variables: any) {
   return json.data;
 }
 
+type ApiParticipant = {
+  gamerTag: string;
+  prefix: string | null;
+  player: {
+    user: {
+      genderPronoun: string | null;
+    } | null;
+  };
+};
 const apiParticipantToParticipant = (
   participant: ApiParticipant,
 ): Participant => ({
@@ -152,12 +142,7 @@ const apiParticipantToParticipant = (
   pronouns: participant.player.user?.genderPronoun || '',
   prefix: participant.prefix || '',
 });
-function apiSetToSet(set: ApiSet, setIdToCallOrder: Map<number, number>): Set {
-  const callOrder = setIdToCallOrder.get(set.id);
-  if (callOrder === undefined) {
-    throw new Error('No call order available, try refreshing phase group');
-  }
-
+function apiSetToSet(set: any): Set {
   const slot1 = set.slots[0];
   const slot2 = set.slots[1];
   const entrant1Participants: Participant[] = slot1.entrant.participants.map(
@@ -182,7 +167,6 @@ function apiSetToSet(set: ApiSet, setIdToCallOrder: Map<number, number>): Set {
     entrant2Score: slot2.standing
       ? slot2.standing.stats.score.displayValue
       : null,
-    callOrder,
   };
 }
 
@@ -238,12 +222,11 @@ export async function getPhaseGroup(
   key: string,
   id: number,
   isDoubles: boolean,
-  updatedApiSets: Map<number, ApiSet> = new Map(),
+  updatedSets: Map<number, Set> = new Map(),
 ): Promise<Sets> {
-  const setIdToCallOrderPromise = getPhaseGroupCallOrder(id);
   let page = 1;
   let nextData;
-  const apiSets: ApiSet[] = [];
+  const sets: Set[] = [];
   do {
     // eslint-disable-next-line no-await-in-loop
     nextData = await fetchGql(key, PHASE_GROUP_QUERY, {
@@ -251,19 +234,17 @@ export async function getPhaseGroup(
       page,
       pageSize: isDoubles ? DOUBLES_PAGE_SIZE : SINGLES_PAGE_SIZE,
     });
-    const newSets: ApiSet[] = nextData.phaseGroup.sets.nodes.filter(
-      (set: ApiSet) =>
-        (set.slots[0].entrant && set.slots[1].entrant) ||
-        updatedApiSets.has(set.id),
-    );
-    apiSets.push(...newSets);
+    const newSets: Set[] = nextData.phaseGroup.sets.nodes
+      .filter(
+        (set: any) =>
+          (set.slots[0].entrant && set.slots[1].entrant) ||
+          updatedSets.has(set.id),
+      )
+      .map((set: any) => updatedSets.get(set.id) || apiSetToSet(set));
+    sets.push(...newSets);
 
     page += 1;
   } while (page <= nextData.phaseGroup.sets.pageInfo.totalPages);
-  const setIdToCallOrder = await setIdToCallOrderPromise;
-  const sets = apiSets.map((apiSet: ApiSet) =>
-    apiSetToSet(updatedApiSets.get(apiSet.id) || apiSet, setIdToCallOrder),
-  );
 
   const pendingSets: Set[] = [];
   const completedSets: Set[] = [];
@@ -309,10 +290,9 @@ const MARK_SET_IN_PROGRESS_MUTATION = `
     }
   }
 `;
-// Returns API set
-export async function startSet(key: string, setId: number): Promise<ApiSet> {
+export async function startSet(key: string, setId: number) {
   const data = await fetchGql(key, MARK_SET_IN_PROGRESS_MUTATION, { setId });
-  return data.markSetInProgress;
+  return apiSetToSet(data.markSetInProgress);
 }
 
 const REPORT_BRACKET_SET_MUTATION = `
@@ -347,16 +327,14 @@ const REPORT_BRACKET_SET_MUTATION = `
     }
   }
 `;
-// returns API sets
-export async function reportSet(
-  key: string,
-  set: StartggSet,
-): Promise<ApiSet[]> {
+export async function reportSet(key: string, set: StartggSet): Promise<Set[]> {
   const data = await fetchGql(key, REPORT_BRACKET_SET_MUTATION, set);
-  return data.reportBracketSet.filter(
-    (bracketSet: ApiSet) =>
-      bracketSet.slots[0].entrant && bracketSet.slots[1].entrant,
-  );
+  return data.reportBracketSet
+    .filter(
+      (bracketSet: any) =>
+        bracketSet.slots[0].entrant && bracketSet.slots[1].entrant,
+    )
+    .map(apiSetToSet);
 }
 
 const UPDATE_BRACKET_SET_MUTATION = `
@@ -391,8 +369,7 @@ const UPDATE_BRACKET_SET_MUTATION = `
     }
   }
 `;
-// returns API set
-export async function updateSet(key: string, set: StartggSet): Promise<ApiSet> {
+export async function updateSet(key: string, set: StartggSet): Promise<Set> {
   const data = await fetchGql(key, UPDATE_BRACKET_SET_MUTATION, set);
-  return data.updateBracketSet;
+  return apiSetToSet(data.updateBracketSet);
 }

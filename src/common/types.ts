@@ -49,7 +49,6 @@ export type Set = {
   entrant2Id: number;
   entrant2Participants: Participant[];
   entrant2Score: string | null;
-  callOrder: number;
 };
 
 export type Sets = {
@@ -156,7 +155,6 @@ export type Context = {
     };
     set: {
       id: number;
-      callOrder: number;
       fullRoundText: string;
       round: number;
     };
@@ -180,34 +178,3 @@ export enum Mode {
   MANUAL = 'manual',
   STARTGG = 'start.gg',
 }
-
-export type ApiParticipant = {
-  gamerTag: string;
-  prefix: string | null;
-  player: {
-    user: {
-      genderPronoun: string | null;
-    } | null;
-  };
-};
-
-export type ApiSet = {
-  id: number;
-  slots: {
-    entrant: {
-      id: number;
-      participants: ApiParticipant[];
-    };
-    standing: {
-      stats: {
-        score: {
-          displayValue: string;
-        };
-      };
-    } | null;
-  }[];
-  state: number;
-  fullRoundText: string;
-  round: number;
-  winnerId: number | null;
-};

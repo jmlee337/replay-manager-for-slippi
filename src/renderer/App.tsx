@@ -34,7 +34,6 @@ import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { IpcRendererEvent } from 'electron';
 import {
-  ApiSet,
   Context,
   ContextScore,
   ContextSlot,
@@ -48,7 +47,6 @@ import {
   Replay,
   ReportSettings,
   Set,
-  Sets,
   StartggSet,
   Tournament,
 } from '../common/types';
@@ -126,7 +124,6 @@ const EMPTY_SET: Set = {
     },
   ],
   entrant2Score: null,
-  callOrder: 0,
 };
 
 function Hello() {
@@ -398,14 +395,14 @@ function Hello() {
     phaseId: number,
     eventId: number,
     isRoot: boolean,
-    updatedSets?: Map<number, ApiSet>,
+    updatedSets?: Map<number, Set>,
   ) => {
     const editEvent = tournament.events.find((event) => event.id === eventId);
     if (!editEvent) {
       return;
     }
 
-    let sets: Sets;
+    let sets;
     try {
       sets = await window.electron.getPhaseGroup(
         id,
@@ -840,6 +837,7 @@ function Hello() {
         true,
         new Map([[updatedSet.id, updatedSet]]),
       );
+      setSelectedSet(updatedSet);
     } catch (e: any) {
       showErrorDialog(e.toString());
     } finally {
@@ -848,7 +846,7 @@ function Hello() {
   };
 
   const reportSet = async (set: StartggSet, update: boolean) => {
-    const updatedSets = new Map<number, ApiSet>();
+    const updatedSets = new Map<number, Set>();
     if (update) {
       const updatedSet = await window.electron.updateSet(set);
       updatedSets.set(updatedSet.id, updatedSet);
@@ -863,6 +861,35 @@ function Hello() {
       selectedSetChain.eventId,
       true,
       updatedSets,
+    );
+
+    const updatedSelectedSet = updatedSets.get(set.setId);
+    setSelectedSet(
+      updatedSelectedSet || {
+        id: 0,
+        state: 0,
+        round: 0,
+        fullRoundText: '',
+        winnerId: null,
+        entrant1Id: 0,
+        entrant1Participants: [
+          {
+            displayName: '',
+            prefix: '',
+            pronouns: '',
+          },
+        ],
+        entrant1Score: null,
+        entrant2Id: 0,
+        entrant2Participants: [
+          {
+            displayName: '',
+            prefix: '',
+            pronouns: '',
+          },
+        ],
+        entrant2Score: null,
+      },
     );
     resetDq();
   };
@@ -1030,10 +1057,6 @@ function Hello() {
         subdir = subdir.replace('{roundShort}', roundShort);
         subdir = subdir.replace('{roundLong}', roundLong);
         subdir = subdir.replace('{games}', selectedReplays.length.toString(10));
-        subdir = subdir.replace(
-          '{callOrder}',
-          selectedSet.callOrder.toString(10),
-        );
         // do last in case event/phase/phase group names contain template strings LOL
         subdir = subdir.replace('{event}', selectedSetChain.eventName);
         subdir = subdir.replace('{phase}', selectedSetChain.phaseName);
@@ -1159,7 +1182,6 @@ function Hello() {
             },
             set: {
               id: selectedSet.id,
-              callOrder: selectedSet.callOrder,
               fullRoundText: selectedSet.fullRoundText,
               round: selectedSet.round,
             },

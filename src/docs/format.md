@@ -19,7 +19,6 @@
 * `{playersChars}` - Player 1 (Marth), Player 2 (Fox, Falco)
 * `{singlesChars}` - `{playersChars}` if singles, `{playersOnly}` if doubles
 * `{games}` - 3 (number of games)
-* `{callOrder}` - 3.01 (start.gg defined round ordinal, sorts sets by when in bracket they're played)
 * `{event}` - Melee Singles
 * `{phase}` - Top 64
 * `{phaseGroup}` - 1 (name or number of the pool)
