@@ -301,8 +301,8 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     if (store.has('useEnforcer')) {
       return store.get('useEnforcer') as boolean;
     }
-    store.set('useEnforcer', true);
-    return true;
+    store.set('useEnforcer', false);
+    return false;
   });
 
   ipcMain.removeHandler('setUseEnforcer');
