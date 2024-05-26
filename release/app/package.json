@@ -13,7 +13,8 @@
     "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts"
   },
   "dependencies": {
-    "detect-usb": "^2.0.0"
+    "detect-usb": "^2.0.0",
+    "eject-media": "^0.0.3"
   },
   "devDependencies": {
     "prebuild-install": "^7.1.1"

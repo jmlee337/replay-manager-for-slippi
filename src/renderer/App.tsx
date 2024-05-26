@@ -1263,9 +1263,14 @@ function Hello() {
                         }
                         onClick={async () => {
                           setDirDeleting(true);
-                          await deleteDir();
-                          setDirDeleteDialogOpen(false);
-                          setDirDeleting(false);
+                          try {
+                            await deleteDir();
+                          } catch (e: any) {
+                            showErrorDialog(e instanceof Error ? e.message : e);
+                          } finally {
+                            setDirDeleteDialogOpen(false);
+                            setDirDeleting(false);
+                          }
                         }}
                         variant="contained"
                       >
