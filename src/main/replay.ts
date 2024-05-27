@@ -277,7 +277,7 @@ export async function getReplaysInDir(dir: string) {
           players,
           selected: false,
           stageId,
-          startAt: obj.metadata.startAt,
+          startAt: new Date(obj.metadata.startAt),
         };
       } catch (e: any) {
         return null;
@@ -285,7 +285,12 @@ export async function getReplaysInDir(dir: string) {
         fileHandle.close();
       }
     });
-  return (await Promise.all(objs)).filter((obj) => obj);
+  const replays = (await Promise.all(objs)).filter(
+    (replay) => replay,
+  ) as Replay[];
+  return replays.sort(
+    (replayA, replayB) => replayA.startAt.getTime() - replayB.startAt.getTime(),
+  );
 }
 
 const narrowSpecialChars = new Map([

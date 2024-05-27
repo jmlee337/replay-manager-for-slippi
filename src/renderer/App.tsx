@@ -886,17 +886,15 @@ function Hello() {
     setIsCopying(true);
 
     let offsetMs = 0;
-    let startDate = new Date(selectedReplays[0].startAt);
+    let startDate = selectedReplays[0].startAt;
     if (copySettings.writeStartTimes) {
       const lastReplay = selectedReplays[selectedReplays.length - 1];
-      const lastStartMs = new Date(lastReplay.startAt).getTime();
+      const lastStartMs = lastReplay.startAt.getTime();
       offsetMs =
         Date.now() -
         lastStartMs -
         Math.round((lastReplay.lastFrame + 124) / frameMsDivisor);
-      startDate = new Date(
-        new Date(selectedReplays[0].startAt).getTime() + offsetMs,
-      );
+      startDate = new Date(selectedReplays[0].startAt.getTime() + offsetMs);
     }
 
     let fileNames = selectedReplays.map((replay) => replay.fileName);
@@ -1044,8 +1042,8 @@ function Hello() {
         fileNames = nameObjs.map((game, i) => {
           const { stageId, startAt } = selectedReplays[i];
           const writeStartDate = copySettings.writeStartTimes
-            ? new Date(new Date(startAt).getTime() + offsetMs)
-            : new Date(startAt);
+            ? new Date(startAt.getTime() + offsetMs)
+            : startAt;
           const names = game.filter((nameObj) => nameObj.characterName);
           const playersOnly = names.map(toPlayerOnly).join(', ');
           const playersChars = names.map(toPlayerChar).join(', ');
@@ -1163,7 +1161,7 @@ function Hello() {
     let startTimes: string[] = [];
     if (copySettings.writeStartTimes) {
       startTimes = selectedReplays.map((replay) =>
-        new Date(new Date(replay.startAt).getTime() + offsetMs).toISOString(),
+        new Date(replay.startAt.getTime() + offsetMs).toISOString(),
       );
     }
 

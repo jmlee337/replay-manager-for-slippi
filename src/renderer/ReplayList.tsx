@@ -93,10 +93,9 @@ const ReplayListItem = memo(function ReplayListItem({
     onClick(index);
   }, [index, onClick]);
 
-  const startAtDate = new Date(replay.startAt);
-  const dateLong = format(startAtDate, 'MMMM do, yyyy');
-  const dateShort = format(startAtDate, 'yyyy MMM dd');
-  const time = format(startAtDate, 'h:mmaaa');
+  const dateLong = format(replay.startAt, 'MMMM do, yyyy');
+  const dateShort = format(replay.startAt, 'yyyy MMM dd');
+  const time = format(replay.startAt, 'h:mmaaa');
   const duration = format(
     new Date(replay.lastFrame / frameMsDivisor),
     "m'm'ss's'",
