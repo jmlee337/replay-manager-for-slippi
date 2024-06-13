@@ -124,6 +124,7 @@ const EMPTY_SET: Set = {
     },
   ],
   entrant2Score: null,
+  twitchStream: null,
 };
 
 function Hello() {
@@ -862,6 +863,7 @@ function Hello() {
       updatedSets,
     );
     resetDq();
+    return updatedSets.get(set.setId);
   };
 
   // copy
@@ -882,8 +884,9 @@ function Hello() {
   const [copyErrorDialogOpen, setCopyErrorDialogOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
 
-  const onCopy = async () => {
+  const onCopy = async (set?: Set) => {
     setIsCopying(true);
+    const copySet = set ?? selectedSet;
 
     let offsetMs = 0;
     let startDate = selectedReplays[0].startAt;
@@ -943,12 +946,12 @@ function Hello() {
 
       let roundShort = '';
       const regex = /([A-Z]|[0-9])/g;
-      let regexRes = regex.exec(selectedSet.fullRoundText);
+      let regexRes = regex.exec(copySet.fullRoundText);
       while (regexRes) {
         roundShort += regexRes[0];
-        regexRes = regex.exec(selectedSet.fullRoundText);
+        regexRes = regex.exec(copySet.fullRoundText);
       }
-      const roundLong = String(selectedSet.fullRoundText);
+      const roundLong = String(copySet.fullRoundText);
       if (
         copySettings.output === Output.FOLDER ||
         copySettings.output === Output.ZIP
@@ -1130,7 +1133,7 @@ function Hello() {
           scores,
         };
 
-        if (selectedSet.id) {
+        if (copySet.id) {
           context.startgg = {
             tournament: {
               name: tournament.name,
@@ -1149,9 +1152,10 @@ function Hello() {
               name: selectedSetChain.phaseGroupName,
             },
             set: {
-              id: selectedSet.id,
-              fullRoundText: selectedSet.fullRoundText,
-              round: selectedSet.round,
+              id: copySet.id,
+              fullRoundText: copySet.fullRoundText,
+              round: copySet.round,
+              twitchStream: copySet.twitchStream,
             },
           };
         }

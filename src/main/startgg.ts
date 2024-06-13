@@ -167,11 +167,17 @@ function apiSetToSet(set: any): Set {
     entrant2Score: slot2.standing
       ? slot2.standing.stats.score.displayValue
       : null,
+    twitchStream:
+      set.stream &&
+      set.stream.streamName &&
+      set.stream.streamSource === 'TWITCH'
+        ? set.stream.streamName
+        : null,
   };
 }
 
-const DOUBLES_PAGE_SIZE = 36;
-const SINGLES_PAGE_SIZE = 46;
+const DOUBLES_PAGE_SIZE = 32;
+const SINGLES_PAGE_SIZE = 40;
 const PHASE_GROUP_QUERY = `
   query PhaseGroupQuery($id: ID!, $page: Int, $pageSize: Int) {
     phaseGroup(id: $id) {
@@ -205,6 +211,10 @@ const PHASE_GROUP_QUERY = `
             }
           }
           state
+          stream {
+            streamName
+            streamSource
+          }
           winnerId
         }
       }
@@ -262,6 +272,8 @@ const MARK_SET_IN_PROGRESS_MUTATION = `
   mutation MarkSetInProgress($setId: ID!) {
     markSetInProgress(setId: $setId) {
       id
+      fullRoundText
+      round
       slots {
         entrant {
           id
@@ -284,8 +296,10 @@ const MARK_SET_IN_PROGRESS_MUTATION = `
         }
       }
       state
-      fullRoundText
-      round
+      stream {
+        streamName
+        streamSource
+      }
       winnerId
     }
   }
@@ -299,6 +313,8 @@ const REPORT_BRACKET_SET_MUTATION = `
   mutation ReportBracketSet($setId: ID!, $winnerId: ID, $isDQ: Boolean, $gameData: [BracketSetGameDataInput]) {
     reportBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {
       id
+      fullRoundText
+      round
       slots {
         entrant {
           id
@@ -321,8 +337,10 @@ const REPORT_BRACKET_SET_MUTATION = `
         }
       }
       state
-      fullRoundText
-      round
+      stream {
+        streamName
+        streamSource
+      }
       winnerId
     }
   }
@@ -341,6 +359,8 @@ const UPDATE_BRACKET_SET_MUTATION = `
   mutation UpdateBracketSet($setId: ID!, $winnerId: ID, $isDQ: Boolean, $gameData: [BracketSetGameDataInput]) {
     updateBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {
       id
+      fullRoundText
+      round
       slots {
         entrant {
           id
@@ -363,8 +383,10 @@ const UPDATE_BRACKET_SET_MUTATION = `
         }
       }
       state
-      fullRoundText
-      round
+      stream {
+        streamName
+        streamSource
+      }
       winnerId
     }
   }

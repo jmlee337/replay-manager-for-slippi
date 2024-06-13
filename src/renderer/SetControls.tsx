@@ -140,9 +140,9 @@ export default function SetControls({
   set,
   useEnforcer,
 }: {
-  copyReplays: () => Promise<void>;
+  copyReplays: (set?: Set) => Promise<void>;
   deleteReplays: () => Promise<void>;
-  reportSet: (set: StartggSet, update: boolean) => Promise<void>;
+  reportSet: (set: StartggSet, update: boolean) => Promise<Set | undefined>;
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
   copyDisabled: boolean;
   dqId: number;
@@ -390,9 +390,9 @@ export default function SetControls({
             onClick={async () => {
               setReporting(true);
               try {
-                await reportSet(startggSet, set.state === 3);
+                const updatedSet = await reportSet(startggSet, set.state === 3);
                 if (reportSettings.alsoCopy) {
-                  await copyReplays();
+                  await copyReplays(updatedSet);
                 }
                 if (reportSettings.alsoCopy && reportSettings.alsoDelete) {
                   await deleteReplays();

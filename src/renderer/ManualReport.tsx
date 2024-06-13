@@ -29,7 +29,7 @@ export default function ManualReport({
   reportSet,
   selectedSet,
 }: {
-  reportSet: (set: StartggSet, update: boolean) => Promise<void>;
+  reportSet: (set: StartggSet, update: boolean) => Promise<Set | undefined>;
   selectedSet: Set;
 }) {
   const [open, setOpen] = useState(false);

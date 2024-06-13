@@ -49,6 +49,7 @@ export type Set = {
   entrant2Id: number;
   entrant2Participants: Participant[];
   entrant2Score: string | null;
+  twitchStream: string | null;
 };
 
 export type Sets = {
@@ -157,6 +158,7 @@ export type Context = {
       id: number;
       fullRoundText: string;
       round: number;
+      twitchStream: string | null;
     };
   };
 };
