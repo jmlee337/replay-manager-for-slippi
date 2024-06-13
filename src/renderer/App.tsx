@@ -1131,6 +1131,7 @@ function Hello() {
             )
             .reduce((prev, curr) => prev + curr, 0),
           scores,
+          startMs: startDate.getTime(),
         };
 
         if (copySet.id) {

@@ -161,6 +161,7 @@ export type Context = {
       twitchStream: string | null;
     };
   };
+  startMs: number;
 };
 
 export type CopySettings = {
