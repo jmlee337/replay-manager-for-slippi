@@ -6,7 +6,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Divider,
   Fab,
   FormControl,
   FormControlLabel,
@@ -208,7 +207,6 @@ export default function Settings({
               </Stack>
             </>
           )}
-          <Divider sx={{ marginTop: '8px' }} />
           <Stack>
             <LabeledCheckbox
               checked={autoDetectUsb}
@@ -240,7 +238,7 @@ export default function Settings({
             <DialogContentText>
               File/Folder name format placeholders documented{' '}
               <a
-                href="https://github.com/jmlee337/replay-manager-for-slippi/blob/main/src/docs/format.md"
+                href={`https://github.com/jmlee337/replay-manager-for-slippi/blob/${appVersion}/src/docs/format.md`}
                 target="_blank"
                 rel="noreferrer"
               >
