@@ -4,6 +4,7 @@ import {
   CopySettings,
   EnforceResult,
   Event,
+  InvalidReplay,
   Mode,
   Output,
   Phase,
@@ -19,8 +20,10 @@ const electronHandler = {
   chooseReplaysDir: (): Promise<string> =>
     ipcRenderer.invoke('chooseReplaysDir'),
   deleteReplaysDir: (): Promise<void> => ipcRenderer.invoke('deleteReplaysDir'),
-  getReplaysInDir: (): Promise<Replay[]> =>
-    ipcRenderer.invoke('getReplaysInDir'),
+  getReplaysInDir: (): Promise<{
+    replays: Replay[];
+    invalidReplays: InvalidReplay[];
+  }> => ipcRenderer.invoke('getReplaysInDir'),
   writeReplays: (
     dir: string,
     fileNames: string[],

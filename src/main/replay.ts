@@ -24,6 +24,7 @@ import {
   Context,
   EnforcePlayerFailure,
   EnforceResult,
+  InvalidReplay,
   Output,
   Player,
   Replay,
@@ -34,19 +35,22 @@ const RAW_HEADER_START = Buffer.from([
   0x7b, 0x55, 0x03, 0x72, 0x61, 0x77, 0x5b, 0x24, 0x55, 0x23, 0x6c,
 ]);
 
-export async function getReplaysInDir(dir: string) {
+export async function getReplaysInDir(
+  dir: string,
+): Promise<{ replays: Replay[]; invalidReplays: InvalidReplay[] }> {
   const filenames = await readdir(dir);
 
   const objs = filenames
     .filter((fileName) => fileName.endsWith('.slp'))
-    .map(async (fileName): Promise<Replay | null> => {
+    .map(async (fileName): Promise<Replay | InvalidReplay> => {
       const filePath = join(dir, fileName);
 
       let fileHandle;
       try {
         fileHandle = await open(filePath);
       } catch (e: any) {
-        return null;
+        const invalidReason = e instanceof Error ? e.message : e;
+        return { fileName, invalidReason };
       }
 
       try {
@@ -54,10 +58,10 @@ export async function getReplaysInDir(dir: string) {
         const rawHeader = Buffer.alloc(15);
         const rawHeaderRes = await fileHandle.read(rawHeader, 0, 15, 0);
         if (rawHeaderRes.bytesRead !== 15) {
-          return null;
+          return { fileName, invalidReason: 'File corrupted.' };
         }
         if (!rawHeader.subarray(0, 11).equals(RAW_HEADER_START)) {
-          return null;
+          return { fileName, invalidReason: 'File corrupted.' };
         }
         const metadataOffset = rawHeader.subarray(11, 15).readUInt32BE() + 15;
 
@@ -70,10 +74,10 @@ export async function getReplaysInDir(dir: string) {
           15,
         );
         if (payloadsHeaderRes.bytesRead !== 2) {
-          return null;
+          return { fileName, invalidReason: 'File corrupted.' };
         }
         if (payloadsHeader[0] !== 0x35) {
-          return null;
+          return { fileName, invalidReason: 'File corrupted.' };
         }
 
         // event payloads
@@ -86,7 +90,7 @@ export async function getReplaysInDir(dir: string) {
           17,
         );
         if (payloadsRes.bytesRead !== payloadsSize) {
-          return null;
+          return { fileName, invalidReason: 'File corrupted.' };
         }
         let gameStartSize = 0;
         let gameEndSize = 0;
@@ -98,7 +102,7 @@ export async function getReplaysInDir(dir: string) {
           }
         }
         if (gameStartSize === 0 || gameEndSize === 0) {
-          return null;
+          return { fileName, invalidReason: 'File corrupted.' };
         }
         const gameEndOffset = metadataOffset - gameEndSize;
 
@@ -111,18 +115,20 @@ export async function getReplaysInDir(dir: string) {
           17 + payloadsSize,
         );
         if (gameStartRes.bytesRead !== gameStartSize) {
-          return null;
+          return { fileName, invalidReason: 'File corrupted.' };
         }
         if (gameStart[0] !== 0x36) {
-          return null;
+          return { fileName, invalidReason: 'File corrupted.' };
         }
 
         const version = gameStart.readUint32BE(1);
         if (version < 0x030d0000) {
           // Display Names/Connect Codes added in 3.9.0
           // Player Placements added in 3.13.0
-          // TODO support older files
-          return null;
+          return {
+            fileName,
+            invalidReason: 'Replay version too old. Update Slippi Nintendont.',
+          };
         }
 
         const isTeams = gameStart[13] === 1;
@@ -226,7 +232,7 @@ export async function getReplaysInDir(dir: string) {
           gameEndOffset,
         );
         if (gameEndRes.bytesRead !== gameEndSize) {
-          return null;
+          return { fileName, invalidReason: 'File corrupted.' };
         }
         if (
           gameEnd[0] !== 0x39 ||
@@ -246,7 +252,7 @@ export async function getReplaysInDir(dir: string) {
         const fileSize = (await fileHandle.stat()).size;
         const metadataLength = fileSize - metadataOffset;
         if (metadataLength <= 0) {
-          return null;
+          return { fileName, invalidReason: 'File corrupted.' };
         }
 
         const metadata = Buffer.alloc(metadataLength);
@@ -257,7 +263,7 @@ export async function getReplaysInDir(dir: string) {
           metadataOffset,
         );
         if (metadataReadRes.bytesRead !== metadataLength) {
-          return null;
+          return { fileName, invalidReason: 'File corrupted.' };
         }
 
         const concatBuffer = Buffer.from(new Uint8Array([0x7b]));
@@ -280,17 +286,29 @@ export async function getReplaysInDir(dir: string) {
           startAt: new Date(obj.metadata.startAt),
         };
       } catch (e: any) {
-        return null;
+        const invalidReason = e instanceof Error ? e.message : e;
+        return { fileName, invalidReason };
       } finally {
         fileHandle.close();
       }
     });
-  const replays = (await Promise.all(objs)).filter(
-    (replay) => replay,
-  ) as Replay[];
-  return replays.sort(
+  const replays = (
+    (await Promise.all(objs)).filter(
+      (replayOrInvalidReplay) =>
+        !(<InvalidReplay>replayOrInvalidReplay).invalidReason,
+    ) as Replay[]
+  ).sort(
     (replayA, replayB) => replayA.startAt.getTime() - replayB.startAt.getTime(),
   );
+  const invalidReplays = (
+    (await Promise.all(objs)).filter(
+      (replayOrInvalidReplay) =>
+        (<InvalidReplay>replayOrInvalidReplay).invalidReason,
+    ) as InvalidReplay[]
+  ).sort((invalidReplayA, invalidReplayB) =>
+    invalidReplayA.fileName.localeCompare(invalidReplayB.fileName),
+  );
+  return { replays, invalidReplays };
 }
 
 const narrowSpecialChars = new Map([

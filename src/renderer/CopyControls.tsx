@@ -160,7 +160,7 @@ export default function CopyControls({
           spacing="8px"
         >
           <ErrorDialog
-            message={error}
+            messages={[error]}
             onClose={() => {
               setError('');
               setErrorDialogOpen(false);

@@ -39,6 +39,7 @@ import {
   ContextSlot,
   CopySettings,
   Event,
+  InvalidReplay,
   Mode,
   Output,
   Phase,
@@ -128,10 +129,10 @@ const EMPTY_SET: Set = {
 };
 
 function Hello() {
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<string[]>([]);
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
-  const showErrorDialog = (message: string) => {
-    setError(message);
+  const showErrorDialog = (messages: string[]) => {
+    setErrors(messages);
     setErrorDialogOpen(true);
   };
 
@@ -274,7 +275,8 @@ function Hello() {
   const chooseDir = async () => {
     const newDir = await window.electron.chooseReplaysDir();
     if (newDir) {
-      const newReplays = await window.electron.getReplaysInDir();
+      const { replays: newReplays, invalidReplays } =
+        await window.electron.getReplaysInDir();
       applyAllReplaysSelected(newReplays, allReplaysSelected);
       setBatchActives(
         getNewBatchActives(newReplays.filter((replay) => replay.selected)),
@@ -284,12 +286,23 @@ function Hello() {
       resetOverrides();
       setReplays(newReplays);
       setReplayLoadCount((r) => r + 1);
+      if (invalidReplays.length > 0) {
+        showErrorDialog(
+          invalidReplays.map(
+            (invalidReplay) =>
+              `${invalidReplay.fileName}: ${invalidReplay.invalidReason}`,
+          ),
+        );
+      }
     }
   };
   const refreshReplays = useCallback(async () => {
     let newReplays: Replay[] = [];
+    let invalidReplays: InvalidReplay[] = [];
     try {
-      newReplays = await window.electron.getReplaysInDir();
+      const res = await window.electron.getReplaysInDir();
+      newReplays = res.replays;
+      invalidReplays = res.invalidReplays;
       setDirExists(true);
     } catch (e: any) {
       setDirExists(false);
@@ -301,6 +314,14 @@ function Hello() {
     resetOverrides();
     setReplays(newReplays);
     setReplayLoadCount((r) => r + 1);
+    if (invalidReplays.length > 0) {
+      showErrorDialog(
+        invalidReplays.map(
+          (invalidReplay) =>
+            `${invalidReplay.fileName}: ${invalidReplay.invalidReason}`,
+        ),
+      );
+    }
   }, [allReplaysSelected]);
   const deleteDir = async () => {
     if (!dir) {
@@ -411,7 +432,7 @@ function Hello() {
         updatedSets,
       );
     } catch (e: any) {
-      showErrorDialog(e.toString());
+      showErrorDialog([e.toString()]);
       return;
     }
 
@@ -642,7 +663,7 @@ function Hello() {
     try {
       phaseGroups = await window.electron.getPhase(id);
     } catch (e: any) {
-      showErrorDialog(e.toString());
+      showErrorDialog([e.toString()]);
       return;
     }
 
@@ -688,7 +709,7 @@ function Hello() {
     try {
       phases = await window.electron.getEvent(id);
     } catch (e: any) {
-      showErrorDialog(e.toString());
+      showErrorDialog([e.toString()]);
       return;
     }
 
@@ -730,7 +751,7 @@ function Hello() {
     try {
       newTournament = await window.electron.getTournament(getSlug);
     } catch (e: any) {
-      showErrorDialog(e.toString());
+      showErrorDialog([e.toString()]);
       setGettingTournament(false);
       return false;
     }
@@ -839,7 +860,7 @@ function Hello() {
         new Map([[updatedSet.id, updatedSet]]),
       );
     } catch (e: any) {
-      showErrorDialog(e.toString());
+      showErrorDialog([e.toString()]);
     } finally {
       setStartingSet(false);
     }
@@ -1269,7 +1290,9 @@ function Hello() {
                           try {
                             await deleteDir();
                           } catch (e: any) {
-                            showErrorDialog(e instanceof Error ? e.message : e);
+                            showErrorDialog([
+                              e instanceof Error ? e.message : e,
+                            ]);
                           } finally {
                             setDirDeleteDialogOpen(false);
                             setDirDeleting(false);
@@ -1618,9 +1641,9 @@ function Hello() {
         sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
       />
       <ErrorDialog
-        message={error}
+        messages={errors}
         onClose={() => {
-          setError('');
+          setErrors([]);
           setErrorDialogOpen(false);
         }}
         open={errorDialogOpen}

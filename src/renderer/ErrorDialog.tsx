@@ -8,11 +8,11 @@ import {
 } from '@mui/material';
 
 export default function ErrorDialog({
-  message,
+  messages,
   onClose,
   open,
 }: {
-  message: string;
+  messages: string[];
   onClose: () => void;
   open: boolean;
 }) {
@@ -20,7 +20,9 @@ export default function ErrorDialog({
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>Error! (You may want to copy this message)</DialogTitle>
       <DialogContent>
-        <DialogContentText>{message}</DialogContentText>
+        {messages.map((message) => (
+          <DialogContentText>{message}</DialogContentText>
+        ))}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Close</Button>

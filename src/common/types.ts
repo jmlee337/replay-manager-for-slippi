@@ -31,6 +31,11 @@ export type Replay = {
   startAt: Date;
 };
 
+export type InvalidReplay = {
+  fileName: string;
+  invalidReason: string;
+};
+
 export type Participant = {
   displayName: string;
   prefix: string;
