@@ -35,7 +35,11 @@ async function wrappedFetch(
         }, 1000);
       });
     }
-    throw new Error(`${response.status} - ${response.statusText}`);
+    const keyErr =
+      response.status === 400
+        ? ' ***start.gg API key invalid or expired!***'
+        : '';
+    throw new Error(`${response.status} - ${response.statusText}.${keyErr}`);
   }
 
   return response;
