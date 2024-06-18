@@ -4,7 +4,8 @@
   "description": "An app for managing Slippi replays",
   "license": "MIT",
   "author": {
-    "name": "jmlee337"
+    "name": "Nicolet",
+    "url": "https://github.com/jmlee337"
   },
   "main": "./dist/main/main.js",
   "scripts": {
