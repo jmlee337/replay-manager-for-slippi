@@ -251,24 +251,52 @@ export default function Settings({
                 fullWidth
                 label="File name format"
                 onChange={(event) => {
-                  setFileNameFormat(event.target.value);
+                  const newFileNameFormat = event.target.value;
+                  if (newFileNameFormat) {
+                    setFileNameFormat(newFileNameFormat);
+                  }
                 }}
                 size="small"
                 value={fileNameFormat}
                 variant="standard"
               />
               <DialogContentText paddingBottom="5px">.slp</DialogContentText>
+              <Button
+                onClick={async () => {
+                  setFileNameFormat(
+                    await window.electron.resetFileNameFormat(),
+                  );
+                }}
+                variant="contained"
+              >
+                Reset
+              </Button>
             </Stack>
-            <TextField
-              fullWidth
-              label="Folder name format"
-              onChange={(event) => {
-                setFolderNameFormat(event.target.value);
-              }}
-              size="small"
-              value={folderNameFormat}
-              variant="standard"
-            />
+            <Stack alignItems="end" direction="row" gap="8px">
+              <TextField
+                fullWidth
+                label="Folder name format"
+                onChange={(event) => {
+                  const newFolderNameFormat = event.target.value;
+                  if (newFolderNameFormat) {
+                    setFolderNameFormat(newFolderNameFormat);
+                  }
+                }}
+                size="small"
+                value={folderNameFormat}
+                variant="standard"
+              />
+              <Button
+                onClick={async () => {
+                  setFolderNameFormat(
+                    await window.electron.resetFolderNameFormat(),
+                  );
+                }}
+                variant="contained"
+              >
+                Reset
+              </Button>
+            </Stack>
           </Stack>
           {needUpdate && (
             <Alert severity="warning">

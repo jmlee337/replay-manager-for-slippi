@@ -85,10 +85,14 @@ const electronHandler = {
     ipcRenderer.invoke('getFileNameFormat'),
   setFileNameFormat: (fileNameFormat: string): Promise<void> =>
     ipcRenderer.invoke('setFileNameFormat', fileNameFormat),
+  resetFileNameFormat: (): Promise<string> =>
+    ipcRenderer.invoke('resetFileNameFormat'),
   getFolderNameFormat: (): Promise<string> =>
     ipcRenderer.invoke('getFolderNameFormat'),
   setFolderNameFormat: (folderNameFormat: string): Promise<void> =>
     ipcRenderer.invoke('setFolderNameFormat', folderNameFormat),
+  resetFolderNameFormat: (): Promise<string> =>
+    ipcRenderer.invoke('resetFolderNameFormat'),
   getCopySettings: (): Promise<CopySettings> =>
     ipcRenderer.invoke('getCopySettings'),
   setCopySettings: (copySettings: CopySettings): Promise<void> =>
