@@ -937,9 +937,8 @@ function Hello() {
                   characterName: characterNames.get(
                     player.externalCharacterId,
                   )!,
-                  displayName: copySettings.writeDisplayNames
-                    ? player.playerOverrides.displayName || player.displayName
-                    : player.displayName,
+                  displayName:
+                    player.playerOverrides.displayName || player.displayName,
                   nametag: player.nametag,
                 }
               : { characterName: '', displayName: '', nametag: '' },
