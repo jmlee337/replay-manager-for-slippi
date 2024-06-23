@@ -158,7 +158,8 @@ function apiSetToSet(set: any): Set {
   return {
     id: set.id,
     state: set.state,
-    round: set.round,
+    round:
+      set.fullRoundText === 'Grand Final Reset' ? set.round + 1 : set.round,
     fullRoundText: set.fullRoundText,
     winnerId: set.winnerId,
     entrant1Id: slot1.entrant.id,
