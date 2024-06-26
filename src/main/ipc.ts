@@ -86,6 +86,9 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   detectUsb.removeAllListeners('eject');
   detectUsb.on('eject', onEject);
   detectUsb.startListening();
+  app.on('will-quit', () => {
+    detectUsb.stopListening();
+  });
 
   ipcMain.removeHandler('chooseReplaysDir');
   ipcMain.handle('chooseReplaysDir', async () => {
