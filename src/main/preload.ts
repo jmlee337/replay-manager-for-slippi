@@ -70,6 +70,9 @@ const electronHandler = {
   getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
   setStartggKey: (startggKey: string): Promise<void> =>
     ipcRenderer.invoke('setStartggKey', startggKey),
+  getChallongeKey: (): Promise<string> => ipcRenderer.invoke('getChallongeKey'),
+  setChallongeKey: (challongeKey: string): Promise<void> =>
+    ipcRenderer.invoke('setChallongeKey', challongeKey),
   getAutoDetectUsb: (): Promise<boolean> =>
     ipcRenderer.invoke('getAutoDetectUsb'),
   setAutoDetectUsb: (autoDetectUsb: boolean): Promise<void> =>

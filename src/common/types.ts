@@ -185,4 +185,5 @@ export type ReportSettings = {
 export enum Mode {
   MANUAL = 'manual',
   STARTGG = 'start.gg',
+  CHALLONGE = 'challonge',
 }

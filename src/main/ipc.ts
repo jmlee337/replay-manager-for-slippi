@@ -270,6 +270,21 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
+  let challongeApiKey = store.has('challongeApiKey')
+    ? store.get('challongeApiKey')
+    : '';
+  ipcMain.removeHandler('getChallongeKey');
+  ipcMain.handle('getChallongeKey', () => challongeApiKey);
+
+  ipcMain.removeHandler('setChallongeKey');
+  ipcMain.handle(
+    'setChallongeKey',
+    (event: IpcMainInvokeEvent, newChallongeKey: string) => {
+      store.set('challongeApiKey', newChallongeKey);
+      challongeApiKey = newChallongeKey;
+    },
+  );
+
   ipcMain.removeHandler('getAutoDetectUsb');
   ipcMain.handle('getAutoDetectUsb', () => autoDetectUsb);
 

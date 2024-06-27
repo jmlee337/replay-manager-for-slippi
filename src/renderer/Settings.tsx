@@ -42,6 +42,8 @@ export default function Settings({
   setMode,
   startggApiKey,
   setStartggApiKey,
+  challongeApiKey,
+  setChallongeApiKey,
   autoDetectUsb,
   setAutoDetectUsb,
   scrollToBottom,
@@ -60,6 +62,8 @@ export default function Settings({
   setMode: (mode: Mode) => void;
   startggApiKey: string;
   setStartggApiKey: (key: string) => void;
+  challongeApiKey: string;
+  setChallongeApiKey: (key: string) => void;
   autoDetectUsb: boolean;
   setAutoDetectUsb: (autoDetectUsb: boolean) => void;
   scrollToBottom: boolean;
@@ -106,7 +110,13 @@ export default function Settings({
     }
     return false;
   }, [appVersion, latestAppVersion]);
-  if (gotSettings && !hasAutoOpened && (!startggApiKey || needUpdate)) {
+  if (
+    gotSettings &&
+    !hasAutoOpened &&
+    ((mode === Mode.STARTGG && !startggApiKey) ||
+      (mode === Mode.CHALLONGE && !challongeApiKey) ||
+      needUpdate)
+  ) {
     setOpen(true);
     setHasAutoOpened(true);
   }
@@ -127,6 +137,7 @@ export default function Settings({
         open={open}
         onClose={async () => {
           await Promise.all([
+            window.electron.setChallongeKey(challongeApiKey),
             window.electron.setStartggKey(startggApiKey),
             window.electron.setFileNameFormat(fileNameFormat),
             window.electron.setFolderNameFormat(folderNameFormat),
@@ -152,6 +163,7 @@ export default function Settings({
               <RadioGroup
                 aria-labelledby="mode-radio-group-label"
                 name="mode-radio-group"
+                row
                 value={mode}
                 onChange={async (event: ChangeEvent<HTMLInputElement>) => {
                   const newMode = event.target.value as Mode;
@@ -160,6 +172,7 @@ export default function Settings({
                 }}
               >
                 <LabeledRadioButton label="start.gg" value={Mode.STARTGG} />
+                <LabeledRadioButton label="Challonge" value={Mode.CHALLONGE} />
                 <LabeledRadioButton label="Manual" value={Mode.MANUAL} />
               </RadioGroup>
             </FormControl>
@@ -197,6 +210,48 @@ export default function Settings({
                   endIcon={copied ? undefined : <ContentCopy />}
                   onClick={async () => {
                     await window.electron.copyToClipboard(startggApiKey);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 5000);
+                  }}
+                  variant="contained"
+                >
+                  {copied ? 'Copied!' : 'Copy'}
+                </Button>
+              </Stack>
+            </>
+          )}
+          {mode === Mode.CHALLONGE && (
+            <>
+              <DialogContentText>
+                Get your Challongve v1 API key by clicking “Generate a new API
+                key” on{' '}
+                <a
+                  href="https://challonge.com/settings/developer"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  this page
+                </a>
+                . Keep it private!
+              </DialogContentText>
+              <Stack alignItems="center" direction="row" gap="8px">
+                <TextField
+                  autoFocus
+                  fullWidth
+                  label="Challonge v1 API key (Keep it private!)"
+                  onChange={(event) => {
+                    setChallongeApiKey(event.target.value);
+                  }}
+                  size="small"
+                  type="password"
+                  value={challongeApiKey}
+                  variant="standard"
+                />
+                <Button
+                  disabled={copied}
+                  endIcon={copied ? undefined : <ContentCopy />}
+                  onClick={async () => {
+                    await window.electron.copyToClipboard(challongeApiKey);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 5000);
                   }}

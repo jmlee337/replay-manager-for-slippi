@@ -140,6 +140,7 @@ function Hello() {
   const [gotSettings, setGotSettings] = useState(false);
   const [mode, setMode] = useState<Mode>(Mode.STARTGG);
   const [startggApiKey, setStartggApiKey] = useState('');
+  const [challongeApiKey, setChallongeApiKey] = useState('');
   const [autoDetectUsb, setAutoDetectUsb] = useState(false);
   const [scrollToBottom, setScrollToBottom] = useState(false);
   const [useEnforcer, setUseEnforcer] = useState(false);
@@ -166,6 +167,7 @@ function Hello() {
       const latestAppVersionPromise = window.electron.getLatestVersion();
       const modePromise = window.electron.getMode();
       const startggKeyPromise = window.electron.getStartggKey();
+      const challongeKeyPromise = window.electron.getChallongeKey();
       const autoDetectUsbPromise = window.electron.getAutoDetectUsb();
       const scrollToBottomPromise = window.electron.getScrollToBottom();
       const useEnforcerPromise = window.electron.getUseEnforcer();
@@ -177,6 +179,7 @@ function Hello() {
       setLatestAppVersion(await latestAppVersionPromise);
       setMode(await modePromise);
       setStartggApiKey(await startggKeyPromise);
+      setChallongeApiKey(await challongeKeyPromise);
       setAutoDetectUsb(await autoDetectUsbPromise);
       setScrollToBottom(await scrollToBottomPromise);
       setUseEnforcer(await useEnforcerPromise);
@@ -1658,6 +1661,8 @@ function Hello() {
         }}
         startggApiKey={startggApiKey}
         setStartggApiKey={setStartggApiKey}
+        challongeApiKey={challongeApiKey}
+        setChallongeApiKey={setChallongeApiKey}
         autoDetectUsb={autoDetectUsb}
         setAutoDetectUsb={setAutoDetectUsb}
         scrollToBottom={scrollToBottom}
