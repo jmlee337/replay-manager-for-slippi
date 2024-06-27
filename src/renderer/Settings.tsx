@@ -223,7 +223,7 @@ export default function Settings({
           {mode === Mode.CHALLONGE && (
             <>
               <DialogContentText>
-                Get your Challongve v1 API key by clicking “Generate a new API
+                Get your Challonge v1 API key by clicking “Generate a new API
                 key” on{' '}
                 <a
                   href="https://challonge.com/settings/developer"

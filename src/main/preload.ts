@@ -73,6 +73,8 @@ const electronHandler = {
   getChallongeKey: (): Promise<string> => ipcRenderer.invoke('getChallongeKey'),
   setChallongeKey: (challongeKey: string): Promise<void> =>
     ipcRenderer.invoke('setChallongeKey', challongeKey),
+  getChallongeTournament: (slug: string): Promise<Sets> =>
+    ipcRenderer.invoke('getChallongeTournament', slug),
   getAutoDetectUsb: (): Promise<boolean> =>
     ipcRenderer.invoke('getAutoDetectUsb'),
   setAutoDetectUsb: (autoDetectUsb: boolean): Promise<void> =>

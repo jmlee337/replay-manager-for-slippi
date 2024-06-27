@@ -178,6 +178,7 @@ function apiSetToSet(set: any): Set {
       set.stream.streamSource === 'TWITCH'
         ? set.stream.streamName
         : null,
+    ordinal: null,
   };
 }
 

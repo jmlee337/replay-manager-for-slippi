@@ -48,6 +48,7 @@ import {
   Replay,
   ReportSettings,
   Set,
+  Sets,
   StartggSet,
   Tournament,
 } from '../common/types';
@@ -67,6 +68,7 @@ import {
 } from '../common/constants';
 import ManualView from './ManualView';
 import ManualBar from './ManualBar';
+import ChallongeView from './ChallongeView';
 
 const Bottom = styled(Paper)`
   height: 147px;
@@ -126,6 +128,7 @@ const EMPTY_SET: Set = {
   ],
   entrant2Score: null,
   twitchStream: null,
+  ordinal: null,
 };
 
 function Hello() {
@@ -405,10 +408,52 @@ function Hello() {
     });
   });
 
-  // Tournament view
-  const [slug, setSlug] = useState('');
   const [slugDialogOpen, setSlugDialogOpen] = useState(false);
   const [gettingTournament, setGettingTournament] = useState(false);
+
+  // Challonge tournament view
+  const [challongeSlug, setChallongeSlug] = useState('');
+  const [challongeTournament, setChallongeTournament] = useState<Sets>({
+    pendingSets: [],
+    completedSets: [],
+  });
+  const getChallongeTournament = async (slug: string) => {
+    if (!slug) {
+      return false;
+    }
+
+    setGettingTournament(true);
+    try {
+      setChallongeTournament(
+        await window.electron.getChallongeTournament(slug),
+      );
+      return true;
+    } catch (e: any) {
+      showErrorDialog([e.toString()]);
+      return false;
+    } finally {
+      setGettingTournament(false);
+    }
+  };
+  const getChallongeTournamentOnSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    const target = event.target as typeof event.target & {
+      slug: { value: string };
+    };
+    const newSlug = target.slug.value;
+    event.preventDefault();
+    event.stopPropagation();
+    if (newSlug) {
+      setSlugDialogOpen(false);
+      if (await getChallongeTournament(newSlug)) {
+        setChallongeSlug(newSlug);
+      }
+    }
+  };
+
+  // start.gg tournament view
+  const [slug, setSlug] = useState('');
   const [tournament, setTournament] = useState<Tournament>({
     slug: '',
     name: '',
@@ -813,16 +858,7 @@ function Hello() {
     phaseGroupId: 0,
     phaseGroupName: '',
   });
-  const selectSet = (
-    set: Set,
-    phaseGroupId: number,
-    phaseGroupName: string,
-    phaseId: number,
-    phaseName: string,
-    eventId: number,
-    eventName: string,
-    eventSlug: string,
-  ) => {
+  const selectSet = (set: Set) => {
     const newOverrides = [
       { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
       { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
@@ -835,9 +871,21 @@ function Hello() {
       });
     });
     const newReplays = Array.from(replays);
-
+    setSelectedSet(set);
     setOverrides(newOverrides);
     setReplays(newReplays);
+  };
+  const selectStartggSet = (
+    set: Set,
+    phaseGroupId: number,
+    phaseGroupName: string,
+    phaseId: number,
+    phaseName: string,
+    eventId: number,
+    eventName: string,
+    eventSlug: string,
+  ) => {
+    selectSet(set);
     setSelectedSetChain({
       eventId,
       eventName,
@@ -847,7 +895,6 @@ function Hello() {
       phaseGroupId,
       phaseGroupName,
     });
-    setSelectedSet(set);
   };
 
   const [startingSet, setStartingSet] = useState(false);
@@ -1379,6 +1426,57 @@ function Hello() {
                 </Dialog>
               </Stack>
             )}
+            {mode === Mode.CHALLONGE && (
+              <Stack direction="row">
+                <InputBase
+                  disabled
+                  size="small"
+                  value={challongeSlug || 'Set tournament slug...'}
+                  style={{ flexGrow: 1 }}
+                />
+                <Tooltip arrow title="Refresh tournament">
+                  <div>
+                    <IconButton
+                      disabled={gettingTournament}
+                      onClick={() => getChallongeTournament(challongeSlug)}
+                    >
+                      {gettingTournament ? (
+                        <CircularProgress size="24px" />
+                      ) : (
+                        <Refresh />
+                      )}
+                    </IconButton>
+                  </div>
+                </Tooltip>
+                <Tooltip arrow title="Set tournament slug">
+                  <IconButton
+                    aria-label="Set tournament slug"
+                    onClick={() => setSlugDialogOpen(true)}
+                  >
+                    <Edit />
+                  </IconButton>
+                </Tooltip>
+                <Dialog
+                  open={slugDialogOpen}
+                  onClose={() => setSlugDialogOpen(false)}
+                >
+                  <DialogTitle>Set Tournament Slug</DialogTitle>
+                  <DialogContent>
+                    <Form onSubmit={getChallongeTournamentOnSubmit}>
+                      <TextField
+                        autoFocus
+                        label="Tournament Slug"
+                        name="slug"
+                        placeholder="pwq179iw"
+                        size="small"
+                        variant="outlined"
+                      />
+                      <Button type="submit">Get!</Button>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
+              </Stack>
+            )}
             {mode === Mode.MANUAL && (
               <ManualBar
                 manualDialogOpen={manualDialogOpen}
@@ -1441,6 +1539,12 @@ function Hello() {
               getPhaseGroup={(id: number, phaseId: number, eventId: number) =>
                 getPhaseGroup(id, phaseId, eventId, true)
               }
+              selectSet={selectStartggSet}
+            />
+          )}
+          {mode === Mode.CHALLONGE && (
+            <ChallongeView
+              tournament={challongeTournament}
               selectSet={selectSet}
             />
           )}

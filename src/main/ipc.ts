@@ -31,6 +31,7 @@ import {
   updateSet,
 } from './startgg';
 import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
+import getChallongeTournament from './challonge';
 
 export default function setupIPCs(mainWindow: BrowserWindow): void {
   const store = new Store();
@@ -271,7 +272,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   );
 
   let challongeApiKey = store.has('challongeApiKey')
-    ? store.get('challongeApiKey')
+    ? (store.get('challongeApiKey') as string)
     : '';
   ipcMain.removeHandler('getChallongeKey');
   ipcMain.handle('getChallongeKey', () => challongeApiKey);
@@ -282,6 +283,18 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     (event: IpcMainInvokeEvent, newChallongeKey: string) => {
       store.set('challongeApiKey', newChallongeKey);
       challongeApiKey = newChallongeKey;
+    },
+  );
+
+  ipcMain.removeHandler('getChallongeTournament');
+  ipcMain.handle(
+    'getChallongeTournament',
+    (event: IpcMainInvokeEvent, slug: string) => {
+      if (!challongeApiKey) {
+        throw new Error('Please set Challonge API key.');
+      }
+
+      return getChallongeTournament(slug, challongeApiKey);
     },
   );
 

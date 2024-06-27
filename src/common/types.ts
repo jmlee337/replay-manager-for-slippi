@@ -42,9 +42,15 @@ export type Participant = {
   pronouns: string;
 };
 
+export enum State {
+  PENDING = 0,
+  STARTED = 2,
+  COMPLETED = 3,
+}
+
 export type Set = {
   id: number;
-  state: number;
+  state: State;
   round: number;
   fullRoundText: string;
   winnerId: number | null;
@@ -55,6 +61,7 @@ export type Set = {
   entrant2Participants: Participant[];
   entrant2Score: string | null;
   twitchStream: string | null;
+  ordinal: number | null;
 };
 
 export type Sets = {
