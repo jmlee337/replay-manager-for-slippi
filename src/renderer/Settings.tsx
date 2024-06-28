@@ -223,16 +223,16 @@ export default function Settings({
           {mode === Mode.CHALLONGE && (
             <>
               <DialogContentText>
-                Get your Challonge v1 API key by clicking “Generate a new API
-                key” on{' '}
+                Get your Challonge v1 API key on{' '}
                 <a
                   href="https://challonge.com/settings/developer"
                   target="_blank"
                   rel="noreferrer"
                 >
                   this page
-                </a>
-                . Keep it private!
+                </a>{' '}
+                (you may need to click “Generate a new API key”). Keep it
+                private!
               </DialogContentText>
               <Stack alignItems="center" direction="row" gap="8px">
                 <TextField

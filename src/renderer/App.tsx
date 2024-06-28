@@ -1437,7 +1437,7 @@ function Hello() {
                 <InputBase
                   disabled
                   size="small"
-                  value={slug || 'Set tournament slug...'}
+                  value={slug || 'Set start.gg tournament...'}
                   style={{ flexGrow: 1 }}
                 />
                 <Tooltip arrow title="Refresh tournament and all descendants">
@@ -1454,9 +1454,9 @@ function Hello() {
                     </IconButton>
                   </div>
                 </Tooltip>
-                <Tooltip arrow title="Set tournament slug">
+                <Tooltip arrow title="Set start.gg tournament">
                   <IconButton
-                    aria-label="Set tournament slug"
+                    aria-label="Set start.gg tournament"
                     onClick={() => setSlugDialogOpen(true)}
                   >
                     <Edit />
@@ -1466,7 +1466,7 @@ function Hello() {
                   open={slugDialogOpen}
                   onClose={() => setSlugDialogOpen(false)}
                 >
-                  <DialogTitle>Set Tournament Slug</DialogTitle>
+                  <DialogTitle>Set start.gg tournament slug</DialogTitle>
                   <DialogContent>
                     <Form onSubmit={getTournamentOnSubmit}>
                       <TextField
@@ -1488,12 +1488,12 @@ function Hello() {
                 <InputBase
                   disabled
                   size="small"
-                  value="Add tournament by slug..."
+                  value="Add Challonge tournament..."
                   style={{ flexGrow: 1 }}
                 />
-                <Tooltip arrow title="Add tournament by slug">
+                <Tooltip arrow title="Add Challonge tournament">
                   <IconButton
-                    aria-label="Add tournament by slug"
+                    aria-label="Add Challonge tournament"
                     onClick={() => setSlugDialogOpen(true)}
                   >
                     <Edit />
@@ -1503,7 +1503,7 @@ function Hello() {
                   open={slugDialogOpen}
                   onClose={() => setSlugDialogOpen(false)}
                 >
-                  <DialogTitle>Set Tournament Slug</DialogTitle>
+                  <DialogTitle>Set Challonge tournament slug</DialogTitle>
                   <DialogContent>
                     <Form onSubmit={getChallongeTournamentOnSubmit}>
                       <TextField
