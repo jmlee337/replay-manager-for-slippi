@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { Backup, HourglassTop, SaveAs } from '@mui/icons-material';
 import styled from '@emotion/styled';
-import { Set, StartggSet } from '../common/types';
+import { ChallongeMatchItem, Mode, Set, StartggSet } from '../common/types';
 
 const EntrantNames = styled(Stack)`
   flex-grow: 1;
@@ -26,14 +26,26 @@ const Name = styled.div`
 `;
 
 export default function ManualReport({
-  reportSet,
+  mode,
+  reportChallongeSet,
+  reportStartggSet,
   selectedSet,
 }: {
-  reportSet: (set: StartggSet, update: boolean) => Promise<Set | undefined>;
+  mode: Mode;
+  reportChallongeSet: (
+    matchId: number,
+    items: ChallongeMatchItem[],
+  ) => Promise<Set>;
+  reportStartggSet: (
+    set: StartggSet,
+    update: boolean,
+  ) => Promise<Set | undefined>;
   selectedSet: Set;
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
+
+  // startgg
   const [entrant1Dq, setEntrant1Dq] = useState(false);
   const [entrant2Dq, setEntrant2Dq] = useState(false);
   const [entrant1Win, setEntrant1Win] = useState(false);
@@ -45,14 +57,26 @@ export default function ManualReport({
     setEntrant2Win(false);
   };
 
+  // challonge
+  const [entrant1Score, setEntrant1Score] = useState(0);
+  const [entrant2Score, setEntrant2Score] = useState(0);
+
   const [reportError, setReportError] = useState('');
   const [reportErrorOpen, setReportErrorOpen] = useState(false);
 
   let winnerId = 0;
-  if (entrant1Win || entrant2Dq) {
-    winnerId = selectedSet.entrant1Id;
-  } else if (entrant2Win || entrant1Dq) {
-    winnerId = selectedSet.entrant2Id;
+  if (mode === Mode.STARTGG) {
+    if (entrant1Win || entrant2Dq) {
+      winnerId = selectedSet.entrant1Id;
+    } else if (entrant2Win || entrant1Dq) {
+      winnerId = selectedSet.entrant2Id;
+    }
+  } else if (mode === Mode.CHALLONGE) {
+    if (entrant1Score > entrant2Score) {
+      winnerId = selectedSet.entrant1Id;
+    } else if (entrant1Score < entrant2Score) {
+      winnerId = selectedSet.entrant2Id;
+    }
   }
   const startggSet: StartggSet = {
     setId: selectedSet.id,
@@ -60,6 +84,20 @@ export default function ManualReport({
     isDQ: entrant1Dq || entrant2Dq,
     gameData: [],
   };
+  const challongeMatchItems: ChallongeMatchItem[] = [
+    {
+      participant_id: selectedSet.entrant1Id.toString(10),
+      score_set: entrant1Score.toString(10),
+      rank: winnerId === selectedSet.entrant1Id ? 1 : 2,
+      advancing: winnerId === selectedSet.entrant1Id,
+    },
+    {
+      participant_id: selectedSet.entrant2Id.toString(10),
+      score_set: entrant2Score.toString(10),
+      rank: winnerId === selectedSet.entrant2Id ? 1 : 2,
+      advancing: winnerId === selectedSet.entrant2Id,
+    },
+  ];
 
   return (
     <>
@@ -80,7 +118,9 @@ export default function ManualReport({
       </Tooltip>
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Report set manually</DialogTitle>
-        <DialogContent sx={{ width: '300px' }}>
+        <DialogContent
+          sx={{ width: mode === Mode.STARTGG ? '300px' : '500px' }}
+        >
           <Stack
             direction="row"
             alignItems="center"
@@ -124,26 +164,79 @@ export default function ManualReport({
                 )}
               </EntrantNames>
               <Stack direction="row" spacing="8px">
-                <Button
-                  color="secondary"
-                  variant={entrant1Dq ? 'contained' : 'outlined'}
-                  onClick={() => {
-                    resetForm();
-                    setEntrant1Dq(true);
-                  }}
-                >
-                  DQ
-                </Button>
-                <Button
-                  color="secondary"
-                  variant={entrant1Win ? 'contained' : 'outlined'}
-                  onClick={() => {
-                    resetForm();
-                    setEntrant1Win(true);
-                  }}
-                >
-                  W
-                </Button>
+                {mode === Mode.STARTGG && (
+                  <>
+                    <Button
+                      color="secondary"
+                      variant={entrant1Dq ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        resetForm();
+                        setEntrant1Dq(true);
+                      }}
+                    >
+                      DQ
+                    </Button>
+                    <Button
+                      color="secondary"
+                      variant={entrant1Win ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        resetForm();
+                        setEntrant1Win(true);
+                      }}
+                    >
+                      W
+                    </Button>
+                  </>
+                )}
+                {mode === Mode.CHALLONGE && (
+                  <>
+                    <Button
+                      color="secondary"
+                      variant={entrant1Score === -1 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant1Score(-1);
+                      }}
+                    >
+                      -1
+                    </Button>
+                    <Button
+                      color="secondary"
+                      variant={entrant1Score === 0 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant1Score(0);
+                      }}
+                    >
+                      0
+                    </Button>
+                    <Button
+                      color="secondary"
+                      variant={entrant1Score === 1 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant1Score(1);
+                      }}
+                    >
+                      1
+                    </Button>
+                    <Button
+                      color="secondary"
+                      variant={entrant1Score === 2 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant1Score(2);
+                      }}
+                    >
+                      2
+                    </Button>
+                    <Button
+                      color="secondary"
+                      variant={entrant1Score === 3 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant1Score(3);
+                      }}
+                    >
+                      3
+                    </Button>
+                  </>
+                )}
               </Stack>
             </Stack>
             <Stack
@@ -159,26 +252,79 @@ export default function ManualReport({
                 )}
               </EntrantNames>
               <Stack direction="row" spacing="8px">
-                <Button
-                  color="secondary"
-                  variant={entrant2Dq ? 'contained' : 'outlined'}
-                  onClick={() => {
-                    resetForm();
-                    setEntrant2Dq(true);
-                  }}
-                >
-                  DQ
-                </Button>
-                <Button
-                  color="secondary"
-                  variant={entrant2Win ? 'contained' : 'outlined'}
-                  onClick={() => {
-                    resetForm();
-                    setEntrant2Win(true);
-                  }}
-                >
-                  W
-                </Button>
+                {mode === Mode.STARTGG && (
+                  <>
+                    <Button
+                      color="secondary"
+                      variant={entrant2Dq ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        resetForm();
+                        setEntrant2Dq(true);
+                      }}
+                    >
+                      DQ
+                    </Button>
+                    <Button
+                      color="secondary"
+                      variant={entrant2Win ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        resetForm();
+                        setEntrant2Win(true);
+                      }}
+                    >
+                      W
+                    </Button>
+                  </>
+                )}
+                {mode === Mode.CHALLONGE && (
+                  <>
+                    <Button
+                      color="secondary"
+                      variant={entrant2Score === -1 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant2Score(-1);
+                      }}
+                    >
+                      -1
+                    </Button>
+                    <Button
+                      color="secondary"
+                      variant={entrant2Score === 0 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant2Score(0);
+                      }}
+                    >
+                      0
+                    </Button>
+                    <Button
+                      color="secondary"
+                      variant={entrant2Score === 1 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant2Score(1);
+                      }}
+                    >
+                      1
+                    </Button>
+                    <Button
+                      color="secondary"
+                      variant={entrant2Score === 2 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant2Score(2);
+                      }}
+                    >
+                      2
+                    </Button>
+                    <Button
+                      color="secondary"
+                      variant={entrant2Score === 3 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant2Score(3);
+                      }}
+                    >
+                      3
+                    </Button>
+                  </>
+                )}
               </Stack>
             </Stack>
           </Stack>
@@ -190,7 +336,11 @@ export default function ManualReport({
             onClick={async () => {
               setReporting(true);
               try {
-                await reportSet(startggSet, selectedSet.state === 3);
+                if (mode === Mode.STARTGG) {
+                  await reportStartggSet(startggSet, selectedSet.state === 3);
+                } else if (mode === Mode.CHALLONGE) {
+                  await reportChallongeSet(selectedSet.id, challongeMatchItems);
+                }
                 resetForm();
                 setOpen(false);
               } catch (e: any) {

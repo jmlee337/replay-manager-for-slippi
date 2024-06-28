@@ -19,6 +19,6 @@
 * `{playersChars}` - Player 1 (Marth), Player 2 (Fox, Falco)
 * `{singlesChars}` - `{playersChars}` if singles, `{playersOnly}` if doubles
 * `{games}` - 3 (number of games)
-* `{event}` - Melee Singles
-* `{phase}` - Top 64
-* `{phaseGroup}` - 1 (name or number of the pool)
+* `{event}` - Melee Singles (start.gg only)
+* `{phase}` - Top 64 (start.gg only)
+* `{phaseGroup}` - 1 (name or number of the pool, start.gg only)

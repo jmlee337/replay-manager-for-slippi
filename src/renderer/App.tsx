@@ -34,6 +34,8 @@ import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { IpcRendererEvent } from 'electron';
 import {
+  ChallongeMatchItem,
+  ChallongeTournament,
   Context,
   ContextScore,
   ContextSlot,
@@ -48,7 +50,6 @@ import {
   Replay,
   ReportSettings,
   Set,
-  Sets,
   StartggSet,
   Tournament,
 } from '../common/types';
@@ -129,6 +130,16 @@ const EMPTY_SET: Set = {
   entrant2Score: null,
   twitchStream: null,
   ordinal: null,
+};
+
+const EMPTY_SELECTED_SET_CHAIN = {
+  eventId: 0,
+  eventName: '',
+  eventSlug: '',
+  phaseId: 0,
+  phaseName: '',
+  phaseGroupId: 0,
+  phaseGroupName: '',
 };
 
 function Hello() {
@@ -413,20 +424,29 @@ function Hello() {
 
   // Challonge tournament view
   const [challongeSlug, setChallongeSlug] = useState('');
-  const [challongeTournament, setChallongeTournament] = useState<Sets>({
-    pendingSets: [],
-    completedSets: [],
-  });
-  const getChallongeTournament = async (slug: string) => {
-    if (!slug) {
+  const [challongeTournament, setChallongeTournament] =
+    useState<ChallongeTournament>({
+      name: '',
+      slug: '',
+      sets: {
+        pendingSets: [],
+        completedSets: [],
+      },
+    });
+  const getChallongeTournament = async (maybeSlug: string) => {
+    if (!maybeSlug) {
       return false;
     }
 
     setGettingTournament(true);
     try {
-      setChallongeTournament(
-        await window.electron.getChallongeTournament(slug),
-      );
+      const namePromise = window.electron.getChallongeTournamentName(maybeSlug);
+      const setsPromise = window.electron.getChallongeSets(maybeSlug);
+      setChallongeTournament({
+        name: await namePromise,
+        slug: maybeSlug,
+        sets: await setsPromise,
+      });
       return true;
     } catch (e: any) {
       showErrorDialog([e.toString()]);
@@ -789,22 +809,22 @@ function Hello() {
     }
   };
 
-  const getTournament = async (getSlug: string) => {
-    if (!getSlug) {
+  const getTournament = async (maybeSlug: string) => {
+    if (!maybeSlug) {
       return false;
     }
 
     let newTournament;
     setGettingTournament(true);
     try {
-      newTournament = await window.electron.getTournament(getSlug);
+      newTournament = await window.electron.getTournament(maybeSlug);
     } catch (e: any) {
       showErrorDialog([e.toString()]);
       setGettingTournament(false);
       return false;
     }
 
-    if (tournament.slug === getSlug && tournament.events.length > 0) {
+    if (tournament.slug === maybeSlug && tournament.events.length > 0) {
       const eventsMap = new Map<number, Event>();
       tournament.events.forEach((event) => {
         eventsMap.set(event.id, event);
@@ -815,7 +835,7 @@ function Hello() {
     }
     tournament.events = newTournament.events;
     tournament.name = newTournament.name;
-    tournament.slug = getSlug;
+    tournament.slug = maybeSlug;
     const eventsWithChildren = newTournament.events.filter(
       (event) => event.phases.length > 0,
     );
@@ -849,15 +869,11 @@ function Hello() {
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
 
   // set controls
-  const [selectedSetChain, setSelectedSetChain] = useState({
-    eventId: 0,
-    eventName: '',
-    eventSlug: '',
-    phaseId: 0,
-    phaseName: '',
-    phaseGroupId: 0,
-    phaseGroupName: '',
-  });
+  const [selectedSetChain, setSelectedSetChain] = useState(
+    EMPTY_SELECTED_SET_CHAIN,
+  );
+  const [selectedChallongeTournament, setSelectedChallongeTournament] =
+    useState({ name: '', slug: '' });
   const selectSet = (set: Set) => {
     const newOverrides = [
       { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
@@ -896,19 +912,38 @@ function Hello() {
       phaseGroupName,
     });
   };
+  const selectChallongeSet = (
+    set: Set,
+    selectedTournament: ChallongeTournament,
+  ) => {
+    selectSet(set);
+    setSelectedChallongeTournament({
+      name: selectedTournament.name,
+      slug: selectedTournament.slug,
+    });
+  };
 
   const [startingSet, setStartingSet] = useState(false);
   const startSet = async (setId: number) => {
     setStartingSet(true);
     try {
-      const updatedSet = await window.electron.startSet(setId);
-      await getPhaseGroup(
-        selectedSetChain.phaseGroupId,
-        selectedSetChain.phaseId,
-        selectedSetChain.eventId,
-        true,
-        new Map([[updatedSet.id, updatedSet]]),
-      );
+      if (mode === Mode.STARTGG) {
+        const updatedSet = await window.electron.startSet(setId);
+        await getPhaseGroup(
+          selectedSetChain.phaseGroupId,
+          selectedSetChain.phaseId,
+          selectedSetChain.eventId,
+          true,
+          new Map([[updatedSet.id, updatedSet]]),
+        );
+      } else if (mode === Mode.CHALLONGE) {
+        setSelectedSet(
+          await window.electron.startChallongeSet(
+            selectedChallongeTournament.slug,
+            setId,
+          ),
+        );
+      }
     } catch (e: any) {
       showErrorDialog([e.toString()]);
     } finally {
@@ -916,7 +951,7 @@ function Hello() {
     }
   };
 
-  const reportSet = async (set: StartggSet, update: boolean) => {
+  const reportStartggSet = async (set: StartggSet, update: boolean) => {
     const updatedSets = new Map<number, Set>();
     if (update) {
       const updatedSet = await window.electron.updateSet(set);
@@ -935,6 +970,21 @@ function Hello() {
     );
     resetDq();
     return updatedSets.get(set.setId);
+  };
+  const reportChallongeSet = async (
+    matchId: number,
+    items: ChallongeMatchItem[],
+  ) => {
+    const reportSlug = selectedChallongeTournament.slug;
+    const updatedSet = await window.electron.reportChallongeSet(
+      reportSlug,
+      matchId,
+      items,
+    );
+    setSelectedSet(updatedSet);
+    await getChallongeTournament(reportSlug);
+    resetDq();
+    return updatedSet;
   };
 
   // copy
@@ -1099,12 +1149,14 @@ function Hello() {
         subdir = subdir.replace('{roundLong}', roundLong);
         subdir = subdir.replace('{games}', selectedReplays.length.toString(10));
         // do last in case event/phase/phase group names contain template strings LOL
-        subdir = subdir.replace('{event}', selectedSetChain.eventName);
-        subdir = subdir.replace('{phase}', selectedSetChain.phaseName);
-        subdir = subdir.replace(
-          '{phaseGroup}',
-          selectedSetChain.phaseGroupName,
-        );
+        if (mode === Mode.STARTGG) {
+          subdir = subdir.replace('{event}', selectedSetChain.eventName);
+          subdir = subdir.replace('{phase}', selectedSetChain.phaseName);
+          subdir = subdir.replace(
+            '{phaseGroup}',
+            selectedSetChain.phaseGroupName,
+          );
+        }
         // do last in case player names contain template strings LOL
         subdir = subdir.replace('{playersOnly}', playersOnly);
         subdir = subdir.replace('{playersChars}', playersChars);
@@ -1205,30 +1257,44 @@ function Hello() {
         };
 
         if (copySet.id) {
-          context.startgg = {
-            tournament: {
-              name: tournament.name,
-            },
-            event: {
-              id: selectedSetChain.eventId,
-              name: selectedSetChain.eventName,
-              slug: selectedSetChain.eventSlug,
-            },
-            phase: {
-              id: selectedSetChain.phaseId,
-              name: selectedSetChain.phaseName,
-            },
-            phaseGroup: {
-              id: selectedSetChain.phaseGroupId,
-              name: selectedSetChain.phaseGroupName,
-            },
-            set: {
-              id: copySet.id,
-              fullRoundText: copySet.fullRoundText,
-              round: copySet.round,
-              twitchStream: copySet.twitchStream,
-            },
-          };
+          if (mode === Mode.STARTGG) {
+            context.startgg = {
+              tournament: {
+                name: tournament.name,
+              },
+              event: {
+                id: selectedSetChain.eventId,
+                name: selectedSetChain.eventName,
+                slug: selectedSetChain.eventSlug,
+              },
+              phase: {
+                id: selectedSetChain.phaseId,
+                name: selectedSetChain.phaseName,
+              },
+              phaseGroup: {
+                id: selectedSetChain.phaseGroupId,
+                name: selectedSetChain.phaseGroupName,
+              },
+              set: {
+                id: copySet.id,
+                fullRoundText: copySet.fullRoundText,
+                round: copySet.round,
+                twitchStream: copySet.twitchStream,
+              },
+            };
+          } else if (mode === Mode.CHALLONGE) {
+            context.challonge = {
+              tournament: {
+                name: selectedChallongeTournament.name,
+              },
+              set: {
+                id: copySet.id,
+                fullRoundText: copySet.fullRoundText,
+                round: copySet.round,
+                ordinal: copySet.ordinal!,
+              },
+            };
+          }
         }
       }
     }
@@ -1434,20 +1500,6 @@ function Hello() {
                   value={challongeSlug || 'Set tournament slug...'}
                   style={{ flexGrow: 1 }}
                 />
-                <Tooltip arrow title="Refresh tournament">
-                  <div>
-                    <IconButton
-                      disabled={gettingTournament}
-                      onClick={() => getChallongeTournament(challongeSlug)}
-                    >
-                      {gettingTournament ? (
-                        <CircularProgress size="24px" />
-                      ) : (
-                        <Refresh />
-                      )}
-                    </IconButton>
-                  </div>
-                </Tooltip>
                 <Tooltip arrow title="Set tournament slug">
                   <IconButton
                     aria-label="Set tournament slug"
@@ -1545,7 +1597,12 @@ function Hello() {
           {mode === Mode.CHALLONGE && (
             <ChallongeView
               tournament={challongeTournament}
-              selectSet={selectSet}
+              getChallongeTournament={async () => {
+                getChallongeTournament(challongeSlug);
+              }}
+              selectSet={(set: Set) => {
+                selectChallongeSet(set, challongeTournament);
+              }}
             />
           )}
           {mode === Mode.MANUAL && (
@@ -1717,11 +1774,18 @@ function Hello() {
                   </IconButton>
                 </div>
               </Tooltip>
-              <ManualReport reportSet={reportSet} selectedSet={selectedSet} />
+              <ManualReport
+                mode={mode}
+                reportChallongeSet={reportChallongeSet}
+                reportStartggSet={reportStartggSet}
+                selectedSet={selectedSet}
+              />
               <SetControls
+                mode={mode}
                 copyReplays={onCopy}
                 deleteReplays={deleteDir}
-                reportSet={reportSet}
+                reportChallongeSet={reportChallongeSet}
+                reportStartggSet={reportStartggSet}
                 setReportSettings={async (
                   newReportSettings: ReportSettings,
                 ) => {
@@ -1762,6 +1826,7 @@ function Hello() {
         setMode={(newMode: Mode) => {
           setMode(newMode);
           setSelectedSet(EMPTY_SET);
+          setSelectedSetChain(EMPTY_SELECTED_SET_CHAIN);
         }}
         startggApiKey={startggApiKey}
         setStartggApiKey={setStartggApiKey}

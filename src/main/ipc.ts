@@ -12,6 +12,7 @@ import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
 import {
+  ChallongeMatchItem,
   Context,
   CopySettings,
   Mode,
@@ -31,7 +32,12 @@ import {
   updateSet,
 } from './startgg';
 import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
-import getChallongeTournament from './challonge';
+import {
+  getChallongeSets,
+  getChallongeTournamentName,
+  reportChallongeSet,
+  startChallongeSet,
+} from './challonge';
 
 export default function setupIPCs(mainWindow: BrowserWindow): void {
   const store = new Store();
@@ -286,15 +292,55 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
-  ipcMain.removeHandler('getChallongeTournament');
+  ipcMain.removeHandler('getChallongeTournamentName');
   ipcMain.handle(
-    'getChallongeTournament',
+    'getChallongeTournamentName',
     (event: IpcMainInvokeEvent, slug: string) => {
       if (!challongeApiKey) {
         throw new Error('Please set Challonge API key.');
       }
 
-      return getChallongeTournament(slug, challongeApiKey);
+      return getChallongeTournamentName(slug, challongeApiKey);
+    },
+  );
+
+  ipcMain.removeHandler('getChallongeSets');
+  ipcMain.handle(
+    'getChallongeSets',
+    (event: IpcMainInvokeEvent, slug: string) => {
+      if (!challongeApiKey) {
+        throw new Error('Please set Challonge API key.');
+      }
+
+      return getChallongeSets(slug, challongeApiKey);
+    },
+  );
+
+  ipcMain.removeHandler('startChallongeSet');
+  ipcMain.handle(
+    'startChallongeSet',
+    (event: IpcMainInvokeEvent, slug: string, id: number) => {
+      if (!challongeApiKey) {
+        throw new Error('Please set Challonge API key.');
+      }
+
+      return startChallongeSet(slug, id, challongeApiKey);
+    },
+  );
+
+  ipcMain.removeHandler('reportChallongeSet');
+  ipcMain.handle(
+    'reportChallongeSet',
+    (
+      event: IpcMainInvokeEvent,
+      slug: string,
+      id: number,
+      items: ChallongeMatchItem[],
+    ) => {
+      if (!challongeApiKey) {
+        throw new Error('Please set Challonge API key.');
+      }
+      return reportChallongeSet(slug, id, items, challongeApiKey);
     },
   );
 

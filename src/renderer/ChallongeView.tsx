@@ -1,7 +1,20 @@
-import { Box, Collapse, ListItemButton, Typography } from '@mui/material';
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
+import {
+  Box,
+  CircularProgress,
+  Collapse,
+  IconButton,
+  ListItemButton,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import {
+  KeyboardArrowDown,
+  KeyboardArrowRight,
+  KeyboardArrowUp,
+  Refresh,
+} from '@mui/icons-material';
 import { useState } from 'react';
-import { Set, Sets } from '../common/types';
+import { ChallongeTournament, Set } from '../common/types';
 import SetViewInner from './SetView';
 
 function SetView({
@@ -39,41 +52,84 @@ function SetView({
 
 export default function ChallongeView({
   tournament,
+  getChallongeTournament,
   selectSet,
 }: {
-  tournament: Sets;
+  tournament: ChallongeTournament;
+  getChallongeTournament: () => Promise<void>;
   selectSet: (set: Set) => void;
 }) {
+  const [open, setOpen] = useState(true);
   const [completedOpen, setCompletedOpen] = useState(false);
+  const [getting, setGetting] = useState(false);
+  const get = async () => {
+    setGetting(true);
+    await getChallongeTournament();
+    setGetting(false);
+  };
   return (
     <Box>
-      {tournament.pendingSets.map((set) => (
-        <SetView key={set.id} set={set} selectSet={selectSet} />
-      ))}
-      {tournament.completedSets.length > 0 && (
-        <>
-          <ListItemButton
-            dense
-            onClick={() => setCompletedOpen(!completedOpen)}
+      <ListItemButton
+        dense
+        disableGutters
+        onClick={() => {
+          setOpen(!open);
+        }}
+        sx={{ typography: 'caption' }}
+      >
+        {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
+        <div
+          style={{
+            overflowX: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {tournament.name}
+        </div>
+        <Tooltip arrow title="Refresh tournament">
+          <IconButton
+            onClick={(ev) => {
+              ev.stopPropagation();
+              get();
+            }}
+            size="small"
           >
-            <Typography
-              alignItems="center"
-              display="flex"
-              justifyContent="right"
-              variant="subtitle2"
-              width="100%"
-            >
-              completed
-              {completedOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-            </Typography>
-          </ListItemButton>
-          <Collapse in={completedOpen}>
-            {tournament.completedSets.map((set) => (
-              <SetView key={set.id} set={set} selectSet={selectSet} />
-            ))}
-          </Collapse>
-        </>
-      )}
+            {getting ? <CircularProgress size="24px" /> : <Refresh />}
+          </IconButton>
+        </Tooltip>
+      </ListItemButton>
+      <Collapse in={open}>
+        <div style={{ paddingLeft: '8px' }}>
+          {tournament.sets.pendingSets.map((set) => (
+            <SetView key={set.id} set={set} selectSet={selectSet} />
+          ))}
+          {tournament.sets.completedSets.length > 0 && (
+            <>
+              <ListItemButton
+                dense
+                onClick={() => setCompletedOpen(!completedOpen)}
+              >
+                <Typography
+                  alignItems="center"
+                  display="flex"
+                  justifyContent="right"
+                  variant="subtitle2"
+                  width="100%"
+                >
+                  completed
+                  {completedOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+                </Typography>
+              </ListItemButton>
+              <Collapse in={completedOpen}>
+                {tournament.sets.completedSets.map((set) => (
+                  <SetView key={set.id} set={set} selectSet={selectSet} />
+                ))}
+              </Collapse>
+            </>
+          )}
+        </div>
+      </Collapse>
     </Box>
   );
 }

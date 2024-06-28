@@ -1,5 +1,6 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer } from 'electron';
 import {
+  ChallongeMatchItem,
   Context,
   CopySettings,
   EnforceResult,
@@ -73,8 +74,17 @@ const electronHandler = {
   getChallongeKey: (): Promise<string> => ipcRenderer.invoke('getChallongeKey'),
   setChallongeKey: (challongeKey: string): Promise<void> =>
     ipcRenderer.invoke('setChallongeKey', challongeKey),
-  getChallongeTournament: (slug: string): Promise<Sets> =>
-    ipcRenderer.invoke('getChallongeTournament', slug),
+  getChallongeTournamentName: (slug: string): Promise<string> =>
+    ipcRenderer.invoke('getChallongeTournamentName', slug),
+  getChallongeSets: (slug: string): Promise<Sets> =>
+    ipcRenderer.invoke('getChallongeSets', slug),
+  startChallongeSet: (slug: string, id: number): Promise<Set> =>
+    ipcRenderer.invoke('startChallongeSet', slug, id),
+  reportChallongeSet: (
+    slug: string,
+    id: number,
+    items: ChallongeMatchItem[],
+  ): Promise<Set> => ipcRenderer.invoke('reportChallongeSet', slug, id, items),
   getAutoDetectUsb: (): Promise<boolean> =>
     ipcRenderer.invoke('getAutoDetectUsb'),
   setAutoDetectUsb: (autoDetectUsb: boolean): Promise<void> =>

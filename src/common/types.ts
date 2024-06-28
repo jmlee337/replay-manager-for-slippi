@@ -95,6 +95,12 @@ export type Tournament = {
   events: Event[];
 };
 
+export type ChallongeTournament = {
+  name: string;
+  slug: string;
+  sets: Sets;
+};
+
 export type StartggGameSelection = {
   characterId: number;
   entrantId: number;
@@ -113,6 +119,13 @@ export type StartggSet = {
   winnerId: number;
   isDQ: boolean;
   gameData: StartggGame[];
+};
+
+export type ChallongeMatchItem = {
+  participant_id: string;
+  score_set: string;
+  rank: number;
+  advancing: boolean;
 };
 
 export enum Output {
@@ -171,6 +184,17 @@ export type Context = {
       fullRoundText: string;
       round: number;
       twitchStream: string | null;
+    };
+  };
+  challonge?: {
+    tournament: {
+      name: string;
+    };
+    set: {
+      id: number;
+      fullRoundText: string;
+      round: number;
+      ordinal: number;
     };
   };
   startMs: number;

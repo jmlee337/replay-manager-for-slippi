@@ -15,7 +15,9 @@ import {
 import { useState } from 'react';
 import styled from '@emotion/styled';
 import {
+  ChallongeMatchItem,
   EnforceResult,
+  Mode,
   Player,
   Replay,
   ReportSettings,
@@ -23,6 +25,7 @@ import {
   StartggGame,
   StartggGameSelection,
   StartggSet,
+  State,
 } from '../common/types';
 import {
   characterNames,
@@ -88,8 +91,11 @@ function findWinner(players: Player[]) {
   return undefined;
 }
 
-function setAndReplaysValid(selectedReplays: Replay[], set: Set) {
+function setAndReplaysValid(selectedReplays: Replay[], set: Set, mode: Mode) {
   if (selectedReplays.length === 0) {
+    return false;
+  }
+  if (mode === Mode.CHALLONGE && set.state === State.COMPLETED) {
     return false;
   }
 
@@ -131,8 +137,10 @@ function getScoresAndWinnerId(selectedReplays: Replay[]) {
 export default function SetControls({
   copyReplays,
   deleteReplays,
-  reportSet,
+  reportChallongeSet,
+  reportStartggSet,
   setReportSettings,
+  mode,
   copyDisabled,
   dqId,
   reportSettings,
@@ -142,8 +150,16 @@ export default function SetControls({
 }: {
   copyReplays: (set?: Set) => Promise<void>;
   deleteReplays: () => Promise<void>;
-  reportSet: (set: StartggSet, update: boolean) => Promise<Set | undefined>;
+  reportChallongeSet: (
+    matchId: number,
+    items: ChallongeMatchItem[],
+  ) => Promise<Set>;
+  reportStartggSet: (
+    set: StartggSet,
+    update: boolean,
+  ) => Promise<Set | undefined>;
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
+  mode: Mode;
   copyDisabled: boolean;
   dqId: number;
   reportSettings: ReportSettings;
@@ -161,13 +177,29 @@ export default function SetControls({
     isDQ: false,
     gameData: [],
   });
+  const [challongeMatchItems, setChallongeMatchItems] = useState<
+    ChallongeMatchItem[]
+  >([
+    {
+      participant_id: '',
+      score_set: '',
+      rank: 0,
+      advancing: false,
+    },
+    {
+      participant_id: '',
+      score_set: '',
+      rank: 0,
+      advancing: false,
+    },
+  ]);
 
   const [enforcing, setEnforcing] = useState(false);
   const [enforcerErrors, setEnforcerErrors] = useState<EnforceResult[]>([]);
   const [enforcerErrorOpen, setEnforcerErrorOpen] = useState(false);
 
   const isDq = dqId === set.entrant1Id || dqId === set.entrant2Id;
-  const validSelections = setAndReplaysValid(selectedReplays, set);
+  const validSelections = setAndReplaysValid(selectedReplays, set, mode);
   let scores = new Map<number, number>();
   let winnerId = 0;
   if (validSelections) {
@@ -187,7 +219,7 @@ export default function SetControls({
   const entrant1Score = scores.get(set.entrant1Id) || 0;
   const entrant2Score = scores.get(set.entrant2Id) || 0;
 
-  const getSet = (): StartggSet => {
+  const getStartggSet = (): StartggSet => {
     if (isDq) {
       return { setId: set.id, winnerId, isDQ: true, gameData: [] };
     }
@@ -218,6 +250,21 @@ export default function SetControls({
     return { setId: set.id, winnerId, isDQ: false, gameData };
   };
 
+  const getChallongeMatchItems = (): ChallongeMatchItem[] => [
+    {
+      participant_id: set.entrant1Id.toString(10),
+      score_set: entrant1Score.toString(10),
+      rank: winnerId === set.entrant1Id ? 1 : 2,
+      advancing: winnerId === set.entrant1Id,
+    },
+    {
+      participant_id: set.entrant2Id.toString(10),
+      score_set: entrant2Score.toString(10),
+      rank: winnerId === set.entrant2Id ? 1 : 2,
+      advancing: winnerId === set.entrant2Id,
+    },
+  ];
+
   const reportCopyDelete = `Report${reportSettings.alsoCopy ? ', Copy' : ''}${
     reportSettings.alsoCopy && reportSettings.alsoDelete ? ', Delete' : ''
   }`;
@@ -227,7 +274,8 @@ export default function SetControls({
         disabled={!(validSelections && (winnerId || isDq))}
         endIcon={<Backup />}
         onClick={() => {
-          setStartggSet(getSet());
+          setStartggSet(getStartggSet());
+          setChallongeMatchItems(getChallongeMatchItems());
           if (useEnforcer) {
             setEnforcing(true);
             window.electron
@@ -264,7 +312,10 @@ export default function SetControls({
           });
         }}
       >
-        <DialogTitle>Report set on start.gg</DialogTitle>
+        <DialogTitle>
+          Report set on {mode === Mode.STARTGG && 'start.gg'}
+          {mode === Mode.CHALLONGE && 'Challonge'}
+        </DialogTitle>
         <DialogContent sx={{ width: '500px' }}>
           <SetView
             entrant1Names={set.entrant1Participants.map(
@@ -390,7 +441,18 @@ export default function SetControls({
             onClick={async () => {
               setReporting(true);
               try {
-                const updatedSet = await reportSet(startggSet, set.state === 3);
+                let updatedSet: Set | undefined;
+                if (mode === Mode.STARTGG) {
+                  updatedSet = await reportStartggSet(
+                    startggSet,
+                    set.state === 3,
+                  );
+                } else if (mode === Mode.CHALLONGE) {
+                  updatedSet = await reportChallongeSet(
+                    set.id,
+                    challongeMatchItems,
+                  );
+                }
                 if (reportSettings.alsoCopy) {
                   await copyReplays(updatedSet);
                 }
