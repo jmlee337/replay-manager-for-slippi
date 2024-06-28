@@ -423,34 +423,26 @@ function Hello() {
   const [gettingTournament, setGettingTournament] = useState(false);
 
   // Challonge tournament view
-  const [challongeSlug, setChallongeSlug] = useState('');
-  const [challongeTournament, setChallongeTournament] =
-    useState<ChallongeTournament>({
-      name: '',
-      slug: '',
-      sets: {
-        pendingSets: [],
-        completedSets: [],
-      },
-    });
+  const [challongeTournaments, setChallongeTournaments] = useState(
+    new Map<string, ChallongeTournament>(),
+  );
   const getChallongeTournament = async (maybeSlug: string) => {
     if (!maybeSlug) {
-      return false;
+      return;
     }
 
     setGettingTournament(true);
     try {
       const namePromise = window.electron.getChallongeTournamentName(maybeSlug);
       const setsPromise = window.electron.getChallongeSets(maybeSlug);
-      setChallongeTournament({
+      challongeTournaments.set(maybeSlug, {
         name: await namePromise,
         slug: maybeSlug,
         sets: await setsPromise,
       });
-      return true;
+      setChallongeTournaments(new Map(challongeTournaments));
     } catch (e: any) {
       showErrorDialog([e.toString()]);
-      return false;
     } finally {
       setGettingTournament(false);
     }
@@ -465,10 +457,8 @@ function Hello() {
     event.preventDefault();
     event.stopPropagation();
     if (newSlug) {
+      await getChallongeTournament(newSlug);
       setSlugDialogOpen(false);
-      if (await getChallongeTournament(newSlug)) {
-        setChallongeSlug(newSlug);
-      }
     }
   };
 
@@ -943,6 +933,7 @@ function Hello() {
             setId,
           ),
         );
+        await getChallongeTournament(selectedChallongeTournament.slug);
       }
     } catch (e: any) {
       showErrorDialog([e.toString()]);
@@ -1497,12 +1488,12 @@ function Hello() {
                 <InputBase
                   disabled
                   size="small"
-                  value={challongeSlug || 'Set tournament slug...'}
+                  value="Add tournament by slug..."
                   style={{ flexGrow: 1 }}
                 />
-                <Tooltip arrow title="Set tournament slug">
+                <Tooltip arrow title="Add tournament by slug">
                   <IconButton
-                    aria-label="Set tournament slug"
+                    aria-label="Add tournament by slug"
                     onClick={() => setSlugDialogOpen(true)}
                   >
                     <Edit />
@@ -1523,7 +1514,14 @@ function Hello() {
                         size="small"
                         variant="outlined"
                       />
-                      <Button type="submit">Get!</Button>
+                      {gettingTournament ? (
+                        <CircularProgress
+                          size="24px"
+                          style={{ marginLeft: '8px' }}
+                        />
+                      ) : (
+                        <Button type="submit">Add!</Button>
+                      )}
                     </Form>
                   </DialogContent>
                 </Dialog>
@@ -1594,17 +1592,21 @@ function Hello() {
               selectSet={selectStartggSet}
             />
           )}
-          {mode === Mode.CHALLONGE && (
-            <ChallongeView
-              tournament={challongeTournament}
-              getChallongeTournament={async () => {
-                getChallongeTournament(challongeSlug);
-              }}
-              selectSet={(set: Set) => {
-                selectChallongeSet(set, challongeTournament);
-              }}
-            />
-          )}
+          {mode === Mode.CHALLONGE &&
+            Array.from(challongeTournaments.values()).map(
+              (challongeTournament) => (
+                <ChallongeView
+                  key={challongeTournament.slug}
+                  tournament={challongeTournament}
+                  getChallongeTournament={async () =>
+                    getChallongeTournament(challongeTournament.slug)
+                  }
+                  selectSet={(set: Set) => {
+                    selectChallongeSet(set, challongeTournament);
+                  }}
+                />
+              ),
+            )}
           {mode === Mode.MANUAL && (
             <ManualView
               manualNames={manualNames}
