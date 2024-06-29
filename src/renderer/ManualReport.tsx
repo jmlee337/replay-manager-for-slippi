@@ -13,7 +13,13 @@ import {
 } from '@mui/material';
 import { Backup, HourglassTop, SaveAs } from '@mui/icons-material';
 import styled from '@emotion/styled';
-import { ChallongeMatchItem, Mode, Set, StartggSet } from '../common/types';
+import {
+  ChallongeMatchItem,
+  Mode,
+  Set,
+  StartggSet,
+  State,
+} from '../common/types';
 
 const EntrantNames = styled(Stack)`
   flex-grow: 1;
@@ -105,7 +111,7 @@ export default function ManualReport({
         <div>
           <IconButton
             color="primary"
-            disabled={!selectedSet.id || selectedSet.state === 3}
+            disabled={!selectedSet.id || selectedSet.state === State.COMPLETED}
             size="small"
             onClick={() => {
               resetForm();
@@ -128,7 +134,7 @@ export default function ManualReport({
             typography="caption"
           >
             {selectedSet.fullRoundText}
-            {selectedSet.state === 2 && (
+            {selectedSet.state === State.STARTED && (
               <>
                 &nbsp;
                 <Tooltip title="Started">
@@ -136,7 +142,7 @@ export default function ManualReport({
                 </Tooltip>
               </>
             )}
-            {selectedSet.state === 3 && (
+            {selectedSet.state === State.COMPLETED && (
               <>
                 &nbsp;
                 <Tooltip title="Finished">
@@ -337,7 +343,10 @@ export default function ManualReport({
               setReporting(true);
               try {
                 if (mode === Mode.STARTGG) {
-                  await reportStartggSet(startggSet, selectedSet.state === 3);
+                  await reportStartggSet(
+                    startggSet,
+                    selectedSet.state === State.COMPLETED,
+                  );
                 } else if (mode === Mode.CHALLONGE) {
                   await reportChallongeSet(selectedSet.id, challongeMatchItems);
                 }

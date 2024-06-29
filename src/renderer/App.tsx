@@ -51,6 +51,7 @@ import {
   ReportSettings,
   Set,
   StartggSet,
+  State,
   Tournament,
 } from '../common/types';
 import { DraggableChip, DroppableChip } from './DragAndDrop';
@@ -106,7 +107,7 @@ const Form = styled.form`
 
 const EMPTY_SET: Set = {
   id: 0,
-  state: 0,
+  state: State.PENDING,
   round: 0,
   fullRoundText: '',
   winnerId: null,
@@ -1672,7 +1673,7 @@ function Hello() {
                     <Typography lineHeight="20px" variant="caption">
                       {selectedSet.fullRoundText} ({selectedSet.id})
                     </Typography>
-                    {selectedSet.state === 2 && (
+                    {selectedSet.state === State.STARTED && (
                       <>
                         &nbsp;
                         <Tooltip title="Started">
@@ -1680,7 +1681,7 @@ function Hello() {
                         </Tooltip>
                       </>
                     )}
-                    {selectedSet.state === 3 && (
+                    {selectedSet.state === State.COMPLETED && (
                       <>
                         &nbsp;
                         <Tooltip placement="top" title="Finished">
@@ -1763,7 +1764,11 @@ function Hello() {
                   <IconButton
                     color="primary"
                     disabled={
-                      !(selectedSet.id && selectedSet.state < 2) || startingSet
+                      !(
+                        (selectedSet.id &&
+                          selectedSet.state === State.PENDING) ||
+                        selectedSet.state === State.CALLED
+                      ) || startingSet
                     }
                     size="small"
                     onClick={() => startSet(selectedSet.id)}

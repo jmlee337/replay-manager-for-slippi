@@ -43,9 +43,10 @@ export type Participant = {
 };
 
 export enum State {
-  PENDING = 0,
+  PENDING = 1,
   STARTED = 2,
   COMPLETED = 3,
+  CALLED = 6,
 }
 
 export type Set = {

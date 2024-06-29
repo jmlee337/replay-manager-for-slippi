@@ -445,7 +445,7 @@ export default function SetControls({
                 if (mode === Mode.STARTGG) {
                   updatedSet = await reportStartggSet(
                     startggSet,
-                    set.state === 3,
+                    set.state === State.COMPLETED,
                   );
                 } else if (mode === Mode.CHALLONGE) {
                   updatedSet = await reportChallongeSet(

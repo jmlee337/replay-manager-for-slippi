@@ -15,7 +15,14 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import { useState } from 'react';
-import { Event, Phase, PhaseGroup, Set, Tournament } from '../common/types';
+import {
+  Event,
+  Phase,
+  PhaseGroup,
+  Set,
+  State,
+  Tournament,
+} from '../common/types';
 import SetViewInner from './SetView';
 
 const Block = styled.div`
@@ -87,7 +94,7 @@ function SetView({
         entrant2Score={set.entrant2Score}
         fullRoundText={set.fullRoundText}
         state={set.state}
-        showScores={set.state === 3}
+        showScores={set.state === State.COMPLETED}
       />
     </ListItemButton>
   );

@@ -14,7 +14,7 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import { useState } from 'react';
-import { ChallongeTournament, Set } from '../common/types';
+import { ChallongeTournament, Set, State } from '../common/types';
 import SetViewInner from './SetView';
 
 function SetView({
@@ -44,7 +44,7 @@ function SetView({
         entrant2Score={set.entrant2Score}
         fullRoundText={set.fullRoundText}
         state={set.state}
-        showScores={set.state === 3}
+        showScores={set.state === State.COMPLETED}
       />
     </ListItemButton>
   );
