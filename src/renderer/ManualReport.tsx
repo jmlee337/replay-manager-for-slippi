@@ -337,7 +337,7 @@ export default function ManualReport({
         </DialogContent>
         <DialogActions>
           <Button
-            disabled={reporting}
+            disabled={reporting || !winnerId}
             endIcon={reporting ? <CircularProgress size="24px" /> : <SaveAs />}
             onClick={async () => {
               setReporting(true);
