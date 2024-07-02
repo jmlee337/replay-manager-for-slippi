@@ -190,6 +190,7 @@ export type Context = {
   challonge?: {
     tournament: {
       name: string;
+      slug: string;
     };
     set: {
       id: number;

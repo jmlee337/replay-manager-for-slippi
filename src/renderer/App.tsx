@@ -1283,6 +1283,7 @@ function Hello() {
               context.challonge = {
                 tournament: {
                   name: selectedChallongeTournament.name,
+                  slug: selectedChallongeTournament.slug,
                 },
                 set: {
                   id: copySet.id,
