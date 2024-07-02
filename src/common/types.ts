@@ -156,7 +156,7 @@ export type ContextSlot = {
 
 export type ContextScore = {
   // slots.length === 2
-  slots: ContextSlot[];
+  slots: [ContextSlot, ContextSlot];
 };
 
 export type Context = {

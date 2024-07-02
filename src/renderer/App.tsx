@@ -1189,6 +1189,7 @@ function Hello() {
       }
 
       if (copySettings.writeContext) {
+        let canWriteContext = true;
         const scores: ContextScore[] = [];
         const gameScores = [0, 0];
         selectedReplays.forEach((replay) => {
@@ -1212,9 +1213,12 @@ function Hello() {
                 !usedK.has(k) &&
                 (teamId === undefined || teamId === player.teamId)
               ) {
-                slots[j].displayNames.push(
-                  player.playerOverrides.displayName || player.displayName,
-                );
+                const displayName =
+                  player.playerOverrides.displayName || player.displayName;
+                if (!displayName) {
+                  canWriteContext = false;
+                }
+                slots[j].displayNames.push(displayName);
                 slots[j].ports.push(player.port);
                 slots[j].prefixes.push(player.playerOverrides.prefix);
                 slots[j].pronouns.push(player.playerOverrides.pronouns);
@@ -1235,57 +1239,59 @@ function Hello() {
               }
             }
           }
-          scores.push({ slots });
+          scores.push({ slots: [slots[0], slots[1]] });
         });
-        context = {
-          bestOf: Math.max(gameScores[0], gameScores[1]) * 2 - 1,
-          durationMs: selectedReplays
-            .map((replay) =>
-              Math.ceil((replay.lastFrame + 124) / frameMsDivisor),
-            )
-            .reduce((prev, curr) => prev + curr, 0),
-          scores,
-          startMs: startDate.getTime(),
-        };
+        if (canWriteContext) {
+          context = {
+            bestOf: Math.max(gameScores[0], gameScores[1]) * 2 - 1,
+            durationMs: selectedReplays
+              .map((replay) =>
+                Math.ceil((replay.lastFrame + 124) / frameMsDivisor),
+              )
+              .reduce((prev, curr) => prev + curr, 0),
+            scores,
+            startMs: startDate.getTime(),
+          };
 
-        if (copySet.id) {
-          if (mode === Mode.STARTGG) {
-            context.startgg = {
-              tournament: {
-                name: tournament.name,
-              },
-              event: {
-                id: selectedSetChain.eventId,
-                name: selectedSetChain.eventName,
-                slug: selectedSetChain.eventSlug,
-              },
-              phase: {
-                id: selectedSetChain.phaseId,
-                name: selectedSetChain.phaseName,
-              },
-              phaseGroup: {
-                id: selectedSetChain.phaseGroupId,
-                name: selectedSetChain.phaseGroupName,
-              },
-              set: {
-                id: copySet.id,
-                fullRoundText: copySet.fullRoundText,
-                round: copySet.round,
-                twitchStream: copySet.twitchStream,
-              },
-            };
-          } else if (mode === Mode.CHALLONGE) {
-            context.challonge = {
-              tournament: {
-                name: selectedChallongeTournament.name,
-              },
-              set: {
-                id: copySet.id,
-                fullRoundText: copySet.fullRoundText,
-                round: copySet.round,
-                ordinal: copySet.ordinal!,
-              },
-            };
+          if (copySet.id) {
+            if (mode === Mode.STARTGG) {
+              context.startgg = {
+                tournament: {
+                  name: tournament.name,
+                },
+                event: {
+                  id: selectedSetChain.eventId,
+                  name: selectedSetChain.eventName,
+                  slug: selectedSetChain.eventSlug,
+                },
+                phase: {
+                  id: selectedSetChain.phaseId,
+                  name: selectedSetChain.phaseName,
+                },
+                phaseGroup: {
+                  id: selectedSetChain.phaseGroupId,
+                  name: selectedSetChain.phaseGroupName,
+                },
+                set: {
+                  id: copySet.id,
+                  fullRoundText: copySet.fullRoundText,
+                  round: copySet.round,
+                  twitchStream: copySet.twitchStream,
+                },
+              };
+            } else if (mode === Mode.CHALLONGE) {
+              context.challonge = {
+                tournament: {
+                  name: selectedChallongeTournament.name,
+                },
+                set: {
+                  id: copySet.id,
+                  fullRoundText: copySet.fullRoundText,
+                  round: copySet.round,
+                  ordinal: copySet.ordinal!,
+                },
+              };
+            }
           }
         }
       }
