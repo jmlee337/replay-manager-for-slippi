@@ -159,6 +159,7 @@ function Hello() {
   const [autoDetectUsb, setAutoDetectUsb] = useState(false);
   const [scrollToBottom, setScrollToBottom] = useState(false);
   const [useEnforcer, setUseEnforcer] = useState(false);
+  const [vlerkMode, setVlerkMode] = useState(false);
   const [fileNameFormat, setFileNameFormat] = useState('');
   const [folderNameFormat, setFolderNameFormat] = useState('');
   const [appVersion, setAppVersion] = useState('');
@@ -186,6 +187,7 @@ function Hello() {
       const autoDetectUsbPromise = window.electron.getAutoDetectUsb();
       const scrollToBottomPromise = window.electron.getScrollToBottom();
       const useEnforcerPromise = window.electron.getUseEnforcer();
+      const vlerkModePromise = window.electron.getVlerkMode();
       const fileNameFormatPromise = window.electron.getFileNameFormat();
       const folderNameFormatPromise = window.electron.getFolderNameFormat();
       const copySettingsPromise = window.electron.getCopySettings();
@@ -200,6 +202,7 @@ function Hello() {
       setUseEnforcer(await useEnforcerPromise);
       setFileNameFormat(await fileNameFormatPromise);
       setFolderNameFormat(await folderNameFormatPromise);
+      setVlerkMode(await vlerkModePromise);
       setCopySettings(await copySettingsPromise);
       setReportSettings(await reportSettingsPromise);
       setGotSettings(true);
@@ -1852,6 +1855,8 @@ function Hello() {
         setScrollToBottom={setScrollToBottom}
         useEnforcer={useEnforcer}
         setUseEnforcer={setUseEnforcer}
+        vlerkMode={vlerkMode}
+        setVlerkMode={setVlerkMode}
         fileNameFormat={fileNameFormat}
         setFileNameFormat={setFileNameFormat}
         folderNameFormat={folderNameFormat}

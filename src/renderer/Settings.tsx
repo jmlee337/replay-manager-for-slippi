@@ -54,6 +54,8 @@ export default function Settings({
   setFileNameFormat,
   folderNameFormat,
   setFolderNameFormat,
+  vlerkMode,
+  setVlerkMode,
 }: {
   appVersion: string;
   latestAppVersion: string;
@@ -74,6 +76,8 @@ export default function Settings({
   setFileNameFormat: (fileNameFormat: string) => void;
   folderNameFormat: string;
   setFolderNameFormat: (folderNameFormat: string) => void;
+  vlerkMode: boolean;
+  setVlerkMode: (vlerkMode: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -279,6 +283,15 @@ export default function Settings({
               set={async (checked) => {
                 await window.electron.setScrollToBottom(checked);
                 setScrollToBottom(checked);
+              }}
+            />
+            <LabeledCheckbox
+              checked={vlerkMode}
+              label="Use 'Vlerk mode' features for reporting stage/char data post tournament"
+              labelPlacement="end"
+              set={async (checked) => {
+                await window.electron.setVlerkMode(checked);
+                setVlerkMode(checked);
               }}
             />
             <LabeledCheckbox

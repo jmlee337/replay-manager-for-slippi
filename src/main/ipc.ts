@@ -517,6 +517,21 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
+  let vlerkMode = store.has('vlerkMode')
+    ? (store.get('vlerkMode') as boolean)
+    : false;
+  ipcMain.removeHandler('getVlerkMode');
+  ipcMain.handle('getVlerkMode', () => vlerkMode);
+
+  ipcMain.removeHandler('setVlerkMode');
+  ipcMain.handle(
+    'setVlerkMode',
+    (event: IpcMainInvokeEvent, newVlerkMode: boolean) => {
+      store.set('vlerkMode', newVlerkMode);
+      vlerkMode = newVlerkMode;
+    },
+  );
+
   ipcMain.removeHandler('copyToClipboard');
   ipcMain.handle(
     'copyToClipboard',

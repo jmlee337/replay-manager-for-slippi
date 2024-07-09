@@ -116,6 +116,9 @@ const electronHandler = {
     ipcRenderer.invoke('getReportSettings'),
   setReportSettings: (reportSettings: ReportSettings): Promise<void> =>
     ipcRenderer.invoke('setReportSettings', reportSettings),
+  getVlerkMode: (): Promise<boolean> => ipcRenderer.invoke('getVlerkMode'),
+  setVlerkMode: (vlerkMode: boolean): Promise<void> =>
+    ipcRenderer.invoke('setVlerkMode', vlerkMode),
   copyToClipboard: (text: string): Promise<void> =>
     ipcRenderer.invoke('copyToClipboard', text),
   getVersion: (): Promise<string> => ipcRenderer.invoke('getVersion'),
