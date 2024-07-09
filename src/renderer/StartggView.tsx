@@ -103,6 +103,7 @@ function SetView({
 function PhaseGroupView({
   phaseGroup,
   initiallyOpen,
+  completedInitiallyOpen,
   eventId,
   eventName,
   eventSlug,
@@ -113,6 +114,7 @@ function PhaseGroupView({
 }: {
   phaseGroup: PhaseGroup;
   initiallyOpen: boolean;
+  completedInitiallyOpen: boolean;
   eventId: number;
   eventName: string;
   eventSlug: string;
@@ -135,7 +137,7 @@ function PhaseGroupView({
   ) => void;
 }) {
   const [getting, setGetting] = useState(false);
-  const [completedOpen, setCompletedOpen] = useState(false);
+  const [completedOpen, setCompletedOpen] = useState(completedInitiallyOpen);
   const [open, setOpen] = useState(initiallyOpen);
 
   const get = async () => {
@@ -240,6 +242,7 @@ function PhaseView({
   eventId,
   eventName,
   eventSlug,
+  vlerkMode,
   getPhase,
   getPhaseGroup,
   selectSet,
@@ -249,6 +252,7 @@ function PhaseView({
   eventId: number;
   eventName: string;
   eventSlug: string;
+  vlerkMode: boolean;
   getPhase: (id: number, eventId: number) => Promise<void>;
   getPhaseGroup: (
     id: number,
@@ -309,6 +313,7 @@ function PhaseView({
               key={phaseGroup.id}
               phaseGroup={phaseGroup}
               initiallyOpen={phase.phaseGroups.length === 1}
+              completedInitiallyOpen={vlerkMode}
               eventId={eventId}
               eventName={eventName}
               eventSlug={eventSlug}
@@ -327,6 +332,7 @@ function PhaseView({
 function EventView({
   event,
   initiallyOpen,
+  vlerkMode,
   getEvent,
   getPhase,
   getPhaseGroup,
@@ -334,6 +340,7 @@ function EventView({
 }: {
   event: Event;
   initiallyOpen: boolean;
+  vlerkMode: boolean;
   getEvent: (id: number) => Promise<void>;
   getPhase: (id: number, eventId: number) => Promise<void>;
   getPhaseGroup: (
@@ -398,6 +405,7 @@ function EventView({
               eventId={event.id}
               eventName={event.name}
               eventSlug={event.slug}
+              vlerkMode={vlerkMode}
               getPhase={getPhase}
               getPhaseGroup={getPhaseGroup}
               selectSet={selectSet}
@@ -411,12 +419,14 @@ function EventView({
 
 export default function StartggView({
   tournament,
+  vlerkMode,
   getEvent,
   getPhase,
   getPhaseGroup,
   selectSet,
 }: {
   tournament: Tournament;
+  vlerkMode: boolean;
   getEvent: (id: number) => Promise<void>;
   getPhase: (id: number, eventId: number) => Promise<void>;
   getPhaseGroup: (
@@ -442,6 +452,7 @@ export default function StartggView({
           key={event.id}
           event={event}
           initiallyOpen={tournament.events.length === 1}
+          vlerkMode={vlerkMode}
           getEvent={getEvent}
           getPhase={getPhase}
           getPhaseGroup={getPhaseGroup}

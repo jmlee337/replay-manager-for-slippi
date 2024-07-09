@@ -1593,6 +1593,7 @@ function Hello() {
           {mode === Mode.STARTGG && (
             <StartggView
               tournament={tournament}
+              vlerkMode={vlerkMode}
               getEvent={(id: number) => getEvent(id, true)}
               getPhase={(id: number, eventId: number) =>
                 getPhase(id, eventId, true)
