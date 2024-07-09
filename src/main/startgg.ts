@@ -1,4 +1,5 @@
 import {
+  AdminedTournament,
   Event,
   Participant,
   Phase,
@@ -43,6 +44,43 @@ async function wrappedFetch(
   }
 
   return response;
+}
+
+async function fetchGql(key: string, query: string, variables: any) {
+  const response = await wrappedFetch('https://api.start.gg/gql/alpha', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  const json = await response.json();
+  if (json.errors) {
+    throw new Error(json.errors[0].message);
+  }
+
+  return json.data;
+}
+
+const GET_TOURNAMENTS_QUERY = `
+  query TournamentsQuery {
+    currentUser {
+      tournaments(query: {perPage: 500, filter: {tournamentView: "admin"}}) {
+        nodes {
+          name
+          slug
+        }
+      }
+    }
+  }
+`;
+export async function getTournaments(key: string): Promise<AdminedTournament> {
+  const data = await fetchGql(key, GET_TOURNAMENTS_QUERY, {});
+  return data.currentUser.tournaments.nodes.map((tournament: any) => ({
+    slug: tournament.slug.slice(11),
+    name: tournament.name,
+  }));
 }
 
 export async function getTournament(
@@ -111,23 +149,6 @@ export async function getPhase(id: number): Promise<PhaseGroup[]> {
     .sort((phaseGroupA: PhaseGroup, phaseGroupB: PhaseGroup) =>
       phaseGroupA.name.localeCompare(phaseGroupB.name),
     );
-}
-
-async function fetchGql(key: string, query: string, variables: any) {
-  const response = await wrappedFetch('https://api.start.gg/gql/alpha', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ query, variables }),
-  });
-  const json = await response.json();
-  if (json.errors) {
-    throw new Error(json.errors[0].message);
-  }
-
-  return json.data;
 }
 
 const reportedSetIds = new Map<number, boolean>();

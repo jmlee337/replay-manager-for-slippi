@@ -30,6 +30,7 @@ import {
   startSet,
   reportSet,
   updateSet,
+  getTournaments,
 } from './startgg';
 import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
 import {
@@ -180,6 +181,15 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   let sggApiKey = store.has('sggApiKey')
     ? (store.get('sggApiKey') as string)
     : '';
+
+  ipcMain.removeHandler('getTournaments');
+  ipcMain.handle('getTournaments', async () => {
+    if (!sggApiKey) {
+      throw new Error('Please set start.gg API key');
+    }
+
+    return getTournaments(sggApiKey);
+  });
 
   ipcMain.removeHandler('getTournament');
   ipcMain.handle(

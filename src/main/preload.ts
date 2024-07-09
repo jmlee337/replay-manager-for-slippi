@@ -1,5 +1,6 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer } from 'electron';
 import {
+  AdminedTournament,
   ChallongeMatchItem,
   Context,
   CopySettings,
@@ -49,6 +50,8 @@ const electronHandler = {
   enforceReplays: (replays: Replay[]): Promise<EnforceResult[]> =>
     ipcRenderer.invoke('enforceReplays', replays),
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
+  getTournaments: (): Promise<AdminedTournament[]> =>
+    ipcRenderer.invoke('getTournaments'),
   getTournament: (slug: string): Promise<{ name: string; events: Event[] }> =>
     ipcRenderer.invoke('getTournament', slug),
   getEvent: (id: number): Promise<Phase[]> =>

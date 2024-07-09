@@ -97,6 +97,11 @@ export type Tournament = {
   events: Event[];
 };
 
+export type AdminedTournament = {
+  slug: string;
+  name: string;
+};
+
 export type ChallongeTournament = {
   name: string;
   slug: string;

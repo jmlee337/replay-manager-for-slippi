@@ -14,6 +14,8 @@ import {
   Divider,
   IconButton,
   InputBase,
+  ListItemButton,
+  ListItemText,
   Paper,
   Stack,
   TextField,
@@ -34,6 +36,7 @@ import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { IpcRendererEvent } from 'electron';
 import {
+  AdminedTournament,
   ChallongeMatchItem,
   ChallongeTournament,
   Context,
@@ -178,12 +181,14 @@ function Hello() {
     alsoCopy: false,
     alsoDelete: false,
   });
+  // admined tournaments
+  const [tournaments, setTournaments] = useState<AdminedTournament[]>([]);
   useEffect(() => {
     const inner = async () => {
+      const startggKey = await window.electron.getStartggKey();
       const appVersionPromise = window.electron.getVersion();
       const latestAppVersionPromise = window.electron.getLatestVersion();
       const modePromise = window.electron.getMode();
-      const startggKeyPromise = window.electron.getStartggKey();
       const challongeKeyPromise = window.electron.getChallongeKey();
       const autoDetectUsbPromise = window.electron.getAutoDetectUsb();
       const scrollToBottomPromise = window.electron.getScrollToBottom();
@@ -193,10 +198,13 @@ function Hello() {
       const folderNameFormatPromise = window.electron.getFolderNameFormat();
       const copySettingsPromise = window.electron.getCopySettings();
       const reportSettingsPromise = window.electron.getReportSettings();
+      const tournamentsPromise = startggKey
+        ? window.electron.getTournaments()
+        : Promise.resolve([]);
       setAppVersion(await appVersionPromise);
       setLatestAppVersion(await latestAppVersionPromise);
       setMode(await modePromise);
-      setStartggApiKey(await startggKeyPromise);
+      setStartggApiKey(startggKey);
       setChallongeApiKey(await challongeKeyPromise);
       setAutoDetectUsb(await autoDetectUsbPromise);
       setScrollToBottom(await scrollToBottomPromise);
@@ -206,6 +214,7 @@ function Hello() {
       setVlerkMode(await vlerkModePromise);
       setCopySettings(await copySettingsPromise);
       setReportSettings(await reportSettingsPromise);
+      setTournaments(await tournamentsPromise);
       setGotSettings(true);
     };
     inner();
@@ -878,9 +887,9 @@ function Hello() {
     event.preventDefault();
     event.stopPropagation();
     if (newSlug) {
-      setSlugDialogOpen(false);
       if (await getTournament(newSlug, true)) {
         setSlug(newSlug);
+        setSlugDialogOpen(false);
       }
     }
   };
@@ -1503,7 +1512,7 @@ function Hello() {
                   open={slugDialogOpen}
                   onClose={() => setSlugDialogOpen(false)}
                 >
-                  <DialogTitle>Set start.gg tournament slug</DialogTitle>
+                  <DialogTitle>Set start.gg tournament</DialogTitle>
                   <DialogContent>
                     <Form onSubmit={getTournamentOnSubmit}>
                       <TextField
@@ -1514,8 +1523,31 @@ function Hello() {
                         size="small"
                         variant="outlined"
                       />
-                      <Button type="submit">Get!</Button>
+                      <Button
+                        disabled={gettingTournament}
+                        endIcon={
+                          gettingTournament && <CircularProgress size="24px" />
+                        }
+                        type="submit"
+                      >
+                        Get!
+                      </Button>
                     </Form>
+                    {tournaments.map((adminedTournament) => (
+                      <ListItemButton
+                        key={adminedTournament.slug}
+                        onClick={async () => {
+                          if (
+                            await getTournament(adminedTournament.slug, true)
+                          ) {
+                            setSlug(adminedTournament.slug);
+                            setSlugDialogOpen(false);
+                          }
+                        }}
+                      >
+                        <ListItemText>{adminedTournament.name}</ListItemText>
+                      </ListItemButton>
+                    ))}
                   </DialogContent>
                 </Dialog>
               </Stack>
@@ -1889,6 +1921,7 @@ function Hello() {
         setFileNameFormat={setFileNameFormat}
         folderNameFormat={folderNameFormat}
         setFolderNameFormat={setFolderNameFormat}
+        setTournaments={setTournaments}
       />
     </>
   );

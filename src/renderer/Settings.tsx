@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import { ChangeEvent, useMemo, useState } from 'react';
 import LabeledCheckbox from './LabeledCheckbox';
-import { Mode } from '../common/types';
+import { AdminedTournament, Mode } from '../common/types';
 
 function LabeledRadioButton({ label, value }: { label: string; value: Mode }) {
   return (
@@ -50,12 +50,13 @@ export default function Settings({
   setScrollToBottom,
   useEnforcer,
   setUseEnforcer,
+  vlerkMode,
+  setVlerkMode,
   fileNameFormat,
   setFileNameFormat,
   folderNameFormat,
   setFolderNameFormat,
-  vlerkMode,
-  setVlerkMode,
+  setTournaments,
 }: {
   appVersion: string;
   latestAppVersion: string;
@@ -72,12 +73,13 @@ export default function Settings({
   setScrollToBottom: (scrollToBottom: boolean) => void;
   useEnforcer: boolean;
   setUseEnforcer: (useEnforcer: boolean) => void;
+  vlerkMode: boolean;
+  setVlerkMode: (vlerkMode: boolean) => void;
   fileNameFormat: string;
   setFileNameFormat: (fileNameFormat: string) => void;
   folderNameFormat: string;
   setFolderNameFormat: (folderNameFormat: string) => void;
-  vlerkMode: boolean;
-  setVlerkMode: (vlerkMode: boolean) => void;
+  setTournaments: (tournaments: AdminedTournament[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -140,12 +142,23 @@ export default function Settings({
         fullWidth
         open={open}
         onClose={async () => {
-          await Promise.all([
+          const promises = [
             window.electron.setChallongeKey(challongeApiKey),
             window.electron.setStartggKey(startggApiKey),
             window.electron.setFileNameFormat(fileNameFormat),
             window.electron.setFolderNameFormat(folderNameFormat),
-          ]);
+          ];
+          if (startggApiKey) {
+            promises.push(
+              // eslint-disable-next-line promise/always-return
+              window.electron.getTournaments().then((tournaments) => {
+                setTournaments(tournaments);
+              }),
+            );
+          } else {
+            setTournaments([]);
+          }
+          await Promise.all(promises);
           setOpen(false);
         }}
       >
