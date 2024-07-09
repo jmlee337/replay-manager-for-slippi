@@ -320,14 +320,14 @@ export default function SetControls({
         </DialogTitle>
         <DialogContent sx={{ width: '500px' }}>
           <SetView
-            entrant1Names={set.entrant1Participants.map(
-              (participant) => participant.displayName,
-            )}
+            entrant1Names={set.entrant1Participants.map((participant) => ({
+              name: participant.displayName,
+            }))}
             entrant1Score={entrant1Score.toString()}
             entrant1Win={set.entrant1Id === winnerId}
-            entrant2Names={set.entrant2Participants.map(
-              (participant) => participant.displayName,
-            )}
+            entrant2Names={set.entrant2Participants.map((participant) => ({
+              name: participant.displayName,
+            }))}
             entrant2Score={entrant2Score.toString()}
             fullRoundText={set.fullRoundText}
             state={set.state}

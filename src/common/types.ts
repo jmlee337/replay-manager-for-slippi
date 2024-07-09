@@ -221,3 +221,11 @@ export enum Mode {
   STARTGG = 'start.gg',
   CHALLONGE = 'challonge',
 }
+
+export type NameWithHighlight = {
+  highlight?: {
+    start: number;
+    end: number;
+  };
+  name: string;
+};

@@ -4,11 +4,14 @@ import {
   CircularProgress,
   Collapse,
   IconButton,
+  InputAdornment,
   ListItemButton,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
 import {
+  Clear,
   KeyboardArrowDown,
   KeyboardArrowRight,
   KeyboardArrowUp,
@@ -17,6 +20,7 @@ import {
 import { useState } from 'react';
 import {
   Event,
+  NameWithHighlight,
   Phase,
   PhaseGroup,
   Set,
@@ -35,8 +39,16 @@ const Name = styled.div`
   white-space: nowrap;
 `;
 
+type SetWithNames = {
+  set: Set;
+  entrant1Names: NameWithHighlight[];
+  entrant2Names: NameWithHighlight[];
+};
+
 function SetView({
   set,
+  entrant1Names,
+  entrant2Names,
   eventId,
   eventName,
   eventSlug,
@@ -48,6 +60,8 @@ function SetView({
   selectSet,
 }: {
   set: Set;
+  entrant1Names: NameWithHighlight[];
+  entrant2Names: NameWithHighlight[];
   eventId: number;
   eventName: string;
   eventSlug: string;
@@ -85,14 +99,10 @@ function SetView({
       }
     >
       <SetViewInner
-        entrant1Names={set.entrant1Participants.map(
-          (participant) => participant.displayName,
-        )}
+        entrant1Names={entrant1Names}
         entrant1Score={set.entrant1Score}
         entrant1Win={set.entrant1Id === set.winnerId}
-        entrant2Names={set.entrant2Participants.map(
-          (participant) => participant.displayName,
-        )}
+        entrant2Names={entrant2Names}
         entrant2Score={set.entrant2Score}
         fullRoundText={set.fullRoundText}
         state={set.state}
@@ -111,6 +121,7 @@ function PhaseGroupView({
   eventSlug,
   phaseId,
   phaseName,
+  searchSubstr,
   vlerkMode,
   getPhaseGroup,
   selectSet,
@@ -122,6 +133,7 @@ function PhaseGroupView({
   eventSlug: string;
   phaseId: number;
   phaseName: string;
+  searchSubstr: string;
   vlerkMode: boolean;
   getPhaseGroup: (
     id: number,
@@ -149,95 +161,169 @@ function PhaseGroupView({
     setGetting(false);
   };
 
-  return (
-    <>
-      <ListItemButton
-        dense
-        disableGutters
-        onClick={() => {
-          if (
-            !open &&
-            phaseGroup.sets.pendingSets.length === 0 &&
-            phaseGroup.sets.completedSets.length === 0
-          ) {
-            get();
+  const filterSets = (sets: Set[], substr: string): SetWithNames[] => {
+    const setsToShow: SetWithNames[] = [];
+    sets.forEach((set) => {
+      if (!substr) {
+        setsToShow.push({
+          set,
+          entrant1Names: set.entrant1Participants.map((participant) => ({
+            name: participant.displayName,
+          })),
+          entrant2Names: set.entrant2Participants.map((participant) => ({
+            name: participant.displayName,
+          })),
+        });
+      } else {
+        const entrant1Names: NameWithHighlight[] = [];
+        const entrant2Names: NameWithHighlight[] = [];
+        const includeStr = substr.toLowerCase();
+        let toShow = false;
+        set.entrant1Participants.forEach((participant) => {
+          const start = participant.displayName
+            .toLowerCase()
+            .indexOf(includeStr);
+          if (start < 0) {
+            entrant1Names.push({ name: participant.displayName });
+          } else {
+            toShow = true;
+            entrant1Names.push({
+              highlight: { start, end: start + includeStr.length },
+              name: participant.displayName,
+            });
           }
-          setOpen(!open);
-        }}
-        sx={{ typography: 'caption' }}
-      >
-        {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
-        <Name>{phaseGroup.name}</Name>
-        {'\u00A0'}({phaseGroup.id})
-        <Tooltip arrow title="Refresh phase group">
-          <IconButton
-            disabled={getting}
-            onClick={(event) => {
-              event.stopPropagation();
+        });
+        set.entrant2Participants.forEach((participant) => {
+          const start = participant.displayName
+            .toLowerCase()
+            .indexOf(includeStr);
+          if (start < 0) {
+            entrant2Names.push({ name: participant.displayName });
+          } else {
+            toShow = true;
+            entrant2Names.push({
+              highlight: { start, end: start + includeStr.length },
+              name: participant.displayName,
+            });
+          }
+        });
+        if (toShow) {
+          setsToShow.push({ set, entrant1Names, entrant2Names });
+        }
+      }
+    });
+    return setsToShow;
+  };
+  const pendingSetsToShow = filterSets(
+    phaseGroup.sets.pendingSets,
+    searchSubstr,
+  );
+  const completedSetsToShow = filterSets(
+    phaseGroup.sets.completedSets,
+    searchSubstr,
+  );
+
+  return (
+    (!searchSubstr ||
+      pendingSetsToShow.length > 0 ||
+      completedSetsToShow.length > 0) && (
+      <>
+        <ListItemButton
+          dense
+          disableGutters
+          onClick={() => {
+            if (
+              !open &&
+              phaseGroup.sets.pendingSets.length === 0 &&
+              phaseGroup.sets.completedSets.length === 0
+            ) {
               get();
-            }}
-            size="small"
-          >
-            {getting ? <CircularProgress size="24px" /> : <Refresh />}
-          </IconButton>
-        </Tooltip>
-      </ListItemButton>
-      <Collapse in={open}>
-        <Block>
-          {phaseGroup.sets.pendingSets.map((set) => (
-            <SetView
-              key={set.id}
-              set={set}
-              eventId={eventId}
-              eventName={eventName}
-              eventSlug={eventSlug}
-              phaseId={phaseId}
-              phaseName={phaseName}
-              phaseGroupId={phaseGroup.id}
-              phaseGroupName={phaseGroup.name}
-              vlerkMode={vlerkMode}
-              selectSet={selectSet}
-            />
-          ))}
-          {phaseGroup.sets.completedSets.length > 0 && (
-            <>
-              <ListItemButton
-                dense
-                onClick={() => setCompletedOpen(!completedOpen)}
-              >
-                <Typography
-                  alignItems="center"
-                  display="flex"
-                  justifyContent="right"
-                  variant="subtitle2"
-                  width="100%"
+            }
+            setOpen(!open);
+          }}
+          sx={{ typography: 'caption' }}
+        >
+          {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
+          <Name>{phaseGroup.name}</Name>
+          {'\u00A0'}({phaseGroup.id})
+          <Tooltip arrow title="Refresh phase group">
+            <IconButton
+              disabled={getting}
+              onClick={(event) => {
+                event.stopPropagation();
+                get();
+              }}
+              size="small"
+            >
+              {getting ? <CircularProgress size="24px" /> : <Refresh />}
+            </IconButton>
+          </Tooltip>
+        </ListItemButton>
+        <Collapse in={open}>
+          <Block>
+            {pendingSetsToShow.map((setWithNames) => (
+              <SetView
+                key={setWithNames.set.id}
+                set={setWithNames.set}
+                entrant1Names={setWithNames.entrant1Names}
+                entrant2Names={setWithNames.entrant2Names}
+                eventId={eventId}
+                eventName={eventName}
+                eventSlug={eventSlug}
+                phaseId={phaseId}
+                phaseName={phaseName}
+                phaseGroupId={phaseGroup.id}
+                phaseGroupName={phaseGroup.name}
+                vlerkMode={vlerkMode}
+                selectSet={selectSet}
+              />
+            ))}
+            {completedSetsToShow.length > 0 && (
+              <>
+                <ListItemButton
+                  dense
+                  onClick={() => setCompletedOpen(!completedOpen)}
                 >
-                  completed
-                  {completedOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-                </Typography>
-              </ListItemButton>
-              <Collapse in={completedOpen}>
-                {phaseGroup.sets.completedSets.map((set) => (
-                  <SetView
-                    key={set.id}
-                    set={set}
-                    eventId={eventId}
-                    eventName={eventName}
-                    eventSlug={eventSlug}
-                    phaseId={phaseId}
-                    phaseName={phaseName}
-                    phaseGroupId={phaseGroup.id}
-                    phaseGroupName={phaseGroup.name}
-                    vlerkMode={vlerkMode}
-                    selectSet={selectSet}
-                  />
-                ))}
-              </Collapse>
-            </>
-          )}
-        </Block>
-      </Collapse>
-    </>
+                  <Typography
+                    alignItems="center"
+                    display="flex"
+                    justifyContent="right"
+                    variant="subtitle2"
+                    width="100%"
+                  >
+                    completed
+                    {completedOpen ? (
+                      <KeyboardArrowUp />
+                    ) : (
+                      <KeyboardArrowDown />
+                    )}
+                  </Typography>
+                </ListItemButton>
+                <Collapse in={completedOpen}>
+                  {completedSetsToShow.map((setWithNames) => (
+                    <SetView
+                      key={setWithNames.set.id}
+                      set={setWithNames.set}
+                      entrant1Names={setWithNames.entrant1Names}
+                      entrant2Names={setWithNames.entrant2Names}
+                      eventId={eventId}
+                      eventName={eventName}
+                      eventSlug={eventSlug}
+                      phaseId={phaseId}
+                      phaseName={phaseName}
+                      phaseGroupId={phaseGroup.id}
+                      phaseGroupName={phaseGroup.name}
+                      vlerkMode={vlerkMode}
+                      selectSet={selectSet}
+                    />
+                  ))}
+                </Collapse>
+              </>
+            )}
+          </Block>
+        </Collapse>
+      </>
+    )
   );
 }
 
@@ -247,6 +333,7 @@ function PhaseView({
   eventId,
   eventName,
   eventSlug,
+  searchSubstr,
   vlerkMode,
   getPhase,
   getPhaseGroup,
@@ -257,6 +344,7 @@ function PhaseView({
   eventId: number;
   eventName: string;
   eventSlug: string;
+  searchSubstr: string;
   vlerkMode: boolean;
   getPhase: (id: number, eventId: number) => Promise<void>;
   getPhaseGroup: (
@@ -323,6 +411,7 @@ function PhaseView({
               eventSlug={eventSlug}
               phaseId={phase.id}
               phaseName={phase.name}
+              searchSubstr={searchSubstr}
               vlerkMode={vlerkMode}
               getPhaseGroup={getPhaseGroup}
               selectSet={selectSet}
@@ -337,6 +426,7 @@ function PhaseView({
 function EventView({
   event,
   initiallyOpen,
+  searchSubstr,
   vlerkMode,
   getEvent,
   getPhase,
@@ -345,6 +435,7 @@ function EventView({
 }: {
   event: Event;
   initiallyOpen: boolean;
+  searchSubstr: string;
   vlerkMode: boolean;
   getEvent: (id: number) => Promise<void>;
   getPhase: (id: number, eventId: number) => Promise<void>;
@@ -410,6 +501,7 @@ function EventView({
               eventId={event.id}
               eventName={event.name}
               eventSlug={event.slug}
+              searchSubstr={searchSubstr}
               vlerkMode={vlerkMode}
               getPhase={getPhase}
               getPhaseGroup={getPhaseGroup}
@@ -450,13 +542,39 @@ export default function StartggView({
     eventSlug: string,
   ) => void;
 }) {
+  const [searchSubstr, setSearchSubstr] = useState('');
   return (
     <Box>
+      {vlerkMode && (
+        <Box style={{ padding: '8px 0' }}>
+          <TextField
+            fullWidth
+            label="Search"
+            onChange={(event) => {
+              setSearchSubstr(event.target.value);
+            }}
+            size="small"
+            value={searchSubstr}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Tooltip title="Clear search">
+                    <IconButton onClick={() => setSearchSubstr('')}>
+                      <Clear />
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Box>
+      )}
       {tournament.events.map((event) => (
         <EventView
           key={event.id}
           event={event}
           initiallyOpen={tournament.events.length === 1}
+          searchSubstr={searchSubstr}
           vlerkMode={vlerkMode}
           getEvent={getEvent}
           getPhase={getPhase}

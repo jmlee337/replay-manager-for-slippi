@@ -1,7 +1,9 @@
 import styled from '@emotion/styled';
 import { Backup, CheckBox, HourglassTop } from '@mui/icons-material';
 import { Box, Stack, Tooltip } from '@mui/material';
+import { NameWithHighlight } from '../common/types';
 
+const HIGHLIGHT_COLOR = '#ffee58';
 const EntrantNames = styled(Stack)`
   flex-grow: 1;
   min-width: 0;
@@ -25,6 +27,25 @@ const Name = styled.div`
   white-space: nowrap;
 `;
 
+function EntrantName({ entrantName }: { entrantName: NameWithHighlight }) {
+  if (!entrantName.highlight) {
+    return <Name>{entrantName.name}</Name>;
+  }
+
+  return (
+    <Name>
+      <span>{entrantName.name.substring(0, entrantName.highlight.start)}</span>
+      <span style={{ backgroundColor: HIGHLIGHT_COLOR }}>
+        {entrantName.name.substring(
+          entrantName.highlight.start,
+          entrantName.highlight.end,
+        )}
+      </span>
+      <span>{entrantName.name.substring(entrantName.highlight.end)}</span>
+    </Name>
+  );
+}
+
 export default function SetView({
   entrant1Names,
   entrant1Score,
@@ -36,10 +57,10 @@ export default function SetView({
   showScores,
   wasReported,
 }: {
-  entrant1Names: string[];
+  entrant1Names: NameWithHighlight[];
   entrant1Score: string | null;
   entrant1Win: boolean;
-  entrant2Names: string[];
+  entrant2Names: NameWithHighlight[];
   entrant2Score: string | null;
   fullRoundText: string;
   state: number;
@@ -80,15 +101,19 @@ export default function SetView({
           <EntrantSection borderRight={1} direction="row-reverse">
             <EntrantScore textAlign="right">{leftScore}</EntrantScore>
             <EntrantNames textAlign="right">
-              <Name>{entrant1Names[0]}</Name>
-              {entrant1Names.length > 1 && <Name>{entrant1Names[1]}</Name>}
+              <EntrantName entrantName={entrant1Names[0]} />
+              {entrant1Names.length > 1 && (
+                <EntrantName entrantName={entrant1Names[1]} />
+              )}
             </EntrantNames>
           </EntrantSection>
           <EntrantSection borderLeft={1} direction="row">
             <EntrantScore>{rightScore}</EntrantScore>
             <EntrantNames>
-              <Name>{entrant2Names[0]}</Name>
-              {entrant2Names.length > 1 && <Name>{entrant2Names[1]}</Name>}
+              <EntrantName entrantName={entrant2Names[0]} />
+              {entrant2Names.length > 1 && (
+                <EntrantName entrantName={entrant2Names[1]} />
+              )}
             </EntrantNames>
           </EntrantSection>
         </Stack>

@@ -33,14 +33,14 @@ function SetView({
       }}
     >
       <SetViewInner
-        entrant1Names={set.entrant1Participants.map(
-          (participant) => participant.displayName,
-        )}
+        entrant1Names={set.entrant1Participants.map((participant) => ({
+          name: participant.displayName,
+        }))}
         entrant1Score={set.entrant1Score}
         entrant1Win={set.entrant1Id === set.winnerId}
-        entrant2Names={set.entrant2Participants.map(
-          (participant) => participant.displayName,
-        )}
+        entrant2Names={set.entrant2Participants.map((participant) => ({
+          name: participant.displayName,
+        }))}
         entrant2Score={set.entrant2Score}
         fullRoundText={set.fullRoundText}
         state={set.state}
