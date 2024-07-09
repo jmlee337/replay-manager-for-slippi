@@ -147,6 +147,7 @@ export default function SetControls({
   selectedReplays,
   set,
   useEnforcer,
+  vlerkMode,
 }: {
   copyReplays: (set?: Set) => Promise<void>;
   deleteReplays: () => Promise<void>;
@@ -166,6 +167,7 @@ export default function SetControls({
   selectedReplays: Replay[];
   set: Set;
   useEnforcer: boolean;
+  vlerkMode: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -330,6 +332,7 @@ export default function SetControls({
             fullRoundText={set.fullRoundText}
             state={set.state}
             showScores
+            wasReported={vlerkMode && set.wasReported}
           />
           <Divider sx={{ marginTop: '8px' }} />
           <Stack flexGrow={1}>

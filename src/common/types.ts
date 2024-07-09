@@ -63,6 +63,7 @@ export type Set = {
   entrant2Score: string | null;
   twitchStream: string | null;
   ordinal: number | null;
+  wasReported: boolean;
 };
 
 export type Sets = {

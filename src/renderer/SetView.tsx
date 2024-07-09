@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import { Backup, HourglassTop } from '@mui/icons-material';
+import { Backup, CheckBox, HourglassTop } from '@mui/icons-material';
 import { Box, Stack, Tooltip } from '@mui/material';
 
 const EntrantNames = styled(Stack)`
@@ -34,6 +34,7 @@ export default function SetView({
   fullRoundText,
   state,
   showScores,
+  wasReported,
 }: {
   entrant1Names: string[];
   entrant1Score: string | null;
@@ -43,6 +44,7 @@ export default function SetView({
   fullRoundText: string;
   state: number;
   showScores: boolean;
+  wasReported: boolean;
 }) {
   let leftScore = '\u00A0';
   let rightScore = '\u00A0';
@@ -61,7 +63,15 @@ export default function SetView({
 
   return (
     <Stack direction="row" width="100%">
-      <Box width="20px" />
+      {wasReported ? (
+        <Stack alignItems="center" direction="row" width="20px">
+          <Tooltip title="Reported">
+            <CheckBox />
+          </Tooltip>
+        </Stack>
+      ) : (
+        <Box width="20px" />
+      )}
       <Stack flexGrow={1}>
         <Box sx={{ typography: 'caption' }} textAlign="center">
           {fullRoundText}

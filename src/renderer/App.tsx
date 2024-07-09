@@ -131,6 +131,7 @@ const EMPTY_SET: Set = {
   entrant2Score: null,
   twitchStream: null,
   ordinal: null,
+  wasReported: false,
 };
 
 const EMPTY_SELECTED_SET_CHAIN = {
@@ -1818,6 +1819,7 @@ function Hello() {
                 selectedReplays={selectedReplays}
                 set={selectedSet}
                 useEnforcer={useEnforcer}
+                vlerkMode={vlerkMode}
               />
             </Stack>
           </Stack>

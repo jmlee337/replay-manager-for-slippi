@@ -130,6 +130,7 @@ async function fetchGql(key: string, query: string, variables: any) {
   return json.data;
 }
 
+const reportedSetIds = new Map<number, boolean>();
 type ApiParticipant = {
   gamerTag: string;
   prefix: string | null;
@@ -139,13 +140,13 @@ type ApiParticipant = {
     } | null;
   };
 };
-const apiParticipantToParticipant = (
-  participant: ApiParticipant,
-): Participant => ({
-  displayName: participant.gamerTag,
-  pronouns: participant.player.user?.genderPronoun || '',
-  prefix: participant.prefix || '',
-});
+function apiParticipantToParticipant(participant: ApiParticipant): Participant {
+  return {
+    displayName: participant.gamerTag,
+    pronouns: participant.player.user?.genderPronoun || '',
+    prefix: participant.prefix || '',
+  };
+}
 function apiSetToSet(set: any): Set {
   const slot1 = set.slots[0];
   const slot2 = set.slots[1];
@@ -179,6 +180,7 @@ function apiSetToSet(set: any): Set {
         ? set.stream.streamName
         : null,
     ordinal: null,
+    wasReported: reportedSetIds.has(set.id),
   };
 }
 
@@ -353,6 +355,7 @@ const REPORT_BRACKET_SET_MUTATION = `
 `;
 export async function reportSet(key: string, set: StartggSet): Promise<Set[]> {
   const data = await fetchGql(key, REPORT_BRACKET_SET_MUTATION, set);
+  reportedSetIds.set(set.setId, true);
   return data.reportBracketSet
     .filter(
       (bracketSet: any) =>
@@ -399,5 +402,6 @@ const UPDATE_BRACKET_SET_MUTATION = `
 `;
 export async function updateSet(key: string, set: StartggSet): Promise<Set> {
   const data = await fetchGql(key, UPDATE_BRACKET_SET_MUTATION, set);
+  reportedSetIds.set(set.setId, true);
   return apiSetToSet(data.updateBracketSet);
 }

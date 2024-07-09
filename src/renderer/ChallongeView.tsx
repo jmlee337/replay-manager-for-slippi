@@ -45,6 +45,7 @@ function SetView({
         fullRoundText={set.fullRoundText}
         state={set.state}
         showScores={set.state === State.COMPLETED}
+        wasReported={false}
       />
     </ListItemButton>
   );

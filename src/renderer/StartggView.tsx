@@ -44,6 +44,7 @@ function SetView({
   phaseName,
   phaseGroupId,
   phaseGroupName,
+  vlerkMode,
   selectSet,
 }: {
   set: Set;
@@ -54,6 +55,7 @@ function SetView({
   phaseName: string;
   phaseGroupId: number;
   phaseGroupName: string;
+  vlerkMode: boolean;
   selectSet: (
     set: Set,
     phaseGroupId: number,
@@ -95,6 +97,7 @@ function SetView({
         fullRoundText={set.fullRoundText}
         state={set.state}
         showScores={set.state === State.COMPLETED}
+        wasReported={vlerkMode && set.wasReported}
       />
     </ListItemButton>
   );
@@ -103,23 +106,23 @@ function SetView({
 function PhaseGroupView({
   phaseGroup,
   initiallyOpen,
-  completedInitiallyOpen,
   eventId,
   eventName,
   eventSlug,
   phaseId,
   phaseName,
+  vlerkMode,
   getPhaseGroup,
   selectSet,
 }: {
   phaseGroup: PhaseGroup;
   initiallyOpen: boolean;
-  completedInitiallyOpen: boolean;
   eventId: number;
   eventName: string;
   eventSlug: string;
   phaseId: number;
   phaseName: string;
+  vlerkMode: boolean;
   getPhaseGroup: (
     id: number,
     phaseId: number,
@@ -137,7 +140,7 @@ function PhaseGroupView({
   ) => void;
 }) {
   const [getting, setGetting] = useState(false);
-  const [completedOpen, setCompletedOpen] = useState(completedInitiallyOpen);
+  const [completedOpen, setCompletedOpen] = useState(vlerkMode);
   const [open, setOpen] = useState(initiallyOpen);
 
   const get = async () => {
@@ -192,6 +195,7 @@ function PhaseGroupView({
               phaseName={phaseName}
               phaseGroupId={phaseGroup.id}
               phaseGroupName={phaseGroup.name}
+              vlerkMode={vlerkMode}
               selectSet={selectSet}
             />
           ))}
@@ -224,6 +228,7 @@ function PhaseGroupView({
                     phaseName={phaseName}
                     phaseGroupId={phaseGroup.id}
                     phaseGroupName={phaseGroup.name}
+                    vlerkMode={vlerkMode}
                     selectSet={selectSet}
                   />
                 ))}
@@ -313,12 +318,12 @@ function PhaseView({
               key={phaseGroup.id}
               phaseGroup={phaseGroup}
               initiallyOpen={phase.phaseGroups.length === 1}
-              completedInitiallyOpen={vlerkMode}
               eventId={eventId}
               eventName={eventName}
               eventSlug={eventSlug}
               phaseId={phase.id}
               phaseName={phase.name}
+              vlerkMode={vlerkMode}
               getPhaseGroup={getPhaseGroup}
               selectSet={selectSet}
             />
