@@ -11,7 +11,7 @@ import {
   Stack,
   Tooltip,
 } from '@mui/material';
-import { Backup, HourglassTop, SaveAs } from '@mui/icons-material';
+import { HourglassTop, SaveAs } from '@mui/icons-material';
 import styled from '@emotion/styled';
 import {
   ChallongeMatchItem,
@@ -139,14 +139,6 @@ export default function ManualReport({
                 &nbsp;
                 <Tooltip title="Started">
                   <HourglassTop fontSize="small" />
-                </Tooltip>
-              </>
-            )}
-            {selectedSet.state === State.COMPLETED && (
-              <>
-                &nbsp;
-                <Tooltip title="Finished">
-                  <Backup fontSize="small" />
                 </Tooltip>
               </>
             )}

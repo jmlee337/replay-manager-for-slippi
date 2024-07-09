@@ -95,7 +95,7 @@ export default function SetView({
           </Tooltip>
         )}
         {state === 3 && (
-          <Tooltip title="Finished">
+          <Tooltip title="Completed">
             <Backup fontSize="small" />
           </Tooltip>
         )}
