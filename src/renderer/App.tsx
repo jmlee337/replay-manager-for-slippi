@@ -721,7 +721,12 @@ function Hello() {
     );
   };
 
-  const getPhase = async (id: number, eventId: number, isRoot: boolean) => {
+  const getPhase = async (
+    id: number,
+    eventId: number,
+    isRoot: boolean,
+    fullyRecursive: boolean = false,
+  ) => {
     let phaseGroups;
     try {
       phaseGroups = await window.electron.getPhase(id);
@@ -752,7 +757,13 @@ function Hello() {
           phaseGroup.sets.completedSets.length > 0 ||
           phaseGroup.sets.pendingSets.length > 0,
       );
-      if (phaseGroupsWithChildren.length > 0) {
+      if (fullyRecursive) {
+        await Promise.all(
+          phaseGroups.map(async (phaseGroup) =>
+            getPhaseGroup(phaseGroup.id, id, eventId, false),
+          ),
+        );
+      } else if (phaseGroupsWithChildren.length > 0) {
         await Promise.all(
           phaseGroupsWithChildren.map(async (phaseGroup) =>
             getPhaseGroup(phaseGroup.id, id, eventId, false),
@@ -767,7 +778,11 @@ function Hello() {
     }
   };
 
-  const getEvent = async (id: number, isRoot: boolean) => {
+  const getEvent = async (
+    id: number,
+    isRoot: boolean,
+    fullyRecursive: boolean = false,
+  ) => {
     let phases;
     try {
       phases = await window.electron.getEvent(id);
@@ -789,7 +804,11 @@ function Hello() {
       const phasesWithChildren = phases.filter(
         (phase) => phase.phaseGroups.length > 0,
       );
-      if (phasesWithChildren.length > 0) {
+      if (fullyRecursive) {
+        await Promise.all(
+          phases.map(async (phase) => getPhase(phase.id, id, false, true)),
+        );
+      } else if (phasesWithChildren.length > 0) {
         await Promise.all(
           phasesWithChildren.map(async (phase) =>
             getPhase(phase.id, id, false),
@@ -804,7 +823,7 @@ function Hello() {
     }
   };
 
-  const getTournament = async (maybeSlug: string) => {
+  const getTournament = async (maybeSlug: string, initial: boolean = false) => {
     if (!maybeSlug) {
       return false;
     }
@@ -834,7 +853,13 @@ function Hello() {
     const eventsWithChildren = newTournament.events.filter(
       (event) => event.phases.length > 0,
     );
-    if (eventsWithChildren.length > 0) {
+    if (initial && vlerkMode) {
+      await Promise.all(
+        newTournament.events.map(async (event) =>
+          getEvent(event.id, false, true),
+        ),
+      );
+    } else if (eventsWithChildren.length > 0) {
       await Promise.all(
         eventsWithChildren.map(async (event) => getEvent(event.id, false)),
       );
@@ -854,7 +879,7 @@ function Hello() {
     event.stopPropagation();
     if (newSlug) {
       setSlugDialogOpen(false);
-      if (await getTournament(newSlug)) {
+      if (await getTournament(newSlug, true)) {
         setSlug(newSlug);
       }
     }
