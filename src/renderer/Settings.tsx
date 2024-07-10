@@ -300,7 +300,20 @@ export default function Settings({
             />
             <LabeledCheckbox
               checked={vlerkMode}
-              label="Use 'Vlerk mode' features for reporting stage/char data post tournament"
+              label={
+                <span>
+                  Use &quot;Vlerk mode&quot; for post tournament supplemental
+                  reporting,{' '}
+                  <a
+                    href={`https://github.com/jmlee337/replay-manager-for-slippi/blob/${appVersion}/src/docs/vlerk.md`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    see more details
+                  </a>
+                  .
+                </span>
+              }
               labelPlacement="end"
               set={async (checked) => {
                 await window.electron.setVlerkMode(checked);

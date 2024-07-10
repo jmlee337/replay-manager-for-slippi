@@ -1,5 +1,5 @@
 import { Checkbox, FormControlLabel } from '@mui/material';
-import { ChangeEvent } from 'react';
+import { ChangeEvent, ReactNode } from 'react';
 
 export default function LabeledCheckbox({
   checked,
@@ -10,7 +10,7 @@ export default function LabeledCheckbox({
 }: {
   checked: boolean;
   disabled?: boolean;
-  label: string;
+  label: ReactNode;
   labelPlacement?: 'end' | 'start' | 'top' | 'bottom';
   set: (checked: boolean) => void;
 }) {
