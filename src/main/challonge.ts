@@ -1,4 +1,10 @@
-import { ChallongeMatchItem, Set, Sets, State } from '../common/types';
+import {
+  AdminedTournament,
+  ChallongeMatchItem,
+  Set,
+  Sets,
+  State,
+} from '../common/types';
 
 async function wrappedFetch(url: string, init: RequestInit) {
   const response = await fetch(url, init);
@@ -38,6 +44,19 @@ async function put(url: string, data: any | null, key: string) {
     init.body = JSON.stringify({ data });
   }
   return wrappedFetch(url, init);
+}
+
+export async function getChallongeTournaments(
+  key: string,
+): Promise<AdminedTournament[]> {
+  const json = await get(
+    'https://api.challonge.com/v2.1/tournaments.json?page=1&per_page=1000',
+    key,
+  );
+  return json.data.map((tournament: any) => ({
+    slug: tournament.attributes.url,
+    name: tournament.attributes.name,
+  }));
 }
 
 export async function getChallongeTournamentName(

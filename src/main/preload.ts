@@ -50,8 +50,6 @@ const electronHandler = {
   enforceReplays: (replays: Replay[]): Promise<EnforceResult[]> =>
     ipcRenderer.invoke('enforceReplays', replays),
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
-  getTournaments: (): Promise<AdminedTournament[]> =>
-    ipcRenderer.invoke('getTournaments'),
   getTournament: (slug: string): Promise<{ name: string; events: Event[] }> =>
     ipcRenderer.invoke('getTournament', slug),
   getEvent: (id: number): Promise<Phase[]> =>
@@ -88,6 +86,8 @@ const electronHandler = {
     id: number,
     items: ChallongeMatchItem[],
   ): Promise<Set> => ipcRenderer.invoke('reportChallongeSet', slug, id, items),
+  getTournaments: (): Promise<AdminedTournament[]> =>
+    ipcRenderer.invoke('getTournaments'),
   getAutoDetectUsb: (): Promise<boolean> =>
     ipcRenderer.invoke('getAutoDetectUsb'),
   setAutoDetectUsb: (autoDetectUsb: boolean): Promise<void> =>

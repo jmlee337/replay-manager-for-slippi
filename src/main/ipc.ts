@@ -36,6 +36,7 @@ import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
 import {
   getChallongeSets,
   getChallongeTournamentName,
+  getChallongeTournaments,
   reportChallongeSet,
   startChallongeSet,
 } from './challonge';
@@ -96,6 +97,16 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   detectUsb.startListening();
   app.on('will-quit', () => {
     detectUsb.stopListening();
+  });
+
+  let mode = store.has('mode') ? (store.get('mode') as Mode) : Mode.STARTGG;
+  ipcMain.removeHandler('getMode');
+  ipcMain.handle('getMode', () => mode);
+
+  ipcMain.removeHandler('setMode');
+  ipcMain.handle('setMode', (event: IpcMainInvokeEvent, newMode: Mode) => {
+    store.set('mode', newMode);
+    mode = newMode;
   });
 
   ipcMain.removeHandler('chooseReplaysDir');
@@ -182,15 +193,6 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     ? (store.get('sggApiKey') as string)
     : '';
 
-  ipcMain.removeHandler('getTournaments');
-  ipcMain.handle('getTournaments', async () => {
-    if (!sggApiKey) {
-      throw new Error('Please set start.gg API key');
-    }
-
-    return getTournaments(sggApiKey);
-  });
-
   ipcMain.removeHandler('getTournament');
   ipcMain.handle(
     'getTournament',
@@ -259,21 +261,6 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       return updateSet(sggApiKey, set);
     },
   );
-
-  ipcMain.removeHandler('getMode');
-  ipcMain.handle('getMode', () => {
-    if (store.has('mode')) {
-      return store.get('mode') as Mode;
-    }
-
-    store.set('mode', Mode.STARTGG);
-    return Mode.STARTGG;
-  });
-
-  ipcMain.removeHandler('setMode');
-  ipcMain.handle('setMode', (event: IpcMainInvokeEvent, newMode: Mode) => {
-    store.set('mode', newMode);
-  });
 
   ipcMain.removeHandler('getStartggKey');
   ipcMain.handle('getStartggKey', () => sggApiKey);
@@ -353,6 +340,17 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       return reportChallongeSet(slug, id, items, challongeApiKey);
     },
   );
+
+  ipcMain.removeHandler('getTournaments');
+  ipcMain.handle('getTournaments', async () => {
+    if (mode === Mode.STARTGG) {
+      return sggApiKey ? getTournaments(sggApiKey) : [];
+    }
+    if (mode === Mode.CHALLONGE) {
+      return challongeApiKey ? getChallongeTournaments(challongeApiKey) : [];
+    }
+    return [];
+  });
 
   ipcMain.removeHandler('getAutoDetectUsb');
   ipcMain.handle('getAutoDetectUsb', () => autoDetectUsb);

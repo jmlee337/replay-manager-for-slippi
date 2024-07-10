@@ -185,10 +185,10 @@ function Hello() {
   const [tournaments, setTournaments] = useState<AdminedTournament[]>([]);
   useEffect(() => {
     const inner = async () => {
-      const startggKey = await window.electron.getStartggKey();
       const appVersionPromise = window.electron.getVersion();
       const latestAppVersionPromise = window.electron.getLatestVersion();
       const modePromise = window.electron.getMode();
+      const startggKeyPromise = window.electron.getStartggKey();
       const challongeKeyPromise = window.electron.getChallongeKey();
       const autoDetectUsbPromise = window.electron.getAutoDetectUsb();
       const scrollToBottomPromise = window.electron.getScrollToBottom();
@@ -198,13 +198,11 @@ function Hello() {
       const folderNameFormatPromise = window.electron.getFolderNameFormat();
       const copySettingsPromise = window.electron.getCopySettings();
       const reportSettingsPromise = window.electron.getReportSettings();
-      const tournamentsPromise = startggKey
-        ? window.electron.getTournaments()
-        : Promise.resolve([]);
+      const tournamentsPromise = window.electron.getTournaments();
       setAppVersion(await appVersionPromise);
       setLatestAppVersion(await latestAppVersionPromise);
       setMode(await modePromise);
-      setStartggApiKey(startggKey);
+      setStartggApiKey(await startggKeyPromise);
       setChallongeApiKey(await challongeKeyPromise);
       setAutoDetectUsb(await autoDetectUsbPromise);
       setScrollToBottom(await scrollToBottomPromise);
@@ -1592,6 +1590,17 @@ function Hello() {
                         <Button type="submit">Add!</Button>
                       )}
                     </Form>
+                    {tournaments.map((adminedTournament) => (
+                      <ListItemButton
+                        key={adminedTournament.slug}
+                        onClick={async () => {
+                          await getChallongeTournament(adminedTournament.slug);
+                          setSlugDialogOpen(false);
+                        }}
+                      >
+                        <ListItemText>{adminedTournament.name}</ListItemText>
+                      </ListItemButton>
+                    ))}
                   </DialogContent>
                 </Dialog>
               </Stack>
