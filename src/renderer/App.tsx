@@ -186,7 +186,6 @@ function Hello() {
   useEffect(() => {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
-      const latestAppVersionPromise = window.electron.getLatestVersion();
       const modePromise = window.electron.getMode();
       const startggKeyPromise = window.electron.getStartggKey();
       const challongeKeyPromise = window.electron.getChallongeKey();
@@ -198,9 +197,12 @@ function Hello() {
       const folderNameFormatPromise = window.electron.getFolderNameFormat();
       const copySettingsPromise = window.electron.getCopySettings();
       const reportSettingsPromise = window.electron.getReportSettings();
+
+      // req network
+      const latestAppVersionPromise = window.electron.getLatestVersion();
       const tournamentsPromise = window.electron.getTournaments();
+
       setAppVersion(await appVersionPromise);
-      setLatestAppVersion(await latestAppVersionPromise);
       setMode(await modePromise);
       setStartggApiKey(await startggKeyPromise);
       setChallongeApiKey(await challongeKeyPromise);
@@ -212,7 +214,24 @@ function Hello() {
       setVlerkMode(await vlerkModePromise);
       setCopySettings(await copySettingsPromise);
       setReportSettings(await reportSettingsPromise);
-      setTournaments(await tournamentsPromise);
+
+      // req network
+      const errorMessages: string[] = [];
+      try {
+        setLatestAppVersion(await latestAppVersionPromise);
+      } catch {
+        errorMessages.push('Unable to check for updates.');
+      }
+      try {
+        setTournaments(await tournamentsPromise);
+      } catch {
+        errorMessages.push('Unable to fetch admined tournaments.');
+      }
+      if (errorMessages.length > 0) {
+        errorMessages.push('Are you connected to the internet?');
+        showErrorDialog(errorMessages);
+      }
+
       setGotSettings(true);
     };
     inner();
