@@ -75,7 +75,9 @@ const GET_TOURNAMENTS_QUERY = `
     }
   }
 `;
-export async function getTournaments(key: string): Promise<AdminedTournament> {
+export async function getTournaments(
+  key: string,
+): Promise<AdminedTournament[]> {
   const data = await fetchGql(key, GET_TOURNAMENTS_QUERY, {});
   return data.currentUser.tournaments.nodes.map((tournament: any) => ({
     slug: tournament.slug.slice(11),
