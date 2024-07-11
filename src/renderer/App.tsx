@@ -1570,7 +1570,7 @@ function Hello() {
                   open={slugDialogOpen}
                   onClose={() => setSlugDialogOpen(false)}
                 >
-                  <DialogTitle>Set Challonge tournament slug</DialogTitle>
+                  <DialogTitle>Add Challonge tournament</DialogTitle>
                   <DialogContent>
                     <Form onSubmit={getChallongeTournamentOnSubmit}>
                       <TextField

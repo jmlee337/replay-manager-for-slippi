@@ -84,6 +84,7 @@ export default function Settings({
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
+  const [shouldGetTournaments, setShouldGetTournaments] = useState(false);
 
   const needUpdate = useMemo(() => {
     if (!appVersion || !latestAppVersion) {
@@ -127,6 +128,11 @@ export default function Settings({
     setHasAutoOpened(true);
   }
 
+  const getTournaments = async () => {
+    setTournaments(await window.electron.getTournaments());
+    setShouldGetTournaments(false);
+  };
+
   return (
     <>
       <Tooltip title="Settings">
@@ -148,15 +154,16 @@ export default function Settings({
             window.electron.setFileNameFormat(fileNameFormat),
             window.electron.setFolderNameFormat(folderNameFormat),
           ];
-          if (startggApiKey) {
-            promises.push(
-              // eslint-disable-next-line promise/always-return
-              window.electron.getTournaments().then((tournaments) => {
-                setTournaments(tournaments);
-              }),
-            );
-          } else {
-            setTournaments([]);
+          if (shouldGetTournaments) {
+            if (
+              (mode === Mode.STARTGG && startggApiKey) ||
+              (mode === Mode.CHALLONGE && challongeApiKey)
+            ) {
+              promises.push(getTournaments());
+            } else {
+              setTournaments([]);
+              setShouldGetTournaments(false);
+            }
           }
           await Promise.all(promises);
           setOpen(false);
@@ -186,6 +193,7 @@ export default function Settings({
                   const newMode = event.target.value as Mode;
                   await window.electron.setMode(newMode);
                   setMode(newMode);
+                  setShouldGetTournaments(true);
                 }}
               >
                 <LabeledRadioButton label="start.gg" value={Mode.STARTGG} />
@@ -216,6 +224,7 @@ export default function Settings({
                   label="start.gg API key (Keep it private!)"
                   onChange={(event) => {
                     setStartggApiKey(event.target.value);
+                    setShouldGetTournaments(true);
                   }}
                   size="small"
                   type="password"
@@ -258,6 +267,7 @@ export default function Settings({
                   label="Challonge v1 API key (Keep it private!)"
                   onChange={(event) => {
                     setChallongeApiKey(event.target.value);
+                    setShouldGetTournaments(true);
                   }}
                   size="small"
                   type="password"
