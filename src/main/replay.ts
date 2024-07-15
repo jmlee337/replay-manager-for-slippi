@@ -6,6 +6,7 @@ import {
   readdir,
   rm,
   access,
+  FileHandle,
 } from 'fs/promises';
 import { join } from 'path';
 import iconv from 'iconv-lite';
@@ -20,6 +21,7 @@ import {
   isSlpMinVersion,
 } from 'slp-enforcer';
 import { app } from 'electron';
+import { parse } from 'date-fns';
 import {
   Context,
   EnforcePlayerFailure,
@@ -31,9 +33,63 @@ import {
 } from '../common/types';
 import { isValidCharacter, legalStages } from '../common/constants';
 
+// https://github.com/project-slippi/slippi-launcher/blob/ae8bb69e235b6e46b24bc966aeaa80f45030c6f9/src/replays/file_system_replay_provider/load_file.ts#L91-L101
+// ty vince
+function filenameToDateAndTime(fileName: string) {
+  const timeReg = /\d{8}T\d{6}/g;
+  const filenameTime = fileName.match(timeReg);
+
+  if (filenameTime == null) {
+    return undefined;
+  }
+
+  const time = parse(filenameTime[0], "yyyyMMdd'T'HHmmss", new Date());
+  return time;
+}
+
 const RAW_HEADER_START = Buffer.from([
   0x7b, 0x55, 0x03, 0x72, 0x61, 0x77, 0x5b, 0x24, 0x55, 0x23, 0x6c,
 ]);
+
+async function getLastFrame(
+  start: number,
+  end: number,
+  fileHandle: FileHandle,
+  payloadSizes: Map<number, number>,
+) {
+  let lastFrame = -124;
+  let offset = start;
+  while (offset < end) {
+    const eventCode = Buffer.alloc(1);
+    // eslint-disable-next-line no-await-in-loop
+    const eventCodeReadRes = await fileHandle.read(eventCode, 0, 1, offset);
+    if (eventCodeReadRes.bytesRead !== 1) {
+      break;
+    }
+    const eventLength = payloadSizes.get(eventCode[0]);
+    if (!eventLength) {
+      break;
+    }
+    // Frame Bookend -> Latest Finalized Frame available from 3.7.0.
+    // We enforce version >= 3.13.0 so this should always be available.
+    if (eventCode[0] === 0x3c) {
+      const frameNumberBuf = Buffer.alloc(4);
+      // eslint-disable-next-line no-await-in-loop
+      const frameNumberReadRes = await fileHandle.read(
+        frameNumberBuf,
+        0,
+        4,
+        offset + 5,
+      );
+      if (frameNumberReadRes.bytesRead !== 4) {
+        break;
+      }
+      lastFrame = frameNumberBuf.readUint32BE();
+    }
+    offset = offset + 1 + eventLength;
+  }
+  return lastFrame;
+}
 
 export async function getReplaysInDir(
   dir: string,
@@ -63,7 +119,8 @@ export async function getReplaysInDir(
         if (!rawHeader.subarray(0, 11).equals(RAW_HEADER_START)) {
           return { fileName, invalidReason: 'File corrupted.' };
         }
-        const metadataOffset = rawHeader.subarray(11, 15).readUInt32BE() + 15;
+        const replayLength = rawHeader.subarray(11, 15).readUInt32BE();
+        const metadataOffset = replayLength + 15;
 
         // event payloads header
         const payloadsHeader = Buffer.alloc(2);
@@ -92,19 +149,21 @@ export async function getReplaysInDir(
         if (payloadsRes.bytesRead !== payloadsSize) {
           return { fileName, invalidReason: 'File corrupted.' };
         }
+        const payloadSizes = new Map<number, number>();
         let gameStartSize = 0;
         let gameEndSize = 0;
         for (let i = 0; i < payloadsSize; i += 3) {
+          const payloadSize = payloads.subarray(i + 1, i + 3).readUInt16BE();
+          payloadSizes.set(payloads[i], payloadSize);
           if (payloads[i] === 0x36) {
-            gameStartSize = payloads.subarray(i + 1, i + 3).readUInt16BE() + 1;
+            gameStartSize = payloadSize + 1;
           } else if (payloads[i] === 0x39) {
-            gameEndSize = payloads.subarray(i + 1, i + 3).readUint16BE() + 1;
+            gameEndSize = payloadSize + 1;
           }
         }
         if (gameStartSize === 0 || gameEndSize === 0) {
           return { fileName, invalidReason: 'File corrupted.' };
         }
-        const gameEndOffset = metadataOffset - gameEndSize;
 
         // game start
         const gameStart = Buffer.alloc(gameStartSize);
@@ -134,18 +193,25 @@ export async function getReplaysInDir(
         const isTeams = gameStart[13] === 1;
         const stageId = gameStart.subarray(19, 21).readUint16BE();
         const gameTimerSeconds = gameStart.subarray(21, 25).readUint32BE();
-        let isValid = true;
-        if (!legalStages.has(stageId) || gameTimerSeconds > 480) {
-          isValid = false;
+        const invalidReasons: string[] = [];
+        if (!legalStages.has(stageId)) {
+          invalidReasons.push('Illegal stage.');
+        }
+        if (gameTimerSeconds > 480) {
+          invalidReasons.push('Game timer > 8 minutes.');
         }
 
         const teamSizes = new Map<number, number>();
         let numPlayers = 0;
+        let hasCPUPlayers = false;
+        let hasIllegalCharacters = false;
+        let nonStandardStockCount = false;
         const players: Player[] = new Array<Player>(4);
         for (let i = 0; i < 4; i += 1) {
           const offset = i * 36 + 101;
           const teamId = isTeams ? gameStart[offset + 9] : -1;
           players[i] = {
+            isWinner: false,
             overrideWin: false,
             playerOverrides: { displayName: '', entrantId: 0 },
             playerType: gameStart[offset + 1],
@@ -159,34 +225,42 @@ export async function getReplaysInDir(
               teamSizes.set(teamId, currTeamSize + 1);
             }
           } else if (players[i].playerType === 1) {
-            isValid = false;
+            hasCPUPlayers = true;
           }
           if (players[i].playerType === 0 || players[i].playerType === 1) {
             players[i].costumeIndex = gameStart[offset + 3];
             players[i].externalCharacterId = gameStart[offset];
-            if (
-              !isValidCharacter(players[i].externalCharacterId) ||
-              gameStart[offset + 2] !== 4 // Stock Start Count
-            ) {
-              isValid = false;
+            if (!isValidCharacter(players[i].externalCharacterId)) {
+              hasIllegalCharacters = true;
+            }
+            if (gameStart[offset + 2] !== 4) {
+              nonStandardStockCount = true;
             }
           }
         }
 
-        if (numPlayers !== 2 && numPlayers !== 4) {
-          isValid = false;
+        if (hasCPUPlayers) {
+          invalidReasons.push('Has CPU Player(s).');
         }
-        if (numPlayers === 4) {
+        if (hasIllegalCharacters) {
+          invalidReasons.push('Has illegal character(s).');
+        }
+        if (nonStandardStockCount) {
+          invalidReasons.push('Non standard starting stock count.');
+        }
+        if (numPlayers !== 2 && numPlayers !== 4) {
+          invalidReasons.push('Not singles or doubles.');
+        } else if (numPlayers === 4) {
           if (isTeams) {
             const teamSizesArr = Array.from(teamSizes.values());
             if (
               teamSizesArr.length !== 2 ||
               teamSizesArr[0] !== teamSizesArr[1]
             ) {
-              isValid = false;
+              invalidReasons.push('Not singles or doubles.');
             }
           } else {
-            isValid = false;
+            invalidReasons.push('Not singles or doubles.');
           }
         }
 
@@ -223,67 +297,141 @@ export async function getReplaysInDir(
           }
         }
 
-        // game end
-        const gameEnd = Buffer.alloc(gameEndSize);
-        const gameEndRes = await fileHandle.read(
-          gameEnd,
-          0,
-          gameEndSize,
-          gameEndOffset,
-        );
-        if (gameEndRes.bytesRead !== gameEndSize) {
-          return { fileName, invalidReason: 'File corrupted.' };
-        }
-        if (
-          gameEnd[0] !== 0x39 ||
-          (gameEnd[1] !== 1 && gameEnd[1] !== 2 && gameEnd[1] !== 3)
-        ) {
-          for (let i = 0; i < 4; i += 1) {
-            players[i].isWinner = false;
-          }
-          isValid = false;
-        } else {
-          for (let i = 0; i < 4; i += 1) {
-            players[i].isWinner = gameEnd[i + 3] === 0;
-          }
-        }
-
-        // metadata
         const fileSize = (await fileHandle.stat()).size;
-        const metadataLength = fileSize - metadataOffset;
-        if (metadataLength <= 0) {
-          return { fileName, invalidReason: 'File corrupted.' };
+        if (replayLength > 0) {
+          // game end
+          const gameEndOffset = metadataOffset - gameEndSize;
+          const gameEnd = Buffer.alloc(gameEndSize);
+          const gameEndRes = await fileHandle.read(
+            gameEnd,
+            0,
+            gameEndSize,
+            gameEndOffset,
+          );
+          if (gameEndRes.bytesRead !== gameEndSize || gameEnd[0] !== 0x39) {
+            invalidReasons.push('Game end corrupted.');
+            const lastFrame = await getLastFrame(
+              17 + payloadsSize + gameStartSize,
+              replayLength + 15,
+              fileHandle,
+              payloadSizes,
+            );
+            return {
+              fileName,
+              filePath,
+              invalidReasons,
+              isTeams,
+              lastFrame,
+              players,
+              selected: false,
+              stageId,
+              startAt: filenameToDateAndTime(fileName),
+            };
+          }
+          if (gameEnd[1] !== 1 && gameEnd[1] !== 2 && gameEnd[1] !== 3) {
+            invalidReasons.push('No contest.');
+          } else {
+            for (let i = 0; i < 4; i += 1) {
+              players[i].isWinner = gameEnd[i + 3] === 0;
+            }
+          }
+
+          // metadata
+          const metadataLength = fileSize - metadataOffset;
+          if (metadataLength <= 0) {
+            invalidReasons.push('Metadata not present.');
+            const lastFrame = await getLastFrame(
+              17 + payloadsSize + gameStartSize,
+              replayLength + 15,
+              fileHandle,
+              payloadSizes,
+            );
+            return {
+              fileName,
+              filePath,
+              invalidReasons,
+              isTeams,
+              lastFrame,
+              players,
+              selected: false,
+              stageId,
+              startAt: filenameToDateAndTime(fileName),
+            };
+          }
+
+          const metadata = Buffer.alloc(metadataLength);
+          const metadataReadRes = await fileHandle.read(
+            metadata,
+            0,
+            metadataLength,
+            metadataOffset,
+          );
+          if (metadataReadRes.bytesRead !== metadataLength) {
+            invalidReasons.push('Metadata corrupted.');
+            const lastFrame = await getLastFrame(
+              17 + payloadsSize + gameStartSize,
+              replayLength + 15,
+              fileHandle,
+              payloadSizes,
+            );
+            return {
+              fileName,
+              filePath,
+              invalidReasons,
+              isTeams,
+              lastFrame,
+              players,
+              selected: false,
+              stageId,
+              startAt: filenameToDateAndTime(fileName),
+            };
+          }
+
+          const concatBuffer = Buffer.from(new Uint8Array([0x7b]));
+          const metadataUbjson = Buffer.concat([concatBuffer, metadata]);
+          const obj = decode(metadataUbjson);
+          const { lastFrame } = obj.metadata;
+          if (!Number.isInteger(lastFrame)) {
+            invalidReasons.push('No game duration.');
+          } else if (lastFrame <= 3600) {
+            invalidReasons.push('Game duration <= 1 minute.');
+          }
+          let startAt: Date | undefined = new Date(obj.metadata.startAt);
+          if (!startAt || Number.isNaN(startAt.getTime())) {
+            startAt = filenameToDateAndTime(fileName);
+          }
+          return {
+            fileName,
+            filePath,
+            invalidReasons,
+            isTeams,
+            lastFrame,
+            players,
+            selected: false,
+            stageId,
+            startAt,
+          };
         }
 
-        const metadata = Buffer.alloc(metadataLength);
-        const metadataReadRes = await fileHandle.read(
-          metadata,
-          0,
-          metadataLength,
-          metadataOffset,
+        // if we reach this point, the file is incomplete.
+        // try to derive lastFrame and startAt
+        invalidReasons.push('Incomplete file.');
+        const lastFrame = await getLastFrame(
+          17 + payloadsSize + gameStartSize, // start
+          replayLength > 0 ? replayLength + 15 : fileSize, // end
+          fileHandle,
+          payloadSizes,
         );
-        if (metadataReadRes.bytesRead !== metadataLength) {
-          return { fileName, invalidReason: 'File corrupted.' };
-        }
-
-        const concatBuffer = Buffer.from(new Uint8Array([0x7b]));
-        const metadataUbjson = Buffer.concat([concatBuffer, metadata]);
-        const obj = decode(metadataUbjson);
-        const { lastFrame } = obj.metadata;
-        if (lastFrame <= 3600) {
-          isValid = false;
-        }
-
         return {
           fileName,
           filePath,
+          invalidReasons,
           isTeams,
-          isValid,
           lastFrame,
           players,
           selected: false,
           stageId,
-          startAt: new Date(obj.metadata.startAt),
+          startAt: filenameToDateAndTime(fileName),
         };
       } catch (e: any) {
         const invalidReason = e instanceof Error ? e.message : e;
@@ -297,9 +445,15 @@ export async function getReplaysInDir(
       (replayOrInvalidReplay) =>
         !(<InvalidReplay>replayOrInvalidReplay).invalidReason,
     ) as Replay[]
-  ).sort(
-    (replayA, replayB) => replayA.startAt.getTime() - replayB.startAt.getTime(),
-  );
+  ).sort((replayA, replayB) => {
+    if (replayA.startAt && replayB.startAt) {
+      const diff = replayA.startAt.getTime() - replayB.startAt.getTime();
+      if (diff) {
+        return diff;
+      }
+    }
+    return replayA.fileName.localeCompare(replayB.fileName);
+  });
   const invalidReplays = (
     (await Promise.all(objs)).filter(
       (replayOrInvalidReplay) =>
@@ -348,6 +502,23 @@ const narrowSpecialChars = new Map([
 
 const START_AT_TAG = Buffer.from([
   0x55, 0x07, 0x73, 0x74, 0x61, 0x72, 0x74, 0x41, 0x74, 0x53, 0x55,
+]);
+
+const METADATA = Buffer.from([
+  0x55, 0x08, 0x6d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x7b,
+]);
+
+const START_AT_PREFIX = Buffer.from([
+  0x55, 0x07, 0x73, 0x74, 0x61, 0x72, 0x74, 0x41, 0x74, 0x53, 0x55,
+]);
+
+const LAST_FRAME_PREFIX = Buffer.from([
+  0x55, 0x09, 0x6c, 0x61, 0x73, 0x74, 0x46, 0x72, 0x61, 0x6d, 0x65, 0x6c,
+]);
+
+const PLAYED_ON = Buffer.from([
+  0x55, 0x08, 0x70, 0x6c, 0x61, 0x79, 0x65, 0x64, 0x4f, 0x6e, 0x53, 0x55, 0x0a,
+  0x6e, 0x69, 0x6e, 0x74, 0x65, 0x6e, 0x64, 0x6f, 0x6e, 0x74, 0x7d, 0x7d,
 ]);
 
 export async function writeReplays(
@@ -420,24 +591,33 @@ export async function writeReplays(
       if (rawHeaderRes.bytesRead !== 15) {
         throw new Error('raw element header read');
       }
+
+      const fileSize = (await readFile.stat()).size;
+      const rawElementLength = rawHeader.subarray(11, 15).readUInt32BE();
+      const rawElementReadLength =
+        rawElementLength > 0 ? rawElementLength : fileSize - 15;
+      if (rawElementLength === 0) {
+        const actualRawElementLength = Buffer.alloc(4);
+        actualRawElementLength.writeUint32BE(rawElementReadLength);
+        actualRawElementLength.copy(rawHeader, 11);
+      }
+
       const rawHeaderWrite = await writeFile.write(rawHeader);
       if (rawHeaderWrite.bytesWritten !== 15) {
         throw new Error('raw element header write');
       }
 
-      const rawElementLength = rawHeader.subarray(11, 15).readUInt32BE();
-      const rawElement = Buffer.alloc(rawElementLength);
+      const rawElement = Buffer.alloc(rawElementReadLength);
       const rawElementRes = await readFile.read(
         rawElement,
         0,
-        rawElementLength,
+        rawElementReadLength,
         15,
       );
-      if (rawElementRes.bytesRead !== rawElementLength) {
+      if (rawElementRes.bytesRead !== rawElementReadLength) {
         throw new Error('raw element read');
       }
 
-      // display names?
       if (writeDisplayNames) {
         const payloadsSize = rawElement[1] - 1;
         const gameStartOffset = payloadsSize + 2;
@@ -471,48 +651,81 @@ export async function writeReplays(
         });
       }
       const rawElementWrite = await writeFile.write(rawElement);
-      if (rawElementWrite.bytesWritten !== rawElementLength) {
+      if (rawElementWrite.bytesWritten !== rawElementReadLength) {
         throw new Error('raw element write');
       }
 
       // metadata
-      const metadataOffset = rawElementLength + 15;
-      const metadataLength = (await readFile.stat()).size - metadataOffset;
-      const metadata = Buffer.alloc(metadataLength);
-      const metadataRes = await readFile.read(
-        metadata,
-        0,
-        metadataLength,
-        metadataOffset,
-      );
-      if (metadataRes.bytesRead !== metadataLength) {
-        throw new Error('metadata read');
-      }
-
-      // startTimes?
-      if (startTimes.length) {
-        const startAtTagOffset = metadata.indexOf(START_AT_TAG);
-        const startAtLengthOffset = startAtTagOffset + START_AT_TAG.length;
-        const startAtLength = metadata[startAtLengthOffset];
-        const newStartAtLength = startTimes[i].length;
-        const diff = newStartAtLength - startAtLength;
-        const newMetadata = Buffer.alloc(metadataLength + diff);
-        metadata.copy(newMetadata, 0, 0, startAtLengthOffset);
-        newMetadata[startAtLengthOffset] = newStartAtLength;
-        Buffer.from(startTimes[i]).copy(newMetadata, startAtLengthOffset + 1);
-        metadata.copy(
-          newMetadata,
-          startAtLengthOffset + newStartAtLength + 1,
-          startAtLengthOffset + startAtLength + 1,
+      if (rawElementLength > 0) {
+        const metadataOffset = rawElementLength + 15;
+        const metadataLength = fileSize - metadataOffset;
+        const metadata = Buffer.alloc(metadataLength);
+        const metadataRes = await readFile.read(
+          metadata,
+          0,
+          metadataLength,
+          metadataOffset,
         );
-        const newMetadataWrite = await writeFile.write(newMetadata);
-        if (newMetadataWrite.bytesWritten !== newMetadata.length) {
-          throw new Error('metadata write (with start time override)');
+        if (metadataRes.bytesRead !== metadataLength) {
+          throw new Error('metadata read');
+        }
+
+        // startTimes?
+        if (startTimes.length) {
+          const startAtTagOffset = metadata.indexOf(START_AT_TAG);
+          const startAtLengthOffset = startAtTagOffset + START_AT_TAG.length;
+          const startAtLength = metadata[startAtLengthOffset];
+          const newStartAtLength = startTimes[i].length;
+          const diff = newStartAtLength - startAtLength;
+          const newMetadata = Buffer.alloc(metadataLength + diff);
+          metadata.copy(newMetadata, 0, 0, startAtLengthOffset);
+          newMetadata[startAtLengthOffset] = newStartAtLength;
+          Buffer.from(startTimes[i]).copy(newMetadata, startAtLengthOffset + 1);
+          metadata.copy(
+            newMetadata,
+            startAtLengthOffset + newStartAtLength + 1,
+            startAtLengthOffset + startAtLength + 1,
+          );
+          const newMetadataWrite = await writeFile.write(newMetadata);
+          if (newMetadataWrite.bytesWritten !== newMetadata.length) {
+            throw new Error('metadata write (with start time override)');
+          }
+        } else {
+          const metadataWrite = await writeFile.write(metadata);
+          if (metadataWrite.bytesWritten !== metadataLength) {
+            throw new Error('metadata write');
+          }
         }
       } else {
+        // create the metadata element
+        const bufs = [METADATA];
+        let startAt = replay.startAt?.toISOString();
+        if (startTimes.length && startTimes[i]) {
+          startAt = startTimes[i];
+        }
+        if (startAt) {
+          const startAtBuf = Buffer.alloc(startAt.length + 1);
+          startAtBuf.writeUint8(startAt.length, 0);
+          startAtBuf.write(startAt, 1);
+          bufs.push(START_AT_PREFIX);
+          bufs.push(startAtBuf);
+        }
+        if (replay.lastFrame) {
+          const lastFrameBuf = Buffer.alloc(4);
+          lastFrameBuf.writeUint32BE(replay.lastFrame);
+          bufs.push(LAST_FRAME_PREFIX);
+          bufs.push(lastFrameBuf);
+        }
+        bufs.push(PLAYED_ON);
+        const bufsLength = bufs.reduce((acc, buf) => acc + buf.length, 0);
+        const metadata = Buffer.concat(bufs, bufsLength);
         const metadataWrite = await writeFile.write(metadata);
-        if (metadataWrite.bytesWritten !== metadataLength) {
-          throw new Error('metadata write');
+        if (metadataWrite.bytesWritten !== metadata.length) {
+          throw new Error(
+            startTimes.length
+              ? 'metadata creation (with start time override)'
+              : 'metadata creation',
+          );
         }
       }
 

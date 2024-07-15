@@ -22,13 +22,13 @@ export type Player = {
 export type Replay = {
   fileName: string;
   filePath: string;
+  invalidReasons: string[];
   isTeams: boolean;
-  isValid: boolean;
   lastFrame: number;
   players: Player[];
   selected: boolean;
   stageId: number;
-  startAt: Date;
+  startAt?: Date;
 };
 
 export type InvalidReplay = {

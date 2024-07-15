@@ -269,10 +269,11 @@ function Hello() {
   const [dirDeleting, setDirDeleting] = useState(false);
   const [dirExists, setDirExists] = useState(true);
   const [replays, setReplays] = useState<Replay[]>([]);
+  const [gettingReplays, setGettingReplays] = useState(false);
   const selectedReplays = replays.filter((replay) => replay.selected);
   const applyAllReplaysSelected = (allReplays: Replay[], selected: boolean) =>
     allReplays
-      .filter((replay) => replay.isValid)
+      .filter((replay) => replay.invalidReasons.length === 0)
       .forEach((replay) => {
         replay.selected = selected;
       });
@@ -321,6 +322,7 @@ function Hello() {
     }
   }, [replayLoadCount, scrollToBottom]);
   const chooseDir = async () => {
+    setGettingReplays(true);
     const newDir = await window.electron.chooseReplaysDir();
     if (newDir) {
       const { replays: newReplays, invalidReplays } =
@@ -343,10 +345,12 @@ function Hello() {
         );
       }
     }
+    setGettingReplays(false);
   };
   const refreshReplays = useCallback(async () => {
     let newReplays: Replay[] = [];
     let invalidReplays: InvalidReplay[] = [];
+    setGettingReplays(true);
     try {
       const res = await window.electron.getReplaysInDir();
       newReplays = res.replays;
@@ -370,6 +374,7 @@ function Hello() {
         ),
       );
     }
+    setGettingReplays(false);
   }, [allReplaysSelected]);
   const deleteDir = async () => {
     if (!dir) {
@@ -1057,15 +1062,17 @@ function Hello() {
     const copySet = set ?? selectedSet;
 
     let offsetMs = 0;
-    let startDate = selectedReplays[0].startAt;
-    if (copySettings.writeStartTimes) {
-      const lastReplay = selectedReplays[selectedReplays.length - 1];
-      const lastStartMs = lastReplay.startAt.getTime();
+    const timeableReplays = selectedReplays.filter((replay) => replay.startAt);
+    let startDate =
+      timeableReplays.length > 0 ? timeableReplays[0].startAt! : new Date();
+    if (copySettings.writeStartTimes && timeableReplays.length > 0) {
+      const lastReplay = timeableReplays[timeableReplays.length - 1];
+      const lastStartMs = lastReplay.startAt!.getTime();
       offsetMs =
         Date.now() -
         lastStartMs -
         Math.round((lastReplay.lastFrame + 124) / frameMsDivisor);
-      startDate = new Date(selectedReplays[0].startAt.getTime() + offsetMs);
+      startDate = new Date(timeableReplays[0].startAt!.getTime() + offsetMs);
     }
 
     let fileNames = selectedReplays.map((replay) => replay.fileName);
@@ -1213,9 +1220,12 @@ function Hello() {
       if (copySettings.writeFileNames) {
         fileNames = nameObjs.map((game, i) => {
           const { stageId, startAt } = selectedReplays[i];
-          const writeStartDate = copySettings.writeStartTimes
-            ? new Date(startAt.getTime() + offsetMs)
-            : startAt;
+          let writeStartDate = null;
+          if (startAt) {
+            writeStartDate = copySettings.writeStartTimes
+              ? new Date(startAt.getTime() + offsetMs)
+              : startAt;
+          }
           const names = game.filter((nameObj) => nameObj.characterName);
           const playersOnly = names.map(toPlayerOnly).join(', ');
           const playersChars = names.map(toPlayerChar).join(', ');
@@ -1225,11 +1235,11 @@ function Hello() {
           let fileName = String(fileNameFormat);
           fileName = fileName.replace(
             '{date}',
-            format(writeStartDate, 'yyyyMMdd'),
+            writeStartDate ? format(writeStartDate, 'yyyyMMdd') : '',
           );
           fileName = fileName.replace(
             '{time}',
-            format(writeStartDate, 'HHmmss'),
+            writeStartDate ? format(writeStartDate, 'HHmmss') : '',
           );
           fileName = fileName.replace('{roundShort}', roundShort);
           fileName = fileName.replace('{roundLong}', roundLong);
@@ -1356,7 +1366,9 @@ function Hello() {
     let startTimes: string[] = [];
     if (copySettings.writeStartTimes) {
       startTimes = selectedReplays.map((replay) =>
-        new Date(replay.startAt.getTime() + offsetMs).toISOString(),
+        replay.startAt
+          ? new Date(replay.startAt.getTime() + offsetMs).toISOString()
+          : '',
       );
     }
 
@@ -1425,7 +1437,7 @@ function Hello() {
                 value={dir || 'Set replays folder...'}
                 style={{ flexGrow: 1 }}
               />
-              {dir && dirExists && (
+              {dir && dirExists && !gettingReplays && (
                 <>
                   <Tooltip arrow title="Delete replays folder">
                     <IconButton onClick={() => setDirDeleteDialogOpen(true)}>
@@ -1475,18 +1487,22 @@ function Hello() {
                   </Dialog>
                 </>
               )}
-              {dir && (
+              {dir && !gettingReplays && (
                 <Tooltip arrow title="Refresh replays">
                   <IconButton onClick={refreshReplays}>
                     <Refresh />
                   </IconButton>
                 </Tooltip>
               )}
-              <Tooltip arrow title="Set replays folder">
-                <IconButton onClick={chooseDir}>
-                  <FolderOpen />
-                </IconButton>
-              </Tooltip>
+              {gettingReplays ? (
+                <CircularProgress size="24px" style={{ margin: '9px' }} />
+              ) : (
+                <Tooltip arrow title="Set replays folder">
+                  <IconButton onClick={chooseDir}>
+                    <FolderOpen />
+                  </IconButton>
+                </Tooltip>
+              )}
             </Stack>
           </AppBarSection>
           <Divider

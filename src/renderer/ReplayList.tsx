@@ -93,10 +93,14 @@ const ReplayListItem = memo(function ReplayListItem({
     onClick(index);
   }, [index, onClick]);
 
-  const dateShort = format(replay.startAt, 'yyyy MMM dd');
-  const time = format(replay.startAt, 'h:mmaaa');
+  const dateShort = replay.startAt
+    ? format(replay.startAt, 'yyyy MMM dd')
+    : 'Date unknown';
+  const time = replay.startAt
+    ? format(replay.startAt, 'h:mmaaa')
+    : 'Time unknown';
   const duration = format(
-    new Date(replay.lastFrame / frameMsDivisor),
+    new Date((replay.lastFrame + 124) / frameMsDivisor),
     "m'm'ss's'",
   );
   const stageName = stageNames.get(replay.stageId) || replay.stageId.toString();
@@ -245,7 +249,7 @@ const ReplayListItem = memo(function ReplayListItem({
     <ListItemButton
       disableGutters
       style={
-        replay.isValid ||
+        replay.invalidReasons.length === 0 ||
         (selectedChipData.displayName && selectedChipData.entrantId)
           ? {}
           : { opacity: '50%' }
