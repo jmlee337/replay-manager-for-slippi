@@ -218,18 +218,17 @@ export async function getReplaysInDir(
             port: i + 1,
             teamId,
           } as Player;
-          if (players[i].playerType === 0) {
+          if (players[i].playerType === 0 || players[i].playerType === 1) {
             numPlayers += 1;
+            players[i].costumeIndex = gameStart[offset + 3];
+            players[i].externalCharacterId = gameStart[offset];
             if (isTeams) {
               const currTeamSize = teamSizes.get(teamId) || 0;
               teamSizes.set(teamId, currTeamSize + 1);
             }
-          } else if (players[i].playerType === 1) {
-            hasCPUPlayers = true;
-          }
-          if (players[i].playerType === 0 || players[i].playerType === 1) {
-            players[i].costumeIndex = gameStart[offset + 3];
-            players[i].externalCharacterId = gameStart[offset];
+            if (players[i].playerType === 1) {
+              hasCPUPlayers = true;
+            }
             if (!isValidCharacter(players[i].externalCharacterId)) {
               hasIllegalCharacters = true;
             }
@@ -309,10 +308,10 @@ export async function getReplaysInDir(
             gameEndOffset,
           );
           if (gameEndRes.bytesRead !== gameEndSize || gameEnd[0] !== 0x39) {
-            invalidReasons.push('Game end corrupted.');
+            invalidReasons.push('Game end event not found.');
             const lastFrame = await getLastFrame(
-              17 + payloadsSize + gameStartSize,
-              replayLength + 15,
+              17 + payloadsSize + gameStartSize, // start
+              replayLength + 15, // end
               fileHandle,
               payloadSizes,
             );
@@ -341,8 +340,8 @@ export async function getReplaysInDir(
           if (metadataLength <= 0) {
             invalidReasons.push('Metadata not present.');
             const lastFrame = await getLastFrame(
-              17 + payloadsSize + gameStartSize,
-              replayLength + 15,
+              17 + payloadsSize + gameStartSize, // start
+              replayLength + 15, // end
               fileHandle,
               payloadSizes,
             );
@@ -369,8 +368,8 @@ export async function getReplaysInDir(
           if (metadataReadRes.bytesRead !== metadataLength) {
             invalidReasons.push('Metadata corrupted.');
             const lastFrame = await getLastFrame(
-              17 + payloadsSize + gameStartSize,
-              replayLength + 15,
+              17 + payloadsSize + gameStartSize, // start
+              replayLength + 15, // end
               fileHandle,
               payloadSizes,
             );
@@ -390,11 +389,18 @@ export async function getReplaysInDir(
           const concatBuffer = Buffer.from(new Uint8Array([0x7b]));
           const metadataUbjson = Buffer.concat([concatBuffer, metadata]);
           const obj = decode(metadataUbjson);
-          const { lastFrame } = obj.metadata;
+          let { lastFrame } = obj.metadata;
           if (!Number.isInteger(lastFrame)) {
-            invalidReasons.push('No game duration.');
-          } else if (lastFrame <= 3600) {
-            invalidReasons.push('Game duration <= 1 minute.');
+            lastFrame = getLastFrame(
+              17 + payloadsSize + gameStartSize, // start
+              replayLength + 15, // end
+              fileHandle,
+              payloadSizes,
+            );
+          } else if (lastFrame <= 3476 /* 3600 - 124 */) {
+            invalidReasons.push('Game duration less than 1 minute.');
+          } else if (lastFrame === 3600 && gameEnd[1] === 1) {
+            invalidReasons.push('1 minute timed game.');
           }
           let startAt: Date | undefined = new Date(obj.metadata.startAt);
           if (!startAt || Number.isNaN(startAt.getTime())) {
@@ -418,7 +424,7 @@ export async function getReplaysInDir(
         invalidReasons.push('Incomplete file.');
         const lastFrame = await getLastFrame(
           17 + payloadsSize + gameStartSize, // start
-          replayLength > 0 ? replayLength + 15 : fileSize, // end
+          fileSize, // end
           fileHandle,
           payloadSizes,
         );

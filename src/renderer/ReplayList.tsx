@@ -245,7 +245,7 @@ const ReplayListItem = memo(function ReplayListItem({
     );
   });
 
-  return (
+  const replayListItemInner = (
     <ListItemButton
       disableGutters
       style={
@@ -274,6 +274,14 @@ const ReplayListItem = memo(function ReplayListItem({
         </Stack>
       </ReplayContent>
     </ListItemButton>
+  );
+
+  return replay.invalidReasons.length === 0 ? (
+    replayListItemInner
+  ) : (
+    <Tooltip title={replay.invalidReasons.join(' ')}>
+      {replayListItemInner}
+    </Tooltip>
   );
 });
 
