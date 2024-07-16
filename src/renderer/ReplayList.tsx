@@ -152,9 +152,27 @@ const ReplayListItem = memo(function ReplayListItem({
       <Avatar
         alt={characterNames.get(player.externalCharacterId)}
         src={getCharacterIcon(player.externalCharacterId, player.costumeIndex)}
+        style={{ height: '24px', width: '24px' }}
         variant="square"
       />
     ) : undefined;
+    const avatarButton = (player.externalCharacterId === 18 ||
+      player.externalCharacterId === 19) && (
+      <IconButton
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (player.externalCharacterId === 18) {
+            player.externalCharacterId = 19;
+          } else {
+            player.externalCharacterId = 18;
+          }
+          onOverride();
+        }}
+      >
+        {avatar}
+      </IconButton>
+    );
     const name =
       player.playerType === 0
         ? player.connectCode || player.nametag || `P${key}`
@@ -234,7 +252,7 @@ const ReplayListItem = memo(function ReplayListItem({
     return (
       <DroppableChip
         active={replay.selected}
-        avatar={avatar}
+        avatar={avatarButton || avatar}
         key={key}
         label={name}
         outlined
