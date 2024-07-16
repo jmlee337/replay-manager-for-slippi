@@ -131,6 +131,7 @@ const electronHandler = {
     ipcRenderer.removeAllListeners('usbstorage');
     ipcRenderer.on('usbstorage', callback);
   },
+  isMac: process.platform === 'darwin',
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

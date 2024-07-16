@@ -17,7 +17,8 @@ import {
   KeyboardArrowUp,
   Refresh,
 } from '@mui/icons-material';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { GlobalHotKeys } from 'react-hotkeys';
 import {
   Event,
   NameWithHighlight,
@@ -542,24 +543,42 @@ export default function StartggView({
     eventSlug: string,
   ) => void;
 }) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchSubstr, setSearchSubstr] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const clearSearch = () => {
+    setSearchSubstr('');
+    setShowSearch(false);
+  };
+
   return (
     <Box>
-      {vlerkMode && (
+      {(showSearch || vlerkMode) && (
         <Box style={{ padding: '8px 0' }}>
           <TextField
+            autoFocus
             fullWidth
             label="Search"
             onChange={(event) => {
               setSearchSubstr(event.target.value);
             }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                clearSearch();
+              }
+            }}
+            inputRef={searchInputRef}
             size="small"
             value={searchSubstr}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
                   <Tooltip title="Clear search">
-                    <IconButton onClick={() => setSearchSubstr('')}>
+                    <IconButton
+                      onClick={() => {
+                        clearSearch();
+                      }}
+                    >
                       <Clear />
                     </IconButton>
                   </Tooltip>
@@ -582,6 +601,21 @@ export default function StartggView({
           selectSet={selectSet}
         />
       ))}
+      <GlobalHotKeys
+        keyMap={{
+          ESC: 'escape',
+          FIND: window.electron.isMac ? 'command+f' : 'ctrl+f',
+        }}
+        handlers={{
+          ESC: () => {
+            clearSearch();
+          },
+          FIND: () => {
+            setShowSearch(true);
+            searchInputRef.current?.focus();
+          },
+        }}
+      />
     </Box>
   );
 }
