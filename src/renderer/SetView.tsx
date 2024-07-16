@@ -2,8 +2,8 @@ import styled from '@emotion/styled';
 import { Backup, CheckBox, HourglassTop } from '@mui/icons-material';
 import { Box, Stack, Tooltip } from '@mui/material';
 import { NameWithHighlight } from '../common/types';
+import { highlightColor } from '../common/constants';
 
-const HIGHLIGHT_COLOR = '#ffee58';
 const EntrantNames = styled(Stack)`
   flex-grow: 1;
   min-width: 0;
@@ -35,7 +35,7 @@ function EntrantName({ entrantName }: { entrantName: NameWithHighlight }) {
   return (
     <Name>
       <span>{entrantName.name.substring(0, entrantName.highlight.start)}</span>
-      <span style={{ backgroundColor: HIGHLIGHT_COLOR }}>
+      <span style={{ backgroundColor: highlightColor }}>
         {entrantName.name.substring(
           entrantName.highlight.start,
           entrantName.highlight.end,

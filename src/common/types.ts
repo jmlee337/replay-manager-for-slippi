@@ -234,3 +234,9 @@ export type NameWithHighlight = {
   };
   name: string;
 };
+
+export type SetWithNames = {
+  set: Set;
+  entrant1Names: NameWithHighlight[];
+  entrant2Names: NameWithHighlight[];
+};

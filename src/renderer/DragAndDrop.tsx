@@ -6,18 +6,42 @@ import {
   createTheme,
 } from '@mui/material';
 import { CSSProperties, DragEvent, ReactElement } from 'react';
-import { PlayerOverrides } from '../common/types';
+import { NameWithHighlight, PlayerOverrides } from '../common/types';
+import { highlightColor } from '../common/constants';
+
+function Name({ nameWithHighlight }: { nameWithHighlight: NameWithHighlight }) {
+  if (!nameWithHighlight.highlight) {
+    return nameWithHighlight.name;
+  }
+
+  return (
+    <>
+      <span>
+        {nameWithHighlight.name.substring(0, nameWithHighlight.highlight.start)}
+      </span>
+      <span style={{ backgroundColor: highlightColor }}>
+        {nameWithHighlight.name.substring(
+          nameWithHighlight.highlight.start,
+          nameWithHighlight.highlight.end,
+        )}
+      </span>
+      <span>
+        {nameWithHighlight.name.substring(nameWithHighlight.highlight.end)}
+      </span>
+    </>
+  );
+}
 
 export function DraggableChip({
-  displayName,
   entrantId,
+  nameWithHighlight,
   prefix,
   pronouns,
   selectedChipData,
   setSelectedChipData,
 }: {
-  displayName: string;
   entrantId: number;
+  nameWithHighlight: NameWithHighlight;
   prefix: string;
   pronouns: string;
   selectedChipData: PlayerOverrides;
@@ -45,7 +69,7 @@ export function DraggableChip({
     );
   };
   const selected =
-    selectedChipData.displayName === displayName &&
+    selectedChipData.displayName === nameWithHighlight.name &&
     selectedChipData.entrantId === entrantId;
 
   return (
@@ -70,7 +94,7 @@ export function DraggableChip({
     >
       <Chip
         color={selected ? 'primary' : undefined}
-        data-display-name={displayName}
+        data-display-name={nameWithHighlight.name}
         data-entrant-id={entrantId.toString(10)}
         data-prefix={prefix}
         data-pronouns={pronouns}
@@ -84,11 +108,16 @@ export function DraggableChip({
               pronouns: '',
             });
           } else {
-            setSelectedChipData({ displayName, entrantId, prefix, pronouns });
+            setSelectedChipData({
+              displayName: nameWithHighlight.name,
+              entrantId,
+              prefix,
+              pronouns,
+            });
           }
         }}
         onDragStart={dragStart}
-        label={displayName}
+        label={<Name nameWithHighlight={nameWithHighlight} />}
         sx={{ zIndex: (theme) => theme.zIndex.drawer + 2 }}
         variant={selected ? 'filled' : 'outlined'}
       />

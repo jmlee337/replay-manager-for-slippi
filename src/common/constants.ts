@@ -139,3 +139,4 @@ export const startggStageIds = new Map(
 );
 
 export const frameMsDivisor = 0.05994;
+export const highlightColor = '#ffee58';

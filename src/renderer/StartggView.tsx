@@ -4,21 +4,17 @@ import {
   CircularProgress,
   Collapse,
   IconButton,
-  InputAdornment,
   ListItemButton,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
 import {
-  Clear,
   KeyboardArrowDown,
   KeyboardArrowRight,
   KeyboardArrowUp,
   Refresh,
 } from '@mui/icons-material';
-import { useRef, useState } from 'react';
-import { GlobalHotKeys } from 'react-hotkeys';
+import { useState } from 'react';
 import {
   Event,
   NameWithHighlight,
@@ -29,6 +25,7 @@ import {
   Tournament,
 } from '../common/types';
 import SetViewInner from './SetView';
+import filterSets from './filterSets';
 
 const Block = styled.div`
   padding-left: 8px;
@@ -39,12 +36,6 @@ const Name = styled.div`
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
-
-type SetWithNames = {
-  set: Set;
-  entrant1Names: NameWithHighlight[];
-  entrant2Names: NameWithHighlight[];
-};
 
 function SetView({
   set,
@@ -162,59 +153,6 @@ function PhaseGroupView({
     setGetting(false);
   };
 
-  const filterSets = (sets: Set[], substr: string): SetWithNames[] => {
-    const setsToShow: SetWithNames[] = [];
-    sets.forEach((set) => {
-      if (!substr) {
-        setsToShow.push({
-          set,
-          entrant1Names: set.entrant1Participants.map((participant) => ({
-            name: participant.displayName,
-          })),
-          entrant2Names: set.entrant2Participants.map((participant) => ({
-            name: participant.displayName,
-          })),
-        });
-      } else {
-        const entrant1Names: NameWithHighlight[] = [];
-        const entrant2Names: NameWithHighlight[] = [];
-        const includeStr = substr.toLowerCase();
-        let toShow = false;
-        set.entrant1Participants.forEach((participant) => {
-          const start = participant.displayName
-            .toLowerCase()
-            .indexOf(includeStr);
-          if (start < 0) {
-            entrant1Names.push({ name: participant.displayName });
-          } else {
-            toShow = true;
-            entrant1Names.push({
-              highlight: { start, end: start + includeStr.length },
-              name: participant.displayName,
-            });
-          }
-        });
-        set.entrant2Participants.forEach((participant) => {
-          const start = participant.displayName
-            .toLowerCase()
-            .indexOf(includeStr);
-          if (start < 0) {
-            entrant2Names.push({ name: participant.displayName });
-          } else {
-            toShow = true;
-            entrant2Names.push({
-              highlight: { start, end: start + includeStr.length },
-              name: participant.displayName,
-            });
-          }
-        });
-        if (toShow) {
-          setsToShow.push({ set, entrant1Names, entrant2Names });
-        }
-      }
-    });
-    return setsToShow;
-  };
   const pendingSetsToShow = filterSets(
     phaseGroup.sets.pendingSets,
     searchSubstr,
@@ -516,6 +454,7 @@ function EventView({
 }
 
 export default function StartggView({
+  searchSubstr,
   tournament,
   vlerkMode,
   getEvent,
@@ -523,6 +462,7 @@ export default function StartggView({
   getPhaseGroup,
   selectSet,
 }: {
+  searchSubstr: string;
   tournament: Tournament;
   vlerkMode: boolean;
   getEvent: (id: number) => Promise<void>;
@@ -543,51 +483,8 @@ export default function StartggView({
     eventSlug: string,
   ) => void;
 }) {
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const [searchSubstr, setSearchSubstr] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
-  const clearSearch = () => {
-    setSearchSubstr('');
-    setShowSearch(false);
-  };
-
   return (
     <Box>
-      {(showSearch || vlerkMode) && (
-        <Box style={{ padding: '8px 0' }}>
-          <TextField
-            autoFocus
-            fullWidth
-            label="Search"
-            onChange={(event) => {
-              setSearchSubstr(event.target.value);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                clearSearch();
-              }
-            }}
-            inputRef={searchInputRef}
-            size="small"
-            value={searchSubstr}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Tooltip title="Clear search">
-                    <IconButton
-                      onClick={() => {
-                        clearSearch();
-                      }}
-                    >
-                      <Clear />
-                    </IconButton>
-                  </Tooltip>
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Box>
-      )}
       {tournament.events.map((event) => (
         <EventView
           key={event.id}
@@ -601,21 +498,6 @@ export default function StartggView({
           selectSet={selectSet}
         />
       ))}
-      <GlobalHotKeys
-        keyMap={{
-          ESC: 'escape',
-          FIND: window.electron.isMac ? 'command+f' : 'ctrl+f',
-        }}
-        handlers={{
-          ESC: () => {
-            clearSearch();
-          },
-          FIND: () => {
-            setShowSearch(true);
-            searchInputRef.current?.focus();
-          },
-        }}
-      />
     </Box>
   );
 }

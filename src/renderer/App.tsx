@@ -74,6 +74,7 @@ import {
 import ManualView from './ManualView';
 import ManualBar from './ManualBar';
 import ChallongeView from './ChallongeView';
+import SearchBox from './SearchBox';
 
 const Bottom = styled(Paper)`
   height: 147px;
@@ -457,6 +458,7 @@ function Hello() {
 
   const [slugDialogOpen, setSlugDialogOpen] = useState(false);
   const [gettingTournament, setGettingTournament] = useState(false);
+  const [searchSubstr, setSearchSubstr] = useState('');
 
   // Challonge tournament view
   const [challongeTournaments, setChallongeTournaments] = useState(
@@ -1692,8 +1694,15 @@ function Hello() {
           <div ref={copyControlsRef} />
         </TopColumn>
         <TopColumn width="300px">
+          <SearchBox
+            mode={mode}
+            searchSubstr={searchSubstr}
+            setSearchSubstr={setSearchSubstr}
+            vlerkMode={vlerkMode}
+          />
           {mode === Mode.STARTGG && (
             <StartggView
+              searchSubstr={searchSubstr}
               tournament={tournament}
               vlerkMode={vlerkMode}
               getEvent={(id: number) => getEvent(id, true)}
@@ -1711,6 +1720,7 @@ function Hello() {
               (challongeTournament) => (
                 <ChallongeView
                   key={challongeTournament.slug}
+                  searchSubstr={searchSubstr}
                   tournament={challongeTournament}
                   getChallongeTournament={async () =>
                     getChallongeTournament(challongeTournament.slug)
@@ -1724,6 +1734,7 @@ function Hello() {
           {mode === Mode.MANUAL && (
             <ManualView
               manualNames={manualNames}
+              searchSubstr={searchSubstr}
               selectedChipData={selectedChipData}
               setSelectedChipData={setSelectedChipData}
             />
@@ -1807,10 +1818,11 @@ function Hello() {
                     <Stack direction="row" gap="8px">
                       <Stack gap="8px" width="50%">
                         <DraggableChip
-                          displayName={
-                            selectedSet.entrant1Participants[0].displayName
-                          }
                           entrantId={selectedSet.entrant1Id}
+                          nameWithHighlight={{
+                            name: selectedSet.entrant1Participants[0]
+                              .displayName,
+                          }}
                           prefix={selectedSet.entrant1Participants[0].prefix}
                           pronouns={
                             selectedSet.entrant1Participants[0].pronouns
@@ -1820,10 +1832,11 @@ function Hello() {
                         />
                         {selectedSet.entrant1Participants.length > 1 && (
                           <DraggableChip
-                            displayName={
-                              selectedSet.entrant1Participants[1].displayName
-                            }
                             entrantId={selectedSet.entrant1Id}
+                            nameWithHighlight={{
+                              name: selectedSet.entrant1Participants[1]
+                                .displayName,
+                            }}
                             prefix={selectedSet.entrant1Participants[1].prefix}
                             pronouns={
                               selectedSet.entrant1Participants[1].pronouns
@@ -1835,10 +1848,11 @@ function Hello() {
                       </Stack>
                       <Stack gap="8px" width="50%">
                         <DraggableChip
-                          displayName={
-                            selectedSet.entrant2Participants[0].displayName
-                          }
                           entrantId={selectedSet.entrant2Id}
+                          nameWithHighlight={{
+                            name: selectedSet.entrant2Participants[0]
+                              .displayName,
+                          }}
                           prefix={selectedSet.entrant2Participants[0].prefix}
                           pronouns={
                             selectedSet.entrant2Participants[0].pronouns
@@ -1848,10 +1862,11 @@ function Hello() {
                         />
                         {selectedSet.entrant2Participants.length > 1 && (
                           <DraggableChip
-                            displayName={
-                              selectedSet.entrant2Participants[1].displayName
-                            }
                             entrantId={selectedSet.entrant2Id}
+                            nameWithHighlight={{
+                              name: selectedSet.entrant2Participants[1]
+                                .displayName,
+                            }}
                             prefix={selectedSet.entrant2Participants[1].prefix}
                             pronouns={
                               selectedSet.entrant2Participants[1].pronouns
