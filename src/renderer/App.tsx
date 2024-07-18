@@ -1671,7 +1671,7 @@ function Hello() {
             />
           ) : (
             <Alert severity="error" sx={{ mb: '8px', pl: '24px' }}>
-              Folder not found
+              Replays folder not found (most likely deleted).
             </Alert>
           )}
           <CopyControls
