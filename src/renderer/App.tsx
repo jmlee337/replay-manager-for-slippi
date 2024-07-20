@@ -319,7 +319,7 @@ function Hello() {
   const copyControlsRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (scrollToBottom && copyControlsRef.current) {
-      copyControlsRef.current.scrollIntoView();
+      copyControlsRef.current.scrollIntoView(false);
     }
   }, [replayLoadCount, scrollToBottom]);
   const chooseDir = async () => {
@@ -1674,6 +1674,7 @@ function Hello() {
               Replays folder not found (most likely deleted).
             </Alert>
           )}
+          <div ref={copyControlsRef} />
           <CopyControls
             dir={copyDir}
             setDir={setCopyDir}
@@ -1691,7 +1692,6 @@ function Hello() {
               setCopySettings(newCopySettings);
             }}
           />
-          <div ref={copyControlsRef} />
         </TopColumn>
         <TopColumn width="300px">
           <SearchBox
