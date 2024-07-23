@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { ChallongeTournament, Set, SetWithNames, State } from '../common/types';
 import SetViewInner from './SetView';
 import filterSets from './filterSets';
+import TiebreakerDialog from './TiebreakerDialog';
 
 function SetView({
   setWithNames,
@@ -151,6 +152,15 @@ export default function ChallongeView({
                 </Collapse>
               </>
             )}
+            {(tournament.tournamentType === 'swiss' ||
+              tournament.tournamentType === 'round robin') &&
+              tournament.sets.pendingSets.length === 0 && (
+                <TiebreakerDialog
+                  entrants={tournament.entrants}
+                  getEntrants={() => Promise.resolve()}
+                  selectSet={selectSet}
+                />
+              )}
           </div>
         </Collapse>
       </Box>

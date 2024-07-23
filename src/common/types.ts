@@ -36,18 +36,23 @@ export type InvalidReplay = {
   invalidReason: string;
 };
 
-export type Participant = {
-  displayName: string;
-  prefix: string;
-  pronouns: string;
-};
-
 export enum State {
   PENDING = 1,
   STARTED = 2,
   COMPLETED = 3,
   CALLED = 6,
 }
+
+export type Participant = {
+  displayName: string;
+  prefix: string;
+  pronouns: string;
+};
+
+export type Entrant = {
+  id: number;
+  participants: Participant[];
+};
 
 export type Set = {
   id: number;
@@ -73,6 +78,15 @@ export type Sets = {
 
 export type PhaseGroup = {
   id: number;
+  /**
+   * 1: SINGLE_ELIMINATION
+   * 2: DOUBLE_ELIMINATION
+   * 3: ROUND_ROBIN
+   * 4: SWISS
+   * https://developer.start.gg/reference/brackettype.doc
+   */
+  bracketType: number;
+  entrants: Entrant[];
   name: string;
   sets: Sets;
 };
@@ -103,9 +117,11 @@ export type AdminedTournament = {
 };
 
 export type ChallongeTournament = {
+  entrants: Entrant[];
   name: string;
   slug: string;
   sets: Sets;
+  tournamentType: string;
 };
 
 export type StartggGameSelection = {
@@ -187,7 +203,7 @@ export type Context = {
       name: string;
     };
     set: {
-      id: number;
+      id?: number;
       fullRoundText: string;
       round: number;
       twitchStream: string | null;
@@ -199,10 +215,10 @@ export type Context = {
       slug: string;
     };
     set: {
-      id: number;
+      id?: number;
       fullRoundText: string;
       round: number;
-      ordinal: number;
+      ordinal: number | null;
     };
   };
   startMs: number;

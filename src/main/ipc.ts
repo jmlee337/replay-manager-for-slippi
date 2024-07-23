@@ -15,6 +15,7 @@ import {
   ChallongeMatchItem,
   Context,
   CopySettings,
+  Entrant,
   Mode,
   Output,
   Replay,
@@ -31,11 +32,12 @@ import {
   reportSet,
   updateSet,
   getTournaments,
+  getPhaseGroupEntrants,
 } from './startgg';
 import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
 import {
   getChallongeSets,
-  getChallongeTournamentName,
+  getChallongeTournament,
   getChallongeTournaments,
   reportChallongeSet,
   startChallongeSet,
@@ -262,6 +264,18 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
+  ipcMain.removeHandler('getPhaseGroupEntrants');
+  ipcMain.handle(
+    'getPhaseGroupEntrants',
+    async (event: IpcMainInvokeEvent, id: number): Promise<Entrant[]> => {
+      if (!sggApiKey) {
+        throw new Error('Please set start.gg API key');
+      }
+
+      return getPhaseGroupEntrants(sggApiKey, id);
+    },
+  );
+
   ipcMain.removeHandler('getStartggKey');
   ipcMain.handle('getStartggKey', () => sggApiKey);
 
@@ -289,15 +303,15 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
-  ipcMain.removeHandler('getChallongeTournamentName');
+  ipcMain.removeHandler('getChallongeTournament');
   ipcMain.handle(
-    'getChallongeTournamentName',
+    'getChallongeTournament',
     (event: IpcMainInvokeEvent, slug: string) => {
       if (!challongeApiKey) {
         throw new Error('Please set Challonge API key.');
       }
 
-      return getChallongeTournamentName(slug, challongeApiKey);
+      return getChallongeTournament(slug, challongeApiKey);
     },
   );
 

@@ -1,6 +1,7 @@
 import {
   AdminedTournament,
   ChallongeMatchItem,
+  Entrant,
   Set,
   Sets,
   State,
@@ -59,15 +60,18 @@ export async function getChallongeTournaments(
   }));
 }
 
-export async function getChallongeTournamentName(
+export async function getChallongeTournament(
   slug: string,
   key: string,
-): Promise<string> {
+): Promise<{ name: string; tournamentType: string }> {
   const json = await get(
     `https://api.challonge.com/v2.1/tournaments/${slug}.json`,
     key,
   );
-  return json.data.attributes.name;
+  return {
+    name: json.data.attributes.name,
+    tournamentType: json.data.attributes.tournament_type,
+  };
 }
 
 const participantIdToName = new Map<number, string>();
@@ -121,10 +125,11 @@ const toSet = (match: any): Set => {
 export async function getChallongeSets(
   slug: string,
   key: string,
-): Promise<Sets> {
+): Promise<{ entrants: Entrant[]; sets: Sets }> {
   let participantsPage = 0;
   let participantsCount = 0;
   let participantsSeen = 0;
+  const entrants: Entrant[] = [];
   do {
     participantsPage += 1;
     // eslint-disable-next-line no-await-in-loop
@@ -136,6 +141,16 @@ export async function getChallongeSets(
     data
       .filter((participant: any) => participant.type === 'participant')
       .forEach((participant: any) => {
+        entrants.push({
+          id: participant.id,
+          participants: [
+            {
+              displayName: participant.attributes.name,
+              prefix: '',
+              pronouns: '',
+            },
+          ],
+        });
         participantIdToName.set(
           parseInt(participant.id, 10),
           participant.attributes.name,
@@ -177,8 +192,11 @@ export async function getChallongeSets(
     matchesSeen += data.length;
   } while (matchesSeen < matchesCount);
   return {
-    pendingSets: pendingSets.sort((a, b) => a.ordinal! - b.ordinal!),
-    completedSets: completedSets.sort((a, b) => b.ordinal! - a.ordinal!),
+    entrants,
+    sets: {
+      pendingSets: pendingSets.sort((a, b) => a.ordinal! - b.ordinal!),
+      completedSets: completedSets.sort((a, b) => b.ordinal! - a.ordinal!),
+    },
   };
 }
 

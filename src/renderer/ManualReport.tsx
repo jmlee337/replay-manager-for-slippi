@@ -111,7 +111,9 @@ export default function ManualReport({
         <div>
           <IconButton
             color="primary"
-            disabled={!selectedSet.id || selectedSet.state === State.COMPLETED}
+            disabled={
+              selectedSet.id <= 0 || selectedSet.state === State.COMPLETED
+            }
             size="small"
             onClick={() => {
               resetForm();

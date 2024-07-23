@@ -471,12 +471,15 @@ function Hello() {
 
     setGettingTournament(true);
     try {
-      const namePromise = window.electron.getChallongeTournamentName(maybeSlug);
+      const tournamentPromise =
+        window.electron.getChallongeTournament(maybeSlug);
       const setsPromise = window.electron.getChallongeSets(maybeSlug);
       challongeTournaments.set(maybeSlug, {
-        name: await namePromise,
+        entrants: (await setsPromise).entrants,
+        name: (await tournamentPromise).name,
         slug: maybeSlug,
-        sets: await setsPromise,
+        sets: (await setsPromise).sets,
+        tournamentType: (await tournamentPromise).tournamentType,
       });
       setChallongeTournaments(new Map(challongeTournaments));
     } catch (e: any) {
@@ -507,6 +510,18 @@ function Hello() {
     name: '',
     events: [],
   });
+
+  const getPhaseGroupEntrants = async (phaseGroup: PhaseGroup) => {
+    try {
+      const entrants = await window.electron.getPhaseGroupEntrants(
+        phaseGroup.id,
+      );
+      phaseGroup.entrants = entrants;
+      setTournament({ ...tournament });
+    } catch (e: any) {
+      showErrorDialog([e.toString()]);
+    }
+  };
 
   const getPhaseGroup = async (
     id: number,
@@ -542,7 +557,7 @@ function Hello() {
     );
     if (editPhaseGroup) {
       editPhaseGroup.sets = sets;
-      if (selectedSet.id) {
+      if (selectedSet.id > 0) {
         const updatedSelectedSet =
           sets.completedSets.find((set) => set.id === selectedSet.id) ||
           sets.pendingSets.find((set) => set.id === selectedSet.id);
@@ -1340,7 +1355,7 @@ function Hello() {
                   name: selectedSetChain.phaseGroupName,
                 },
                 set: {
-                  id: copySet.id,
+                  id: copySet.id > 0 ? copySet.id : undefined,
                   fullRoundText: copySet.fullRoundText,
                   round: copySet.round,
                   twitchStream: copySet.twitchStream,
@@ -1353,10 +1368,10 @@ function Hello() {
                   slug: selectedChallongeTournament.slug,
                 },
                 set: {
-                  id: copySet.id,
+                  id: copySet.id > 0 ? copySet.id : undefined,
                   fullRoundText: copySet.fullRoundText,
                   round: copySet.round,
-                  ordinal: copySet.ordinal!,
+                  ordinal: copySet.ordinal,
                 },
               };
             }
@@ -1712,6 +1727,7 @@ function Hello() {
               getPhaseGroup={(id: number, phaseId: number, eventId: number) =>
                 getPhaseGroup(id, phaseId, eventId, true)
               }
+              getPhaseGroupEntrants={getPhaseGroupEntrants}
               selectSet={selectStartggSet}
             />
           )}
@@ -1787,7 +1803,7 @@ function Hello() {
           </Stack>
           <Stack justifyContent="space-between" width="300px">
             <Stack>
-              {!!selectedSet.id && (
+              {selectedSet.id !== 0 && (
                 <>
                   <Stack
                     alignItems="center"
@@ -1795,7 +1811,8 @@ function Hello() {
                     direction="row"
                   >
                     <Typography lineHeight="20px" variant="caption">
-                      {selectedSet.fullRoundText} ({selectedSet.id})
+                      {selectedSet.fullRoundText}
+                      {selectedSet.id > 0 && ` (${selectedSet.id})`}
                     </Typography>
                     {selectedSet.state === State.STARTED && (
                       <>
@@ -1893,7 +1910,7 @@ function Hello() {
                     color="primary"
                     disabled={
                       !(
-                        (selectedSet.id &&
+                        (selectedSet.id > 0 &&
                           selectedSet.state === State.PENDING) ||
                         selectedSet.state === State.CALLED
                       ) || startingSet

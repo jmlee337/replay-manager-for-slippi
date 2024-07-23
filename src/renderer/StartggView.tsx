@@ -26,6 +26,7 @@ import {
 } from '../common/types';
 import SetViewInner from './SetView';
 import filterSets from './filterSets';
+import TiebreakerDialog from './TiebreakerDialog';
 
 const Block = styled.div`
   padding-left: 8px;
@@ -116,6 +117,7 @@ function PhaseGroupView({
   searchSubstr,
   vlerkMode,
   getPhaseGroup,
+  getPhaseGroupEntrants,
   selectSet,
 }: {
   phaseGroup: PhaseGroup;
@@ -132,6 +134,7 @@ function PhaseGroupView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
+  getPhaseGroupEntrants: (phaseGroup: PhaseGroup) => Promise<void>;
   selectSet: (
     set: Set,
     phaseGroupId: number,
@@ -259,6 +262,27 @@ function PhaseGroupView({
                 </Collapse>
               </>
             )}
+            {(phaseGroup.bracketType === 3 || phaseGroup.bracketType === 4) &&
+              phaseGroup.sets.pendingSets.length === 0 && (
+                <TiebreakerDialog
+                  entrants={phaseGroup.entrants}
+                  getEntrants={async () => {
+                    await getPhaseGroupEntrants(phaseGroup);
+                  }}
+                  selectSet={(set: Set) => {
+                    selectSet(
+                      set,
+                      phaseGroup.id,
+                      phaseGroup.name,
+                      phaseId,
+                      phaseName,
+                      eventId,
+                      eventName,
+                      eventSlug,
+                    );
+                  }}
+                />
+              )}
           </Block>
         </Collapse>
       </>
@@ -276,6 +300,7 @@ function PhaseView({
   vlerkMode,
   getPhase,
   getPhaseGroup,
+  getPhaseGroupEntrants,
   selectSet,
 }: {
   phase: Phase;
@@ -291,6 +316,7 @@ function PhaseView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
+  getPhaseGroupEntrants: (phaseGroup: PhaseGroup) => Promise<void>;
   selectSet: (
     set: Set,
     phaseGroupId: number,
@@ -353,6 +379,7 @@ function PhaseView({
               searchSubstr={searchSubstr}
               vlerkMode={vlerkMode}
               getPhaseGroup={getPhaseGroup}
+              getPhaseGroupEntrants={getPhaseGroupEntrants}
               selectSet={selectSet}
             />
           ))}
@@ -370,6 +397,7 @@ function EventView({
   getEvent,
   getPhase,
   getPhaseGroup,
+  getPhaseGroupEntrants,
   selectSet,
 }: {
   event: Event;
@@ -383,6 +411,7 @@ function EventView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
+  getPhaseGroupEntrants: (phaseGroup: PhaseGroup) => Promise<void>;
   selectSet: (
     set: Set,
     phaseGroupId: number,
@@ -444,6 +473,7 @@ function EventView({
               vlerkMode={vlerkMode}
               getPhase={getPhase}
               getPhaseGroup={getPhaseGroup}
+              getPhaseGroupEntrants={getPhaseGroupEntrants}
               selectSet={selectSet}
             />
           ))}
@@ -460,6 +490,7 @@ export default function StartggView({
   getEvent,
   getPhase,
   getPhaseGroup,
+  getPhaseGroupEntrants,
   selectSet,
 }: {
   searchSubstr: string;
@@ -472,6 +503,7 @@ export default function StartggView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
+  getPhaseGroupEntrants: (phaseGroup: PhaseGroup) => Promise<void>;
   selectSet: (
     set: Set,
     phaseGroupId: number,
@@ -495,6 +527,7 @@ export default function StartggView({
           getEvent={getEvent}
           getPhase={getPhase}
           getPhaseGroup={getPhaseGroup}
+          getPhaseGroupEntrants={getPhaseGroupEntrants}
           selectSet={selectSet}
         />
       ))}

@@ -5,6 +5,7 @@ import {
   Context,
   CopySettings,
   EnforceResult,
+  Entrant,
   Event,
   InvalidReplay,
   Mode,
@@ -67,6 +68,8 @@ const electronHandler = {
     ipcRenderer.invoke('reportSet', set),
   updateSet: (set: StartggSet): Promise<Set> =>
     ipcRenderer.invoke('updateSet', set),
+  getPhaseGroupEntrants: (id: number): Promise<Entrant[]> =>
+    ipcRenderer.invoke('getPhaseGroupEntrants', id),
   getMode: (): Promise<Mode> => ipcRenderer.invoke('getMode'),
   setMode: (mode: Mode): Promise<void> => ipcRenderer.invoke('setMode', mode),
   getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
@@ -75,9 +78,13 @@ const electronHandler = {
   getChallongeKey: (): Promise<string> => ipcRenderer.invoke('getChallongeKey'),
   setChallongeKey: (challongeKey: string): Promise<void> =>
     ipcRenderer.invoke('setChallongeKey', challongeKey),
-  getChallongeTournamentName: (slug: string): Promise<string> =>
-    ipcRenderer.invoke('getChallongeTournamentName', slug),
-  getChallongeSets: (slug: string): Promise<Sets> =>
+  getChallongeTournament: (
+    slug: string,
+  ): Promise<{ name: string; tournamentType: string }> =>
+    ipcRenderer.invoke('getChallongeTournament', slug),
+  getChallongeSets: (
+    slug: string,
+  ): Promise<{ entrants: Entrant[]; sets: Sets }> =>
     ipcRenderer.invoke('getChallongeSets', slug),
   startChallongeSet: (slug: string, id: number): Promise<Set> =>
     ipcRenderer.invoke('startChallongeSet', slug, id),
