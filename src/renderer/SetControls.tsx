@@ -143,6 +143,7 @@ export default function SetControls({
   mode,
   copyDisabled,
   dqId,
+  hasRemainingReplays,
   reportSettings,
   selectedReplays,
   set,
@@ -163,6 +164,7 @@ export default function SetControls({
   mode: Mode;
   copyDisabled: boolean;
   dqId: number;
+  hasRemainingReplays: boolean;
   reportSettings: ReportSettings;
   selectedReplays: Replay[];
   set: Set;
@@ -267,8 +269,12 @@ export default function SetControls({
     },
   ];
 
+  const gfDeleteOverride =
+    set.fullRoundText === 'Grand Final' && hasRemainingReplays;
   const reportCopyDelete = `Report${reportSettings.alsoCopy ? ', Copy' : ''}${
-    reportSettings.alsoCopy && reportSettings.alsoDelete ? ', Delete' : ''
+    reportSettings.alsoCopy && reportSettings.alsoDelete && !gfDeleteOverride
+      ? ', Delete'
+      : ''
   }`;
   return (
     <>
@@ -416,8 +422,12 @@ export default function SetControls({
             />
             <LabeledCheckbox
               checked={reportSettings.alsoDelete}
-              disabled={!reportSettings.alsoCopy}
-              label="Also Delete"
+              disabled={!reportSettings.alsoCopy || gfDeleteOverride}
+              label={
+                gfDeleteOverride
+                  ? 'Delete disabled, possible Grand Finals Reset replays detected'
+                  : 'Also Delete'
+              }
               labelPlacement="start"
               set={(checked: boolean) => {
                 const newReportSettings = { ...reportSettings };
@@ -459,7 +469,11 @@ export default function SetControls({
                 if (reportSettings.alsoCopy) {
                   await copyReplays(updatedSet);
                 }
-                if (reportSettings.alsoCopy && reportSettings.alsoDelete) {
+                if (
+                  reportSettings.alsoCopy &&
+                  reportSettings.alsoDelete &&
+                  !gfDeleteOverride
+                ) {
                   await deleteReplays();
                 }
                 setOpen(false);

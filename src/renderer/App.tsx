@@ -271,7 +271,16 @@ function Hello() {
   const [dirExists, setDirExists] = useState(true);
   const [replays, setReplays] = useState<Replay[]>([]);
   const [gettingReplays, setGettingReplays] = useState(false);
-  const selectedReplays = replays.filter((replay) => replay.selected);
+  let hasRemainingReplays = false;
+  const selectedReplays: Replay[] = [];
+  replays.forEach((replay) => {
+    if (replay.selected) {
+      selectedReplays.push(replay);
+      hasRemainingReplays = false;
+    } else {
+      hasRemainingReplays = true;
+    }
+  });
   const applyAllReplaysSelected = (allReplays: Replay[], selected: boolean) =>
     allReplays
       .filter((replay) => replay.invalidReasons.length === 0)
@@ -1942,6 +1951,7 @@ function Hello() {
                   isCopying || !copyDir || selectedReplays.length === 0
                 }
                 dqId={dq.entrantId}
+                hasRemainingReplays={hasRemainingReplays}
                 reportSettings={reportSettings}
                 selectedReplays={selectedReplays}
                 set={selectedSet}
