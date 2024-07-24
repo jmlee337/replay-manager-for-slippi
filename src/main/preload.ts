@@ -2,6 +2,7 @@ import { IpcRendererEvent, contextBridge, ipcRenderer } from 'electron';
 import {
   AdminedTournament,
   ChallongeMatchItem,
+  ChallongeTournament,
   Context,
   CopySettings,
   EnforceResult,
@@ -78,14 +79,8 @@ const electronHandler = {
   getChallongeKey: (): Promise<string> => ipcRenderer.invoke('getChallongeKey'),
   setChallongeKey: (challongeKey: string): Promise<void> =>
     ipcRenderer.invoke('setChallongeKey', challongeKey),
-  getChallongeTournament: (
-    slug: string,
-  ): Promise<{ name: string; tournamentType: string }> =>
+  getChallongeTournament: (slug: string): Promise<ChallongeTournament> =>
     ipcRenderer.invoke('getChallongeTournament', slug),
-  getChallongeSets: (
-    slug: string,
-  ): Promise<{ entrants: Entrant[]; sets: Sets }> =>
-    ipcRenderer.invoke('getChallongeSets', slug),
   startChallongeSet: (slug: string, id: number): Promise<Set> =>
     ipcRenderer.invoke('startChallongeSet', slug, id),
   reportChallongeSet: (

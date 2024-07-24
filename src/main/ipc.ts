@@ -36,7 +36,6 @@ import {
 } from './startgg';
 import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
 import {
-  getChallongeSets,
   getChallongeTournament,
   getChallongeTournaments,
   reportChallongeSet,
@@ -312,18 +311,6 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       return getChallongeTournament(slug, challongeApiKey);
-    },
-  );
-
-  ipcMain.removeHandler('getChallongeSets');
-  ipcMain.handle(
-    'getChallongeSets',
-    (event: IpcMainInvokeEvent, slug: string) => {
-      if (!challongeApiKey) {
-        throw new Error('Please set Challonge API key.');
-      }
-
-      return getChallongeSets(slug, challongeApiKey);
     },
   );
 

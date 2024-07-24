@@ -471,16 +471,10 @@ function Hello() {
 
     setGettingTournament(true);
     try {
-      const tournamentPromise =
-        window.electron.getChallongeTournament(maybeSlug);
-      const setsPromise = window.electron.getChallongeSets(maybeSlug);
-      challongeTournaments.set(maybeSlug, {
-        entrants: (await setsPromise).entrants,
-        name: (await tournamentPromise).name,
-        slug: maybeSlug,
-        sets: (await setsPromise).sets,
-        tournamentType: (await tournamentPromise).tournamentType,
-      });
+      challongeTournaments.set(
+        maybeSlug,
+        await window.electron.getChallongeTournament(maybeSlug),
+      );
       setChallongeTournaments(new Map(challongeTournaments));
     } catch (e: any) {
       showErrorDialog([e.toString()]);

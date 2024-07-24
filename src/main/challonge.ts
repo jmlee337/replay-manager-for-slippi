@@ -1,9 +1,9 @@
 import {
   AdminedTournament,
   ChallongeMatchItem,
+  ChallongeTournament,
   Entrant,
   Set,
-  Sets,
   State,
 } from '../common/types';
 
@@ -60,22 +60,8 @@ export async function getChallongeTournaments(
   }));
 }
 
-export async function getChallongeTournament(
-  slug: string,
-  key: string,
-): Promise<{ name: string; tournamentType: string }> {
-  const json = await get(
-    `https://api.challonge.com/v2.1/tournaments/${slug}.json`,
-    key,
-  );
-  return {
-    name: json.data.attributes.name,
-    tournamentType: json.data.attributes.tournament_type,
-  };
-}
-
 const participantIdToName = new Map<number, string>();
-const toSet = (match: any): Set => {
+const toSet = (match: any, idToFullRoundText: Map<number, string>): Set => {
   const participant1 = match.attributes.points_by_participant[0];
   const participant2 = match.attributes.points_by_participant[1];
   let state = State.PENDING;
@@ -85,12 +71,14 @@ const toSet = (match: any): Set => {
     state = State.STARTED;
   }
   const { round } = match.attributes;
-  const fullRoundPrefix = round > 0 ? 'Winners Round' : 'Losers Round';
+  const fullRoundText = idToFullRoundText.has(match.id)
+    ? idToFullRoundText.get(match.id)!
+    : `${round > 0 ? 'Winners Round' : 'Losers Round'} ${Math.abs(round)}`;
   return {
     id: match.id,
     state,
     round,
-    fullRoundText: `${fullRoundPrefix} ${Math.abs(round)}`,
+    fullRoundText,
     winnerId: match.attributes.winner_id,
     entrant1Id: participant1.participant_id,
     entrant1Participants: [
@@ -122,10 +110,18 @@ const toSet = (match: any): Set => {
   };
 };
 
-export async function getChallongeSets(
+const slugToFinalsMap = new Map<string, Map<number, string>>();
+export async function getChallongeTournament(
   slug: string,
   key: string,
-): Promise<{ entrants: Entrant[]; sets: Sets }> {
+): Promise<ChallongeTournament> {
+  const tournamentJson = await get(
+    `https://api.challonge.com/v2.1/tournaments/${slug}.json`,
+    key,
+  );
+  const { name, tournament_type: tournamentType } =
+    tournamentJson.data.attributes;
+
   let participantsPage = 0;
   let participantsCount = 0;
   let participantsSeen = 0;
@@ -173,14 +169,27 @@ export async function getChallongeSets(
       key,
     );
     const data = json.data as any[];
+    const idToFullRoundText = new Map<number, string>();
+    if (tournamentType === 'double elimination') {
+      const gfrSet = data[data.length - 1];
+      const gfSet = data[data.length - 2];
+      if (
+        gfSet.attributes.round === gfrSet.attributes.round &&
+        Number.isInteger(gfrSet.attributes.round)
+      ) {
+        idToFullRoundText.set(gfSet.id, 'Grand Final');
+        idToFullRoundText.set(gfrSet.id, 'Grand Final Reset');
+        slugToFinalsMap.set(slug, idToFullRoundText);
+        gfrSet.attributes.round += 1;
+      }
+    }
     data
       .filter(
         (match: any) =>
-          match.type === 'match' &&
-          (match.attributes.state === 'open' ||
-            match.attributes.state === 'complete'),
+          match.attributes.state === 'open' ||
+          match.attributes.state === 'complete',
       )
-      .map(toSet)
+      .map((match) => toSet(match, idToFullRoundText))
       .forEach((set) => {
         if (set.state === State.COMPLETED) {
           completedSets.push(set);
@@ -192,11 +201,14 @@ export async function getChallongeSets(
     matchesSeen += data.length;
   } while (matchesSeen < matchesCount);
   return {
+    name,
     entrants,
     sets: {
       pendingSets: pendingSets.sort((a, b) => a.ordinal! - b.ordinal!),
       completedSets: completedSets.sort((a, b) => b.ordinal! - a.ordinal!),
     },
+    slug,
+    tournamentType,
   };
 }
 
@@ -256,5 +268,8 @@ export async function reportChallongeSet(
       tie: false,
     },
   };
-  return toSet((await put(url, data, key)).data);
+  return toSet(
+    (await put(url, data, key)).data,
+    slugToFinalsMap.get(tournamentSlug) || new Map<number, string>(),
+  );
 }
