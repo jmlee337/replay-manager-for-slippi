@@ -73,6 +73,7 @@ const ReplayListItem = memo(function ReplayListItem({
   onClick,
   onOverride,
   resetSelectedChipData,
+  elevateChips,
 }: {
   index: number;
   numAvailablePlayers: number;
@@ -88,6 +89,7 @@ const ReplayListItem = memo(function ReplayListItem({
   onClick: (index: number) => void;
   onOverride: () => void;
   resetSelectedChipData: () => void;
+  elevateChips: boolean;
 }) {
   const onClickCallback = useCallback(() => {
     onClick(index);
@@ -137,7 +139,18 @@ const ReplayListItem = memo(function ReplayListItem({
     return (
       <QuarterSegment key={key}>
         {trophy}
-        <Box flexGrow={1}>{displayName.slice(0, 15)}</Box>
+        <Box
+          bgcolor="white"
+          flexGrow={1}
+          sx={{
+            zIndex: (theme) =>
+              displayName.length > 0 && elevateChips
+                ? theme.zIndex.drawer + 2
+                : undefined,
+          }}
+        >
+          {displayName.slice(0, 15)}
+        </Box>
       </QuarterSegment>
     );
   });
@@ -259,6 +272,7 @@ const ReplayListItem = memo(function ReplayListItem({
         selectedChipData={selectedChipData}
         style={chipStyle}
         onClickOrDrop={onClickOrDrop}
+        elevate={elevateChips}
       />
     );
   });
@@ -268,7 +282,8 @@ const ReplayListItem = memo(function ReplayListItem({
       disableGutters
       style={
         replay.invalidReasons.length === 0 ||
-        (selectedChipData.displayName && selectedChipData.entrantId)
+        (selectedChipData.displayName && selectedChipData.entrantId) ||
+        elevateChips
           ? {}
           : { opacity: '50%' }
       }
@@ -311,6 +326,8 @@ export default function ReplayList({
   onClick,
   onOverride,
   resetSelectedChipData,
+  elevate,
+  elevateChips,
 }: {
   numAvailablePlayers: number;
   replays: Replay[];
@@ -325,9 +342,16 @@ export default function ReplayList({
   onClick: (index: number) => void;
   onOverride: () => void;
   resetSelectedChipData: () => void;
+  elevate: boolean;
+  elevateChips: boolean;
 }) {
   return (
-    <List>
+    <List
+      style={{ backgroundColor: 'white' }}
+      sx={{
+        zIndex: (theme) => (elevate ? theme.zIndex.drawer + 2 : undefined),
+      }}
+    >
       {replays.map((replay, index) => (
         <ReplayListItem
           key={replay.filePath}
@@ -339,6 +363,7 @@ export default function ReplayList({
           onClick={onClick}
           onOverride={onOverride}
           resetSelectedChipData={resetSelectedChipData}
+          elevateChips={elevateChips}
         />
       ))}
     </List>

@@ -516,7 +516,7 @@ export default function StartggView({
   ) => void;
 }) {
   return (
-    <Box>
+    <Box bgcolor="white">
       {tournament.events.map((event) => (
         <EventView
           key={event.id}

@@ -39,6 +39,7 @@ export function DraggableChip({
   pronouns,
   selectedChipData,
   setSelectedChipData,
+  elevate,
 }: {
   entrantId: number;
   nameWithHighlight: NameWithHighlight;
@@ -56,6 +57,7 @@ export function DraggableChip({
     prefix: string;
     pronouns: string;
   }) => void;
+  elevate?: boolean;
 }) {
   const dragStart = (event: DragEvent<HTMLDivElement>) => {
     event.dataTransfer.setData(
@@ -89,6 +91,9 @@ export function DraggableChip({
             main: '#5BCEFA',
             dark: '#5BCEFA',
           },
+          action: {
+            hover: elevate ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.04)',
+          },
         },
       })}
     >
@@ -118,12 +123,27 @@ export function DraggableChip({
         }}
         onDragStart={dragStart}
         label={<Name nameWithHighlight={nameWithHighlight} />}
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 2 }}
+        sx={{
+          backgroundColor: !selected && elevate ? 'white' : undefined,
+          zIndex: (theme) => {
+            if (selected) {
+              return theme.zIndex.drawer + 4;
+            }
+            if (elevate) {
+              return theme.zIndex.drawer + 2;
+            }
+            return undefined;
+          },
+        }}
         variant={selected ? 'filled' : 'outlined'}
       />
     </ThemeProvider>
   );
 }
+
+DraggableChip.defaultProps = {
+  elevate: false,
+};
 
 export function DroppableChip({
   active,
@@ -133,6 +153,7 @@ export function DroppableChip({
   selectedChipData,
   style,
   onClickOrDrop,
+  elevate,
 }: {
   active: boolean;
   avatar?: ReactElement | undefined;
@@ -146,6 +167,7 @@ export function DroppableChip({
     prefix: string,
     pronouns: string,
   ) => void;
+  elevate?: boolean;
 }) {
   const drop = (event: DragEvent<HTMLDivElement>) => {
     const json = JSON.parse(event.dataTransfer.getData('text/plain'));
@@ -212,11 +234,19 @@ export function DroppableChip({
       onDragOver={dragEnterOver}
       label={label}
       style={style}
-      sx={
-        active && selectedChip
-          ? { zIndex: (theme) => theme.zIndex.drawer + 2 }
-          : undefined
-      }
+      sx={{
+        backgroundColor:
+          active && elevate && !selectedChip ? 'white' : undefined,
+        zIndex: (theme) => {
+          if (active && selectedChip) {
+            return theme.zIndex.drawer + 4;
+          }
+          if (active && elevate) {
+            return theme.zIndex.drawer + 2;
+          }
+          return undefined;
+        },
+      }}
       variant={outlined && !selectedChip ? 'outlined' : 'filled'}
     />
   );
@@ -243,4 +273,5 @@ export function DroppableChip({
 
 DroppableChip.defaultProps = {
   avatar: undefined,
+  elevate: false,
 };

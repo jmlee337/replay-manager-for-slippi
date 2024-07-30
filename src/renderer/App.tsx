@@ -41,6 +41,7 @@ import {
   ContextSlot,
   CopySettings,
   Event,
+  GuideState,
   InvalidReplay,
   Mode,
   Output,
@@ -246,6 +247,9 @@ function Hello() {
     { active: false, teamId: -1 },
     { active: false, teamId: -1 },
   ]);
+  const numBatchActive = batchActives.filter(
+    (batchActive) => batchActive.active,
+  ).length;
   const [overrides, setOverrides] = useState<PlayerOverrides[]>([
     { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
     { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
@@ -359,35 +363,47 @@ function Hello() {
     }
     setGettingReplays(false);
   };
-  const refreshReplays = useCallback(async () => {
-    let newReplays: Replay[] = [];
-    let invalidReplays: InvalidReplay[] = [];
-    setGettingReplays(true);
-    try {
-      const res = await window.electron.getReplaysInDir();
-      newReplays = res.replays;
-      invalidReplays = res.invalidReplays;
-      setDirExists(true);
-    } catch (e: any) {
-      setDirExists(false);
-    }
-    applyAllReplaysSelected(newReplays, allReplaysSelected);
-    setBatchActives(
-      getNewBatchActives(newReplays.filter((replay) => replay.selected)),
-    );
-    resetOverrides();
-    setReplays(newReplays);
-    setReplayLoadCount((r) => r + 1);
-    if (invalidReplays.length > 0) {
-      showErrorDialog(
-        invalidReplays.map(
-          (invalidReplay) =>
-            `${invalidReplay.fileName}: ${invalidReplay.invalidReason}`,
-        ),
+
+  const [guideState, setGuideState] = useState(GuideState.NONE);
+  const [guideBackdropOpen, setGuideBackdropOpen] = useState(false);
+  const refreshReplays = useCallback(
+    async (triggerGuide?: boolean) => {
+      let newReplays: Replay[] = [];
+      let invalidReplays: InvalidReplay[] = [];
+      setGettingReplays(true);
+      try {
+        const res = await window.electron.getReplaysInDir();
+        newReplays = res.replays;
+        invalidReplays = res.invalidReplays;
+        setDirExists(true);
+        if (triggerGuide) {
+          setGuideState(
+            mode === Mode.MANUAL ? GuideState.PLAYERS : GuideState.SET,
+          );
+          setGuideBackdropOpen(true);
+        }
+      } catch (e: any) {
+        setDirExists(false);
+      }
+      applyAllReplaysSelected(newReplays, allReplaysSelected);
+      setBatchActives(
+        getNewBatchActives(newReplays.filter((replay) => replay.selected)),
       );
-    }
-    setGettingReplays(false);
-  }, [allReplaysSelected]);
+      resetOverrides();
+      setReplays(newReplays);
+      setReplayLoadCount((r) => r + 1);
+      if (invalidReplays.length > 0) {
+        showErrorDialog(
+          invalidReplays.map(
+            (invalidReplay) =>
+              `${invalidReplay.fileName}: ${invalidReplay.invalidReason}`,
+          ),
+        );
+      }
+      setGettingReplays(false);
+    },
+    [allReplaysSelected, mode],
+  );
   const deleteDir = async () => {
     if (!dir) {
       return;
@@ -443,8 +459,10 @@ function Hello() {
     window.electron.onUsb((event: IpcRendererEvent, newDir: string) => {
       if (newDir) {
         setDir(newDir);
+        refreshReplays(true);
+      } else {
+        refreshReplays();
       }
-      refreshReplays();
     });
   }, [refreshReplays]);
 
@@ -662,10 +680,7 @@ function Hello() {
     });
 
     // pigeonhole remaining player if possible
-    if (
-      batchActives.filter((batchActive) => batchActive.active).length ===
-      availablePlayers.length
-    ) {
+    if (numBatchActive === availablePlayers.length) {
       const overrideSet = new Map<string, boolean>();
       const remainingIndices: number[] = [];
       const { teamId } = batchActives[index];
@@ -756,6 +771,12 @@ function Hello() {
           prefix: string,
           pronouns: string,
         ) => onClickOrDrop(displayName, entrantId, prefix, pronouns, index)}
+        elevate={
+          guidedMode &&
+          guideBackdropOpen &&
+          guideState === GuideState.PLAYERS &&
+          (numBatchActive === 2 || numBatchActive === 4)
+        }
       />
     );
   };
@@ -1484,7 +1505,7 @@ function Hello() {
               )}
               {dir && !gettingReplays && (
                 <Tooltip arrow title="Refresh replays">
-                  <IconButton onClick={refreshReplays}>
+                  <IconButton onClick={() => refreshReplays()}>
                     <Refresh />
                   </IconButton>
                 </Tooltip>
@@ -1615,6 +1636,18 @@ function Hello() {
               onClick={onReplayClick}
               onOverride={onPlayerOverride}
               resetSelectedChipData={resetSelectedChipData}
+              elevate={
+                guidedMode &&
+                guideBackdropOpen &&
+                guideState === GuideState.REPLAYS
+              }
+              elevateChips={
+                guidedMode &&
+                guideBackdropOpen &&
+                guideState === GuideState.PLAYERS &&
+                numBatchActive !== 2 &&
+                numBatchActive !== 4
+              }
             />
           ) : (
             <Alert severity="error" sx={{ mb: '8px', pl: '24px' }}>
@@ -1640,7 +1673,18 @@ function Hello() {
             }}
           />
         </TopColumn>
-        <TopColumn width="300px">
+        <TopColumn
+          width="300px"
+          sx={{
+            zIndex: (theme) =>
+              guidedMode &&
+              guideBackdropOpen &&
+              (guideState === GuideState.SET ||
+                (mode === Mode.MANUAL && guideState === GuideState.PLAYERS))
+                ? theme.zIndex.drawer + 2
+                : undefined,
+          }}
+        >
           <SearchBox
             mode={mode}
             searchSubstr={searchSubstr}
@@ -1660,7 +1704,28 @@ function Hello() {
                 getPhaseGroup(id, phaseId, eventId, true)
               }
               getPhaseGroupEntrants={getPhaseGroupEntrants}
-              selectSet={selectStartggSet}
+              selectSet={(
+                set: Set,
+                phaseGroupId: number,
+                phaseGroupName: string,
+                phaseId: number,
+                phaseName: string,
+                eventId: number,
+                eventName: string,
+                eventSlug: string,
+              ) => {
+                selectStartggSet(
+                  set,
+                  phaseGroupId,
+                  phaseGroupName,
+                  phaseId,
+                  phaseName,
+                  eventId,
+                  eventName,
+                  eventSlug,
+                );
+                setGuideState(GuideState.REPLAYS);
+              }}
             />
           )}
           {mode === Mode.CHALLONGE &&
@@ -1675,6 +1740,7 @@ function Hello() {
                   }
                   selectSet={(set: Set) => {
                     selectChallongeSet(set, challongeTournament);
+                    setGuideState(GuideState.REPLAYS);
                   }}
                 />
               ),
@@ -1724,6 +1790,12 @@ function Hello() {
                 setManualNames={setManualNames}
                 copyDir={copyDir}
                 setCopyDir={setCopyDir}
+                state={guideState}
+                setState={setGuideState}
+                backdropOpen={guideBackdropOpen}
+                openBackdrop={() => {
+                  setGuideBackdropOpen(true);
+                }}
               />
             ) : (
               <Stack
@@ -1798,6 +1870,11 @@ function Hello() {
                           }
                           selectedChipData={selectedChipData}
                           setSelectedChipData={setSelectedChipData}
+                          elevate={
+                            guidedMode &&
+                            guideBackdropOpen &&
+                            guideState === GuideState.PLAYERS
+                          }
                         />
                         {selectedSet.entrant1Participants.length > 1 && (
                           <DraggableChip
@@ -1812,6 +1889,11 @@ function Hello() {
                             }
                             selectedChipData={selectedChipData}
                             setSelectedChipData={setSelectedChipData}
+                            elevate={
+                              guidedMode &&
+                              guideBackdropOpen &&
+                              guideState === GuideState.PLAYERS
+                            }
                           />
                         )}
                       </Stack>
@@ -1828,6 +1910,11 @@ function Hello() {
                           }
                           selectedChipData={selectedChipData}
                           setSelectedChipData={setSelectedChipData}
+                          elevate={
+                            guidedMode &&
+                            guideBackdropOpen &&
+                            guideState === GuideState.PLAYERS
+                          }
                         />
                         {selectedSet.entrant2Participants.length > 1 && (
                           <DraggableChip
@@ -1842,6 +1929,11 @@ function Hello() {
                             }
                             selectedChipData={selectedChipData}
                             setSelectedChipData={setSelectedChipData}
+                            elevate={
+                              guidedMode &&
+                              guideBackdropOpen &&
+                              guideState === GuideState.PLAYERS
+                            }
                           />
                         )}
                       </Stack>
@@ -1896,6 +1988,7 @@ function Hello() {
                   await window.electron.setReportSettings(newReportSettings);
                   setReportSettings(newReportSettings);
                 }}
+                setGuideState={setGuideState}
                 copyDisabled={
                   isCopying || !copyDir || selectedReplays.length === 0
                 }
@@ -1906,6 +1999,11 @@ function Hello() {
                 set={selectedSet}
                 useEnforcer={useEnforcer}
                 vlerkMode={vlerkMode}
+                elevate={
+                  guidedMode &&
+                  guideBackdropOpen &&
+                  guideState === GuideState.PLAYERS
+                }
               />
             </Stack>
           </Stack>
@@ -1914,6 +2012,11 @@ function Hello() {
       <Backdrop
         onClick={resetSelectedChipData}
         open={!!(selectedChipData.displayName && selectedChipData.entrantId)}
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 3 }}
+      />
+      <Backdrop
+        onClick={() => setGuideBackdropOpen(false)}
+        open={guidedMode && guideBackdropOpen && guideState !== GuideState.NONE}
         sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
       />
       <ErrorDialog

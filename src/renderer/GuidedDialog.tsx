@@ -1,6 +1,18 @@
-import { Alert, Button, Dialog, DialogContent, Stack } from '@mui/material';
+import {
+  Alert,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Stack,
+} from '@mui/material';
 import { FolderOpen } from '@mui/icons-material';
-import { AdminedTournament, ChallongeTournament, Mode } from '../common/types';
+import {
+  AdminedTournament,
+  ChallongeTournament,
+  GuideState,
+  Mode,
+} from '../common/types';
 import ManualNamesForm from './ManualNamesForm';
 import StartggTournamentForm from './StartggTournamentForm';
 import ChallongeTournamentForm from './ChallongeTournamentForm';
@@ -21,6 +33,10 @@ export default function GuidedDialog({
   setManualNames,
   copyDir,
   setCopyDir,
+  state,
+  setState,
+  backdropOpen,
+  openBackdrop,
 }: {
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -40,6 +56,10 @@ export default function GuidedDialog({
   setManualNames: (manualNames: string[]) => void;
   copyDir: string;
   setCopyDir: (copyDir: string) => void;
+  state: GuideState;
+  setState: (state: GuideState) => void;
+  backdropOpen: boolean;
+  openBackdrop: () => void;
 }) {
   const tournamentSet =
     (mode === Mode.STARTGG && startggTournamentSlug) ||
@@ -54,10 +74,16 @@ export default function GuidedDialog({
         justifyContent="end"
         marginTop="8px"
         spacing="8px"
+        sx={{
+          zIndex: (theme) =>
+            state !== GuideState.NONE && backdropOpen
+              ? theme.zIndex.drawer + 2
+              : undefined,
+        }}
       >
         {(!tournamentSet || !copyDirSet) && (
           <>
-            <Alert severity="warning">Guided mode not ready</Alert>
+            <Alert severity="error">Guided mode not ready</Alert>
             <Button
               onClick={() => {
                 setOpen(true);
@@ -68,10 +94,39 @@ export default function GuidedDialog({
             </Button>
           </>
         )}
-        {tournamentSet && copyDirSet && (
+        {tournamentSet && copyDirSet && state === GuideState.NONE && (
           <Alert severity="success">
             Guided mode ready, insert USB drive...
           </Alert>
+        )}
+        {tournamentSet && copyDirSet && state !== GuideState.NONE && (
+          <>
+            <Alert severity="warning">
+              {state === GuideState.SET && 'Select set'}
+              {state === GuideState.REPLAYS &&
+                'Select Replays (deselect handwarmers)'}
+              {state === GuideState.PLAYERS && 'Assign players and report'}
+            </Alert>
+            {state === GuideState.REPLAYS && (
+              <Button
+                onClick={() => {
+                  setState(GuideState.PLAYERS);
+                }}
+                variant="contained"
+              >
+                Done!
+              </Button>
+            )}
+            <Button
+              disabled={backdropOpen}
+              onClick={() => {
+                openBackdrop();
+              }}
+              variant="contained"
+            >
+              Highlight Step
+            </Button>
+          </>
         )}
       </Stack>
       <Dialog
@@ -118,25 +173,27 @@ export default function GuidedDialog({
             setManualNames={setManualNames}
           />
         )}
-        {tournamentSet && (
-          <DialogContent>
-            {tournamentSet && !copyDirSet && (
-              <Button
-                endIcon={<FolderOpen />}
-                onClick={async () => {
-                  const newCopyDir = await window.electron.chooseCopyDir();
-                  if (newCopyDir) {
-                    setCopyDir(newCopyDir);
-                    setOpen(false);
-                  }
-                }}
-                variant="contained"
-              >
-                Set copy folder
-              </Button>
-            )}
-            {tournamentSet && copyDirSet && <>ready</>}
-          </DialogContent>
+        {tournamentSet && !copyDirSet && (
+          <>
+            <DialogTitle>Set copy folder</DialogTitle>
+            <DialogContent>
+              <Stack direction="row" justifyContent="end">
+                <Button
+                  endIcon={<FolderOpen />}
+                  onClick={async () => {
+                    const newCopyDir = await window.electron.chooseCopyDir();
+                    if (newCopyDir) {
+                      setCopyDir(newCopyDir);
+                      setOpen(false);
+                    }
+                  }}
+                  variant="contained"
+                >
+                  Set
+                </Button>
+              </Stack>
+            </DialogContent>
+          </>
         )}
       </Dialog>
     </>

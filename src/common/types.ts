@@ -256,3 +256,10 @@ export type SetWithNames = {
   entrant1Names: NameWithHighlight[];
   entrant2Names: NameWithHighlight[];
 };
+
+export enum GuideState {
+  NONE,
+  SET,
+  REPLAYS,
+  PLAYERS,
+}

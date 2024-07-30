@@ -30,7 +30,7 @@ export default function SearchBox({
   return (
     <>
       {(showSearch || (vlerkMode && mode === Mode.STARTGG)) && (
-        <Box style={{ padding: '8px 0' }}>
+        <Box style={{ background: 'white', padding: '8px 0' }}>
           <TextField
             autoFocus
             fullWidth

@@ -17,6 +17,7 @@ import styled from '@emotion/styled';
 import {
   ChallongeMatchItem,
   EnforceResult,
+  GuideState,
   Mode,
   Player,
   Replay,
@@ -140,6 +141,7 @@ export default function SetControls({
   reportChallongeSet,
   reportStartggSet,
   setReportSettings,
+  setGuideState,
   mode,
   copyDisabled,
   dqId,
@@ -149,6 +151,7 @@ export default function SetControls({
   set,
   useEnforcer,
   vlerkMode,
+  elevate,
 }: {
   copyReplays: (set?: Set) => Promise<void>;
   deleteReplays: () => Promise<void>;
@@ -161,6 +164,7 @@ export default function SetControls({
     update: boolean,
   ) => Promise<Set | undefined>;
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
+  setGuideState: (guideState: GuideState) => void;
   mode: Mode;
   copyDisabled: boolean;
   dqId: number;
@@ -170,6 +174,7 @@ export default function SetControls({
   set: Set;
   useEnforcer: boolean;
   vlerkMode: boolean;
+  elevate: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -305,6 +310,9 @@ export default function SetControls({
         }}
         size="small"
         variant="contained"
+        sx={{
+          zIndex: (theme) => (elevate ? theme.zIndex.drawer + 2 : undefined),
+        }}
       >
         Report
       </Button>
@@ -483,6 +491,7 @@ export default function SetControls({
                   isDQ: false,
                   gameData: [],
                 });
+                setGuideState(GuideState.NONE);
               } catch (e: any) {
                 const message = e instanceof Error ? e.message : e;
                 setReportError(message);
