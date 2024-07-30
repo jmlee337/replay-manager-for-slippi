@@ -1,6 +1,7 @@
 import { Alert, Button, Dialog, DialogContent, Stack } from '@mui/material';
-import { ChallongeTournament, Mode } from '../common/types';
 import { FolderOpen } from '@mui/icons-material';
+import { ChallongeTournament, Mode } from '../common/types';
+import ManualNamesForm from './ManualNamesForm';
 
 export default function GuidedDialog({
   open,
@@ -68,26 +69,37 @@ export default function GuidedDialog({
           setOpen(false);
         }}
       >
-        <DialogContent>
-          {!tournamentSet && mode === Mode.STARTGG && <>start.gg</>}
-          {!tournamentSet && mode === Mode.CHALLONGE && <>challonge</>}
-          {!tournamentSet && mode === Mode.MANUAL && <>manual</>}
-          {tournamentSet && !copyDirSet && (
-            <Button
-              endIcon={<FolderOpen />}
-              onClick={async () => {
-                const newCopyDir = await window.electron.chooseCopyDir();
-                if (newCopyDir) {
-                  setCopyDir(newCopyDir);
-                }
-              }}
-              variant="contained"
-            >
-              Set copy folder
-            </Button>
-          )}
-          {tournamentSet && copyDirSet && <>ready</>}
-        </DialogContent>
+        {!tournamentSet && mode === Mode.MANUAL ? (
+          <ManualNamesForm
+            close={() => {
+              if (copyDir) {
+                setOpen(false);
+              }
+            }}
+            manualNames={manualNames}
+            setManualNames={setManualNames}
+          />
+        ) : (
+          <DialogContent>
+            {!tournamentSet && mode === Mode.STARTGG && <>start.gg</>}
+            {!tournamentSet && mode === Mode.CHALLONGE && <>challonge</>}
+            {tournamentSet && !copyDirSet && (
+              <Button
+                endIcon={<FolderOpen />}
+                onClick={async () => {
+                  const newCopyDir = await window.electron.chooseCopyDir();
+                  if (newCopyDir) {
+                    setCopyDir(newCopyDir);
+                  }
+                }}
+                variant="contained"
+              >
+                Set copy folder
+              </Button>
+            )}
+            {tournamentSet && copyDirSet && <>ready</>}
+          </DialogContent>
+        )}
       </Dialog>
     </>
   );
