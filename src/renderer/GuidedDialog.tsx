@@ -3,6 +3,7 @@ import { FolderOpen } from '@mui/icons-material';
 import { AdminedTournament, ChallongeTournament, Mode } from '../common/types';
 import ManualNamesForm from './ManualNamesForm';
 import StartggTournamentForm from './StartggTournamentForm';
+import ChallongeTournamentForm from './ChallongeTournamentForm';
 
 export default function GuidedDialog({
   open,
@@ -15,7 +16,7 @@ export default function GuidedDialog({
   setStartggTournamentSlug,
   getStartggTournament,
   challongeTournaments,
-  setChallongeTournaments,
+  getChallongeTournament,
   manualNames,
   setManualNames,
   copyDir,
@@ -34,9 +35,7 @@ export default function GuidedDialog({
     initial?: boolean,
   ) => Promise<boolean>;
   challongeTournaments: Map<string, ChallongeTournament>;
-  setChallongeTournaments: (
-    challongeTournaments: Map<string, ChallongeTournament>,
-  ) => void;
+  getChallongeTournament: (maybeSlug: string) => Promise<void>;
   manualNames: string[];
   setManualNames: (manualNames: string[]) => void;
   copyDir: string;
@@ -71,7 +70,7 @@ export default function GuidedDialog({
         )}
         {tournamentSet && copyDirSet && (
           <Alert severity="success">
-            Guide mode ready, insert USB drive...
+            Guided mode ready, insert USB drive...
           </Alert>
         )}
       </Stack>
@@ -81,17 +80,6 @@ export default function GuidedDialog({
           setOpen(false);
         }}
       >
-        {!tournamentSet && mode === Mode.MANUAL && (
-          <ManualNamesForm
-            close={() => {
-              if (copyDir) {
-                setOpen(false);
-              }
-            }}
-            manualNames={manualNames}
-            setManualNames={setManualNames}
-          />
-        )}
         {!tournamentSet && mode === Mode.STARTGG && (
           <StartggTournamentForm
             gettingAdminedTournaments={gettingAdminedTournaments}
@@ -106,9 +94,32 @@ export default function GuidedDialog({
             }}
           />
         )}
-        {(tournamentSet || mode === Mode.CHALLONGE) && (
+        {!tournamentSet && mode === Mode.CHALLONGE && (
+          <ChallongeTournamentForm
+            gettingAdminedTournaments={gettingAdminedTournaments}
+            adminedTournaments={adminedTournaments}
+            gettingTournament={gettingTournament}
+            getTournament={getChallongeTournament}
+            close={() => {
+              if (copyDir) {
+                setOpen(false);
+              }
+            }}
+          />
+        )}
+        {!tournamentSet && mode === Mode.MANUAL && (
+          <ManualNamesForm
+            close={() => {
+              if (copyDir) {
+                setOpen(false);
+              }
+            }}
+            manualNames={manualNames}
+            setManualNames={setManualNames}
+          />
+        )}
+        {tournamentSet && (
           <DialogContent>
-            {!tournamentSet && mode === Mode.CHALLONGE && <>challonge</>}
             {tournamentSet && !copyDirSet && (
               <Button
                 endIcon={<FolderOpen />}

@@ -1,5 +1,5 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   AppBar,
@@ -14,11 +14,8 @@ import {
   Divider,
   IconButton,
   InputBase,
-  ListItemButton,
-  ListItemText,
   Paper,
   Stack,
-  TextField,
   Toolbar,
   Tooltip,
   Typography,
@@ -77,6 +74,7 @@ import ChallongeView from './ChallongeView';
 import SearchBox from './SearchBox';
 import GuidedDialog from './GuidedDialog';
 import StartggTournamentForm from './StartggTournamentForm';
+import ChallongeTournamentForm from './ChallongeTournamentForm';
 
 const Bottom = styled(Paper)`
   height: 147px;
@@ -103,12 +101,6 @@ const TopColumn = styled(Stack)`
 const AppBarSection = styled(Stack)`
   flex-shrink: 1;
   padding: 8px;
-`;
-
-const Form = styled.form`
-  align-items: center;
-  display: flex;
-  margin-top: 8px;
 `;
 
 const EMPTY_SET: Set = {
@@ -499,20 +491,6 @@ function Hello() {
       showErrorDialog([e.toString()]);
     } finally {
       setGettingTournament(false);
-    }
-  };
-  const getChallongeTournamentOnSubmit = async (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
-    const target = event.target as typeof event.target & {
-      slug: { value: string };
-    };
-    const newSlug = target.slug.value;
-    event.preventDefault();
-    event.stopPropagation();
-    if (newSlug) {
-      await getChallongeTournament(newSlug);
-      setSlugDialogOpen(false);
     }
   };
 
@@ -1595,40 +1573,19 @@ function Hello() {
                 </Tooltip>
                 <Dialog
                   open={slugDialogOpen}
-                  onClose={() => setSlugDialogOpen(false)}
+                  onClose={() => {
+                    setSlugDialogOpen(false);
+                  }}
                 >
-                  <DialogTitle>Add Challonge tournament</DialogTitle>
-                  <DialogContent>
-                    <Form onSubmit={getChallongeTournamentOnSubmit}>
-                      <TextField
-                        autoFocus
-                        label="Tournament Slug"
-                        name="slug"
-                        placeholder="pwq179iw"
-                        size="small"
-                        variant="outlined"
-                      />
-                      {gettingTournament ? (
-                        <CircularProgress
-                          size="24px"
-                          style={{ marginLeft: '8px' }}
-                        />
-                      ) : (
-                        <Button type="submit">Add!</Button>
-                      )}
-                    </Form>
-                    {adminedTournaments.map((adminedTournament) => (
-                      <ListItemButton
-                        key={adminedTournament.slug}
-                        onClick={async () => {
-                          await getChallongeTournament(adminedTournament.slug);
-                          setSlugDialogOpen(false);
-                        }}
-                      >
-                        <ListItemText>{adminedTournament.name}</ListItemText>
-                      </ListItemButton>
-                    ))}
-                  </DialogContent>
+                  <ChallongeTournamentForm
+                    gettingAdminedTournaments={gettingAdminedTournaments}
+                    adminedTournaments={adminedTournaments}
+                    gettingTournament={gettingTournament}
+                    getTournament={getChallongeTournament}
+                    close={() => {
+                      setSlugDialogOpen(false);
+                    }}
+                  />
                 </Dialog>
               </Stack>
             )}
@@ -1762,7 +1719,7 @@ function Hello() {
                 setStartggTournamentSlug={setSlug}
                 getStartggTournament={getTournament}
                 challongeTournaments={challongeTournaments}
-                setChallongeTournaments={setChallongeTournaments}
+                getChallongeTournament={getChallongeTournament}
                 manualNames={manualNames}
                 setManualNames={setManualNames}
                 copyDir={copyDir}

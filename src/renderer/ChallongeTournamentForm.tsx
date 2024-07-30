@@ -12,19 +12,17 @@ import {
 import { FormEvent } from 'react';
 import { AdminedTournament } from '../common/types';
 
-export default function StartggTournamentForm({
+export default function ChallongeTournamentForm({
   gettingAdminedTournaments,
   adminedTournaments,
   gettingTournament,
   getTournament,
-  setSlug,
   close,
 }: {
   gettingAdminedTournaments: boolean;
   adminedTournaments: AdminedTournament[];
   gettingTournament: boolean;
-  getTournament: (maybeSlug: string, initial?: boolean) => Promise<boolean>;
-  setSlug: (slug: string) => void;
+  getTournament: (maybeSlug: string) => Promise<void>;
   close: () => void;
 }) {
   const getTournamentOnSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -35,16 +33,14 @@ export default function StartggTournamentForm({
     event.preventDefault();
     event.stopPropagation();
     if (newSlug) {
-      if (await getTournament(newSlug, true)) {
-        setSlug(newSlug);
-        close();
-      }
+      await getTournament(newSlug);
+      close();
     }
   };
 
   return (
     <>
-      <DialogTitle>Set start.gg tournament</DialogTitle>
+      <DialogTitle>Add Challonge tournament</DialogTitle>
       <DialogContent>
         <form
           style={{
@@ -59,7 +55,7 @@ export default function StartggTournamentForm({
             autoFocus
             label="Tournament Slug"
             name="slug"
-            placeholder="super-smash-con-2023"
+            placeholder="pwq179iw"
             size="small"
             variant="outlined"
           />
@@ -69,7 +65,7 @@ export default function StartggTournamentForm({
             type="submit"
             variant="contained"
           >
-            Get!
+            Add!
           </Button>
         </form>
         {gettingAdminedTournaments ? (
@@ -84,10 +80,8 @@ export default function StartggTournamentForm({
             <ListItemButton
               key={adminedTournament.slug}
               onClick={async () => {
-                if (await getTournament(adminedTournament.slug, true)) {
-                  setSlug(adminedTournament.slug);
-                  close();
-                }
+                await getTournament(adminedTournament.slug);
+                close();
               }}
             >
               <ListItemText>{adminedTournament.name}</ListItemText>
