@@ -124,6 +124,9 @@ const electronHandler = {
   getVlerkMode: (): Promise<boolean> => ipcRenderer.invoke('getVlerkMode'),
   setVlerkMode: (vlerkMode: boolean): Promise<void> =>
     ipcRenderer.invoke('setVlerkMode', vlerkMode),
+  getGuidedMode: (): Promise<boolean> => ipcRenderer.invoke('getGuidedMode'),
+  setGuidedMode: (guidedMode: boolean): Promise<void> =>
+    ipcRenderer.invoke('setGuidedMode', guidedMode),
   copyToClipboard: (text: string): Promise<void> =>
     ipcRenderer.invoke('copyToClipboard', text),
   getVersion: (): Promise<string> => ipcRenderer.invoke('getVersion'),

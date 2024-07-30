@@ -541,6 +541,21 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
+  let guidedMode = store.has('guidedMode')
+    ? (store.get('guidedMode') as boolean)
+    : true;
+  ipcMain.removeHandler('getGuidedMode');
+  ipcMain.handle('getGuidedMode', () => guidedMode);
+
+  ipcMain.removeHandler('setGuidedMode');
+  ipcMain.handle(
+    'setGuidedMode',
+    (event: IpcMainInvokeEvent, newGuidedMode: boolean) => {
+      store.set('guidedMode', newGuidedMode);
+      guidedMode = newGuidedMode;
+    },
+  );
+
   ipcMain.removeHandler('copyToClipboard');
   ipcMain.handle(
     'copyToClipboard',

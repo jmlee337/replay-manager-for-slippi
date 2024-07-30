@@ -52,6 +52,8 @@ export default function Settings({
   setUseEnforcer,
   vlerkMode,
   setVlerkMode,
+  guidedMode,
+  setGuidedMode,
   fileNameFormat,
   setFileNameFormat,
   folderNameFormat,
@@ -75,6 +77,8 @@ export default function Settings({
   setUseEnforcer: (useEnforcer: boolean) => void;
   vlerkMode: boolean;
   setVlerkMode: (vlerkMode: boolean) => void;
+  guidedMode: boolean;
+  setGuidedMode: (guidedMode: boolean) => void;
   fileNameFormat: string;
   setFileNameFormat: (fileNameFormat: string) => void;
   folderNameFormat: string;
@@ -300,12 +304,31 @@ export default function Settings({
               }}
             />
             <LabeledCheckbox
+              checked={guidedMode}
+              disabled={!autoDetectUsb}
+              label="Use guided mode"
+              labelPlacement="end"
+              set={async (checked) => {
+                await window.electron.setGuidedMode(checked);
+                setGuidedMode(checked);
+              }}
+            />
+            <LabeledCheckbox
               checked={scrollToBottom}
               label="Auto-scroll to end of replay list"
               labelPlacement="end"
               set={async (checked) => {
                 await window.electron.setScrollToBottom(checked);
                 setScrollToBottom(checked);
+              }}
+            />
+            <LabeledCheckbox
+              checked={useEnforcer}
+              label="Use SLP Enforcer"
+              labelPlacement="end"
+              set={async (checked) => {
+                await window.electron.setUseEnforcer(checked);
+                setUseEnforcer(checked);
               }}
             />
             <LabeledCheckbox
@@ -328,15 +351,6 @@ export default function Settings({
               set={async (checked) => {
                 await window.electron.setVlerkMode(checked);
                 setVlerkMode(checked);
-              }}
-            />
-            <LabeledCheckbox
-              checked={useEnforcer}
-              label="Use SLP Enforcer"
-              labelPlacement="end"
-              set={async (checked) => {
-                await window.electron.setUseEnforcer(checked);
-                setUseEnforcer(checked);
               }}
             />
             <DialogContentText>

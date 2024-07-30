@@ -165,6 +165,7 @@ function Hello() {
   const [scrollToBottom, setScrollToBottom] = useState(false);
   const [useEnforcer, setUseEnforcer] = useState(false);
   const [vlerkMode, setVlerkMode] = useState(false);
+  const [guidedMode, setGuidedMode] = useState(false);
   const [fileNameFormat, setFileNameFormat] = useState('');
   const [folderNameFormat, setFolderNameFormat] = useState('');
   const [appVersion, setAppVersion] = useState('');
@@ -194,6 +195,7 @@ function Hello() {
       const scrollToBottomPromise = window.electron.getScrollToBottom();
       const useEnforcerPromise = window.electron.getUseEnforcer();
       const vlerkModePromise = window.electron.getVlerkMode();
+      const guidedModePromise = window.electron.getGuidedMode();
       const fileNameFormatPromise = window.electron.getFileNameFormat();
       const folderNameFormatPromise = window.electron.getFolderNameFormat();
       const copySettingsPromise = window.electron.getCopySettings();
@@ -213,6 +215,7 @@ function Hello() {
       setFileNameFormat(await fileNameFormatPromise);
       setFolderNameFormat(await folderNameFormatPromise);
       setVlerkMode(await vlerkModePromise);
+      setGuidedMode(await guidedModePromise);
       setCopySettings(await copySettingsPromise);
       setReportSettings(await reportSettingsPromise);
 
@@ -1997,6 +2000,8 @@ function Hello() {
         setUseEnforcer={setUseEnforcer}
         vlerkMode={vlerkMode}
         setVlerkMode={setVlerkMode}
+        guidedMode={guidedMode}
+        setGuidedMode={setGuidedMode}
         fileNameFormat={fileNameFormat}
         setFileNameFormat={setFileNameFormat}
         folderNameFormat={folderNameFormat}
