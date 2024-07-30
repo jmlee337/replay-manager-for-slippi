@@ -76,6 +76,7 @@ import ManualBar from './ManualBar';
 import ChallongeView from './ChallongeView';
 import SearchBox from './SearchBox';
 import GuidedDialog from './GuidedDialog';
+import StartggTournamentForm from './StartggTournamentForm';
 
 const Bottom = styled(Paper)`
   height: 147px;
@@ -185,7 +186,11 @@ function Hello() {
     alsoDelete: false,
   });
   // admined tournaments
-  const [tournaments, setTournaments] = useState<AdminedTournament[]>([]);
+  const [adminedTournaments, setAdminedTournaments] = useState<
+    AdminedTournament[]
+  >([]);
+  const [gettingAdminedTournaments, setGettingAdminedTournaments] =
+    useState(true);
   useEffect(() => {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
@@ -228,10 +233,11 @@ function Hello() {
         errorMessages.push('Unable to check for updates.');
       }
       try {
-        setTournaments(await tournamentsPromise);
+        setAdminedTournaments(await tournamentsPromise);
       } catch {
         errorMessages.push('Unable to fetch admined tournaments.');
       }
+      setGettingAdminedTournaments(false);
       if (errorMessages.length > 0) {
         errorMessages.push('Are you connected to the internet?');
         showErrorDialog(errorMessages);
@@ -925,20 +931,6 @@ function Hello() {
     setGettingTournament(false);
     return true;
   };
-  const getTournamentOnSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    const target = event.target as typeof event.target & {
-      slug: { value: string };
-    };
-    const newSlug = target.slug.value;
-    event.preventDefault();
-    event.stopPropagation();
-    if (newSlug) {
-      if (await getTournament(newSlug, true)) {
-        setSlug(newSlug);
-        setSlugDialogOpen(false);
-      }
-    }
-  };
 
   const [manualNames, setManualNames] = useState<string[]>([]);
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
@@ -1568,45 +1560,20 @@ function Hello() {
                 </Tooltip>
                 <Dialog
                   open={slugDialogOpen}
-                  onClose={() => setSlugDialogOpen(false)}
+                  onClose={() => {
+                    setSlugDialogOpen(false);
+                  }}
                 >
-                  <DialogTitle>Set start.gg tournament</DialogTitle>
-                  <DialogContent>
-                    <Form onSubmit={getTournamentOnSubmit}>
-                      <TextField
-                        autoFocus
-                        label="Tournament Slug"
-                        name="slug"
-                        placeholder="super-smash-con-2023"
-                        size="small"
-                        variant="outlined"
-                      />
-                      <Button
-                        disabled={gettingTournament}
-                        endIcon={
-                          gettingTournament && <CircularProgress size="24px" />
-                        }
-                        type="submit"
-                      >
-                        Get!
-                      </Button>
-                    </Form>
-                    {tournaments.map((adminedTournament) => (
-                      <ListItemButton
-                        key={adminedTournament.slug}
-                        onClick={async () => {
-                          if (
-                            await getTournament(adminedTournament.slug, true)
-                          ) {
-                            setSlug(adminedTournament.slug);
-                            setSlugDialogOpen(false);
-                          }
-                        }}
-                      >
-                        <ListItemText>{adminedTournament.name}</ListItemText>
-                      </ListItemButton>
-                    ))}
-                  </DialogContent>
+                  <StartggTournamentForm
+                    gettingAdminedTournaments={gettingAdminedTournaments}
+                    adminedTournaments={adminedTournaments}
+                    gettingTournament={gettingTournament}
+                    getTournament={getTournament}
+                    setSlug={setSlug}
+                    close={() => {
+                      setSlugDialogOpen(false);
+                    }}
+                  />
                 </Dialog>
               </Stack>
             )}
@@ -1650,7 +1617,7 @@ function Hello() {
                         <Button type="submit">Add!</Button>
                       )}
                     </Form>
-                    {tournaments.map((adminedTournament) => (
+                    {adminedTournaments.map((adminedTournament) => (
                       <ListItemButton
                         key={adminedTournament.slug}
                         onClick={async () => {
@@ -1788,8 +1755,12 @@ function Hello() {
                 open={guidedDialogOpen}
                 setOpen={setGuidedDialogOpen}
                 mode={mode}
+                gettingAdminedTournaments={gettingAdminedTournaments}
+                adminedTournaments={adminedTournaments}
+                gettingTournament={gettingTournament}
                 startggTournamentSlug={slug}
                 setStartggTournamentSlug={setSlug}
+                getStartggTournament={getTournament}
                 challongeTournaments={challongeTournaments}
                 setChallongeTournaments={setChallongeTournaments}
                 manualNames={manualNames}
@@ -2024,7 +1995,7 @@ function Hello() {
         setFileNameFormat={setFileNameFormat}
         folderNameFormat={folderNameFormat}
         setFolderNameFormat={setFolderNameFormat}
-        setTournaments={setTournaments}
+        setAdminedTournaments={setAdminedTournaments}
       />
     </>
   );

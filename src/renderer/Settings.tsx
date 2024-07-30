@@ -58,7 +58,7 @@ export default function Settings({
   setFileNameFormat,
   folderNameFormat,
   setFolderNameFormat,
-  setTournaments,
+  setAdminedTournaments,
 }: {
   appVersion: string;
   latestAppVersion: string;
@@ -83,7 +83,7 @@ export default function Settings({
   setFileNameFormat: (fileNameFormat: string) => void;
   folderNameFormat: string;
   setFolderNameFormat: (folderNameFormat: string) => void;
-  setTournaments: (tournaments: AdminedTournament[]) => void;
+  setAdminedTournaments: (tournaments: AdminedTournament[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -133,7 +133,7 @@ export default function Settings({
   }
 
   const getTournaments = async () => {
-    setTournaments(await window.electron.getTournaments());
+    setAdminedTournaments(await window.electron.getTournaments());
     setShouldGetTournaments(false);
   };
 
@@ -165,7 +165,7 @@ export default function Settings({
             ) {
               promises.push(getTournaments());
             } else {
-              setTournaments([]);
+              setAdminedTournaments([]);
               setShouldGetTournaments(false);
             }
           }

@@ -1,14 +1,19 @@
 import { Alert, Button, Dialog, DialogContent, Stack } from '@mui/material';
 import { FolderOpen } from '@mui/icons-material';
-import { ChallongeTournament, Mode } from '../common/types';
+import { AdminedTournament, ChallongeTournament, Mode } from '../common/types';
 import ManualNamesForm from './ManualNamesForm';
+import StartggTournamentForm from './StartggTournamentForm';
 
 export default function GuidedDialog({
   open,
   setOpen,
   mode,
+  gettingAdminedTournaments,
+  adminedTournaments,
+  gettingTournament,
   startggTournamentSlug,
   setStartggTournamentSlug,
+  getStartggTournament,
   challongeTournaments,
   setChallongeTournaments,
   manualNames,
@@ -19,8 +24,15 @@ export default function GuidedDialog({
   open: boolean;
   setOpen: (open: boolean) => void;
   mode: Mode;
+  gettingAdminedTournaments: boolean;
+  adminedTournaments: AdminedTournament[];
+  gettingTournament: boolean;
   startggTournamentSlug: string;
   setStartggTournamentSlug: (startggTournamentSlug: string) => void;
+  getStartggTournament: (
+    maybeSlug: string,
+    initial?: boolean,
+  ) => Promise<boolean>;
   challongeTournaments: Map<string, ChallongeTournament>;
   setChallongeTournaments: (
     challongeTournaments: Map<string, ChallongeTournament>,
@@ -69,7 +81,7 @@ export default function GuidedDialog({
           setOpen(false);
         }}
       >
-        {!tournamentSet && mode === Mode.MANUAL ? (
+        {!tournamentSet && mode === Mode.MANUAL && (
           <ManualNamesForm
             close={() => {
               if (copyDir) {
@@ -79,9 +91,23 @@ export default function GuidedDialog({
             manualNames={manualNames}
             setManualNames={setManualNames}
           />
-        ) : (
+        )}
+        {!tournamentSet && mode === Mode.STARTGG && (
+          <StartggTournamentForm
+            gettingAdminedTournaments={gettingAdminedTournaments}
+            adminedTournaments={adminedTournaments}
+            gettingTournament={gettingTournament}
+            getTournament={getStartggTournament}
+            setSlug={setStartggTournamentSlug}
+            close={() => {
+              if (copyDir) {
+                setOpen(false);
+              }
+            }}
+          />
+        )}
+        {(tournamentSet || mode === Mode.CHALLONGE) && (
           <DialogContent>
-            {!tournamentSet && mode === Mode.STARTGG && <>start.gg</>}
             {!tournamentSet && mode === Mode.CHALLONGE && <>challonge</>}
             {tournamentSet && !copyDirSet && (
               <Button
@@ -90,6 +116,7 @@ export default function GuidedDialog({
                   const newCopyDir = await window.electron.chooseCopyDir();
                   if (newCopyDir) {
                     setCopyDir(newCopyDir);
+                    setOpen(false);
                   }
                 }}
                 variant="contained"
