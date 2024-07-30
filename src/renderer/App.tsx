@@ -75,6 +75,7 @@ import ManualView from './ManualView';
 import ManualBar from './ManualBar';
 import ChallongeView from './ChallongeView';
 import SearchBox from './SearchBox';
+import GuidedDialog from './GuidedDialog';
 
 const Bottom = styled(Paper)`
   height: 147px;
@@ -1413,6 +1414,7 @@ function Hello() {
     }
   };
 
+  const [guidedDialogOpen, setGuidedDialogOpen] = useState(true);
   return (
     <>
       <AppBar position="fixed" style={{ backgroundColor: 'white' }}>
@@ -1781,31 +1783,47 @@ function Hello() {
               {batchChip(2)}
               {batchChip(3)}
             </Stack>
-            <Stack
-              alignItems="center"
-              direction="row"
-              flexGrow={1}
-              justifyContent="right"
-              marginTop="8px"
-              spacing="1em"
-            >
-              <Stack>
-                <Typography variant="body2">
-                  1. Set replay folder and tournament slug
-                </Typography>
-                <Typography variant="body2">
-                  3. Drag and drop (or select and assign) players
-                </Typography>
+            {autoDetectUsb && guidedMode ? (
+              <GuidedDialog
+                open={guidedDialogOpen}
+                setOpen={setGuidedDialogOpen}
+                mode={mode}
+                startggTournamentSlug={slug}
+                setStartggTournamentSlug={setSlug}
+                challongeTournaments={challongeTournaments}
+                setChallongeTournaments={setChallongeTournaments}
+                manualNames={manualNames}
+                setManualNames={setManualNames}
+                copyDir={copyDir}
+                setCopyDir={setCopyDir}
+              />
+            ) : (
+              <Stack
+                alignItems="center"
+                direction="row"
+                flexGrow={1}
+                justifyContent="right"
+                marginTop="8px"
+                spacing="1em"
+              >
+                <Stack>
+                  <Typography variant="body2">
+                    1. Set replay folder and tournament slug
+                  </Typography>
+                  <Typography variant="body2">
+                    3. Drag and drop (or select and assign) players
+                  </Typography>
+                </Stack>
+                <Stack>
+                  <Typography variant="body2">
+                    2. Select replays and set
+                  </Typography>
+                  <Typography variant="body2">
+                    4. Copy replays / Report set
+                  </Typography>
+                </Stack>
               </Stack>
-              <Stack>
-                <Typography variant="body2">
-                  2. Select replays and set
-                </Typography>
-                <Typography variant="body2">
-                  4. Copy replays / Report set
-                </Typography>
-              </Stack>
-            </Stack>
+            )}
           </Stack>
           <Stack justifyContent="space-between" width="300px">
             <Stack>
