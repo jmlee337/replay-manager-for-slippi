@@ -36,7 +36,7 @@ export default function GuidedDialog({
   state,
   setState,
   backdropOpen,
-  openBackdrop,
+  setBackdropOpen,
 }: {
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -59,7 +59,7 @@ export default function GuidedDialog({
   state: GuideState;
   setState: (state: GuideState) => void;
   backdropOpen: boolean;
-  openBackdrop: () => void;
+  setBackdropOpen: (backdropOpen: boolean) => void;
 }) {
   const tournamentSet =
     (mode === Mode.STARTGG && startggTournamentSlug) ||
@@ -76,9 +76,7 @@ export default function GuidedDialog({
         spacing="8px"
         sx={{
           zIndex: (theme) =>
-            state !== GuideState.NONE && backdropOpen
-              ? theme.zIndex.drawer + 2
-              : undefined,
+            backdropOpen ? theme.zIndex.drawer + 2 : undefined,
         }}
       >
         {(!tournamentSet || !copyDirSet) && (
@@ -120,7 +118,7 @@ export default function GuidedDialog({
             <Button
               disabled={backdropOpen}
               onClick={() => {
-                openBackdrop();
+                setBackdropOpen(true);
               }}
               variant="contained"
             >
@@ -133,6 +131,7 @@ export default function GuidedDialog({
         open={open}
         onClose={() => {
           setOpen(false);
+          setBackdropOpen(true);
         }}
       >
         {!tournamentSet && mode === Mode.STARTGG && (
@@ -145,6 +144,7 @@ export default function GuidedDialog({
             close={() => {
               if (copyDir) {
                 setOpen(false);
+                setBackdropOpen(false);
               }
             }}
           />
@@ -158,6 +158,7 @@ export default function GuidedDialog({
             close={() => {
               if (copyDir) {
                 setOpen(false);
+                setBackdropOpen(false);
               }
             }}
           />
@@ -167,6 +168,7 @@ export default function GuidedDialog({
             close={() => {
               if (copyDir) {
                 setOpen(false);
+                setBackdropOpen(false);
               }
             }}
             manualNames={manualNames}
@@ -185,6 +187,7 @@ export default function GuidedDialog({
                     if (newCopyDir) {
                       setCopyDir(newCopyDir);
                       setOpen(false);
+                      setBackdropOpen(false);
                     }
                   }}
                   variant="contained"

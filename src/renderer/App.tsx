@@ -1793,9 +1793,7 @@ function Hello() {
                 state={guideState}
                 setState={setGuideState}
                 backdropOpen={guideBackdropOpen}
-                openBackdrop={() => {
-                  setGuideBackdropOpen(true);
-                }}
+                setBackdropOpen={setGuideBackdropOpen}
               />
             ) : (
               <Stack
@@ -1988,7 +1986,10 @@ function Hello() {
                   await window.electron.setReportSettings(newReportSettings);
                   setReportSettings(newReportSettings);
                 }}
-                setGuideState={setGuideState}
+                resetGuide={() => {
+                  setGuideState(GuideState.NONE);
+                  setGuideBackdropOpen(false);
+                }}
                 copyDisabled={
                   isCopying || !copyDir || selectedReplays.length === 0
                 }
@@ -2016,7 +2017,7 @@ function Hello() {
       />
       <Backdrop
         onClick={() => setGuideBackdropOpen(false)}
-        open={guidedMode && guideBackdropOpen && guideState !== GuideState.NONE}
+        open={guidedMode && guideBackdropOpen}
         sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
       />
       <ErrorDialog

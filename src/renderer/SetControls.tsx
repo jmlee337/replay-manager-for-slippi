@@ -17,7 +17,6 @@ import styled from '@emotion/styled';
 import {
   ChallongeMatchItem,
   EnforceResult,
-  GuideState,
   Mode,
   Player,
   Replay,
@@ -141,7 +140,7 @@ export default function SetControls({
   reportChallongeSet,
   reportStartggSet,
   setReportSettings,
-  setGuideState,
+  resetGuide,
   mode,
   copyDisabled,
   dqId,
@@ -164,7 +163,7 @@ export default function SetControls({
     update: boolean,
   ) => Promise<Set | undefined>;
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
-  setGuideState: (guideState: GuideState) => void;
+  resetGuide: () => void;
   mode: Mode;
   copyDisabled: boolean;
   dqId: number;
@@ -491,7 +490,7 @@ export default function SetControls({
                   isDQ: false,
                   gameData: [],
                 });
-                setGuideState(GuideState.NONE);
+                resetGuide();
               } catch (e: any) {
                 const message = e instanceof Error ? e.message : e;
                 setReportError(message);
