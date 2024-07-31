@@ -1834,7 +1834,9 @@ function Hello() {
                   >
                     <Typography lineHeight="20px" variant="caption">
                       {selectedSet.fullRoundText}
-                      {selectedSet.id > 0 && ` (${selectedSet.id})`}
+                      {(!Number.isInteger(selectedSet.id) ||
+                        selectedSet.id > 0) &&
+                        ` (${selectedSet.id})`}
                     </Typography>
                     {selectedSet.state === State.STARTED && (
                       <>
@@ -1952,7 +1954,8 @@ function Hello() {
                     color="primary"
                     disabled={
                       !(
-                        (selectedSet.id > 0 &&
+                        ((!Number.isInteger(selectedSet.id) ||
+                          selectedSet.id > 0) &&
                           selectedSet.state === State.PENDING) ||
                         selectedSet.state === State.CALLED
                       ) || startingSet

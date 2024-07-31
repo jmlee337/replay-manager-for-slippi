@@ -104,7 +104,7 @@ function setAndReplaysValid(selectedReplays: Replay[], set: Set, mode: Mode) {
     const numPlayers =
       set.entrant1Participants.length + set.entrant2Participants.length;
     return (
-      set.id > 0 &&
+      (!Number.isInteger(set.id) || set.id > 0) &&
       numPlayers === validPlayers.length &&
       validPlayers.every((player) => player.playerOverrides.entrantId) &&
       findWinner(validPlayers)
