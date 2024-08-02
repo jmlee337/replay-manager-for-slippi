@@ -107,8 +107,6 @@ const ReplayListItem = memo(function ReplayListItem({
   );
   const stageName = stageNames.get(replay.stageId) || replay.stageId.toString();
 
-  const noOverrideWinner =
-    replay.players.findIndex((player) => player.overrideWin) === -1;
   const displayNamesToShow = replay.players.map((player) => {
     const key = player.port;
     const displayName =
@@ -116,26 +114,42 @@ const ReplayListItem = memo(function ReplayListItem({
       (player.playerType === 0 && player.displayName) ||
       '';
     const trophy =
-      ((player.overrideWin || (noOverrideWinner && player.isWinner)) && (
+      (player.isWinner && !replay.timeout && (
         <Tooltip arrow placement="top" title="Winner">
           <EmojiEvents style={{ marginLeft: '-4px' }} />
         </Tooltip>
       )) ||
-      ((player.playerType === 0 || player.playerType === 1) &&
-        noOverrideWinner && (
-          <Tooltip arrow placement="top" title="Set as winner">
-            <IconButton
-              onClick={(event) => {
-                event.stopPropagation();
-                player.overrideWin = true;
-                onOverride();
-              }}
-              style={{ margin: '-8px -8px -8px -12px' }}
-            >
-              <EmojiEventsOutlined />
-            </IconButton>
-          </Tooltip>
-        ));
+      (player.isWinner && replay.timeout && (
+        <Tooltip arrow placement="top" title="Unset as winner (timeout)">
+          <IconButton
+            onClick={(event) => {
+              event.stopPropagation();
+              player.isWinner = false;
+              onOverride();
+            }}
+            style={{ margin: '-8px -8px -8px -12px' }}
+          >
+            <EmojiEvents />
+          </IconButton>
+        </Tooltip>
+      )) ||
+      ((player.playerType === 0 || player.playerType === 1) && (
+        <Tooltip arrow placement="top" title="Set as winner">
+          <IconButton
+            onClick={(event) => {
+              event.stopPropagation();
+              replay.players.forEach((innerPlayer) => {
+                innerPlayer.isWinner = false;
+              });
+              player.isWinner = true;
+              onOverride();
+            }}
+            style={{ margin: '-8px -8px -8px -12px' }}
+          >
+            <EmojiEventsOutlined />
+          </IconButton>
+        </Tooltip>
+      ));
     return (
       <QuarterSegment key={key}>
         {trophy}

@@ -443,7 +443,6 @@ function Hello() {
       });
     } else {
       newReplays[index].players.forEach((player) => {
-        player.overrideWin = false;
         player.playerOverrides = {
           displayName: '',
           entrantId: 0,
@@ -1275,8 +1274,6 @@ function Hello() {
         selectedReplays.forEach((replay) => {
           const slots: ContextSlot[] = [];
           const usedK = new Map<number, boolean>();
-          const hasOverrideWin =
-            replay.players.findIndex((player) => player.overrideWin) !== -1;
           for (let j = 0; j < 2; j += 1) {
             slots[j] = {
               displayNames: [],
@@ -1302,10 +1299,7 @@ function Hello() {
                 slots[j].ports.push(player.port);
                 slots[j].prefixes.push(player.playerOverrides.prefix);
                 slots[j].pronouns.push(player.playerOverrides.pronouns);
-                if (
-                  player.overrideWin ||
-                  (!hasOverrideWin && player.isWinner)
-                ) {
+                if (player.isWinner) {
                   gameScores[j] += 1;
                 }
                 usedK.set(k, true);
@@ -1434,7 +1428,6 @@ function Hello() {
                           prefix: '',
                           pronouns: '',
                         };
-                        player.overrideWin = false;
                       });
                     });
                     resetOverrides();

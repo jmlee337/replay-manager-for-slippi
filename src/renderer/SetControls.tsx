@@ -11,8 +11,9 @@ import {
   DialogTitle,
   Divider,
   Stack,
+  Tooltip,
 } from '@mui/material';
-import { useState } from 'react';
+import { MouseEventHandler, useState } from 'react';
 import styled from '@emotion/styled';
 import {
   ChallongeMatchItem,
@@ -72,67 +73,113 @@ function isValid(player: Player) {
   return player.playerType === 0 || player.playerType === 1;
 }
 
-function findWinner(players: Player[]) {
-  let overrideWinnerIndex = -1;
-  let winnerIndex = -1;
-  players.forEach((player, i) => {
-    if (player.overrideWin) {
-      overrideWinnerIndex = i;
-    } else if (player.isWinner) {
-      winnerIndex = i;
-    }
-  });
-  if (overrideWinnerIndex >= 0) {
-    return players[overrideWinnerIndex];
-  }
-  if (winnerIndex >= 0) {
-    return players[winnerIndex];
-  }
-  return undefined;
-}
-
 function setAndReplaysValid(selectedReplays: Replay[], set: Set, mode: Mode) {
   if (selectedReplays.length === 0) {
-    return false;
+    return { valid: false, reason: 'No replays selected' };
   }
   if (mode === Mode.CHALLONGE && set.state === State.COMPLETED) {
-    return false;
+    return { valid: false, reason: 'Set already completed' };
   }
 
-  return selectedReplays.every((replay) => {
+  let reason = '';
+  const valid = selectedReplays.every((replay, i) => {
+    if (set.id === 0) {
+      if (!reason) {
+        reason = 'No set selected';
+      }
+      return false;
+    }
+    if (Number.isInteger(set.id) && set.id < 0) {
+      if (!reason) {
+        reason = 'Tiebreaker sets cannot be reported';
+      }
+      return false;
+    }
+
     const validPlayers = replay.players.filter(isValid);
-    const numPlayers =
-      set.entrant1Participants.length + set.entrant2Participants.length;
-    return (
-      (!Number.isInteger(set.id) || set.id > 0) &&
-      numPlayers === validPlayers.length &&
-      validPlayers.every((player) => player.playerOverrides.entrantId) &&
-      findWinner(validPlayers)
-    );
+    if (
+      validPlayers.length !==
+      set.entrant1Participants.length + set.entrant2Participants.length
+    ) {
+      if (!reason) {
+        reason = `Game ${i + 1} has wrong number of players`;
+      }
+      return false;
+    }
+    if (!(validPlayers.find((player) => player.isWinner) || replay.timeout)) {
+      if (!reason) {
+        reason = `Game ${i + 1} does not have a winner`;
+      }
+      return false;
+    }
+    if (!validPlayers.every((player) => player.playerOverrides.entrantId)) {
+      if (!reason) {
+        reason = `Game ${i + 1} does not have all players assigned`;
+      }
+      return false;
+    }
+    return true;
   });
+
+  return { valid, reason };
 }
 
 function getScoresAndWinnerId(selectedReplays: Replay[]) {
+  let gameCount = 0;
   const gameWins = new Map<number, number>();
   let leaderId = 0;
   let leaderWins = 0;
   selectedReplays.forEach((replay) => {
-    const gameWinnerId = findWinner(replay.players.filter(isValid))
-      ?.playerOverrides.entrantId!;
+    const gameWinnerId = replay.players
+      .filter(isValid)
+      .find((player) => player.isWinner)?.playerOverrides.entrantId;
+    if (!gameWinnerId) {
+      return;
+    }
 
     const n = (gameWins.get(gameWinnerId) || 0) + 1;
     if (n > leaderWins) {
       leaderWins = n;
       leaderId = gameWinnerId;
     }
+    gameCount += 1;
     gameWins.set(gameWinnerId, n);
   });
 
   return {
     scores: gameWins,
-    winnerId: leaderWins / selectedReplays.length > 0.5 ? leaderId : 0,
+    winnerId: leaderWins / gameCount > 0.5 ? leaderId : 0,
   };
 }
+
+function ReportButton({
+  disabled,
+  elevate,
+  onClick,
+}: {
+  disabled?: boolean;
+  elevate: boolean;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
+}) {
+  return (
+    <Button
+      disabled={disabled}
+      endIcon={<Backup />}
+      onClick={onClick}
+      size="small"
+      variant="contained"
+      sx={{
+        zIndex: (theme) => (elevate ? theme.zIndex.drawer + 2 : undefined),
+      }}
+    >
+      Report
+    </Button>
+  );
+}
+ReportButton.defaultProps = {
+  disabled: false,
+  onClick: undefined,
+};
 
 export default function SetControls({
   copyReplays,
@@ -210,7 +257,7 @@ export default function SetControls({
   const validSelections = setAndReplaysValid(selectedReplays, set, mode);
   let scores = new Map<number, number>();
   let winnerId = 0;
-  if (validSelections) {
+  if (validSelections.valid) {
     ({ scores, winnerId } = getScoresAndWinnerId(selectedReplays));
   } else if (isDq) {
     if (dqId === set.entrant1Id) {
@@ -232,7 +279,14 @@ export default function SetControls({
       return { setId: set.id, winnerId, isDQ: true, gameData: [] };
     }
 
-    const gameData: StartggGame[] = selectedReplays.map((replay, i) => {
+    const gameData: StartggGame[] = [];
+    selectedReplays.forEach((replay, i) => {
+      const gameWinnerId = replay.players.find((player) => player.isWinner)
+        ?.playerOverrides.entrantId;
+      if (!gameWinnerId) {
+        return;
+      }
+
       let selections: StartggGameSelection[] = [];
       const validPlayers = replay.players.filter(
         (player) =>
@@ -247,13 +301,12 @@ export default function SetControls({
           selections = [selections[1], selections[0]];
         }
       }
-
-      return {
+      gameData.push({
         gameNum: i + 1,
         stageId: stageStartggIds.get(replay.stageId),
         selections,
-        winnerId: findWinner(replay.players)?.playerOverrides.entrantId!,
-      };
+        winnerId: gameWinnerId,
+      });
     });
     return { setId: set.id, winnerId, isDQ: false, gameData };
   };
@@ -282,39 +335,42 @@ export default function SetControls({
   }`;
   return (
     <>
-      <Button
-        disabled={!(validSelections && (winnerId || isDq))}
-        endIcon={<Backup />}
-        onClick={() => {
-          setStartggSet(getStartggSet());
-          setChallongeMatchItems(getChallongeMatchItems());
-          if (useEnforcer) {
-            setEnforcing(true);
-            window.electron
-              .enforceReplays(selectedReplays)
-              .then((enforceResults) => {
-                const gameFailures = enforceResults.filter(
-                  (enforceResult) => enforceResult.playerFailures.length > 0,
-                );
-                // eslint-disable-next-line promise/always-return
-                if (gameFailures.length > 0) {
-                  setEnforcerErrors(gameFailures);
-                  setEnforcerErrorOpen(true);
-                }
-                setEnforcing(false);
-              })
-              .catch(() => {});
-          }
-          setOpen(true);
-        }}
-        size="small"
-        variant="contained"
-        sx={{
-          zIndex: (theme) => (elevate ? theme.zIndex.drawer + 2 : undefined),
-        }}
-      >
-        Report
-      </Button>
+      {validSelections.valid && (winnerId || isDq) ? (
+        <ReportButton
+          elevate={elevate}
+          onClick={() => {
+            setStartggSet(getStartggSet());
+            setChallongeMatchItems(getChallongeMatchItems());
+            if (useEnforcer) {
+              setEnforcing(true);
+              window.electron
+                .enforceReplays(selectedReplays)
+                .then((enforceResults) => {
+                  const gameFailures = enforceResults.filter(
+                    (enforceResult) => enforceResult.playerFailures.length > 0,
+                  );
+                  // eslint-disable-next-line promise/always-return
+                  if (gameFailures.length > 0) {
+                    setEnforcerErrors(gameFailures);
+                    setEnforcerErrorOpen(true);
+                  }
+                  setEnforcing(false);
+                })
+                .catch(() => {});
+            }
+            setOpen(true);
+          }}
+        />
+      ) : (
+        <Tooltip
+          arrow
+          title={!validSelections.valid ? validSelections.reason : 'No winner'}
+        >
+          <div>
+            <ReportButton disabled elevate={elevate} />
+          </div>
+        </Tooltip>
+      )}
       <Dialog
         open={open}
         onClose={() => {

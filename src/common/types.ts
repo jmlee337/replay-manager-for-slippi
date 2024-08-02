@@ -12,7 +12,6 @@ export type Player = {
   externalCharacterId: number;
   isWinner: boolean;
   nametag: string;
-  overrideWin: boolean;
   playerOverrides: PlayerOverrides;
   playerType: number;
   port: number;
@@ -29,6 +28,7 @@ export type Replay = {
   selected: boolean;
   stageId: number;
   startAt?: Date;
+  timeout: boolean;
 };
 
 export type InvalidReplay = {

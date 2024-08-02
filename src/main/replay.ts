@@ -212,7 +212,6 @@ export async function getReplaysInDir(
           const teamId = isTeams ? gameStart[offset + 9] : -1;
           players[i] = {
             isWinner: false,
-            overrideWin: false,
             playerOverrides: { displayName: '', entrantId: 0 },
             playerType: gameStart[offset + 1],
             port: i + 1,
@@ -325,6 +324,7 @@ export async function getReplaysInDir(
               selected: false,
               stageId,
               startAt: filenameToDateAndTime(fileName),
+              timeout: lastFrame === gameTimerSeconds * 60,
             };
           }
           if (gameEnd[1] !== 1 && gameEnd[1] !== 2 && gameEnd[1] !== 3) {
@@ -355,6 +355,7 @@ export async function getReplaysInDir(
               selected: false,
               stageId,
               startAt: filenameToDateAndTime(fileName),
+              timeout: lastFrame === gameTimerSeconds * 60 && gameEnd[1] === 1,
             };
           }
 
@@ -383,6 +384,7 @@ export async function getReplaysInDir(
               selected: false,
               stageId,
               startAt: filenameToDateAndTime(fileName),
+              timeout: lastFrame === gameTimerSeconds * 60 && gameEnd[1] === 1,
             };
           }
 
@@ -416,6 +418,7 @@ export async function getReplaysInDir(
             selected: false,
             stageId,
             startAt,
+            timeout: lastFrame === gameTimerSeconds * 60 && gameEnd[1] === 1,
           };
         }
 
@@ -438,6 +441,7 @@ export async function getReplaysInDir(
           selected: false,
           stageId,
           startAt: filenameToDateAndTime(fileName),
+          timeout: lastFrame === gameTimerSeconds * 60,
         };
       } catch (e: any) {
         const invalidReason = e instanceof Error ? e.message : e;
