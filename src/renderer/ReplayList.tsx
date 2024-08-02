@@ -154,7 +154,7 @@ const ReplayListItem = memo(function ReplayListItem({
       <QuarterSegment key={key}>
         {trophy}
         <Box
-          bgcolor="white"
+          bgcolor={displayName.length > 0 && elevateChips ? 'white' : undefined}
           flexGrow={1}
           sx={{
             zIndex: (theme) =>
