@@ -331,6 +331,7 @@ function Hello() {
     });
   };
   const [replayLoadCount, setReplayLoadCount] = useState(0);
+  const [wasDeleted, setWasDeleted] = useState(false);
   const copyControlsRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (scrollToBottom && copyControlsRef.current) {
@@ -340,7 +341,7 @@ function Hello() {
   const chooseDir = async () => {
     setGettingReplays(true);
     const newDir = await window.electron.chooseReplaysDir();
-    if (newDir) {
+    if (newDir && newDir !== dir) {
       const { replays: newReplays, invalidReplays } =
         await window.electron.getReplaysInDir();
       applyAllReplaysSelected(newReplays, allReplaysSelected);
@@ -360,6 +361,7 @@ function Hello() {
           ),
         );
       }
+      setWasDeleted(false);
     }
     setGettingReplays(false);
   };
@@ -410,6 +412,7 @@ function Hello() {
     }
 
     await window.electron.deleteReplaysDir();
+    setWasDeleted(true);
     await refreshReplays();
   };
   const onPlayerOverride = () => {
@@ -458,6 +461,7 @@ function Hello() {
   useEffect(() => {
     window.electron.onUsb((event: IpcRendererEvent, newDir: string) => {
       setDir(newDir);
+      setWasDeleted(false);
       refreshReplays(true);
     });
   }, [refreshReplays]);
@@ -1646,8 +1650,13 @@ function Hello() {
               }
             />
           ) : (
-            <Alert severity="error" sx={{ mb: '8px', pl: '24px' }}>
-              Replays folder not found (most likely deleted).
+            <Alert
+              severity={wasDeleted ? 'warning' : 'error'}
+              sx={{ mb: '8px', pl: '24px' }}
+            >
+              {wasDeleted
+                ? 'Replays folder deleted.'
+                : 'Replays folder not found.'}
             </Alert>
           )}
           <div ref={copyControlsRef} />
