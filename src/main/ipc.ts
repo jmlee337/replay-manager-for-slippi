@@ -47,16 +47,20 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   let autoDetectUsb = store.has('autoDetectUsb')
     ? (store.get('autoDetectUsb') as boolean)
     : true;
-  let chosenReplaysDir = '';
+  let replayDirs: string[] = [];
   const onInsertEjectFallback = (e: any) => {
-    if (
-      (e.event === 'eject' || e.data.isAccessible) &&
-      chosenReplaysDir.startsWith(e.data.key)
-    ) {
-      mainWindow.webContents.send('usbstorage', '');
+    if (replayDirs.length > 0) {
+      const currentDir = replayDirs[replayDirs.length - 1];
+      if (
+        (e.event === 'eject' || e.data.isAccessible) &&
+        (currentDir === e.data.key ||
+          currentDir.startsWith(`${e.data.key}${path.sep}`))
+      ) {
+        mainWindow.webContents.send('usbstorage', currentDir);
+      }
     }
   };
-  const knownUsbs: string[] = [];
+  const knownUsbs = new Map<string, boolean>();
   const onInsert = (e: any) => {
     if (!autoDetectUsb) {
       onInsertEjectFallback(e);
@@ -64,9 +68,12 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     }
 
     if (e.data.isAccessible) {
-      knownUsbs.push(e.data.key);
-      chosenReplaysDir = path.join(e.data.key, 'Slippi');
-      mainWindow.webContents.send('usbstorage', chosenReplaysDir);
+      knownUsbs.set(e.data.key, true);
+      replayDirs.push(path.join(e.data.key, 'Slippi'));
+      mainWindow.webContents.send(
+        'usbstorage',
+        replayDirs[replayDirs.length - 1],
+      );
     }
   };
   const onEject = (e: any) => {
@@ -75,21 +82,15 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       return;
     }
 
-    const i = knownUsbs.findIndex((val) => val === e.data.key);
-    if (i >= 0) {
-      knownUsbs.splice(i, 1);
-      if (chosenReplaysDir.startsWith(e.data.key)) {
-        if (knownUsbs.length > 0) {
-          chosenReplaysDir = path.join(
-            knownUsbs[knownUsbs.length - 1],
-            'Slippi',
-          );
-          mainWindow.webContents.send('usbstorage', chosenReplaysDir);
-        } else {
-          mainWindow.webContents.send('usbstorage', '');
-        }
-      }
-    }
+    knownUsbs.delete(e.data.key);
+    replayDirs = replayDirs.filter(
+      (dir) =>
+        !(dir === e.data.key || dir.startsWith(`${e.data.key}${path.sep}`)),
+    );
+    mainWindow.webContents.send(
+      'usbstorage',
+      replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : '',
+    );
   };
   detectUsb.removeAllListeners('insert');
   detectUsb.on('insert', onInsert);
@@ -110,41 +111,57 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     mode = newMode;
   });
 
+  let chosenReplaysDir = '';
   ipcMain.removeHandler('chooseReplaysDir');
   ipcMain.handle('chooseReplaysDir', async () => {
     const openDialogRes = await dialog.showOpenDialog({
       properties: ['openDirectory', 'showHiddenFiles'],
     });
     if (openDialogRes.canceled) {
-      return chosenReplaysDir;
+      return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : '';
+    }
+    if (chosenReplaysDir) {
+      const spliceI = replayDirs.indexOf(chosenReplaysDir);
+      if (spliceI >= 0) {
+        replayDirs.splice(spliceI, 1);
+      }
     }
     [chosenReplaysDir] = openDialogRes.filePaths;
+    replayDirs.push(chosenReplaysDir);
     return chosenReplaysDir;
   });
 
   ipcMain.removeHandler('deleteReplaysDir');
   ipcMain.handle('deleteReplaysDir', async () => {
-    await rm(chosenReplaysDir, { recursive: true });
-    if (
-      knownUsbs.length > 0 &&
-      chosenReplaysDir.startsWith(knownUsbs[knownUsbs.length - 1])
-    ) {
-      await new Promise<void>((resolve, reject) => {
-        eject(knownUsbs[knownUsbs.length - 1], (error: Error) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve();
-          }
+    if (replayDirs.length > 0) {
+      const currentDir = replayDirs[replayDirs.length - 1];
+      await rm(currentDir, { recursive: true });
+      const key = Array.from(knownUsbs.keys()).find(
+        (usbKey) =>
+          currentDir === usbKey ||
+          currentDir.startsWith(`${usbKey}${path.sep}`),
+      );
+      if (key) {
+        await new Promise<void>((resolve, reject) => {
+          eject(key, (error: Error) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve();
+            }
+          });
         });
-      });
+      }
     }
   });
 
   ipcMain.removeHandler('getReplaysInDir');
-  ipcMain.handle('getReplaysInDir', async () =>
-    getReplaysInDir(chosenReplaysDir),
-  );
+  ipcMain.handle('getReplaysInDir', async () => {
+    if (replayDirs.length > 0) {
+      return getReplaysInDir(replayDirs[replayDirs.length - 1]);
+    }
+    return { replays: [], invalidReplays: [] };
+  });
 
   ipcMain.removeHandler('writeReplays');
   ipcMain.handle(

@@ -457,12 +457,8 @@ function Hello() {
   };
   useEffect(() => {
     window.electron.onUsb((event: IpcRendererEvent, newDir: string) => {
-      if (newDir) {
-        setDir(newDir);
-        refreshReplays(true);
-      } else {
-        refreshReplays();
-      }
+      setDir(newDir);
+      refreshReplays(true);
     });
   }, [refreshReplays]);
 
