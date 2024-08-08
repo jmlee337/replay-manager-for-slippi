@@ -242,10 +242,10 @@ function Hello() {
   }, []);
 
   const [batchActives, setBatchActives] = useState([
-    { active: false, teamId: -1 },
-    { active: false, teamId: -1 },
-    { active: false, teamId: -1 },
-    { active: false, teamId: -1 },
+    { active: false, teamI: -1 },
+    { active: false, teamI: -1 },
+    { active: false, teamI: -1 },
+    { active: false, teamI: -1 },
   ]);
   const numBatchActive = batchActives.filter(
     (batchActive) => batchActive.active,
@@ -312,22 +312,37 @@ function Hello() {
               [true, true, true, true],
             )
         : [false, false, false, false];
-    const teamIdsArr = [
+    const teamIndiciesArr = [
       new Map<number, boolean>(),
       new Map<number, boolean>(),
       new Map<number, boolean>(),
       new Map<number, boolean>(),
     ];
     newReplays.forEach((replay) => {
+      const teamIdsSeen: number[] = [];
       for (let i = 0; i < 4; i += 1) {
-        teamIdsArr[i].set(replay.players[i].teamId, true);
+        const { teamId } = replay.players[i];
+        if (teamId === 0 || teamId === 1 || teamId === 2) {
+          const teamI = teamIdsSeen.indexOf(teamId);
+          if (teamI === -1) {
+            teamIndiciesArr[i].set(teamIdsSeen.length, true);
+            teamIdsSeen.push(teamId);
+          } else {
+            teamIndiciesArr[i].set(teamI, true);
+          }
+        } else {
+          teamIndiciesArr[i].set(-1, true);
+        }
       }
     });
+    const teamsConsistent = teamIndiciesArr.every(
+      (teamIndicies) => teamIndicies.size === 1,
+    );
     return isPlayerArr.map((isPlayer, i) => {
-      const teamIds = teamIdsArr[i];
-      const oneTeam = teamIds.size === 1;
-      const teamId = oneTeam ? Array.from(teamIds.keys())[0] : -1;
-      return { active: isPlayer && oneTeam, teamId };
+      return {
+        active: teamsConsistent && isPlayer,
+        teamI: teamsConsistent ? Array.from(teamIndiciesArr[i].keys())[0] : -1,
+      };
     });
   };
   const [replayLoadCount, setReplayLoadCount] = useState(0);
@@ -696,20 +711,20 @@ function Hello() {
     if (numBatchActive === availablePlayers.length) {
       const overrideSet = new Map<string, boolean>();
       const remainingIndices: number[] = [];
-      const { teamId } = batchActives[index];
-      const isTeams = availablePlayers.length === 4 && teamId !== -1;
+      const { teamI } = batchActives[index];
+      const isTeams = availablePlayers.length === 4 && teamI !== -1;
 
       // find if there's exactly one hole to pigeon
       const batchActivesWithIndex = batchActives
         .map((batchActive, i) => ({
           active: batchActive.active,
-          teamId: batchActive.teamId,
+          teamI: batchActive.teamI,
           i,
         }))
         .filter(
           (batchActiveWithIndex) =>
             batchActiveWithIndex.active &&
-            (!isTeams || batchActiveWithIndex.teamId === teamId),
+            (!isTeams || batchActiveWithIndex.teamI === teamI),
         );
       batchActivesWithIndex.forEach((batchActiveWithIndex) => {
         const { i } = batchActiveWithIndex;
