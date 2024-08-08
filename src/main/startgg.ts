@@ -200,11 +200,12 @@ function apiSetToSet(set: any): Set {
     entrant2Score: slot2.standing
       ? slot2.standing.stats.score.displayValue
       : null,
-    twitchStream:
-      set.stream &&
-      set.stream.streamName &&
-      set.stream.streamSource === 'TWITCH'
-        ? set.stream.streamName
+    stream:
+      set.stream && set.stream.streamSource && set.stream.streamName
+        ? {
+            domain: set.stream.streamSource.toLowerCase(),
+            path: set.stream.streamName.toLowerCase(),
+          }
         : null,
     ordinal: null,
     wasReported: reportedSetIds.has(set.id),

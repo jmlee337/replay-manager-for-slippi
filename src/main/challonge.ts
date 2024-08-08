@@ -5,6 +5,7 @@ import {
   Entrant,
   Set,
   State,
+  Stream,
 } from '../common/types';
 
 async function wrappedFetch(url: string, init: RequestInit) {
@@ -60,8 +61,28 @@ export async function getChallongeTournaments(
   }));
 }
 
+function getStreamFromMatch(
+  match: any,
+  stationIdToStream: Map<string, Stream>,
+) {
+  const stationUrl = match.relationships.station?.links.related;
+  if (stationUrl) {
+    const url = new URL(stationUrl);
+    const pathnameParts = url.pathname.split('/');
+    const stationId = pathnameParts[pathnameParts.length - 1].split('.')[0];
+    if (stationIdToStream.has(stationId)) {
+      return stationIdToStream.get(stationId)!;
+    }
+  }
+  return null;
+}
+
 const participantIdToName = new Map<number, string>();
-const toSet = (match: any, idToFullRoundText: Map<number, string>): Set => {
+const toSet = (
+  match: any,
+  idToFullRoundText: Map<number, string>,
+  stationIdToStream: Map<string, Stream>,
+): Set => {
   const participant1 = match.attributes.points_by_participant[0];
   const participant2 = match.attributes.points_by_participant[1];
   let state = State.PENDING;
@@ -74,6 +95,7 @@ const toSet = (match: any, idToFullRoundText: Map<number, string>): Set => {
   const fullRoundText = idToFullRoundText.has(match.id)
     ? idToFullRoundText.get(match.id)!
     : `${round > 0 ? 'Winners Round' : 'Losers Round'} ${Math.abs(round)}`;
+
   return {
     id: match.id,
     state,
@@ -104,16 +126,18 @@ const toSet = (match: any, idToFullRoundText: Map<number, string>): Set => {
       match.attributes.state === 'complete'
         ? (participant2.scores[0] as number).toString(10)
         : null,
-    twitchStream: null,
+    stream: getStreamFromMatch(match, stationIdToStream),
     ordinal: match.attributes.suggested_play_order,
     wasReported: false,
   };
 };
 
 const slugToFinalsMap = new Map<string, Map<number, string>>();
+const slugToStationsMap = new Map<string, Map<string, Stream>>();
 export async function getChallongeTournament(
-  slug: string,
   key: string,
+  slug: string,
+  updatedSet?: Set,
 ): Promise<ChallongeTournament> {
   const tournamentJson = await get(
     `https://api.challonge.com/v2.1/tournaments/${slug}.json`,
@@ -168,6 +192,24 @@ export async function getChallongeTournament(
       `https://api.challonge.com/v2.1/tournaments/${slug}/matches.json?page=${matchesPage}&per_page=1000`,
       key,
     );
+    const included = json.included as any[];
+    const stationIdToStream = new Map<string, Stream>();
+    included
+      .filter((station) => station.type === 'station')
+      .forEach((station) => {
+        const url = new URL(station.attributes.stream_url.toLowerCase());
+        const hostnameParts = url.hostname.split('.');
+        const domain =
+          hostnameParts.length > 1
+            ? hostnameParts[hostnameParts.length - 2]
+            : hostnameParts[0];
+        let path = url.pathname.slice(1);
+        if (path[path.length - 1] === '/') {
+          path = path.slice(0, -1);
+        }
+        stationIdToStream.set(station.id, { domain, path });
+      });
+    slugToStationsMap.set(slug, stationIdToStream);
     const data = json.data as any[];
     const idToFullRoundText = new Map<number, string>();
     if (tournamentType === 'double elimination') {
@@ -189,7 +231,14 @@ export async function getChallongeTournament(
           match.attributes.state === 'open' ||
           match.attributes.state === 'complete',
       )
-      .map((match) => toSet(match, idToFullRoundText))
+      .map((match) => {
+        if (updatedSet && match.id === updatedSet.id) {
+          const mergedSet: Set = { ...updatedSet };
+          mergedSet.stream = getStreamFromMatch(match, stationIdToStream);
+          return mergedSet;
+        }
+        return toSet(match, idToFullRoundText, stationIdToStream);
+      })
       .forEach((set) => {
         if (set.state === State.COMPLETED) {
           completedSets.push(set);
@@ -248,7 +297,7 @@ export async function startChallongeSet(
       },
     ],
     entrant2Score: null,
-    twitchStream: null,
+    stream: null,
     ordinal: match.suggested_play_order,
     wasReported: false,
   };
@@ -271,5 +320,6 @@ export async function reportChallongeSet(
   return toSet(
     (await put(url, data, key)).data,
     slugToFinalsMap.get(tournamentSlug) || new Map<number, string>(),
+    slugToStationsMap.get(tournamentSlug) || new Map<string, Stream>(),
   );
 }

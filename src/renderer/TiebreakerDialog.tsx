@@ -86,7 +86,7 @@ export default function TiebreakerDialog({
                         entrant1Score: null,
                         entrant2Score: null,
                         ordinal: null,
-                        twitchStream: null,
+                        stream: null,
                         winnerId: null,
                       });
                       setSelectedEntrant({ id: 0, participants: [] });

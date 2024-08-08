@@ -128,7 +128,7 @@ const EMPTY_SET: Set = {
     },
   ],
   entrant2Score: null,
-  twitchStream: null,
+  stream: null,
   ordinal: null,
   wasReported: false,
 };
@@ -492,18 +492,32 @@ function Hello() {
   const [challongeTournaments, setChallongeTournaments] = useState(
     new Map<string, ChallongeTournament>(),
   );
-  const getChallongeTournament = async (maybeSlug: string) => {
+  const getChallongeTournament = async (
+    maybeSlug: string,
+    updatedSet?: Set,
+  ) => {
     if (!maybeSlug) {
       return;
     }
 
     setGettingTournament(true);
     try {
-      challongeTournaments.set(
-        maybeSlug,
-        await window.electron.getChallongeTournament(maybeSlug),
-      );
+      const updatedChallongeTournament =
+        await window.electron.getChallongeTournament(maybeSlug, updatedSet);
+      challongeTournaments.set(maybeSlug, updatedChallongeTournament);
       setChallongeTournaments(new Map(challongeTournaments));
+      if (selectedSet.id > 0) {
+        const updatedSelectedSet =
+          updatedChallongeTournament.sets.completedSets.find(
+            (set) => set.id === selectedSet.id,
+          ) ||
+          updatedChallongeTournament.sets.pendingSets.find(
+            (set) => set.id === selectedSet.id,
+          );
+        if (updatedSelectedSet) {
+          setSelectedSet(updatedSelectedSet);
+        }
+      }
     } catch (e: any) {
       showErrorDialog([e.toString()]);
     } finally {
@@ -1002,13 +1016,14 @@ function Hello() {
           new Map([[updatedSet.id, updatedSet]]),
         );
       } else if (mode === Mode.CHALLONGE) {
-        setSelectedSet(
-          await window.electron.startChallongeSet(
-            selectedChallongeTournament.slug,
-            setId,
-          ),
+        const updatedSet = await window.electron.startChallongeSet(
+          selectedChallongeTournament.slug,
+          setId,
         );
-        await getChallongeTournament(selectedChallongeTournament.slug);
+        await getChallongeTournament(
+          selectedChallongeTournament.slug,
+          updatedSet,
+        );
       }
     } catch (e: any) {
       showErrorDialog([e.toString()]);
@@ -1048,7 +1063,7 @@ function Hello() {
       items,
     );
     setSelectedSet(updatedSet);
-    await getChallongeTournament(reportSlug);
+    await getChallongeTournament(reportSlug, updatedSet);
     resetDq();
     return updatedSet;
   };
@@ -1350,7 +1365,7 @@ function Hello() {
                   id: copySet.id > 0 ? copySet.id : undefined,
                   fullRoundText: copySet.fullRoundText,
                   round: copySet.round,
-                  twitchStream: copySet.twitchStream,
+                  stream: copySet.stream,
                 },
               };
             } else if (mode === Mode.CHALLONGE) {
@@ -1362,8 +1377,9 @@ function Hello() {
                 set: {
                   id: copySet.id > 0 ? copySet.id : undefined,
                   fullRoundText: copySet.fullRoundText,
-                  round: copySet.round,
                   ordinal: copySet.ordinal,
+                  round: copySet.round,
+                  stream: copySet.stream,
                 },
               };
             }

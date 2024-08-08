@@ -54,6 +54,11 @@ export type Entrant = {
   participants: Participant[];
 };
 
+export type Stream = {
+  domain: string;
+  path: string;
+};
+
 export type Set = {
   id: number;
   state: State;
@@ -66,7 +71,7 @@ export type Set = {
   entrant2Id: number;
   entrant2Participants: Participant[];
   entrant2Score: string | null;
-  twitchStream: string | null;
+  stream: Stream | null;
   ordinal: number | null;
   wasReported: boolean;
 };
@@ -206,7 +211,7 @@ export type Context = {
       id?: number;
       fullRoundText: string;
       round: number;
-      twitchStream: string | null;
+      stream: Stream | null;
     };
   };
   challonge?: {
@@ -217,8 +222,9 @@ export type Context = {
     set: {
       id?: number;
       fullRoundText: string;
-      round: number;
       ordinal: number | null;
+      round: number;
+      stream: Stream | null;
     };
   };
   startMs: number;

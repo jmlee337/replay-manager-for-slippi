@@ -322,12 +322,12 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('getChallongeTournament');
   ipcMain.handle(
     'getChallongeTournament',
-    (event: IpcMainInvokeEvent, slug: string) => {
+    (event: IpcMainInvokeEvent, slug: string, updatedSet?: Set) => {
       if (!challongeApiKey) {
         throw new Error('Please set Challonge API key.');
       }
 
-      return getChallongeTournament(slug, challongeApiKey);
+      return getChallongeTournament(challongeApiKey, slug, updatedSet);
     },
   );
 
