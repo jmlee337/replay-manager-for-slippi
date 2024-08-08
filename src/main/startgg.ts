@@ -204,7 +204,7 @@ function apiSetToSet(set: any): Set {
       set.stream && set.stream.streamSource && set.stream.streamName
         ? {
             domain: set.stream.streamSource.toLowerCase(),
-            path: set.stream.streamName.toLowerCase(),
+            path: set.stream.streamName,
           }
         : null,
     ordinal: null,

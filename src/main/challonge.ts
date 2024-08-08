@@ -197,12 +197,13 @@ export async function getChallongeTournament(
     included
       .filter((station) => station.type === 'station')
       .forEach((station) => {
-        const url = new URL(station.attributes.stream_url.toLowerCase());
+        const url = new URL(station.attributes.stream_url);
         const hostnameParts = url.hostname.split('.');
-        const domain =
+        const domain = (
           hostnameParts.length > 1
             ? hostnameParts[hostnameParts.length - 2]
-            : hostnameParts[0];
+            : hostnameParts[0]
+        ).toLowerCase();
         let path = url.pathname.slice(1);
         if (path[path.length - 1] === '/') {
           path = path.slice(0, -1);
