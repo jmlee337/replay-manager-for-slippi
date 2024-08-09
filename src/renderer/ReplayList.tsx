@@ -127,7 +127,7 @@ const ReplayListItem = memo(function ReplayListItem({
               player.isWinner = false;
               onOverride();
             }}
-            style={{ margin: '-8px -8px -8px -12px' }}
+            style={{ color: '#000', margin: '-8px -8px -8px -12px' }}
           >
             <EmojiEvents />
           </IconButton>
@@ -144,7 +144,7 @@ const ReplayListItem = memo(function ReplayListItem({
               player.isWinner = true;
               onOverride();
             }}
-            style={{ margin: '-8px -8px -8px -12px' }}
+            style={{ color: '#000', margin: '-8px -8px -8px -12px' }}
           >
             <EmojiEventsOutlined />
           </IconButton>
