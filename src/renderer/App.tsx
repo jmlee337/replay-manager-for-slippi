@@ -791,7 +791,7 @@ function Hello() {
     return (
       <DroppableChip
         active={active}
-        label={overrides[index].displayName || `P${index + 1}`}
+        label={overrides[index].displayName || `P${index + 1} (all games)`}
         outlined={active}
         selectedChipData={selectedChipData}
         style={{ width: '25%' }}
@@ -1512,6 +1512,7 @@ function Hello() {
                           setDirDeleting(true);
                           try {
                             await deleteDir();
+                            setGuideState(GuideState.NONE);
                           } catch (e: any) {
                             showErrorDialog([
                               e instanceof Error ? e.message : e,
@@ -1891,7 +1892,7 @@ function Hello() {
                       </>
                     )}
                   </Stack>
-                  <Tooltip arrow title="Drag or select players!">
+                  <Tooltip arrow title="Click or drag!">
                     <Stack direction="row" gap="8px">
                       <Stack gap="8px" width="50%">
                         <DraggableChip

@@ -101,8 +101,13 @@ export default function GuidedDialog({
           <>
             <Alert severity="warning">
               {state === GuideState.SET && 'Select set'}
-              {state === GuideState.REPLAYS &&
-                'Select Replays (deselect handwarmers)'}
+              {state === GuideState.REPLAYS && (
+                <>
+                  Select Replays
+                  <br />
+                  (deselect handwarmers)
+                </>
+              )}
               {state === GuideState.PLAYERS && 'Assign players and report'}
             </Alert>
             {state === GuideState.REPLAYS && (
