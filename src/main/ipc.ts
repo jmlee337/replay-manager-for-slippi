@@ -157,10 +157,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
 
   ipcMain.removeHandler('getReplaysInDir');
   ipcMain.handle('getReplaysInDir', async () => {
-    if (replayDirs.length > 0) {
-      return getReplaysInDir(replayDirs[replayDirs.length - 1]);
+    if (replayDirs.length === 0) {
+      throw new Error();
     }
-    return { replays: [], invalidReplays: [] };
+    return getReplaysInDir(replayDirs[replayDirs.length - 1]);
   });
 
   ipcMain.removeHandler('writeReplays');

@@ -74,6 +74,7 @@ const ReplayListItem = memo(function ReplayListItem({
   onOverride,
   resetSelectedChipData,
   elevateChips,
+  elevateNames,
 }: {
   index: number;
   numAvailablePlayers: number;
@@ -90,6 +91,7 @@ const ReplayListItem = memo(function ReplayListItem({
   onOverride: () => void;
   resetSelectedChipData: () => void;
   elevateChips: boolean;
+  elevateNames: boolean;
 }) {
   const onClickCallback = useCallback(() => {
     onClick(index);
@@ -154,11 +156,11 @@ const ReplayListItem = memo(function ReplayListItem({
       <QuarterSegment key={key}>
         {trophy}
         <Box
-          bgcolor={displayName.length > 0 && elevateChips ? 'white' : undefined}
+          bgcolor={displayName.length > 0 && elevateNames ? 'white' : undefined}
           flexGrow={1}
           sx={{
             zIndex: (theme) =>
-              displayName.length > 0 && elevateChips
+              displayName.length > 0 && elevateNames
                 ? theme.zIndex.drawer + 2
                 : undefined,
           }}
@@ -297,7 +299,8 @@ const ReplayListItem = memo(function ReplayListItem({
       style={
         replay.invalidReasons.length === 0 ||
         (selectedChipData.displayName && selectedChipData.entrantId) ||
-        elevateChips
+        elevateChips ||
+        elevateNames
           ? {}
           : { opacity: '50%' }
       }
@@ -342,6 +345,7 @@ export default function ReplayList({
   resetSelectedChipData,
   elevate,
   elevateChips,
+  elevateNames,
 }: {
   numAvailablePlayers: number;
   replays: Replay[];
@@ -358,6 +362,7 @@ export default function ReplayList({
   resetSelectedChipData: () => void;
   elevate: boolean;
   elevateChips: boolean;
+  elevateNames: boolean;
 }) {
   return (
     <List
@@ -378,6 +383,7 @@ export default function ReplayList({
           onOverride={onOverride}
           resetSelectedChipData={resetSelectedChipData}
           elevateChips={elevateChips}
+          elevateNames={elevateNames}
         />
       ))}
     </List>

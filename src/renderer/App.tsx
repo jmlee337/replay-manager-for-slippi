@@ -401,6 +401,8 @@ function Hello() {
         }
       } catch (e: any) {
         setDirExists(false);
+        setGuideBackdropOpen(false);
+        setGuideState(GuideState.NONE);
       }
       applyAllReplaysSelected(newReplays, allReplaysSelected);
       setBatchActives(
@@ -1671,6 +1673,11 @@ function Hello() {
                 guideState === GuideState.PLAYERS &&
                 numBatchActive !== 2 &&
                 numBatchActive !== 4
+              }
+              elevateNames={
+                guidedMode &&
+                guideBackdropOpen &&
+                guideState === GuideState.PLAYERS
               }
             />
           ) : (
