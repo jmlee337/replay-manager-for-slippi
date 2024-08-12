@@ -1761,7 +1761,9 @@ function Hello() {
                   eventName,
                   eventSlug,
                 );
-                setGuideState(GuideState.REPLAYS);
+                if (guideState !== GuideState.NONE) {
+                  setGuideState(GuideState.REPLAYS);
+                }
               }}
             />
           )}
@@ -1777,7 +1779,9 @@ function Hello() {
                   }
                   selectSet={(set: Set) => {
                     selectChallongeSet(set, challongeTournament);
-                    setGuideState(GuideState.REPLAYS);
+                    if (guideState !== GuideState.NONE) {
+                      setGuideState(GuideState.REPLAYS);
+                    }
                   }}
                 />
               ),
