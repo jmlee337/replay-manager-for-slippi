@@ -398,6 +398,8 @@ function Hello() {
     (mode === Mode.CHALLONGE && challongeTournaments.size > 0) ||
     (mode === Mode.MANUAL && manualNames.length > 0);
   const copyDirSet = copyDir.length > 0;
+  const guideActive =
+    guidedMode && tournamentSet && copyDirSet && confirmedCopySettings;
   const refreshReplays = useCallback(
     async (triggerGuide?: boolean) => {
       let newReplays: Replay[] = [];
@@ -412,7 +414,7 @@ function Hello() {
           setGuideState(
             mode === Mode.MANUAL ? GuideState.PLAYERS : GuideState.SET,
           );
-          if (tournamentSet && copyDirSet && confirmedCopySettings) {
+          if (guideActive) {
             setGuideBackdropOpen(true);
           }
         }
@@ -438,13 +440,7 @@ function Hello() {
       }
       setGettingReplays(false);
     },
-    [
-      allReplaysSelected,
-      confirmedCopySettings,
-      copyDirSet,
-      mode,
-      tournamentSet,
-    ],
+    [allReplaysSelected, guideActive, mode],
   );
   const deleteDir = async () => {
     if (!dir) {
@@ -1673,29 +1669,20 @@ function Hello() {
                 onOverride={onPlayerOverride}
                 resetSelectedChipData={resetSelectedChipData}
                 elevate={
-                  guidedMode &&
+                  guideActive &&
                   guideBackdropOpen &&
-                  tournamentSet &&
-                  copyDirSet &&
-                  confirmedCopySettings &&
                   guideState === GuideState.REPLAYS
                 }
                 elevateChips={
-                  guidedMode &&
+                  guideActive &&
                   guideBackdropOpen &&
-                  tournamentSet &&
-                  copyDirSet &&
-                  confirmedCopySettings &&
                   guideState === GuideState.PLAYERS &&
                   numBatchActive !== 2 &&
                   numBatchActive !== 4
                 }
                 elevateNames={
-                  guidedMode &&
+                  guideActive &&
                   guideBackdropOpen &&
-                  tournamentSet &&
-                  copyDirSet &&
-                  confirmedCopySettings &&
                   guideState === GuideState.PLAYERS
                 }
               />
@@ -1739,11 +1726,8 @@ function Hello() {
           width="300px"
           sx={{
             zIndex: (theme) =>
-              guidedMode &&
+              guideActive &&
               guideBackdropOpen &&
-              tournamentSet &&
-              copyDirSet &&
-              confirmedCopySettings &&
               (guideState === GuideState.SET ||
                 (mode === Mode.MANUAL && guideState === GuideState.PLAYERS))
                 ? theme.zIndex.drawer + 2
@@ -1942,11 +1926,8 @@ function Hello() {
                           selectedChipData={selectedChipData}
                           setSelectedChipData={setSelectedChipData}
                           elevate={
-                            guidedMode &&
+                            guideActive &&
                             guideBackdropOpen &&
-                            tournamentSet &&
-                            copyDirSet &&
-                            confirmedCopySettings &&
                             guideState === GuideState.PLAYERS
                           }
                         />
@@ -1964,11 +1945,8 @@ function Hello() {
                             selectedChipData={selectedChipData}
                             setSelectedChipData={setSelectedChipData}
                             elevate={
-                              guidedMode &&
+                              guideActive &&
                               guideBackdropOpen &&
-                              tournamentSet &&
-                              copyDirSet &&
-                              confirmedCopySettings &&
                               guideState === GuideState.PLAYERS
                             }
                           />
@@ -1988,11 +1966,8 @@ function Hello() {
                           selectedChipData={selectedChipData}
                           setSelectedChipData={setSelectedChipData}
                           elevate={
-                            guidedMode &&
+                            guideActive &&
                             guideBackdropOpen &&
-                            tournamentSet &&
-                            copyDirSet &&
-                            confirmedCopySettings &&
                             guideState === GuideState.PLAYERS
                           }
                         />
@@ -2010,11 +1985,8 @@ function Hello() {
                             selectedChipData={selectedChipData}
                             setSelectedChipData={setSelectedChipData}
                             elevate={
-                              guidedMode &&
+                              guideActive &&
                               guideBackdropOpen &&
-                              tournamentSet &&
-                              copyDirSet &&
-                              confirmedCopySettings &&
                               guideState === GuideState.PLAYERS
                             }
                           />
@@ -2087,11 +2059,8 @@ function Hello() {
                 useEnforcer={useEnforcer}
                 vlerkMode={vlerkMode}
                 elevate={
-                  guidedMode &&
+                  guideActive &&
                   guideBackdropOpen &&
-                  tournamentSet &&
-                  copyDirSet &&
-                  confirmedCopySettings &&
                   guideState === GuideState.PLAYERS
                 }
               />
