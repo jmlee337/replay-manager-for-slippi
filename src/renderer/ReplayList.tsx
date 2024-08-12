@@ -327,7 +327,7 @@ const ReplayListItem = memo(function ReplayListItem({
     </ListItemButton>
   );
 
-  return replay.invalidReasons.length === 0 ? (
+  return replay.invalidReasons.length === 0 || replay.selected ? (
     replayListItemInner
   ) : (
     <Tooltip title={replay.invalidReasons.join(' ')}>

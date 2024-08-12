@@ -820,15 +820,6 @@ function Hello() {
           prefix: string,
           pronouns: string,
         ) => onClickOrDrop(displayName, entrantId, prefix, pronouns, index)}
-        elevate={
-          guidedMode &&
-          guideBackdropOpen &&
-          tournamentSet &&
-          copyDirSet &&
-          confirmedCopySettings &&
-          guideState === GuideState.PLAYERS &&
-          (numBatchActive === 2 || numBatchActive === 4)
-        }
       />
     );
   };
