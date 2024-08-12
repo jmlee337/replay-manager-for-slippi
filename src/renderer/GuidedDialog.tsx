@@ -7,12 +7,7 @@ import {
   Stack,
 } from '@mui/material';
 import { FolderOpen } from '@mui/icons-material';
-import {
-  AdminedTournament,
-  ChallongeTournament,
-  GuideState,
-  Mode,
-} from '../common/types';
+import { AdminedTournament, GuideState, Mode } from '../common/types';
 import ManualNamesForm from './ManualNamesForm';
 import StartggTournamentForm from './StartggTournamentForm';
 import ChallongeTournamentForm from './ChallongeTournamentForm';
@@ -24,15 +19,17 @@ export default function GuidedDialog({
   gettingAdminedTournaments,
   adminedTournaments,
   gettingTournament,
-  startggTournamentSlug,
+  tournamentSet,
+  copyDirSet,
   setStartggTournamentSlug,
   getStartggTournament,
-  challongeTournaments,
   getChallongeTournament,
   manualNames,
   setManualNames,
   copyDir,
   setCopyDir,
+  confirmedCopySettings,
+  setConfirmedCopySettings,
   state,
   setState,
   backdropOpen,
@@ -44,28 +41,25 @@ export default function GuidedDialog({
   gettingAdminedTournaments: boolean;
   adminedTournaments: AdminedTournament[];
   gettingTournament: boolean;
-  startggTournamentSlug: string;
+  tournamentSet: boolean;
+  copyDirSet: boolean;
   setStartggTournamentSlug: (startggTournamentSlug: string) => void;
   getStartggTournament: (
     maybeSlug: string,
     initial?: boolean,
   ) => Promise<boolean>;
-  challongeTournaments: Map<string, ChallongeTournament>;
   getChallongeTournament: (maybeSlug: string) => Promise<void>;
   manualNames: string[];
   setManualNames: (manualNames: string[]) => void;
   copyDir: string;
   setCopyDir: (copyDir: string) => void;
+  confirmedCopySettings: boolean;
+  setConfirmedCopySettings: (confirmedCopySettings: boolean) => void;
   state: GuideState;
   setState: (state: GuideState) => void;
   backdropOpen: boolean;
   setBackdropOpen: (backdropOpen: boolean) => void;
 }) {
-  const tournamentSet =
-    (mode === Mode.STARTGG && startggTournamentSlug) ||
-    (mode === Mode.CHALLONGE && challongeTournaments.size > 0) ||
-    (mode === Mode.MANUAL && manualNames.length > 0);
-  const copyDirSet = copyDir.length > 0;
   return (
     <>
       <Stack
@@ -92,34 +86,18 @@ export default function GuidedDialog({
             </Button>
           </>
         )}
-        {tournamentSet && copyDirSet && state === GuideState.NONE && (
-          <Alert severity="success">
-            Guided mode ready, insert USB drive...
-          </Alert>
-        )}
-        {tournamentSet && copyDirSet && state !== GuideState.NONE && (
+        {tournamentSet && copyDirSet && !confirmedCopySettings && (
           <>
-            <Alert severity="warning">
-              {state === GuideState.SET && 'Select set'}
-              {state === GuideState.REPLAYS && (
-                <>
-                  Select Replays
-                  <br />
-                  (deselect handwarmers)
-                </>
-              )}
-              {state === GuideState.PLAYERS && 'Assign players and report'}
-            </Alert>
-            {state === GuideState.REPLAYS && (
-              <Button
-                onClick={() => {
-                  setState(GuideState.PLAYERS);
-                }}
-                variant="contained"
-              >
-                Done!
-              </Button>
-            )}
+            <Alert severity="warning">Confirm copy settings</Alert>
+            <Button
+              onClick={() => {
+                setConfirmedCopySettings(true);
+                setBackdropOpen(state !== GuideState.NONE);
+              }}
+              variant="contained"
+            >
+              Done!
+            </Button>
             <Button
               disabled={backdropOpen}
               onClick={() => {
@@ -131,6 +109,51 @@ export default function GuidedDialog({
             </Button>
           </>
         )}
+        {tournamentSet &&
+          copyDirSet &&
+          confirmedCopySettings &&
+          state === GuideState.NONE && (
+            <Alert severity="success">
+              Guided mode ready, insert USB drive...
+            </Alert>
+          )}
+        {tournamentSet &&
+          copyDirSet &&
+          confirmedCopySettings &&
+          state !== GuideState.NONE && (
+            <>
+              <Alert severity="warning">
+                {state === GuideState.SET && 'Select set'}
+                {state === GuideState.REPLAYS && (
+                  <>
+                    Select replays
+                    <br />
+                    (deselect handwarmers)
+                  </>
+                )}
+                {state === GuideState.PLAYERS && 'Assign players and report'}
+              </Alert>
+              {state === GuideState.REPLAYS && (
+                <Button
+                  onClick={() => {
+                    setState(GuideState.PLAYERS);
+                  }}
+                  variant="contained"
+                >
+                  Done!
+                </Button>
+              )}
+              <Button
+                disabled={backdropOpen}
+                onClick={() => {
+                  setBackdropOpen(true);
+                }}
+                variant="contained"
+              >
+                Highlight Step
+              </Button>
+            </>
+          )}
       </Stack>
       <Dialog
         open={open}
@@ -149,7 +172,7 @@ export default function GuidedDialog({
             close={() => {
               if (copyDir) {
                 setOpen(false);
-                setBackdropOpen(false);
+                setBackdropOpen(true);
               }
             }}
           />
@@ -163,7 +186,7 @@ export default function GuidedDialog({
             close={() => {
               if (copyDir) {
                 setOpen(false);
-                setBackdropOpen(false);
+                setBackdropOpen(true);
               }
             }}
           />
@@ -173,7 +196,7 @@ export default function GuidedDialog({
             close={() => {
               if (copyDir) {
                 setOpen(false);
-                setBackdropOpen(false);
+                setBackdropOpen(true);
               }
             }}
             manualNames={manualNames}
@@ -192,7 +215,7 @@ export default function GuidedDialog({
                     if (newCopyDir) {
                       setCopyDir(newCopyDir);
                       setOpen(false);
-                      setBackdropOpen(false);
+                      setBackdropOpen(true);
                     }
                   }}
                   variant="contained"

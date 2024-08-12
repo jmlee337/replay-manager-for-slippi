@@ -381,8 +381,23 @@ function Hello() {
     setGettingReplays(false);
   };
 
+  const [challongeTournaments, setChallongeTournaments] = useState(
+    new Map<string, ChallongeTournament>(),
+  );
+  const [copyDir, setCopyDir] = useState('');
+  const [manualNames, setManualNames] = useState<string[]>([]);
+  const [manualDialogOpen, setManualDialogOpen] = useState(false);
+  const [slug, setSlug] = useState('');
+
   const [guideState, setGuideState] = useState(GuideState.NONE);
   const [guideBackdropOpen, setGuideBackdropOpen] = useState(false);
+  const [guidedDialogOpen, setGuidedDialogOpen] = useState(true);
+  const [confirmedCopySettings, setConfirmedCopySettings] = useState(false);
+  const tournamentSet =
+    (mode === Mode.STARTGG && slug.length > 0) ||
+    (mode === Mode.CHALLONGE && challongeTournaments.size > 0) ||
+    (mode === Mode.MANUAL && manualNames.length > 0);
+  const copyDirSet = copyDir.length > 0;
   const refreshReplays = useCallback(
     async (triggerGuide?: boolean) => {
       let newReplays: Replay[] = [];
@@ -393,11 +408,13 @@ function Hello() {
         newReplays = res.replays;
         invalidReplays = res.invalidReplays;
         setDirExists(true);
-        if (triggerGuide) {
+        if (triggerGuide && newReplays.length > 0) {
           setGuideState(
             mode === Mode.MANUAL ? GuideState.PLAYERS : GuideState.SET,
           );
-          setGuideBackdropOpen(true);
+          if (tournamentSet && copyDirSet && confirmedCopySettings) {
+            setGuideBackdropOpen(true);
+          }
         }
       } catch (e: any) {
         setDirExists(false);
@@ -421,7 +438,13 @@ function Hello() {
       }
       setGettingReplays(false);
     },
-    [allReplaysSelected, mode],
+    [
+      allReplaysSelected,
+      confirmedCopySettings,
+      copyDirSet,
+      mode,
+      tournamentSet,
+    ],
   );
   const deleteDir = async () => {
     if (!dir) {
@@ -506,9 +529,6 @@ function Hello() {
   const [searchSubstr, setSearchSubstr] = useState('');
 
   // Challonge tournament view
-  const [challongeTournaments, setChallongeTournaments] = useState(
-    new Map<string, ChallongeTournament>(),
-  );
   const getChallongeTournament = async (
     maybeSlug: string,
     updatedSet?: Set,
@@ -543,7 +563,6 @@ function Hello() {
   };
 
   // start.gg tournament view
-  const [slug, setSlug] = useState('');
   const [tournament, setTournament] = useState<Tournament>({
     slug: '',
     name: '',
@@ -804,6 +823,9 @@ function Hello() {
         elevate={
           guidedMode &&
           guideBackdropOpen &&
+          tournamentSet &&
+          copyDirSet &&
+          confirmedCopySettings &&
           guideState === GuideState.PLAYERS &&
           (numBatchActive === 2 || numBatchActive === 4)
         }
@@ -961,9 +983,6 @@ function Hello() {
     return true;
   };
 
-  const [manualNames, setManualNames] = useState<string[]>([]);
-  const [manualDialogOpen, setManualDialogOpen] = useState(false);
-
   // set controls
   const [selectedSetChain, setSelectedSetChain] = useState(
     EMPTY_SELECTED_SET_CHAIN,
@@ -1098,7 +1117,6 @@ function Hello() {
   };
 
   const [isCopying, setIsCopying] = useState(false);
-  const [copyDir, setCopyDir] = useState('');
   const [copyError, setCopyError] = useState('');
   const [copyErrorDialogOpen, setCopyErrorDialogOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
@@ -1432,7 +1450,6 @@ function Hello() {
     }
   };
 
-  const [guidedDialogOpen, setGuidedDialogOpen] = useState(true);
   return (
     <>
       <AppBar position="fixed" style={{ backgroundColor: 'white' }}>
@@ -1479,7 +1496,7 @@ function Hello() {
                 value={dir || 'Set replays folder...'}
                 style={{ flexGrow: 1 }}
               />
-              {dir && dirExists && !gettingReplays && (
+              {dir && dirExists && !gettingReplays && replays.length > 0 && (
                 <>
                   <Tooltip arrow title="Delete replays folder">
                     <IconButton onClick={() => setDirDeleteDialogOpen(true)}>
@@ -1654,43 +1671,53 @@ function Hello() {
         spacing="8px"
       >
         <TopColumn flexGrow={1} minWidth="600px">
-          {dirExists ? (
-            <ReplayList
-              numAvailablePlayers={availablePlayers.length}
-              replays={replays}
-              selectedChipData={selectedChipData}
-              findUnusedPlayer={findUnusedPlayer}
-              onClick={onReplayClick}
-              onOverride={onPlayerOverride}
-              resetSelectedChipData={resetSelectedChipData}
-              elevate={
-                guidedMode &&
-                guideBackdropOpen &&
-                guideState === GuideState.REPLAYS
-              }
-              elevateChips={
-                guidedMode &&
-                guideBackdropOpen &&
-                guideState === GuideState.PLAYERS &&
-                numBatchActive !== 2 &&
-                numBatchActive !== 4
-              }
-              elevateNames={
-                guidedMode &&
-                guideBackdropOpen &&
-                guideState === GuideState.PLAYERS
-              }
-            />
-          ) : (
-            <Alert
-              severity={wasDeleted ? 'warning' : 'error'}
-              sx={{ mb: '8px', pl: '24px' }}
-            >
-              {wasDeleted
-                ? 'Replays folder deleted.'
-                : 'Replays folder not found.'}
-            </Alert>
-          )}
+          {dir &&
+            (dirExists ? (
+              <ReplayList
+                numAvailablePlayers={availablePlayers.length}
+                replays={replays}
+                selectedChipData={selectedChipData}
+                findUnusedPlayer={findUnusedPlayer}
+                onClick={onReplayClick}
+                onOverride={onPlayerOverride}
+                resetSelectedChipData={resetSelectedChipData}
+                elevate={
+                  guidedMode &&
+                  guideBackdropOpen &&
+                  tournamentSet &&
+                  copyDirSet &&
+                  confirmedCopySettings &&
+                  guideState === GuideState.REPLAYS
+                }
+                elevateChips={
+                  guidedMode &&
+                  guideBackdropOpen &&
+                  tournamentSet &&
+                  copyDirSet &&
+                  confirmedCopySettings &&
+                  guideState === GuideState.PLAYERS &&
+                  numBatchActive !== 2 &&
+                  numBatchActive !== 4
+                }
+                elevateNames={
+                  guidedMode &&
+                  guideBackdropOpen &&
+                  tournamentSet &&
+                  copyDirSet &&
+                  confirmedCopySettings &&
+                  guideState === GuideState.PLAYERS
+                }
+              />
+            ) : (
+              <Alert
+                severity={wasDeleted ? 'warning' : 'error'}
+                sx={{ mb: '8px', pl: '24px' }}
+              >
+                {wasDeleted
+                  ? 'Replays folder deleted.'
+                  : 'Replays folder not found.'}
+              </Alert>
+            ))}
           <div ref={copyControlsRef} />
           <CopyControls
             dir={copyDir}
@@ -1708,6 +1735,13 @@ function Hello() {
               await window.electron.setCopySettings(newCopySettings);
               setCopySettings(newCopySettings);
             }}
+            elevateSettings={
+              guidedMode &&
+              guideBackdropOpen &&
+              tournamentSet &&
+              copyDirSet &&
+              !confirmedCopySettings
+            }
           />
         </TopColumn>
         <TopColumn
@@ -1716,6 +1750,9 @@ function Hello() {
             zIndex: (theme) =>
               guidedMode &&
               guideBackdropOpen &&
+              tournamentSet &&
+              copyDirSet &&
+              confirmedCopySettings &&
               (guideState === GuideState.SET ||
                 (mode === Mode.MANUAL && guideState === GuideState.PLAYERS))
                 ? theme.zIndex.drawer + 2
@@ -1822,15 +1859,17 @@ function Hello() {
                 gettingAdminedTournaments={gettingAdminedTournaments}
                 adminedTournaments={adminedTournaments}
                 gettingTournament={gettingTournament}
-                startggTournamentSlug={slug}
+                tournamentSet={tournamentSet}
+                copyDirSet={copyDirSet}
                 setStartggTournamentSlug={setSlug}
                 getStartggTournament={getTournament}
-                challongeTournaments={challongeTournaments}
                 getChallongeTournament={getChallongeTournament}
                 manualNames={manualNames}
                 setManualNames={setManualNames}
                 copyDir={copyDir}
                 setCopyDir={setCopyDir}
+                confirmedCopySettings={confirmedCopySettings}
+                setConfirmedCopySettings={setConfirmedCopySettings}
                 state={guideState}
                 setState={setGuideState}
                 backdropOpen={guideBackdropOpen}
@@ -1914,6 +1953,9 @@ function Hello() {
                           elevate={
                             guidedMode &&
                             guideBackdropOpen &&
+                            tournamentSet &&
+                            copyDirSet &&
+                            confirmedCopySettings &&
                             guideState === GuideState.PLAYERS
                           }
                         />
@@ -1933,6 +1975,9 @@ function Hello() {
                             elevate={
                               guidedMode &&
                               guideBackdropOpen &&
+                              tournamentSet &&
+                              copyDirSet &&
+                              confirmedCopySettings &&
                               guideState === GuideState.PLAYERS
                             }
                           />
@@ -1954,6 +1999,9 @@ function Hello() {
                           elevate={
                             guidedMode &&
                             guideBackdropOpen &&
+                            tournamentSet &&
+                            copyDirSet &&
+                            confirmedCopySettings &&
                             guideState === GuideState.PLAYERS
                           }
                         />
@@ -1973,6 +2021,9 @@ function Hello() {
                             elevate={
                               guidedMode &&
                               guideBackdropOpen &&
+                              tournamentSet &&
+                              copyDirSet &&
+                              confirmedCopySettings &&
                               guideState === GuideState.PLAYERS
                             }
                           />
@@ -2047,6 +2098,9 @@ function Hello() {
                 elevate={
                   guidedMode &&
                   guideBackdropOpen &&
+                  tournamentSet &&
+                  copyDirSet &&
+                  confirmedCopySettings &&
                   guideState === GuideState.PLAYERS
                 }
               />

@@ -27,6 +27,7 @@ export default function CopyControls({
   success,
   copySettings,
   setCopySettings,
+  elevateSettings,
 }: {
   dir: string;
   setDir: (dir: string) => void;
@@ -40,6 +41,7 @@ export default function CopyControls({
   success: string;
   copySettings: CopySettings;
   setCopySettings: (newCopySettings: CopySettings) => Promise<void>;
+  elevateSettings: boolean;
 }) {
   const chooseDir = async () => {
     const newDir = await window.electron.chooseCopyDir();
@@ -65,7 +67,15 @@ export default function CopyControls({
             </IconButton>
           </Tooltip>
         </Stack>
-        <Stack direction="row" justifyContent="right">
+        <Stack
+          direction="row"
+          justifyContent="right"
+          bgcolor={elevateSettings ? 'white' : undefined}
+          sx={{
+            zIndex: (theme) =>
+              elevateSettings ? theme.zIndex.drawer + 2 : undefined,
+          }}
+        >
           <Stack>
             <Tooltip
               arrow

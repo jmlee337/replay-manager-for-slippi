@@ -1,4 +1,5 @@
 import {
+  Alert,
   Avatar,
   Box,
   Checkbox,
@@ -371,21 +372,25 @@ export default function ReplayList({
         zIndex: (theme) => (elevate ? theme.zIndex.drawer + 2 : undefined),
       }}
     >
-      {replays.map((replay, index) => (
-        <ReplayListItem
-          key={replay.filePath}
-          index={index}
-          findUnusedPlayer={findUnusedPlayer}
-          numAvailablePlayers={numAvailablePlayers}
-          replay={replay}
-          selectedChipData={selectedChipData}
-          onClick={onClick}
-          onOverride={onOverride}
-          resetSelectedChipData={resetSelectedChipData}
-          elevateChips={elevateChips}
-          elevateNames={elevateNames}
-        />
-      ))}
+      {replays.length === 0 ? (
+        <Alert severity="warning">No replays in folder</Alert>
+      ) : (
+        replays.map((replay, index) => (
+          <ReplayListItem
+            key={replay.filePath}
+            index={index}
+            findUnusedPlayer={findUnusedPlayer}
+            numAvailablePlayers={numAvailablePlayers}
+            replay={replay}
+            selectedChipData={selectedChipData}
+            onClick={onClick}
+            onOverride={onOverride}
+            resetSelectedChipData={resetSelectedChipData}
+            elevateChips={elevateChips}
+            elevateNames={elevateNames}
+          />
+        ))
+      )}
     </List>
   );
 }
