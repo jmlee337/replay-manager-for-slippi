@@ -54,15 +54,13 @@ const electronHandler = {
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
   getTournament: (slug: string): Promise<{ name: string; events: Event[] }> =>
     ipcRenderer.invoke('getTournament', slug),
-  getEvent: (id: number): Promise<Phase[]> =>
-    ipcRenderer.invoke('getEvent', id),
-  getPhase: (id: number): Promise<PhaseGroup[]> =>
-    ipcRenderer.invoke('getPhase', id),
+  getEvent: (id: number): Promise<Event> => ipcRenderer.invoke('getEvent', id),
+  getPhase: (id: number): Promise<Phase> => ipcRenderer.invoke('getPhase', id),
   getPhaseGroup: (
     id: number,
     isDoubles: boolean,
     updatedSets?: Map<number, Set>,
-  ): Promise<Sets> =>
+  ): Promise<PhaseGroup> =>
     ipcRenderer.invoke('getPhaseGroup', id, isDoubles, updatedSets),
   startSet: (id: number): Promise<Set> => ipcRenderer.invoke('startSet', id),
   reportSet: (set: StartggSet): Promise<Set[]> =>

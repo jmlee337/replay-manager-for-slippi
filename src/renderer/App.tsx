@@ -589,9 +589,9 @@ function Hello() {
       return;
     }
 
-    let sets;
+    let newPhaseGroup;
     try {
-      sets = await window.electron.getPhaseGroup(
+      newPhaseGroup = await window.electron.getPhaseGroup(
         id,
         editEvent.isDoubles,
         updatedSets,
@@ -610,11 +610,16 @@ function Hello() {
       (phaseGroup) => phaseGroup.id === id,
     );
     if (editPhaseGroup) {
-      editPhaseGroup.sets = sets;
+      newPhaseGroup.entrants = editPhaseGroup.entrants;
+      Object.assign(editPhaseGroup, newPhaseGroup);
       if (selectedSet.id > 0) {
         const updatedSelectedSet =
-          sets.completedSets.find((set) => set.id === selectedSet.id) ||
-          sets.pendingSets.find((set) => set.id === selectedSet.id);
+          newPhaseGroup.sets.completedSets.find(
+            (set) => set.id === selectedSet.id,
+          ) ||
+          newPhaseGroup.sets.pendingSets.find(
+            (set) => set.id === selectedSet.id,
+          );
         if (updatedSelectedSet) {
           setSelectedSet(updatedSelectedSet);
         }
@@ -826,9 +831,9 @@ function Hello() {
     isRoot: boolean,
     fullyRecursive: boolean = false,
   ) => {
-    let phaseGroups;
+    let newPhase;
     try {
-      phaseGroups = await window.electron.getPhase(id);
+      newPhase = await window.electron.getPhase(id);
     } catch (e: any) {
       showErrorDialog([e.toString()]);
       return;
@@ -846,7 +851,7 @@ function Hello() {
         editPhase.phaseGroups.forEach((phaseGroup) => {
           phaseGroupsMap.set(phaseGroup.id, phaseGroup);
         });
-        phaseGroups.forEach((phaseGroup) => {
+        newPhase.phaseGroups.forEach((phaseGroup) => {
           const existingPhaseGroup = phaseGroupsMap.get(phaseGroup.id);
           if (existingPhaseGroup) {
             phaseGroup.entrants = existingPhaseGroup.entrants;
@@ -854,15 +859,15 @@ function Hello() {
           }
         });
       }
-      editPhase.phaseGroups = phaseGroups;
-      const phaseGroupsWithChildren = phaseGroups.filter(
+      Object.assign(editPhase, newPhase);
+      const phaseGroupsWithChildren = newPhase.phaseGroups.filter(
         (phaseGroup) =>
           phaseGroup.sets.completedSets.length > 0 ||
           phaseGroup.sets.pendingSets.length > 0,
       );
       if (fullyRecursive) {
         await Promise.all(
-          phaseGroups.map(async (phaseGroup) =>
+          newPhase.phaseGroups.map(async (phaseGroup) =>
             getPhaseGroup(phaseGroup.id, id, eventId, false),
           ),
         );
@@ -872,8 +877,8 @@ function Hello() {
             getPhaseGroup(phaseGroup.id, id, eventId, false),
           ),
         );
-      } else if (phaseGroups.length === 1) {
-        await getPhaseGroup(phaseGroups[0].id, id, eventId, false);
+      } else if (newPhase.phaseGroups.length === 1) {
+        await getPhaseGroup(newPhase.phaseGroups[0].id, id, eventId, false);
       }
       if (isRoot) {
         setTournament({ ...tournament });
@@ -886,9 +891,9 @@ function Hello() {
     isRoot: boolean,
     fullyRecursive: boolean = false,
   ) => {
-    let phases;
+    let newEvent;
     try {
-      phases = await window.electron.getEvent(id);
+      newEvent = await window.electron.getEvent(id);
     } catch (e: any) {
       showErrorDialog([e.toString()]);
       return;
@@ -901,20 +906,22 @@ function Hello() {
         editEvent.phases.forEach((phase) => {
           phasesMap.set(phase.id, phase);
         });
-        phases.forEach((phase) => {
+        newEvent.phases.forEach((phase) => {
           const existingPhase = phasesMap.get(phase.id);
           if (existingPhase) {
             phase.phaseGroups = existingPhase.phaseGroups;
           }
         });
       }
-      editEvent.phases = phases;
-      const phasesWithChildren = phases.filter(
+      Object.assign(editEvent, newEvent);
+      const phasesWithChildren = newEvent.phases.filter(
         (phase) => phase.phaseGroups.length > 0,
       );
       if (fullyRecursive) {
         await Promise.all(
-          phases.map(async (phase) => getPhase(phase.id, id, false, true)),
+          newEvent.phases.map(async (phase) =>
+            getPhase(phase.id, id, false, true),
+          ),
         );
       } else if (phasesWithChildren.length > 0) {
         await Promise.all(
@@ -922,8 +929,8 @@ function Hello() {
             getPhase(phase.id, id, false),
           ),
         );
-      } else if (phases.length === 1) {
-        await getPhase(phases[0].id, id, false);
+      } else if (newEvent.phases.length === 1) {
+        await getPhase(newEvent.phases[0].id, id, false);
       }
       if (isRoot) {
         setTournament({ ...tournament });

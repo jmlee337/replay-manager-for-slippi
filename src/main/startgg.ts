@@ -6,7 +6,6 @@ import {
   Phase,
   PhaseGroup,
   Set,
-  Sets,
   StartggSet,
 } from '../common/types';
 
@@ -121,44 +120,61 @@ export async function getTournament(
   };
 }
 
-export async function getEvent(id: number): Promise<Phase[]> {
+export async function getEvent(id: number): Promise<Event> {
   const response = await wrappedFetch(
     `https://api.smash.gg/event/${id}?expand[]=phase`,
   );
   const json = await response.json();
-  return json.entities.phase.map(
-    (phase: any): Phase => ({
-      id: phase.id,
-      name: phase.name,
-      phaseGroups: [],
-      state: phase.state,
-    }),
-  );
+  const { event } = json.entities;
+  return {
+    id: event.id,
+    name: event.name,
+    slug: event.slug,
+    isDoubles:
+      event.teamRosterSize &&
+      event.teamRosterSize.minPlayers === 2 &&
+      event.teamRosterSize.maxPlayers === 2,
+    isOnline: event.isOnline,
+    state: event.state,
+    phases: json.entities.phase.map(
+      (phase: any): Phase => ({
+        id: phase.id,
+        name: phase.name,
+        phaseGroups: [],
+        state: phase.state,
+      }),
+    ),
+  };
 }
 
-export async function getPhase(id: number): Promise<PhaseGroup[]> {
+export async function getPhase(id: number): Promise<Phase> {
   const response = await wrappedFetch(
     `https://api.smash.gg/phase/${id}?expand[]=groups`,
   );
   const json = await response.json();
-  const { bracketType } = json.entities.phase;
-  return json.entities.groups
-    .map(
-      (group: any): PhaseGroup => ({
-        id: group.id,
-        bracketType,
-        entrants: [],
-        name: group.displayIdentifier,
-        sets: {
-          pendingSets: [],
-          completedSets: [],
-        },
-        state: group.state,
-      }),
-    )
-    .sort((phaseGroupA: PhaseGroup, phaseGroupB: PhaseGroup) =>
-      phaseGroupA.name.localeCompare(phaseGroupB.name),
-    );
+  const { phase } = json.entities;
+  return {
+    id: phase.id,
+    name: phase.name,
+    state: phase.state,
+    phaseGroups: json.entities.groups
+      .map(
+        (group: any): PhaseGroup => ({
+          id: group.id,
+          bracketType: phase.bracketType,
+          entrants: [],
+          name: group.displayIdentifier,
+          sets: {
+            pendingSets: [],
+            completedSets: [],
+          },
+          state: group.state,
+        }),
+      )
+      .sort((phaseGroupA: PhaseGroup, phaseGroupB: PhaseGroup) =>
+        phaseGroupA.name.localeCompare(phaseGroupB.name),
+      ),
+  };
 }
 
 const API_SET_INNER = `
@@ -253,6 +269,10 @@ const SINGLES_PAGE_SIZE = 40;
 const PHASE_GROUP_QUERY = `
   query PhaseGroupQuery($id: ID!, $page: Int, $pageSize: Int) {
     phaseGroup(id: $id) {
+      id
+      bracketType
+      displayIdentifier
+      state
       sets(page: $page, perPage: $pageSize, sortType: CALL_ORDER) {
         pageInfo {
           totalPages
@@ -264,7 +284,7 @@ const PHASE_GROUP_QUERY = `
 `;
 
 // 1838376 genesis-9-1
-// 1997685 test-tournament-sorry
+// 2254448 test-tournament-sorry
 // 2181889 BattleGateway-42
 // 2139098 the-off-season-2-2 1-000-melee-doubles
 // state {1: not started, 2: started, 3: completed}
@@ -274,7 +294,12 @@ export async function getPhaseGroup(
   id: number,
   isDoubles: boolean,
   updatedSets: Map<number, Set> = new Map(),
-): Promise<Sets> {
+): Promise<PhaseGroup> {
+  let phaseGroupId;
+  let bracketType;
+  let name;
+  let state;
+
   let page = 1;
   let nextData;
   const sets: Set[] = [];
@@ -285,7 +310,13 @@ export async function getPhaseGroup(
       page,
       pageSize: isDoubles ? DOUBLES_PAGE_SIZE : SINGLES_PAGE_SIZE,
     });
-    const newSets: Set[] = nextData.phaseGroup.sets.nodes
+    const { phaseGroup } = nextData;
+    phaseGroupId = phaseGroup.id;
+    bracketType = phaseGroup.bracketType;
+    name = phaseGroup.displayIdentifier;
+    state = phaseGroup.state;
+
+    const newSets: Set[] = phaseGroup.sets.nodes
       .filter(
         (set: any) =>
           (set.slots[0].entrant && set.slots[1].entrant) ||
@@ -306,7 +337,14 @@ export async function getPhaseGroup(
       pendingSets.push(set);
     }
   });
-  return { pendingSets, completedSets };
+  return {
+    id: phaseGroupId,
+    bracketType,
+    entrants: [],
+    name,
+    state,
+    sets: { pendingSets, completedSets },
+  };
 }
 
 const MARK_SET_IN_PROGRESS_MUTATION = `
