@@ -134,6 +134,18 @@ const toSet = (
 
 const slugToFinalsMap = new Map<string, Map<number, string>>();
 const slugToStationsMap = new Map<string, Map<string, Stream>>();
+function apiStateToState(apiState: string) {
+  if (apiState === 'pending') {
+    return State.PENDING;
+  }
+  if (apiState === 'underway') {
+    return State.STARTED;
+  }
+  if (apiState === 'complete') {
+    return State.COMPLETED;
+  }
+  throw new Error(`Unknown state: ${apiState}`);
+}
 export async function getChallongeTournament(
   key: string,
   slug: string,
@@ -145,6 +157,20 @@ export async function getChallongeTournament(
   );
   const { name, tournament_type: tournamentType } =
     tournamentJson.data.attributes;
+  const state = apiStateToState(tournamentJson.data.attributes.state);
+  if (state === State.PENDING) {
+    return {
+      entrants: [],
+      name,
+      sets: {
+        completedSets: [],
+        pendingSets: [],
+      },
+      slug,
+      state,
+      tournamentType,
+    };
+  }
 
   let participantsPage = 0;
   let participantsCount = 0;
@@ -213,7 +239,7 @@ export async function getChallongeTournament(
     slugToStationsMap.set(slug, stationIdToStream);
     const data = json.data as any[];
     const idToFullRoundText = new Map<number, string>();
-    if (tournamentType === 'double elimination') {
+    if (tournamentType === 'double elimination' && data.length >= 2) {
       const gfrSet = data[data.length - 1];
       const gfSet = data[data.length - 2];
       if (
@@ -257,6 +283,7 @@ export async function getChallongeTournament(
       pendingSets: pendingSets.sort((a, b) => a.ordinal! - b.ordinal!),
       completedSets: completedSets.sort((a, b) => b.ordinal! - a.ordinal!),
     },
+    state,
     slug,
     tournamentType,
   };

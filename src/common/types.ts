@@ -130,6 +130,7 @@ export type ChallongeTournament = {
   name: string;
   slug: string;
   sets: Sets;
+  state: State;
   tournamentType: string;
 };
 

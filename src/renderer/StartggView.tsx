@@ -120,6 +120,7 @@ function PhaseGroupView({
   eventSlug,
   phaseId,
   phaseName,
+  tournamentSlug,
   searchSubstr,
   vlerkMode,
   getPhaseGroup,
@@ -136,6 +137,7 @@ function PhaseGroupView({
   eventSlug: string;
   phaseId: number;
   phaseName: string;
+  tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
   getPhaseGroup: (
@@ -229,19 +231,34 @@ function PhaseGroupView({
               {getting ? <CircularProgress size="24px" /> : <Refresh />}
             </IconButton>
           </Tooltip>
-          {isStartable && phaseGroup.state === 1 && (
-            <Tooltip arrow title="Start pool (lock seeds)">
-              <IconButton
-                onClick={(ev) => {
-                  ev.stopPropagation();
-                  start();
-                }}
-                size="small"
-              >
-                {starting ? <CircularProgress size="24px" /> : <PlayArrow />}
-              </IconButton>
-            </Tooltip>
-          )}
+          {phaseGroup.state === State.PENDING &&
+            (isStartable ? (
+              <Tooltip arrow title="Start pool (lock seeds)">
+                <IconButton
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    start();
+                  }}
+                  size="small"
+                >
+                  {starting ? <CircularProgress size="24px" /> : <PlayArrow />}
+                </IconButton>
+              </Tooltip>
+            ) : (
+              <Tooltip arrow title="Start pool on website">
+                <IconButton
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    window.open(
+                      `//www.start.gg/admin/tournament/${tournamentSlug}/brackets/${eventId}/${phaseId}/${phaseGroup.id}`,
+                    );
+                  }}
+                  size="small"
+                >
+                  <PlayArrow />
+                </IconButton>
+              </Tooltip>
+            ))}
         </ListItemButton>
         <Collapse in={open}>
           <Block>
@@ -339,6 +356,7 @@ function PhaseView({
   eventId,
   eventName,
   eventSlug,
+  tournamentSlug,
   searchSubstr,
   vlerkMode,
   getPhase,
@@ -354,6 +372,7 @@ function PhaseView({
   eventId: number;
   eventName: string;
   eventSlug: string;
+  tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
   getPhase: (id: number, eventId: number) => Promise<void>;
@@ -429,7 +448,7 @@ function PhaseView({
             {getting ? <CircularProgress size="24px" /> : <Refresh />}
           </IconButton>
         </Tooltip>
-        {isStartable && phase.state === 1 && (
+        {isStartable && phase.state === State.PENDING && (
           <Tooltip arrow title="Start phase (lock seeds and pools)">
             <IconButton
               onClick={(ev) => {
@@ -456,6 +475,7 @@ function PhaseView({
               eventSlug={eventSlug}
               phaseId={phase.id}
               phaseName={phase.name}
+              tournamentSlug={tournamentSlug}
               searchSubstr={searchSubstr}
               vlerkMode={vlerkMode}
               getPhaseGroup={getPhaseGroup}
@@ -474,6 +494,7 @@ function PhaseView({
 function EventView({
   event,
   initiallyOpen,
+  tournamentSlug,
   searchSubstr,
   vlerkMode,
   getEvent,
@@ -486,6 +507,7 @@ function EventView({
 }: {
   event: Event;
   initiallyOpen: boolean;
+  tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
   getEvent: (id: number) => Promise<void>;
@@ -562,7 +584,7 @@ function EventView({
             {getting ? <CircularProgress size="24px" /> : <Refresh />}
           </IconButton>
         </Tooltip>
-        {!event.isOnline && event.state === 1 && (
+        {!event.isOnline && event.state === State.PENDING && (
           <Tooltip arrow title="Start event (lock seeds, phases, and pools)">
             <IconButton
               onClick={(ev) => {
@@ -587,6 +609,7 @@ function EventView({
               eventId={event.id}
               eventName={event.name}
               eventSlug={event.slug}
+              tournamentSlug={tournamentSlug}
               searchSubstr={searchSubstr}
               vlerkMode={vlerkMode}
               getPhase={getPhase}
@@ -651,6 +674,7 @@ export default function StartggView({
             key={event.id}
             event={event}
             initiallyOpen={tournament.events.length === 1}
+            tournamentSlug={tournament.slug}
             searchSubstr={searchSubstr}
             vlerkMode={vlerkMode}
             getEvent={getEvent}

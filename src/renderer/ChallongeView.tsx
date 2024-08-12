@@ -11,6 +11,7 @@ import {
   KeyboardArrowDown,
   KeyboardArrowRight,
   KeyboardArrowUp,
+  PlayArrow,
   Refresh,
 } from '@mui/icons-material';
 import { useState } from 'react';
@@ -110,6 +111,19 @@ export default function ChallongeView({
               {getting ? <CircularProgress size="24px" /> : <Refresh />}
             </IconButton>
           </Tooltip>
+          {tournament.state === State.PENDING && (
+            <Tooltip arrow title="Start tournament on website">
+              <IconButton
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  window.open(`//challonge.com/${tournament.slug}`);
+                }}
+                size="small"
+              >
+                <PlayArrow />
+              </IconButton>
+            </Tooltip>
+          )}
         </ListItemButton>
         <Collapse in={open}>
           <div style={{ paddingLeft: '8px' }}>
