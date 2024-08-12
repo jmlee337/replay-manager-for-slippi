@@ -1777,6 +1777,11 @@ function Hello() {
                   setGuideState(GuideState.REPLAYS);
                 }
               }}
+              setTournament={(updater) => {
+                setTournament(updater);
+                selectSet(EMPTY_SET);
+                setSelectedSetChain(EMPTY_SELECTED_SET_CHAIN);
+              }}
             />
           )}
           {mode === Mode.CHALLONGE &&

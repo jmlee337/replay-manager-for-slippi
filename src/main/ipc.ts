@@ -18,9 +18,12 @@ import {
   Entrant,
   Mode,
   Output,
+  Phase,
+  PhaseGroup,
   Replay,
   ReportSettings,
   Set,
+  Sets,
   StartggSet,
 } from '../common/types';
 import {
@@ -33,6 +36,9 @@ import {
   updateSet,
   getTournaments,
   getPhaseGroupEntrants,
+  startEvent,
+  startPhase,
+  startPhaseGroup,
 } from './startgg';
 import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
 import {
@@ -289,6 +295,42 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       return getPhaseGroupEntrants(sggApiKey, id);
+    },
+  );
+
+  ipcMain.removeHandler('startEvent');
+  ipcMain.handle(
+    'startEvent',
+    async (event: IpcMainInvokeEvent, id: number): Promise<Phase[]> => {
+      if (!sggApiKey) {
+        throw new Error('Please set start.gg API key');
+      }
+
+      return startEvent(sggApiKey, id);
+    },
+  );
+
+  ipcMain.removeHandler('startPhase');
+  ipcMain.handle(
+    'startPhase',
+    async (event: IpcMainInvokeEvent, id: number): Promise<PhaseGroup[]> => {
+      if (!sggApiKey) {
+        throw new Error('Please set start.gg API key');
+      }
+
+      return startPhase(sggApiKey, id);
+    },
+  );
+
+  ipcMain.removeHandler('startPhaseGroup');
+  ipcMain.handle(
+    'startPhaseGroup',
+    async (event: IpcMainInvokeEvent, id: number): Promise<Sets> => {
+      if (!sggApiKey) {
+        throw new Error('Please set start.gg API key');
+      }
+
+      return startPhaseGroup(sggApiKey, id);
     },
   );
 

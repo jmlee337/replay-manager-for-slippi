@@ -3,6 +3,10 @@ import {
   Box,
   CircularProgress,
   Collapse,
+  Dialog,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
   ListItemButton,
   Tooltip,
@@ -12,9 +16,10 @@ import {
   KeyboardArrowDown,
   KeyboardArrowRight,
   KeyboardArrowUp,
+  PlayArrow,
   Refresh,
 } from '@mui/icons-material';
-import { useState } from 'react';
+import { Dispatch, SetStateAction, useState } from 'react';
 import {
   Event,
   NameWithHighlight,
@@ -119,6 +124,8 @@ function PhaseGroupView({
   getPhaseGroup,
   getPhaseGroupEntrants,
   selectSet,
+  setTournament,
+  showError,
 }: {
   phaseGroup: PhaseGroup;
   initiallyOpen: boolean;
@@ -145,8 +152,11 @@ function PhaseGroupView({
     eventName: string,
     eventSlug: string,
   ) => void;
+  setTournament: Dispatch<SetStateAction<Tournament>>;
+  showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [completedOpen, setCompletedOpen] = useState(vlerkMode);
   const [open, setOpen] = useState(initiallyOpen);
 
@@ -154,6 +164,23 @@ function PhaseGroupView({
     setGetting(true);
     await getPhaseGroup(phaseGroup.id, phaseId, eventId);
     setGetting(false);
+  };
+  const start = async () => {
+    setStarting(true);
+    try {
+      const sets = await window.electron.startPhaseGroup(phaseGroup.id);
+      setTournament((preTournament) => {
+        phaseGroup.state = 2;
+        phaseGroup.sets = sets;
+        return preTournament;
+      });
+    } catch (e: any) {
+      if (e instanceof Error) {
+        showError(e.message);
+      }
+    } finally {
+      setStarting(false);
+    }
   };
 
   const pendingSetsToShow = filterSets(
@@ -200,6 +227,19 @@ function PhaseGroupView({
               {getting ? <CircularProgress size="24px" /> : <Refresh />}
             </IconButton>
           </Tooltip>
+          {phaseGroup.state === 1 && (
+            <Tooltip arrow title="Start pool (lock seeds)">
+              <IconButton
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  start();
+                }}
+                size="small"
+              >
+                {starting ? <CircularProgress size="24px" /> : <PlayArrow />}
+              </IconButton>
+            </Tooltip>
+          )}
         </ListItemButton>
         <Collapse in={open}>
           <Block>
@@ -302,6 +342,8 @@ function PhaseView({
   getPhaseGroup,
   getPhaseGroupEntrants,
   selectSet,
+  setTournament,
+  showError,
 }: {
   phase: Phase;
   initiallyOpen: boolean;
@@ -327,14 +369,34 @@ function PhaseView({
     eventName: string,
     eventSlug: string,
   ) => void;
+  setTournament: Dispatch<SetStateAction<Tournament>>;
+  showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [open, setOpen] = useState(initiallyOpen);
 
   const get = async () => {
     setGetting(true);
     await getPhase(phase.id, eventId);
     setGetting(false);
+  };
+  const start = async () => {
+    setStarting(true);
+    try {
+      const phaseGroups = await window.electron.startPhase(phase.id);
+      setTournament((preTournament) => {
+        phase.state = 2;
+        phase.phaseGroups = phaseGroups;
+        return preTournament;
+      });
+    } catch (e: any) {
+      if (e instanceof Error) {
+        showError(e.message);
+      }
+    } finally {
+      setStarting(false);
+    }
   };
   return (
     <>
@@ -363,6 +425,19 @@ function PhaseView({
             {getting ? <CircularProgress size="24px" /> : <Refresh />}
           </IconButton>
         </Tooltip>
+        {phase.state === 1 && (
+          <Tooltip arrow title="Start phase (lock seeds and pools)">
+            <IconButton
+              onClick={(ev) => {
+                ev.stopPropagation();
+                start();
+              }}
+              size="small"
+            >
+              {starting ? <CircularProgress size="24px" /> : <PlayArrow />}
+            </IconButton>
+          </Tooltip>
+        )}
       </ListItemButton>
       <Collapse in={open}>
         <Block>
@@ -381,6 +456,8 @@ function PhaseView({
               getPhaseGroup={getPhaseGroup}
               getPhaseGroupEntrants={getPhaseGroupEntrants}
               selectSet={selectSet}
+              setTournament={setTournament}
+              showError={showError}
             />
           ))}
         </Block>
@@ -399,6 +476,8 @@ function EventView({
   getPhaseGroup,
   getPhaseGroupEntrants,
   selectSet,
+  setTournament,
+  showError,
 }: {
   event: Event;
   initiallyOpen: boolean;
@@ -422,14 +501,34 @@ function EventView({
     eventName: string,
     eventSlug: string,
   ) => void;
+  setTournament: Dispatch<SetStateAction<Tournament>>;
+  showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [open, setOpen] = useState(initiallyOpen);
 
   const get = async () => {
     setGetting(true);
     await getEvent(event.id);
     setGetting(false);
+  };
+  const start = async () => {
+    setStarting(true);
+    try {
+      const phases = await window.electron.startEvent(event.id);
+      setTournament((preTournament) => {
+        event.state = 2;
+        event.phases = phases;
+        return preTournament;
+      });
+    } catch (e: any) {
+      if (e instanceof Error) {
+        showError(e.message);
+      }
+    } finally {
+      setStarting(false);
+    }
   };
   return (
     <>
@@ -458,6 +557,19 @@ function EventView({
             {getting ? <CircularProgress size="24px" /> : <Refresh />}
           </IconButton>
         </Tooltip>
+        {event.state === 1 && (
+          <Tooltip arrow title="Start event (lock seeds, phases, and pools)">
+            <IconButton
+              onClick={(ev) => {
+                ev.stopPropagation();
+                start();
+              }}
+              size="small"
+            >
+              {starting ? <CircularProgress size="24px" /> : <PlayArrow />}
+            </IconButton>
+          </Tooltip>
+        )}
       </ListItemButton>
       <Collapse in={open}>
         <Block>
@@ -475,6 +587,8 @@ function EventView({
               getPhaseGroup={getPhaseGroup}
               getPhaseGroupEntrants={getPhaseGroupEntrants}
               selectSet={selectSet}
+              setTournament={setTournament}
+              showError={showError}
             />
           ))}
         </Block>
@@ -492,6 +606,7 @@ export default function StartggView({
   getPhaseGroup,
   getPhaseGroupEntrants,
   selectSet,
+  setTournament,
 }: {
   searchSubstr: string;
   tournament: Tournament;
@@ -514,23 +629,45 @@ export default function StartggView({
     eventName: string,
     eventSlug: string,
   ) => void;
+  setTournament: Dispatch<SetStateAction<Tournament>>;
 }) {
+  const [error, setError] = useState('');
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+  const showError = (newError: string) => {
+    setError(newError);
+    setErrorDialogOpen(true);
+  };
   return (
-    <Box bgcolor="white">
-      {tournament.events.map((event) => (
-        <EventView
-          key={event.id}
-          event={event}
-          initiallyOpen={tournament.events.length === 1}
-          searchSubstr={searchSubstr}
-          vlerkMode={vlerkMode}
-          getEvent={getEvent}
-          getPhase={getPhase}
-          getPhaseGroup={getPhaseGroup}
-          getPhaseGroupEntrants={getPhaseGroupEntrants}
-          selectSet={selectSet}
-        />
-      ))}
-    </Box>
+    <>
+      <Box bgcolor="white">
+        {tournament.events.map((event) => (
+          <EventView
+            key={event.id}
+            event={event}
+            initiallyOpen={tournament.events.length === 1}
+            searchSubstr={searchSubstr}
+            vlerkMode={vlerkMode}
+            getEvent={getEvent}
+            getPhase={getPhase}
+            getPhaseGroup={getPhaseGroup}
+            getPhaseGroupEntrants={getPhaseGroupEntrants}
+            selectSet={selectSet}
+            setTournament={setTournament}
+            showError={showError}
+          />
+        ))}
+      </Box>
+      <Dialog
+        open={errorDialogOpen}
+        onClose={() => {
+          setErrorDialogOpen(false);
+        }}
+      >
+        <DialogTitle>Error! (You may want to copy this message)</DialogTitle>
+        <DialogContent>
+          <DialogContentText>{error}</DialogContentText>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

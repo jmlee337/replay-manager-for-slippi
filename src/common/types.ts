@@ -94,12 +94,14 @@ export type PhaseGroup = {
   entrants: Entrant[];
   name: string;
   sets: Sets;
+  state: State;
 };
 
 export type Phase = {
   id: number;
   name: string;
   phaseGroups: PhaseGroup[];
+  state: State;
 };
 
 export type Event = {
@@ -107,6 +109,7 @@ export type Event = {
   name: string;
   slug: string;
   isDoubles: boolean;
+  state: State;
   phases: Phase[];
 };
 

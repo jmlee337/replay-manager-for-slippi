@@ -113,6 +113,7 @@ export async function getTournament(
             event.teamRosterSize &&
             event.teamRosterSize.minPlayers === 2 &&
             event.teamRosterSize.maxPlayers === 2,
+          state: event.state,
           phases: [],
         }),
       ),
@@ -129,6 +130,7 @@ export async function getEvent(id: number): Promise<Phase[]> {
       id: phase.id,
       name: phase.name,
       phaseGroups: [],
+      state: phase.state,
     }),
   );
 }
@@ -150,6 +152,7 @@ export async function getPhase(id: number): Promise<PhaseGroup[]> {
           pendingSets: [],
           completedSets: [],
         },
+        state: group.state,
       }),
     )
     .sort((phaseGroupA: PhaseGroup, phaseGroupB: PhaseGroup) =>
@@ -157,6 +160,38 @@ export async function getPhase(id: number): Promise<PhaseGroup[]> {
     );
 }
 
+const API_SET_INNER = `
+  id
+  fullRoundText
+  round
+  slots {
+    entrant {
+      id
+      participants {
+        gamerTag
+        prefix
+        player {
+          user {
+            genderPronoun
+          }
+        }
+      }
+    }
+    standing {
+      stats {
+        score {
+          displayValue
+        }
+      }
+    }
+  }
+  state
+  stream {
+    streamName
+    streamSource
+  }
+  winnerId
+`;
 const reportedSetIds = new Map<number, boolean>();
 type ApiParticipant = {
   gamerTag: string;
@@ -221,38 +256,7 @@ const PHASE_GROUP_QUERY = `
         pageInfo {
           totalPages
         }
-        nodes {
-          id
-          fullRoundText
-          round
-          slots {
-            entrant {
-              id
-              participants {
-                gamerTag
-                prefix
-                player {
-                  user {
-                    genderPronoun
-                  }
-                }
-              }
-            }
-            standing {
-              stats {
-                score {
-                  displayValue
-                }
-              }
-            }
-          }
-          state
-          stream {
-            streamName
-            streamSource
-          }
-          winnerId
-        }
+        nodes {${API_SET_INNER}}
       }
     }
   }
@@ -306,38 +310,7 @@ export async function getPhaseGroup(
 
 const MARK_SET_IN_PROGRESS_MUTATION = `
   mutation MarkSetInProgress($setId: ID!) {
-    markSetInProgress(setId: $setId) {
-      id
-      fullRoundText
-      round
-      slots {
-        entrant {
-          id
-          participants {
-            gamerTag
-            prefix
-            player {
-              user {
-                genderPronoun
-              }
-            }
-          }
-        }
-        standing {
-          stats {
-            score {
-              displayValue
-            }
-          }
-        }
-      }
-      state
-      stream {
-        streamName
-        streamSource
-      }
-      winnerId
-    }
+    markSetInProgress(setId: $setId) {${API_SET_INNER}}
   }
 `;
 export async function startSet(key: string, setId: number) {
@@ -347,38 +320,7 @@ export async function startSet(key: string, setId: number) {
 
 const REPORT_BRACKET_SET_MUTATION = `
   mutation ReportBracketSet($setId: ID!, $winnerId: ID, $isDQ: Boolean, $gameData: [BracketSetGameDataInput]) {
-    reportBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {
-      id
-      fullRoundText
-      round
-      slots {
-        entrant {
-          id
-          participants {
-            gamerTag
-            prefix
-            player {
-              user {
-                genderPronoun
-              }
-            }
-          }
-        }
-        standing {
-          stats {
-            score {
-              displayValue
-            }
-          }
-        }
-      }
-      state
-      stream {
-        streamName
-        streamSource
-      }
-      winnerId
-    }
+    reportBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {${API_SET_INNER}}
   }
 `;
 export async function reportSet(key: string, set: StartggSet): Promise<Set[]> {
@@ -394,38 +336,7 @@ export async function reportSet(key: string, set: StartggSet): Promise<Set[]> {
 
 const UPDATE_BRACKET_SET_MUTATION = `
   mutation UpdateBracketSet($setId: ID!, $winnerId: ID, $isDQ: Boolean, $gameData: [BracketSetGameDataInput]) {
-    updateBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {
-      id
-      fullRoundText
-      round
-      slots {
-        entrant {
-          id
-          participants {
-            gamerTag
-            prefix
-            player {
-              user {
-                genderPronoun
-              }
-            }
-          }
-        }
-        standing {
-          stats {
-            score {
-              displayValue
-            }
-          }
-        }
-      }
-      state
-      stream {
-        streamName
-        streamSource
-      }
-      winnerId
-    }
+    updateBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {${API_SET_INNER}}
   }
 `;
 export async function updateSet(key: string, set: StartggSet): Promise<Set> {
@@ -490,4 +401,224 @@ export async function getPhaseGroupEntrants(
     page += 1;
   } while (page <= nextData.phaseGroup.standings.pageInfo.totalPages);
   return entrants;
+}
+
+async function startPhaseGroupsInner(
+  key: string,
+  phaseGroupAndSetIds: { phaseGroupId: number; setId: string }[],
+  idToPhaseGroup: Map<number, PhaseGroup>,
+) {
+  if (phaseGroupAndSetIds.length === 0) {
+    throw new Error('No startable pools found.');
+  }
+
+  const inner = phaseGroupAndSetIds
+    .map(
+      (phaseGroupAndSetId) => `
+  ${phaseGroupAndSetId.setId}: reportBracketSet(setId: "${phaseGroupAndSetId.setId}") {${API_SET_INNER}}`,
+    )
+    .join('');
+  const query = `mutation StartPhaseGroups {${inner}\n}`;
+  const mutateData = await fetchGql(key, query, {});
+  phaseGroupAndSetIds.forEach((phaseGroupAndSetId) => {
+    const newSets = mutateData[phaseGroupAndSetId.setId];
+    if (Array.isArray(newSets)) {
+      const pendingSets = newSets
+        .filter((set: any) => set.slots[0].entrant && set.slots[1].entrant)
+        .map(apiSetToSet);
+      idToPhaseGroup.get(phaseGroupAndSetId.phaseGroupId)!.sets = {
+        completedSets: [],
+        pendingSets,
+      };
+    }
+  });
+}
+
+const EVENT_PHASE_GROUP_REPRESENTATIVE_SET_IDS_QUERY = `
+  query EventPhaseGroupsQuery($eventId: ID) {
+    event(id: $eventId) {
+      phases {
+        id
+        name
+        phaseGroups(query: {page: 1, perPage: 500}) {
+          nodes {
+            id
+            bracketType
+            displayIdentifier
+            sets(page: 1, perPage: 1, filters: {hideEmpty: false, showByes: false}) {
+              nodes {
+                id
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+export async function startEvent(key: string, eventId: number) {
+  const data = await fetchGql(
+    key,
+    EVENT_PHASE_GROUP_REPRESENTATIVE_SET_IDS_QUERY,
+    { eventId },
+  );
+  const { phases } = data.event;
+  if (!Array.isArray(phases) || phases.length === 0) {
+    throw new Error('Maybe try again or start phases individually?');
+  }
+  const retPhases: Phase[] = [];
+  const idToPhaseGroup = new Map<number, PhaseGroup>();
+  const phaseGroupAndSetIds: { phaseGroupId: number; setId: string }[] = [];
+  phases.forEach((phase) => {
+    const phaseGroups: PhaseGroup[] = [];
+    const phaseGroupNodes = phase.phaseGroups.nodes;
+    if (Array.isArray(phaseGroupNodes)) {
+      phaseGroupNodes.forEach((phaseGroup) => {
+        const newPhaseGroup: PhaseGroup = {
+          id: phaseGroup.id,
+          bracketType: phaseGroup.bracketType,
+          name: phaseGroup.displayIdentifier,
+          entrants: [],
+          sets: {
+            completedSets: [],
+            pendingSets: [],
+          },
+          state: 2,
+        };
+        phaseGroups.push(newPhaseGroup);
+        idToPhaseGroup.set(phaseGroup.id, newPhaseGroup);
+        const setNodes = phaseGroup.sets.nodes;
+        if (Array.isArray(setNodes) && setNodes.length > 0) {
+          const { id } = setNodes[0];
+          if (typeof id === 'string' && id.startsWith('preview')) {
+            phaseGroupAndSetIds.push({
+              phaseGroupId: phaseGroup.id,
+              setId: id,
+            });
+          }
+        }
+      });
+    }
+    retPhases.push({
+      id: phase.id,
+      name: phase.name,
+      phaseGroups,
+      state: 2,
+    });
+  });
+  await startPhaseGroupsInner(key, phaseGroupAndSetIds, idToPhaseGroup);
+  return retPhases;
+}
+
+const PHASE_PHASE_GROUP_REPRESENTATIVE_SET_IDS_QUERY = `
+  query PhasePhaseGroupsQuery($phaseId: ID) {
+    phase(id: $phaseId) {
+      id
+      name
+      phaseGroups(query: {page: 1, perPage: 500}) {
+        nodes {
+          id
+          bracketType
+          displayIdentifier
+          sets(page: 1, perPage: 1, filters: {hideEmpty: false, showByes: false}) {
+            nodes {
+              id
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+export async function startPhase(key: string, phaseId: number) {
+  const data = await fetchGql(
+    key,
+    PHASE_PHASE_GROUP_REPRESENTATIVE_SET_IDS_QUERY,
+    { phaseId },
+  );
+  const phaseGroupNodes = data.phase.phaseGroups.nodes;
+  if (!Array.isArray(phaseGroupNodes) || phaseGroupNodes.length === 0) {
+    throw new Error('Maybe try again or start pools individually?');
+  }
+
+  const retPhaseGroups: PhaseGroup[] = [];
+  const idToPhaseGroup = new Map<number, PhaseGroup>();
+  const phaseGroupAndSetIds: { phaseGroupId: number; setId: string }[] = [];
+  phaseGroupNodes.forEach((phaseGroup) => {
+    const newPhaseGroup: PhaseGroup = {
+      id: phaseGroup.id,
+      bracketType: phaseGroup.bracketType,
+      name: phaseGroup.displayIdentifier,
+      entrants: [],
+      sets: {
+        completedSets: [],
+        pendingSets: [],
+      },
+      state: 2,
+    };
+    retPhaseGroups.push(newPhaseGroup);
+    idToPhaseGroup.set(phaseGroup.id, newPhaseGroup);
+    const setNodes = phaseGroup.sets.nodes;
+    if (Array.isArray(setNodes) && setNodes.length > 0) {
+      const { id } = setNodes[0];
+      if (typeof id === 'string' && id.startsWith('preview')) {
+        phaseGroupAndSetIds.push({
+          phaseGroupId: phaseGroup.id,
+          setId: id,
+        });
+      }
+    }
+  });
+  await startPhaseGroupsInner(key, phaseGroupAndSetIds, idToPhaseGroup);
+  return retPhaseGroups;
+}
+
+const PHASE_GROUP_REPRESENTATIVE_SET_ID_QUERY = `
+  query PhaseGroupQuery($phaseGroupId: ID) {
+    phaseGroup(id: $phaseGroupId) {
+      id
+      bracketType
+      displayIdentifier
+      sets(page: 1, perPage: 1, filters: {hideEmpty: false, showByes: false}) {
+        nodes {
+          id
+        }
+      }
+    }
+  }
+`;
+export async function startPhaseGroup(key: string, phaseGroupId: number) {
+  const data = await fetchGql(key, PHASE_GROUP_REPRESENTATIVE_SET_ID_QUERY, {
+    phaseGroupId,
+  });
+  const { phaseGroup } = data;
+  const { nodes } = phaseGroup.sets;
+  if (!Array.isArray(nodes) || nodes.length === 0) {
+    throw new Error('No startable sets found.');
+  }
+
+  const idToPhaseGroup = new Map<number, PhaseGroup>([
+    [
+      phaseGroup.id,
+      {
+        id: phaseGroup.id,
+        bracketType: phaseGroup.bracketType,
+        name: phaseGroup.displayIdentifier,
+        entrants: [],
+        sets: {
+          completedSets: [],
+          pendingSets: [],
+        },
+        state: 2,
+      },
+    ],
+  ]);
+  const phaseGroupAndSetIds = [
+    {
+      phaseGroupId: phaseGroup.id,
+      setId: nodes[0].id,
+    },
+  ];
+  await startPhaseGroupsInner(key, phaseGroupAndSetIds, idToPhaseGroup);
+  return idToPhaseGroup.get(phaseGroup.id)!.sets;
 }
