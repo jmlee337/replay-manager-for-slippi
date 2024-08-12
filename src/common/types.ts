@@ -109,6 +109,7 @@ export type Event = {
   name: string;
   slug: string;
   isDoubles: boolean;
+  isOnline: boolean;
   state: State;
   phases: Phase[];
 };

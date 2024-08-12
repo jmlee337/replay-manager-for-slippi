@@ -846,9 +846,13 @@ function Hello() {
         editPhase.phaseGroups.forEach((phaseGroup) => {
           phaseGroupsMap.set(phaseGroup.id, phaseGroup);
         });
-        phaseGroups = phaseGroups.map(
-          (phaseGroup) => phaseGroupsMap.get(phaseGroup.id) || phaseGroup,
-        );
+        phaseGroups.forEach((phaseGroup) => {
+          const existingPhaseGroup = phaseGroupsMap.get(phaseGroup.id);
+          if (existingPhaseGroup) {
+            phaseGroup.entrants = existingPhaseGroup.entrants;
+            phaseGroup.sets = existingPhaseGroup.sets;
+          }
+        });
       }
       editPhase.phaseGroups = phaseGroups;
       const phaseGroupsWithChildren = phaseGroups.filter(
@@ -897,7 +901,12 @@ function Hello() {
         editEvent.phases.forEach((phase) => {
           phasesMap.set(phase.id, phase);
         });
-        phases = phases.map((phase) => phasesMap.get(phase.id) || phase);
+        phases.forEach((phase) => {
+          const existingPhase = phasesMap.get(phase.id);
+          if (existingPhase) {
+            phase.phaseGroups = existingPhase.phaseGroups;
+          }
+        });
       }
       editEvent.phases = phases;
       const phasesWithChildren = phases.filter(
@@ -942,9 +951,12 @@ function Hello() {
       tournament.events.forEach((event) => {
         eventsMap.set(event.id, event);
       });
-      newTournament.events = newTournament.events.map(
-        (event) => eventsMap.get(event.id) || event,
-      );
+      newTournament.events.forEach((event) => {
+        const existingEvent = eventsMap.get(event.id);
+        if (existingEvent) {
+          event.phases = existingEvent.phases;
+        }
+      });
     }
     tournament.events = newTournament.events;
     tournament.name = newTournament.name;

@@ -113,6 +113,7 @@ export async function getTournament(
             event.teamRosterSize &&
             event.teamRosterSize.minPlayers === 2 &&
             event.teamRosterSize.maxPlayers === 2,
+          isOnline: event.isOnline,
           state: event.state,
           phases: [],
         }),

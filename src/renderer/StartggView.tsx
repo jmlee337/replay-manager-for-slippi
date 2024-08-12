@@ -114,6 +114,7 @@ function SetView({
 function PhaseGroupView({
   phaseGroup,
   initiallyOpen,
+  isStartable,
   eventId,
   eventName,
   eventSlug,
@@ -129,6 +130,7 @@ function PhaseGroupView({
 }: {
   phaseGroup: PhaseGroup;
   initiallyOpen: boolean;
+  isStartable: boolean;
   eventId: number;
   eventName: string;
   eventSlug: string;
@@ -227,7 +229,7 @@ function PhaseGroupView({
               {getting ? <CircularProgress size="24px" /> : <Refresh />}
             </IconButton>
           </Tooltip>
-          {phaseGroup.state === 1 && (
+          {isStartable && phaseGroup.state === 1 && (
             <Tooltip arrow title="Start pool (lock seeds)">
               <IconButton
                 onClick={(ev) => {
@@ -333,6 +335,7 @@ function PhaseGroupView({
 function PhaseView({
   phase,
   initiallyOpen,
+  isStartable,
   eventId,
   eventName,
   eventSlug,
@@ -347,6 +350,7 @@ function PhaseView({
 }: {
   phase: Phase;
   initiallyOpen: boolean;
+  isStartable: boolean;
   eventId: number;
   eventName: string;
   eventSlug: string;
@@ -425,7 +429,7 @@ function PhaseView({
             {getting ? <CircularProgress size="24px" /> : <Refresh />}
           </IconButton>
         </Tooltip>
-        {phase.state === 1 && (
+        {isStartable && phase.state === 1 && (
           <Tooltip arrow title="Start phase (lock seeds and pools)">
             <IconButton
               onClick={(ev) => {
@@ -446,6 +450,7 @@ function PhaseView({
               key={phaseGroup.id}
               phaseGroup={phaseGroup}
               initiallyOpen={phase.phaseGroups.length === 1}
+              isStartable={isStartable}
               eventId={eventId}
               eventName={eventName}
               eventSlug={eventSlug}
@@ -557,7 +562,7 @@ function EventView({
             {getting ? <CircularProgress size="24px" /> : <Refresh />}
           </IconButton>
         </Tooltip>
-        {event.state === 1 && (
+        {!event.isOnline && event.state === 1 && (
           <Tooltip arrow title="Start event (lock seeds, phases, and pools)">
             <IconButton
               onClick={(ev) => {
@@ -578,6 +583,7 @@ function EventView({
               key={phase.id}
               phase={phase}
               initiallyOpen={event.phases.length === 1}
+              isStartable={!event.isOnline}
               eventId={event.id}
               eventName={event.name}
               eventSlug={event.slug}
