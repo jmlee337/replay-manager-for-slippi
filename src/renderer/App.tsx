@@ -1913,9 +1913,7 @@ function Hello() {
                   >
                     <Typography lineHeight="20px" variant="caption">
                       {selectedSet.fullRoundText}
-                      {(!Number.isInteger(selectedSet.id) ||
-                        selectedSet.id > 0) &&
-                        ` (${selectedSet.id})`}
+                      {selectedSet.id > 0 && ` (${selectedSet.id})`}
                     </Typography>
                     {selectedSet.state === State.STARTED && (
                       <>
@@ -2033,10 +2031,9 @@ function Hello() {
                     color="primary"
                     disabled={
                       !(
-                        ((!Number.isInteger(selectedSet.id) ||
-                          selectedSet.id > 0) &&
-                          selectedSet.state === State.PENDING) ||
-                        selectedSet.state === State.CALLED
+                        selectedSet.id > 0 &&
+                        (selectedSet.state === State.PENDING ||
+                          selectedSet.state === State.CALLED)
                       ) || startingSet
                     }
                     size="small"

@@ -172,12 +172,17 @@ function PhaseGroupView({
   const start = async () => {
     setStarting(true);
     try {
-      const sets = await window.electron.startPhaseGroup(phaseGroup.id);
+      const { error, sets } = await window.electron.startPhaseGroup(
+        phaseGroup.id,
+      );
       setTournament((preTournament) => {
         phaseGroup.state = 2;
         phaseGroup.sets = sets;
         return preTournament;
       });
+      if (error) {
+        showError(error);
+      }
     } catch (e: any) {
       if (e instanceof Error) {
         showError(e.message);
@@ -219,7 +224,7 @@ function PhaseGroupView({
           {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
           <Name>{phaseGroup.name}</Name>
           {'\u00A0'}({phaseGroup.id})
-          <Tooltip arrow title="Refresh phase group">
+          <Tooltip arrow title="Refresh pool">
             <IconButton
               disabled={getting}
               onClick={(event) => {
@@ -407,12 +412,15 @@ function PhaseView({
   const start = async () => {
     setStarting(true);
     try {
-      const phaseGroups = await window.electron.startPhase(phase.id);
+      const { error, phaseGroups } = await window.electron.startPhase(phase.id);
       setTournament((preTournament) => {
         phase.state = 2;
         phase.phaseGroups = phaseGroups;
         return preTournament;
       });
+      if (error) {
+        showError(error);
+      }
     } catch (e: any) {
       if (e instanceof Error) {
         showError(e.message);
@@ -543,12 +551,15 @@ function EventView({
   const start = async () => {
     setStarting(true);
     try {
-      const phases = await window.electron.startEvent(event.id);
+      const { error, phases } = await window.electron.startEvent(event.id);
       setTournament((preTournament) => {
         event.state = 2;
         event.phases = phases;
         return preTournament;
       });
+      if (error) {
+        showError(error);
+      }
     } catch (e: any) {
       if (e instanceof Error) {
         showError(e.message);

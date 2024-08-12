@@ -7,6 +7,7 @@ import {
   PhaseGroup,
   Set,
   StartggSet,
+  State,
 } from '../common/types';
 
 async function wrappedFetch(
@@ -315,12 +316,16 @@ export async function getPhaseGroup(
     bracketType = phaseGroup.bracketType;
     name = phaseGroup.displayIdentifier;
     state = phaseGroup.state;
+    if (state === State.PENDING) {
+      break;
+    }
 
     const newSets: Set[] = phaseGroup.sets.nodes
       .filter(
         (set: any) =>
-          (set.slots[0].entrant && set.slots[1].entrant) ||
-          updatedSets.has(set.id),
+          Number.isInteger(set.id) &&
+          ((set.slots[0].entrant && set.slots[1].entrant) ||
+            updatedSets.has(set.id)),
       )
       .map((set: any) => updatedSets.get(set.id) || apiSetToSet(set));
     sets.push(...newSets);
@@ -446,6 +451,7 @@ async function startPhaseGroupsInner(
   key: string,
   phaseGroupAndSetIds: { phaseGroupId: number; setId: string }[],
   idToPhaseGroup: Map<number, PhaseGroup>,
+  eventPhaseOrPool: 'Event' | 'Phase' | 'Pool',
 ) {
   if (phaseGroupAndSetIds.length === 0) {
     throw new Error('No startable pools found.');
@@ -454,23 +460,70 @@ async function startPhaseGroupsInner(
   const inner = phaseGroupAndSetIds
     .map(
       (phaseGroupAndSetId) => `
-  ${phaseGroupAndSetId.setId}: reportBracketSet(setId: "${phaseGroupAndSetId.setId}") {${API_SET_INNER}}`,
+  ${phaseGroupAndSetId.setId}: reportBracketSet(setId: "${phaseGroupAndSetId.setId}") {
+    id
+    fullRoundText
+    slots {
+      entrant {
+        id
+        participants {
+          gamerTag
+          prefix
+        }
+      }
+    }
+  }`,
     )
     .join('');
   const query = `mutation StartPhaseGroups {${inner}\n}`;
-  const mutateData = await fetchGql(key, query, {});
-  phaseGroupAndSetIds.forEach((phaseGroupAndSetId) => {
-    const newSets = mutateData[phaseGroupAndSetId.setId];
-    if (Array.isArray(newSets)) {
-      const pendingSets = newSets
-        .filter((set: any) => set.slots[0].entrant && set.slots[1].entrant)
-        .map(apiSetToSet);
-      idToPhaseGroup.get(phaseGroupAndSetId.phaseGroupId)!.sets = {
-        completedSets: [],
-        pendingSets,
-      };
+  try {
+    const mutateData = await fetchGql(key, query, {});
+    phaseGroupAndSetIds.forEach((phaseGroupAndSetId) => {
+      const newSets = mutateData[phaseGroupAndSetId.setId];
+      if (Array.isArray(newSets)) {
+        const pendingSets = newSets
+          .filter((set: any) => set.slots[0].entrant && set.slots[1].entrant)
+          .map((set: any): Set => {
+            const toParticipant = (participant: any): Participant => ({
+              displayName: participant.gamerTag,
+              prefix: participant.prefix ?? '',
+              pronouns: '',
+            });
+            return {
+              id: set.id,
+              fullRoundText: set.fullRoundText,
+              entrant1Id: set.slots[0].entrant.id,
+              entrant1Participants:
+                set.slots[0].entrant.participants.map(toParticipant),
+              entrant2Id: set.slots[1].entrant.id,
+              entrant2Participants:
+                set.slots[1].entrant.participants.map(toParticipant),
+              round: 0,
+              state: State.PENDING,
+              wasReported: false,
+              entrant1Score: null,
+              entrant2Score: null,
+              ordinal: null,
+              stream: null,
+              winnerId: null,
+            };
+          });
+        idToPhaseGroup.get(phaseGroupAndSetId.phaseGroupId)!.sets = {
+          completedSets: [],
+          pendingSets,
+        };
+      }
+    });
+  } catch (e: any) {
+    if (
+      e instanceof Error &&
+      e.message.startsWith('Your query complexity is too high.')
+    ) {
+      return `${eventPhaseOrPool} was started but sets are not available yet (too many sets). Please refresh pools until they appear.`;
     }
-  });
+    throw e;
+  }
+  return '';
 }
 
 const EVENT_PHASE_GROUP_REPRESENTATIVE_SET_IDS_QUERY = `
@@ -545,8 +598,13 @@ export async function startEvent(key: string, eventId: number) {
       state: 2,
     });
   });
-  await startPhaseGroupsInner(key, phaseGroupAndSetIds, idToPhaseGroup);
-  return retPhases;
+  const error = await startPhaseGroupsInner(
+    key,
+    phaseGroupAndSetIds,
+    idToPhaseGroup,
+    'Event',
+  );
+  return { error, phases: retPhases };
 }
 
 const PHASE_PHASE_GROUP_REPRESENTATIVE_SET_IDS_QUERY = `
@@ -608,8 +666,13 @@ export async function startPhase(key: string, phaseId: number) {
       }
     }
   });
-  await startPhaseGroupsInner(key, phaseGroupAndSetIds, idToPhaseGroup);
-  return retPhaseGroups;
+  const error = await startPhaseGroupsInner(
+    key,
+    phaseGroupAndSetIds,
+    idToPhaseGroup,
+    'Phase',
+  );
+  return { error, phaseGroups: retPhaseGroups };
 }
 
 const PHASE_GROUP_REPRESENTATIVE_SET_ID_QUERY = `
@@ -658,6 +721,11 @@ export async function startPhaseGroup(key: string, phaseGroupId: number) {
       setId: nodes[0].id,
     },
   ];
-  await startPhaseGroupsInner(key, phaseGroupAndSetIds, idToPhaseGroup);
-  return idToPhaseGroup.get(phaseGroup.id)!.sets;
+  const error = await startPhaseGroupsInner(
+    key,
+    phaseGroupAndSetIds,
+    idToPhaseGroup,
+    'Pool',
+  );
+  return { error, sets: idToPhaseGroup.get(phaseGroup.id)!.sets };
 }

@@ -301,7 +301,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('startEvent');
   ipcMain.handle(
     'startEvent',
-    async (event: IpcMainInvokeEvent, id: number): Promise<Phase[]> => {
+    async (
+      event: IpcMainInvokeEvent,
+      id: number,
+    ): Promise<{ error: string; phases: Phase[] }> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
@@ -313,7 +316,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('startPhase');
   ipcMain.handle(
     'startPhase',
-    async (event: IpcMainInvokeEvent, id: number): Promise<PhaseGroup[]> => {
+    async (
+      event: IpcMainInvokeEvent,
+      id: number,
+    ): Promise<{ error: string; phaseGroups: PhaseGroup[] }> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
@@ -325,7 +331,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('startPhaseGroup');
   ipcMain.handle(
     'startPhaseGroup',
-    async (event: IpcMainInvokeEvent, id: number): Promise<Sets> => {
+    async (
+      event: IpcMainInvokeEvent,
+      id: number,
+    ): Promise<{ error: string; sets: Sets }> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
