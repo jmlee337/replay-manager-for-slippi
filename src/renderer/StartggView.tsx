@@ -115,6 +115,7 @@ function PhaseGroupView({
   phaseGroup,
   initiallyOpen,
   isStartable,
+  elevateStartButton,
   eventId,
   eventName,
   eventSlug,
@@ -132,6 +133,7 @@ function PhaseGroupView({
   phaseGroup: PhaseGroup;
   initiallyOpen: boolean;
   isStartable: boolean;
+  elevateStartButton: boolean;
   eventId: number;
   eventName: string;
   eventSlug: string;
@@ -236,34 +238,47 @@ function PhaseGroupView({
               {getting ? <CircularProgress size="24px" /> : <Refresh />}
             </IconButton>
           </Tooltip>
-          {phaseGroup.state === State.PENDING &&
-            (isStartable ? (
-              <Tooltip arrow title="Start pool (lock seeds)">
-                <IconButton
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    start();
-                  }}
-                  size="small"
-                >
-                  {starting ? <CircularProgress size="24px" /> : <PlayArrow />}
-                </IconButton>
-              </Tooltip>
-            ) : (
-              <Tooltip arrow title="Start pool on website">
-                <IconButton
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    window.open(
-                      `//www.start.gg/admin/tournament/${tournamentSlug}/brackets/${eventId}/${phaseId}/${phaseGroup.id}`,
-                    );
-                  }}
-                  size="small"
-                >
-                  <PlayArrow />
-                </IconButton>
-              </Tooltip>
-            ))}
+          {phaseGroup.state === State.PENDING && (
+            <Box
+              bgcolor={elevateStartButton ? 'white' : undefined}
+              sx={{
+                zIndex: (theme) =>
+                  elevateStartButton ? theme.zIndex.drawer + 2 : undefined,
+              }}
+            >
+              {isStartable ? (
+                <Tooltip arrow title="Start pool (lock seeds)">
+                  <IconButton
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      start();
+                    }}
+                    size="small"
+                  >
+                    {starting ? (
+                      <CircularProgress size="24px" />
+                    ) : (
+                      <PlayArrow />
+                    )}
+                  </IconButton>
+                </Tooltip>
+              ) : (
+                <Tooltip arrow title="Start pool on website">
+                  <IconButton
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      window.open(
+                        `//www.start.gg/admin/tournament/${tournamentSlug}/brackets/${eventId}/${phaseId}/${phaseGroup.id}`,
+                      );
+                    }}
+                    size="small"
+                  >
+                    <PlayArrow />
+                  </IconButton>
+                </Tooltip>
+              )}
+            </Box>
+          )}
         </ListItemButton>
         <Collapse in={open}>
           <Block>
@@ -358,6 +373,7 @@ function PhaseView({
   phase,
   initiallyOpen,
   isStartable,
+  elevateStartButton,
   eventId,
   eventName,
   eventSlug,
@@ -374,6 +390,7 @@ function PhaseView({
   phase: Phase;
   initiallyOpen: boolean;
   isStartable: boolean;
+  elevateStartButton: boolean;
   eventId: number;
   eventName: string;
   eventSlug: string;
@@ -442,7 +459,21 @@ function PhaseView({
         }}
         sx={{ typography: 'caption' }}
       >
-        {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
+        {open ? (
+          <KeyboardArrowDown />
+        ) : (
+          <Box
+            bgcolor={elevateStartButton && !isStartable ? 'white' : undefined}
+            sx={{
+              zIndex: (theme) =>
+                elevateStartButton && !isStartable
+                  ? theme.zIndex.drawer + 2
+                  : undefined,
+            }}
+          >
+            <KeyboardArrowRight />
+          </Box>
+        )}
         <Name>{phase.name}</Name>
         {'\u00A0'}({phase.id})
         <Tooltip arrow title="Refresh phase">
@@ -457,17 +488,25 @@ function PhaseView({
           </IconButton>
         </Tooltip>
         {isStartable && phase.state === State.PENDING && (
-          <Tooltip arrow title="Start phase (lock seeds and pools)">
-            <IconButton
-              onClick={(ev) => {
-                ev.stopPropagation();
-                start();
-              }}
-              size="small"
-            >
-              {starting ? <CircularProgress size="24px" /> : <PlayArrow />}
-            </IconButton>
-          </Tooltip>
+          <Box
+            bgcolor={elevateStartButton ? 'white' : undefined}
+            sx={{
+              zIndex: (theme) =>
+                elevateStartButton ? theme.zIndex.drawer + 2 : undefined,
+            }}
+          >
+            <Tooltip arrow title="Start phase (lock seeds and pools)">
+              <IconButton
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  start();
+                }}
+                size="small"
+              >
+                {starting ? <CircularProgress size="24px" /> : <PlayArrow />}
+              </IconButton>
+            </Tooltip>
+          </Box>
         )}
       </ListItemButton>
       <Collapse in={open}>
@@ -478,6 +517,7 @@ function PhaseView({
               phaseGroup={phaseGroup}
               initiallyOpen={phase.phaseGroups.length === 1}
               isStartable={isStartable}
+              elevateStartButton={elevateStartButton}
               eventId={eventId}
               eventName={eventName}
               eventSlug={eventSlug}
@@ -502,6 +542,7 @@ function PhaseView({
 function EventView({
   event,
   initiallyOpen,
+  elevateStartButton,
   tournamentSlug,
   searchSubstr,
   vlerkMode,
@@ -515,6 +556,7 @@ function EventView({
 }: {
   event: Event;
   initiallyOpen: boolean;
+  elevateStartButton: boolean;
   tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
@@ -581,32 +623,64 @@ function EventView({
         }}
         sx={{ typography: 'caption' }}
       >
-        {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
+        {open ? (
+          <KeyboardArrowDown />
+        ) : (
+          <Box
+            bgcolor={elevateStartButton && event.isOnline ? 'white' : undefined}
+            sx={{
+              zIndex: (theme) =>
+                elevateStartButton && event.isOnline
+                  ? theme.zIndex.drawer + 2
+                  : undefined,
+            }}
+          >
+            <KeyboardArrowRight />
+          </Box>
+        )}
         <Name>{event.name}</Name>
         {'\u00A0'}({event.id})
-        <Tooltip arrow title="Refresh event">
-          <IconButton
-            onClick={(ev) => {
-              ev.stopPropagation();
-              get();
-            }}
-            size="small"
-          >
-            {getting ? <CircularProgress size="24px" /> : <Refresh />}
-          </IconButton>
-        </Tooltip>
-        {!event.isOnline && event.state === State.PENDING && (
-          <Tooltip arrow title="Start event (lock seeds, phases, and pools)">
+        <Box
+          bgcolor={elevateStartButton && event.isOnline ? 'white' : undefined}
+          sx={{
+            zIndex: (theme) =>
+              elevateStartButton && event.isOnline
+                ? theme.zIndex.drawer + 2
+                : undefined,
+          }}
+        >
+          <Tooltip arrow title="Refresh event">
             <IconButton
               onClick={(ev) => {
                 ev.stopPropagation();
-                start();
+                get();
               }}
               size="small"
             >
-              {starting ? <CircularProgress size="24px" /> : <PlayArrow />}
+              {getting ? <CircularProgress size="24px" /> : <Refresh />}
             </IconButton>
           </Tooltip>
+        </Box>
+        {!event.isOnline && event.state === State.PENDING && (
+          <Box
+            bgcolor={elevateStartButton ? 'white' : undefined}
+            sx={{
+              zIndex: (theme) =>
+                elevateStartButton ? theme.zIndex.drawer + 2 : undefined,
+            }}
+          >
+            <Tooltip arrow title="Start event (lock seeds, phases, and pools)">
+              <IconButton
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  start();
+                }}
+                size="small"
+              >
+                {starting ? <CircularProgress size="24px" /> : <PlayArrow />}
+              </IconButton>
+            </Tooltip>
+          </Box>
         )}
       </ListItemButton>
       <Collapse in={open}>
@@ -617,6 +691,7 @@ function EventView({
               phase={phase}
               initiallyOpen={event.phases.length === 1}
               isStartable={!event.isOnline}
+              elevateStartButton={elevateStartButton}
               eventId={event.id}
               eventName={event.name}
               eventSlug={event.slug}
@@ -638,6 +713,7 @@ function EventView({
 }
 
 export default function StartggView({
+  elevateStartButton,
   searchSubstr,
   tournament,
   vlerkMode,
@@ -648,6 +724,7 @@ export default function StartggView({
   selectSet,
   setTournament,
 }: {
+  elevateStartButton: boolean;
   searchSubstr: string;
   tournament: Tournament;
   vlerkMode: boolean;
@@ -685,6 +762,7 @@ export default function StartggView({
             key={event.id}
             event={event}
             initiallyOpen={tournament.events.length === 1}
+            elevateStartButton={elevateStartButton}
             tournamentSlug={tournament.slug}
             searchSubstr={searchSubstr}
             vlerkMode={vlerkMode}

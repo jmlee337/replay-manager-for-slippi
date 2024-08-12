@@ -51,11 +51,13 @@ function SetView({
 }
 
 export default function ChallongeView({
+  elevateStartButton,
   searchSubstr,
   tournament,
   getChallongeTournament,
   selectSet,
 }: {
+  elevateStartButton: boolean;
   searchSubstr: string;
   tournament: ChallongeTournament;
   getChallongeTournament: () => Promise<void>;
@@ -100,29 +102,45 @@ export default function ChallongeView({
           >
             {tournament.name}
           </div>
-          <Tooltip arrow title="Refresh tournament">
-            <IconButton
-              onClick={(ev) => {
-                ev.stopPropagation();
-                get();
-              }}
-              size="small"
-            >
-              {getting ? <CircularProgress size="24px" /> : <Refresh />}
-            </IconButton>
-          </Tooltip>
-          {tournament.state === State.PENDING && (
-            <Tooltip arrow title="Start tournament on website">
+          <Box
+            bgcolor={elevateStartButton ? 'white' : undefined}
+            sx={{
+              zIndex: (theme) =>
+                elevateStartButton ? theme.zIndex.drawer + 2 : undefined,
+            }}
+          >
+            <Tooltip arrow title="Refresh tournament">
               <IconButton
                 onClick={(ev) => {
                   ev.stopPropagation();
-                  window.open(`//challonge.com/${tournament.slug}`);
+                  get();
                 }}
                 size="small"
               >
-                <PlayArrow />
+                {getting ? <CircularProgress size="24px" /> : <Refresh />}
               </IconButton>
             </Tooltip>
+          </Box>
+          {tournament.state === State.PENDING && (
+            <Box
+              bgcolor={elevateStartButton ? 'white' : undefined}
+              sx={{
+                zIndex: (theme) =>
+                  elevateStartButton ? theme.zIndex.drawer + 2 : undefined,
+              }}
+            >
+              <Tooltip arrow title="Start tournament on website">
+                <IconButton
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    window.open(`//challonge.com/${tournament.slug}`);
+                  }}
+                  size="small"
+                >
+                  <PlayArrow />
+                </IconButton>
+              </Tooltip>
+            </Box>
           )}
         </ListItemButton>
         <Collapse in={open}>

@@ -388,6 +388,11 @@ function Hello() {
   const [manualNames, setManualNames] = useState<string[]>([]);
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
   const [slug, setSlug] = useState('');
+  const [tournament, setTournament] = useState<Tournament>({
+    slug: '',
+    name: '',
+    events: [],
+  });
 
   const [guideState, setGuideState] = useState(GuideState.NONE);
   const [guideBackdropOpen, setGuideBackdropOpen] = useState(false);
@@ -398,8 +403,20 @@ function Hello() {
     (mode === Mode.CHALLONGE && challongeTournaments.size > 0) ||
     (mode === Mode.MANUAL && manualNames.length > 0);
   const copyDirSet = copyDir.length > 0;
+  const tournamentStarted =
+    (mode === Mode.STARTGG &&
+      tournament.events.some((event) => event.state !== State.PENDING)) ||
+    (mode === Mode.CHALLONGE &&
+      Array.from(challongeTournaments.values()).some(
+        (challongeTournament) => challongeTournament.state !== State.PENDING,
+      )) ||
+    mode === Mode.MANUAL;
   const guideActive =
-    guidedMode && tournamentSet && copyDirSet && confirmedCopySettings;
+    guidedMode &&
+    tournamentSet &&
+    copyDirSet &&
+    confirmedCopySettings &&
+    tournamentStarted;
   const refreshReplays = useCallback(
     async (triggerGuide?: boolean) => {
       let newReplays: Replay[] = [];
@@ -538,6 +555,15 @@ function Hello() {
       const updatedChallongeTournament =
         await window.electron.getChallongeTournament(maybeSlug, updatedSet);
       challongeTournaments.set(maybeSlug, updatedChallongeTournament);
+      if (
+        updatedChallongeTournament.state !== State.PENDING &&
+        tournamentSet &&
+        copyDirSet &&
+        confirmedCopySettings &&
+        !tournamentStarted
+      ) {
+        setGuideBackdropOpen(false);
+      }
       setChallongeTournaments(new Map(challongeTournaments));
       if (selectedSet.id > 0) {
         const updatedSelectedSet =
@@ -559,12 +585,6 @@ function Hello() {
   };
 
   // start.gg tournament view
-  const [tournament, setTournament] = useState<Tournament>({
-    slug: '',
-    name: '',
-    events: [],
-  });
-
   const getPhaseGroupEntrants = async (phaseGroup: PhaseGroup) => {
     try {
       const entrants = await window.electron.getPhaseGroupEntrants(
@@ -931,6 +951,15 @@ function Hello() {
         );
       } else if (newEvent.phases.length === 1) {
         await getPhase(newEvent.phases[0].id, id, false);
+      }
+      if (
+        newEvent.state !== State.PENDING &&
+        tournamentSet &&
+        copyDirSet &&
+        confirmedCopySettings &&
+        !tournamentStarted
+      ) {
+        setGuideBackdropOpen(false);
       }
       if (isRoot) {
         setTournament({ ...tournament });
@@ -1797,10 +1826,26 @@ function Hello() {
                 }
               }}
               setTournament={(updater) => {
+                if (
+                  tournamentSet &&
+                  copyDirSet &&
+                  confirmedCopySettings &&
+                  !tournamentStarted
+                ) {
+                  setGuideBackdropOpen(false);
+                }
                 setTournament(updater);
                 selectSet(EMPTY_SET);
                 setSelectedSetChain(EMPTY_SELECTED_SET_CHAIN);
               }}
+              elevateStartButton={
+                guidedMode &&
+                guideBackdropOpen &&
+                tournamentSet &&
+                copyDirSet &&
+                confirmedCopySettings &&
+                !tournamentStarted
+              }
             />
           )}
           {mode === Mode.CHALLONGE &&
@@ -1810,7 +1855,7 @@ function Hello() {
                   key={challongeTournament.slug}
                   searchSubstr={searchSubstr}
                   tournament={challongeTournament}
-                  getChallongeTournament={async () =>
+                  getChallongeTournament={() =>
                     getChallongeTournament(challongeTournament.slug)
                   }
                   selectSet={(set: Set) => {
@@ -1819,6 +1864,14 @@ function Hello() {
                       setGuideState(GuideState.REPLAYS);
                     }
                   }}
+                  elevateStartButton={
+                    guidedMode &&
+                    guideBackdropOpen &&
+                    tournamentSet &&
+                    copyDirSet &&
+                    confirmedCopySettings &&
+                    !tournamentStarted
+                  }
                 />
               ),
             )}
@@ -1860,6 +1913,7 @@ function Hello() {
                 gettingTournament={gettingTournament}
                 tournamentSet={tournamentSet}
                 copyDirSet={copyDirSet}
+                tournamentStarted={tournamentStarted}
                 setStartggTournamentSlug={setSlug}
                 getStartggTournament={getTournament}
                 getChallongeTournament={getChallongeTournament}
