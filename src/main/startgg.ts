@@ -661,7 +661,6 @@ export async function updateSet(key: string, set: StartggSet): Promise<Set> {
 async function startPhaseGroupsInner(
   key: string,
   phaseGroupAndSetIds: { phaseGroupId: number; setId: string }[],
-  idToStartPhaseGroup: Map<number, PhaseGroup>,
 ) {
   if (phaseGroupAndSetIds.length === 0) {
     throw new Error('No startable pools found.');
@@ -687,12 +686,9 @@ async function startPhaseGroupsInner(
     }
   }
   await Promise.all(
-    phaseGroupAndSetIds.map(async ({ phaseGroupId }) => {
-      Object.assign(
-        idToStartPhaseGroup.get(phaseGroupId)!,
-        await getPhaseGroup(key, phaseGroupId),
-      );
-    }),
+    phaseGroupAndSetIds.map(async ({ phaseGroupId }) =>
+      getPhaseGroup(key, phaseGroupId),
+    ),
   );
 }
 
@@ -731,27 +727,18 @@ export async function startEvent(key: string, eventId: number) {
   if (!Array.isArray(phases) || phases.length === 0) {
     throw new Error('Maybe try again or start phases individually?');
   }
-  const retPhases: Phase[] = [];
-  const idToStartPhaseGroup = new Map<number, PhaseGroup>();
+  const updatedPhases: Phase[] = [];
+  const phaseIdAndPhaseGroupIds: {
+    phaseId: number;
+    phaseGroupIds: number[];
+  }[] = [];
   const phaseGroupAndSetIds: { phaseGroupId: number; setId: string }[] = [];
   phases.forEach((phase) => {
-    const phaseGroups: PhaseGroup[] = [];
+    const phaseGroupIds: number[] = [];
     const phaseGroupNodes = phase.phaseGroups.nodes;
     if (Array.isArray(phaseGroupNodes)) {
       phaseGroupNodes.forEach((phaseGroup) => {
-        const newPhaseGroup: PhaseGroup = {
-          id: phaseGroup.id,
-          bracketType: phaseGroup.bracketType,
-          name: phaseGroup.displayIdentifier,
-          entrants: [],
-          sets: {
-            completedSets: [],
-            pendingSets: [],
-          },
-          state: 2,
-        };
-        phaseGroups.push(newPhaseGroup);
-        idToStartPhaseGroup.set(phaseGroup.id, newPhaseGroup);
+        phaseGroupIds.push(phaseGroup.id);
         const setNodes = phaseGroup.sets.nodes;
         if (Array.isArray(setNodes) && setNodes.length > 0) {
           const { id } = setNodes[0];
@@ -764,39 +751,33 @@ export async function startEvent(key: string, eventId: number) {
         }
       });
     }
-    retPhases.push({
+    updatedPhases.push({
       id: phase.id,
       name: phase.name,
-      phaseGroups,
-      state: 2,
+      phaseGroups: [],
+      state: State.STARTED,
     });
+    phaseIdAndPhaseGroupIds.push({ phaseId: phase.id, phaseGroupIds });
   });
-  await startPhaseGroupsInner(key, phaseGroupAndSetIds, idToStartPhaseGroup);
+  await startPhaseGroupsInner(key, phaseGroupAndSetIds);
 
   idToEvent.set(eventId, {
     id: eventId,
     name: data.event.name,
     slug: data.event.slug,
     isOnline: data.event.isOnline,
-    state: 2,
+    state: State.STARTED,
     phases: [],
   });
   const phaseIds: number[] = [];
-  retPhases.forEach((phase) => {
+  updatedPhases.forEach((phase) => {
     phaseIds.push(phase.id);
-    idToPhase.set(phase.id, {
-      id: phase.id,
-      name: phase.name,
-      state: phase.state,
-      phaseGroups: [],
-    });
-    phaseIdToPhaseGroupIds.set(
-      phase.id,
-      phase.phaseGroups.map((phaseGroup) => phaseGroup.id),
-    );
+    idToPhase.set(phase.id, phase);
+  });
+  phaseIdAndPhaseGroupIds.forEach(({ phaseId, phaseGroupIds }) => {
+    phaseIdToPhaseGroupIds.set(phaseId, phaseGroupIds);
   });
   eventIdToPhaseIds.set(eventId, phaseIds);
-  return retPhases;
 }
 
 const PHASE_PHASE_GROUP_REPRESENTATIVE_SET_IDS_QUERY = `
@@ -819,7 +800,11 @@ const PHASE_PHASE_GROUP_REPRESENTATIVE_SET_IDS_QUERY = `
     }
   }
 `;
-export async function startPhase(key: string, phaseId: number) {
+export async function startPhase(
+  key: string,
+  phaseId: number,
+  eventId: number,
+) {
   const data = await fetchGql(
     key,
     PHASE_PHASE_GROUP_REPRESENTATIVE_SET_IDS_QUERY,
@@ -830,23 +815,10 @@ export async function startPhase(key: string, phaseId: number) {
     throw new Error('Maybe try again or start pools individually?');
   }
 
-  const retPhaseGroups: PhaseGroup[] = [];
-  const idToStartPhaseGroup = new Map<number, PhaseGroup>();
+  const phaseGroupIds: number[] = [];
   const phaseGroupAndSetIds: { phaseGroupId: number; setId: string }[] = [];
   phaseGroupNodes.forEach((phaseGroup) => {
-    const newPhaseGroup: PhaseGroup = {
-      id: phaseGroup.id,
-      bracketType: phaseGroup.bracketType,
-      name: phaseGroup.displayIdentifier,
-      entrants: [],
-      sets: {
-        completedSets: [],
-        pendingSets: [],
-      },
-      state: 2,
-    };
-    retPhaseGroups.push(newPhaseGroup);
-    idToStartPhaseGroup.set(phaseGroup.id, newPhaseGroup);
+    phaseGroupIds.push(phaseGroup.id);
     const setNodes = phaseGroup.sets.nodes;
     if (Array.isArray(setNodes) && setNodes.length > 0) {
       const { id } = setNodes[0];
@@ -858,19 +830,19 @@ export async function startPhase(key: string, phaseId: number) {
       }
     }
   });
-  await startPhaseGroupsInner(key, phaseGroupAndSetIds, idToStartPhaseGroup);
+  await startPhaseGroupsInner(key, phaseGroupAndSetIds);
 
   idToPhase.set(phaseId, {
     id: phaseId,
     name: data.phase.name,
-    state: 2,
+    state: State.STARTED,
     phaseGroups: [],
   });
-  phaseIdToPhaseGroupIds.set(
-    phaseId,
-    retPhaseGroups.map((phaseGroup) => phaseGroup.id),
-  );
-  return retPhaseGroups;
+  phaseIdToPhaseGroupIds.set(phaseId, phaseGroupIds);
+  const updateEvent = idToEvent.get(eventId);
+  if (updateEvent) {
+    updateEvent.state = State.STARTED;
+  }
 }
 
 const PHASE_GROUP_REPRESENTATIVE_SET_ID_QUERY = `
@@ -887,38 +859,39 @@ const PHASE_GROUP_REPRESENTATIVE_SET_ID_QUERY = `
     }
   }
 `;
-export async function startPhaseGroup(key: string, phaseGroupId: number) {
+export async function startPhaseGroup(
+  key: string,
+  phaseGroupId: number,
+  phaseId: number,
+  eventId: number,
+) {
   const data = await fetchGql(key, PHASE_GROUP_REPRESENTATIVE_SET_ID_QUERY, {
     phaseGroupId,
   });
   const { phaseGroup } = data;
   const { nodes } = phaseGroup.sets;
-  if (!Array.isArray(nodes) || nodes.length === 0) {
-    throw new Error('No startable sets found.');
+  if (
+    !Array.isArray(nodes) ||
+    nodes.length === 0 ||
+    typeof nodes[0].id !== 'string' ||
+    !nodes[0].id.startsWith('preview')
+  ) {
+    throw new Error('This pool cannot be started.');
   }
 
-  const idToStartPhaseGroup = new Map<number, PhaseGroup>([
-    [
-      phaseGroup.id,
-      {
-        id: phaseGroup.id,
-        bracketType: phaseGroup.bracketType,
-        name: phaseGroup.displayIdentifier,
-        entrants: [],
-        sets: {
-          completedSets: [],
-          pendingSets: [],
-        },
-        state: 2,
-      },
-    ],
-  ]);
   const phaseGroupAndSetIds = [
     {
       phaseGroupId: phaseGroup.id,
       setId: nodes[0].id,
     },
   ];
-  await startPhaseGroupsInner(key, phaseGroupAndSetIds, idToStartPhaseGroup);
-  return idToStartPhaseGroup.get(phaseGroup.id)!.sets;
+  await startPhaseGroupsInner(key, phaseGroupAndSetIds);
+  const updatePhase = idToPhase.get(phaseId);
+  if (updatePhase) {
+    updatePhase.state = State.STARTED;
+  }
+  const updateEvent = idToEvent.get(eventId);
+  if (updateEvent) {
+    updateEvent.state = State.STARTED;
+  }
 }

@@ -31,7 +31,6 @@ import {
 } from '@mui/icons-material';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
-import { IpcRendererEvent } from 'electron';
 import {
   AdminedTournament,
   ChallongeMatchItem,
@@ -186,6 +185,7 @@ function Hello() {
   const [dir, setDir] = useState('');
   const [dirInit, setDirInit] = useState(false);
   const [copyDir, setCopyDir] = useState('');
+  const [slug, setSlug] = useState('');
   const [tournament, setTournament] = useState<Tournament>({
     slug: '',
     name: '',
@@ -237,6 +237,7 @@ function Hello() {
       setCopyDir(await copyDirPromise);
       const currentTournament = await tournamentPromise;
       if (currentTournament) {
+        setSlug(currentTournament.slug);
         setTournament(currentTournament);
       }
 
@@ -408,7 +409,6 @@ function Hello() {
   );
   const [manualNames, setManualNames] = useState<string[]>([]);
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
-  const [slug, setSlug] = useState('');
 
   const [guideState, setGuideState] = useState(GuideState.NONE);
   const [guideBackdropOpen, setGuideBackdropOpen] = useState(false);
@@ -528,7 +528,23 @@ function Hello() {
     resetDq();
   };
   useEffect(() => {
-    window.electron.onUsb((event: IpcRendererEvent, newDir: string) => {
+    window.electron.onTournament((e, newTournament) => {
+      if (newTournament) {
+        if (
+          tournamentSet &&
+          copyDirSet &&
+          confirmedCopySettings &&
+          !tournamentStarted &&
+          newTournament.events.some((event) => event.state !== State.PENDING)
+        ) {
+          setGuideBackdropOpen(false);
+        }
+        setTournament(newTournament);
+      }
+    });
+  }, [confirmedCopySettings, copyDirSet, tournamentSet, tournamentStarted]);
+  useEffect(() => {
+    window.electron.onUsb((e, newDir) => {
       setDir(newDir);
       setWasDeleted(false);
       refreshReplays(true);
@@ -1825,19 +1841,6 @@ function Hello() {
                 if (guideState !== GuideState.NONE) {
                   setGuideState(GuideState.REPLAYS);
                 }
-              }}
-              setTournament={(updater) => {
-                if (
-                  tournamentSet &&
-                  copyDirSet &&
-                  confirmedCopySettings &&
-                  !tournamentStarted
-                ) {
-                  setGuideBackdropOpen(false);
-                }
-                setTournament(updater);
-                selectSet(EMPTY_SET);
-                setSelectedSetChain(EMPTY_SELECTED_SET_CHAIN);
               }}
               elevateStartButton={
                 guidedMode &&

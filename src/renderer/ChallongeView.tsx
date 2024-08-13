@@ -186,6 +186,7 @@ export default function ChallongeView({
             )}
             {(tournament.tournamentType === 'swiss' ||
               tournament.tournamentType === 'round robin') &&
+              tournament.sets.completedSets.length > 0 &&
               tournament.sets.pendingSets.length === 0 && (
                 <TiebreakerDialog
                   entrants={tournament.entrants}

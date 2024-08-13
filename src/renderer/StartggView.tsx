@@ -19,7 +19,7 @@ import {
   PlayArrow,
   Refresh,
 } from '@mui/icons-material';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { useState } from 'react';
 import {
   Event,
   NameWithHighlight,
@@ -126,7 +126,6 @@ function PhaseGroupView({
   vlerkMode,
   getPhaseGroup,
   selectSet,
-  setTournament,
   showError,
 }: {
   phaseGroup: PhaseGroup;
@@ -156,7 +155,6 @@ function PhaseGroupView({
     eventName: string,
     eventSlug: string,
   ) => void;
-  setTournament: Dispatch<SetStateAction<Tournament>>;
   showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
@@ -172,12 +170,7 @@ function PhaseGroupView({
   const start = async () => {
     setStarting(true);
     try {
-      const sets = await window.electron.startPhaseGroup(phaseGroup.id);
-      setTournament((preTournament) => {
-        phaseGroup.state = 2;
-        phaseGroup.sets = sets;
-        return preTournament;
-      });
+      await window.electron.startPhaseGroup(phaseGroup.id, phaseId, eventId);
     } catch (e: any) {
       if (e instanceof Error) {
         showError(e.message);
@@ -335,6 +328,7 @@ function PhaseGroupView({
               </>
             )}
             {(phaseGroup.bracketType === 3 || phaseGroup.bracketType === 4) &&
+              phaseGroup.sets.completedSets.length > 0 &&
               phaseGroup.sets.pendingSets.length === 0 && (
                 <TiebreakerDialog
                   entrants={phaseGroup.entrants}
@@ -373,7 +367,6 @@ function PhaseView({
   getPhase,
   getPhaseGroup,
   selectSet,
-  setTournament,
   showError,
 }: {
   phase: Phase;
@@ -402,7 +395,6 @@ function PhaseView({
     eventName: string,
     eventSlug: string,
   ) => void;
-  setTournament: Dispatch<SetStateAction<Tournament>>;
   showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
@@ -417,12 +409,7 @@ function PhaseView({
   const start = async () => {
     setStarting(true);
     try {
-      const phaseGroups = await window.electron.startPhase(phase.id);
-      setTournament((preTournament) => {
-        phase.state = 2;
-        phase.phaseGroups = phaseGroups;
-        return preTournament;
-      });
+      await window.electron.startPhase(phase.id, eventId);
     } catch (e: any) {
       if (e instanceof Error) {
         showError(e.message);
@@ -513,7 +500,6 @@ function PhaseView({
               vlerkMode={vlerkMode}
               getPhaseGroup={getPhaseGroup}
               selectSet={selectSet}
-              setTournament={setTournament}
               showError={showError}
             />
           ))}
@@ -534,7 +520,6 @@ function EventView({
   getPhase,
   getPhaseGroup,
   selectSet,
-  setTournament,
   showError,
 }: {
   event: Event;
@@ -560,7 +545,6 @@ function EventView({
     eventName: string,
     eventSlug: string,
   ) => void;
-  setTournament: Dispatch<SetStateAction<Tournament>>;
   showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
@@ -575,12 +559,7 @@ function EventView({
   const start = async () => {
     setStarting(true);
     try {
-      const phases = await window.electron.startEvent(event.id);
-      setTournament((preTournament) => {
-        event.state = 2;
-        event.phases = phases;
-        return preTournament;
-      });
+      await window.electron.startEvent(event.id);
     } catch (e: any) {
       if (e instanceof Error) {
         showError(e.message);
@@ -680,7 +659,6 @@ function EventView({
               getPhase={getPhase}
               getPhaseGroup={getPhaseGroup}
               selectSet={selectSet}
-              setTournament={setTournament}
               showError={showError}
             />
           ))}
@@ -699,7 +677,6 @@ export default function StartggView({
   getPhase,
   getPhaseGroup,
   selectSet,
-  setTournament,
 }: {
   elevateStartButton: boolean;
   searchSubstr: string;
@@ -722,7 +699,6 @@ export default function StartggView({
     eventName: string,
     eventSlug: string,
   ) => void;
-  setTournament: Dispatch<SetStateAction<Tournament>>;
 }) {
   const [error, setError] = useState('');
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
@@ -746,7 +722,6 @@ export default function StartggView({
             getPhase={getPhase}
             getPhaseGroup={getPhaseGroup}
             selectSet={selectSet}
-            setTournament={setTournament}
             showError={showError}
           />
         ))}

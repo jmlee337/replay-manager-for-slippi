@@ -17,12 +17,9 @@ import {
   CopySettings,
   Mode,
   Output,
-  Phase,
-  PhaseGroup,
   Replay,
   ReportSettings,
   Set,
-  Sets,
   StartggSet,
 } from '../common/types';
 import {
@@ -306,36 +303,44 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('startEvent');
   ipcMain.handle(
     'startEvent',
-    async (event: IpcMainInvokeEvent, id: number): Promise<Phase[]> => {
+    async (event: IpcMainInvokeEvent, id: number) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      return startEvent(sggApiKey, id);
+      await startEvent(sggApiKey, id);
+      mainWindow.webContents.send('startggTournament', getCurrentTournament());
     },
   );
 
   ipcMain.removeHandler('startPhase');
   ipcMain.handle(
     'startPhase',
-    async (event: IpcMainInvokeEvent, id: number): Promise<PhaseGroup[]> => {
+    async (event: IpcMainInvokeEvent, id: number, eventId: number) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      return startPhase(sggApiKey, id);
+      await startPhase(sggApiKey, id, eventId);
+      mainWindow.webContents.send('startggTournament', getCurrentTournament());
     },
   );
 
   ipcMain.removeHandler('startPhaseGroup');
   ipcMain.handle(
     'startPhaseGroup',
-    async (event: IpcMainInvokeEvent, id: number): Promise<Sets> => {
+    async (
+      event: IpcMainInvokeEvent,
+      id: number,
+      phaseId: number,
+      eventId: number,
+    ) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      return startPhaseGroup(sggApiKey, id);
+      await startPhaseGroup(sggApiKey, id, phaseId, eventId);
+      mainWindow.webContents.send('startggTournament', getCurrentTournament());
     },
   );
 

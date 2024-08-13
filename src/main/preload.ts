@@ -15,7 +15,6 @@ import {
   Replay,
   ReportSettings,
   Set,
-  Sets,
   StartggSet,
   Tournament,
 } from '../common/types';
@@ -70,12 +69,16 @@ const electronHandler = {
     ipcRenderer.invoke('reportSet', set),
   updateSet: (set: StartggSet): Promise<Set> =>
     ipcRenderer.invoke('updateSet', set),
-  startEvent: (id: number): Promise<Phase[]> =>
+  startEvent: (id: number): Promise<void> =>
     ipcRenderer.invoke('startEvent', id),
-  startPhase: (id: number): Promise<PhaseGroup[]> =>
-    ipcRenderer.invoke('startPhase', id),
-  startPhaseGroup: (id: number): Promise<Sets> =>
-    ipcRenderer.invoke('startPhaseGroup', id),
+  startPhase: (id: number, eventId: number): Promise<void> =>
+    ipcRenderer.invoke('startPhase', id, eventId),
+  startPhaseGroup: (
+    id: number,
+    phaseId: number,
+    eventId: number,
+  ): Promise<void> =>
+    ipcRenderer.invoke('startPhaseGroup', id, phaseId, eventId),
   getMode: (): Promise<Mode> => ipcRenderer.invoke('getMode'),
   setMode: (mode: Mode): Promise<void> => ipcRenderer.invoke('setMode', mode),
   getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
@@ -140,6 +143,15 @@ const electronHandler = {
   getVersion: (): Promise<string> => ipcRenderer.invoke('getVersion'),
   getLatestVersion: (): Promise<string> =>
     ipcRenderer.invoke('getLatestVersion'),
+  onTournament: (
+    callback: (
+      event: IpcRendererEvent,
+      tournament: Tournament | undefined,
+    ) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('startggTournament');
+    ipcRenderer.on('startggTournament', callback);
+  },
   onUsb: (callback: (event: IpcRendererEvent, newDir: string) => void) => {
     ipcRenderer.removeAllListeners('usbstorage');
     ipcRenderer.on('usbstorage', callback);
