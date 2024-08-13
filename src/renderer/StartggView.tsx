@@ -172,17 +172,12 @@ function PhaseGroupView({
   const start = async () => {
     setStarting(true);
     try {
-      const { error, sets } = await window.electron.startPhaseGroup(
-        phaseGroup.id,
-      );
+      const sets = await window.electron.startPhaseGroup(phaseGroup.id);
       setTournament((preTournament) => {
         phaseGroup.state = 2;
         phaseGroup.sets = sets;
         return preTournament;
       });
-      if (error) {
-        showError(error);
-      }
     } catch (e: any) {
       if (e instanceof Error) {
         showError(e.message);
@@ -422,15 +417,12 @@ function PhaseView({
   const start = async () => {
     setStarting(true);
     try {
-      const { error, phaseGroups } = await window.electron.startPhase(phase.id);
+      const phaseGroups = await window.electron.startPhase(phase.id);
       setTournament((preTournament) => {
         phase.state = 2;
         phase.phaseGroups = phaseGroups;
         return preTournament;
       });
-      if (error) {
-        showError(error);
-      }
     } catch (e: any) {
       if (e instanceof Error) {
         showError(e.message);
@@ -583,15 +575,12 @@ function EventView({
   const start = async () => {
     setStarting(true);
     try {
-      const { error, phases } = await window.electron.startEvent(event.id);
+      const phases = await window.electron.startEvent(event.id);
       setTournament((preTournament) => {
         event.state = 2;
         event.phases = phases;
         return preTournament;
       });
-      if (error) {
-        showError(error);
-      }
     } catch (e: any) {
       if (e instanceof Error) {
         showError(e.message);

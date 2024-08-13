@@ -694,12 +694,14 @@ async function startPhaseGroupsInner(
       );
     }),
   );
-  return '';
 }
 
 const EVENT_PHASE_GROUP_REPRESENTATIVE_SET_IDS_QUERY = `
   query EventPhaseGroupsQuery($eventId: ID) {
     event(id: $eventId) {
+      name
+      slug
+      isOnline
       phases {
         id
         name
@@ -769,12 +771,32 @@ export async function startEvent(key: string, eventId: number) {
       state: 2,
     });
   });
-  const error = await startPhaseGroupsInner(
-    key,
-    phaseGroupAndSetIds,
-    idToStartPhaseGroup,
-  );
-  return { error, phases: retPhases };
+  await startPhaseGroupsInner(key, phaseGroupAndSetIds, idToStartPhaseGroup);
+
+  idToEvent.set(eventId, {
+    id: eventId,
+    name: data.event.name,
+    slug: data.event.slug,
+    isOnline: data.event.isOnline,
+    state: 2,
+    phases: [],
+  });
+  const phaseIds: number[] = [];
+  retPhases.forEach((phase) => {
+    phaseIds.push(phase.id);
+    idToPhase.set(phase.id, {
+      id: phase.id,
+      name: phase.name,
+      state: phase.state,
+      phaseGroups: [],
+    });
+    phaseIdToPhaseGroupIds.set(
+      phase.id,
+      phase.phaseGroups.map((phaseGroup) => phaseGroup.id),
+    );
+  });
+  eventIdToPhaseIds.set(eventId, phaseIds);
+  return retPhases;
 }
 
 const PHASE_PHASE_GROUP_REPRESENTATIVE_SET_IDS_QUERY = `
@@ -836,12 +858,19 @@ export async function startPhase(key: string, phaseId: number) {
       }
     }
   });
-  const error = await startPhaseGroupsInner(
-    key,
-    phaseGroupAndSetIds,
-    idToStartPhaseGroup,
+  await startPhaseGroupsInner(key, phaseGroupAndSetIds, idToStartPhaseGroup);
+
+  idToPhase.set(phaseId, {
+    id: phaseId,
+    name: data.phase.name,
+    state: 2,
+    phaseGroups: [],
+  });
+  phaseIdToPhaseGroupIds.set(
+    phaseId,
+    retPhaseGroups.map((phaseGroup) => phaseGroup.id),
   );
-  return { error, phaseGroups: retPhaseGroups };
+  return retPhaseGroups;
 }
 
 const PHASE_GROUP_REPRESENTATIVE_SET_ID_QUERY = `
@@ -890,10 +919,6 @@ export async function startPhaseGroup(key: string, phaseGroupId: number) {
       setId: nodes[0].id,
     },
   ];
-  const error = await startPhaseGroupsInner(
-    key,
-    phaseGroupAndSetIds,
-    idToStartPhaseGroup,
-  );
-  return { error, sets: idToStartPhaseGroup.get(phaseGroup.id)!.sets };
+  await startPhaseGroupsInner(key, phaseGroupAndSetIds, idToStartPhaseGroup);
+  return idToStartPhaseGroup.get(phaseGroup.id)!.sets;
 }
