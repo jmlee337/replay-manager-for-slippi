@@ -70,7 +70,7 @@ export default function SetView({
   let leftScore = '\u00A0';
   let rightScore = '\u00A0';
   if (showScores) {
-    if (entrant1Score || entrant1Score) {
+    if (entrant1Score || entrant2Score) {
       leftScore = entrant1Score || '0';
       rightScore = entrant2Score || '0';
     } else if (entrant1Win) {

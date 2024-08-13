@@ -186,6 +186,11 @@ function Hello() {
   const [dir, setDir] = useState('');
   const [dirInit, setDirInit] = useState(false);
   const [copyDir, setCopyDir] = useState('');
+  const [tournament, setTournament] = useState<Tournament>({
+    slug: '',
+    name: '',
+    events: [],
+  });
   useEffect(() => {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
@@ -205,6 +210,7 @@ function Hello() {
       // initial state
       const replaysDirPromise = window.electron.getReplaysDir();
       const copyDirPromise = window.electron.getCopyDir();
+      const tournamentPromise = window.electron.getCurrentTournament();
 
       // req network
       const latestAppVersionPromise = window.electron.getLatestVersion();
@@ -229,6 +235,10 @@ function Hello() {
       setDir(replaysDir);
       setDirInit(replaysDir.length > 0);
       setCopyDir(await copyDirPromise);
+      const currentTournament = await tournamentPromise;
+      if (currentTournament) {
+        setTournament(currentTournament);
+      }
 
       // req network
       const errorMessages: string[] = [];
@@ -399,11 +409,6 @@ function Hello() {
   const [manualNames, setManualNames] = useState<string[]>([]);
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
   const [slug, setSlug] = useState('');
-  const [tournament, setTournament] = useState<Tournament>({
-    slug: '',
-    name: '',
-    events: [],
-  });
 
   const [guideState, setGuideState] = useState(GuideState.NONE);
   const [guideBackdropOpen, setGuideBackdropOpen] = useState(false);

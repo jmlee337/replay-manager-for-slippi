@@ -6,11 +6,52 @@ import {
   Phase,
   PhaseGroup,
   Set,
+  Sets,
   StartggSet,
   State,
   Stream,
   Tournament,
 } from '../common/types';
+
+let currentTournament: Tournament | undefined;
+const tournamentSlugToEventIds = new Map<string, number[]>();
+const idToEvent = new Map<number, Event>();
+const eventIdToPhaseIds = new Map<number, number[]>();
+const idToPhase = new Map<number, Phase>();
+const phaseIdToPhaseGroupIds = new Map<number, number[]>();
+const idToPhaseGroup = new Map<number, PhaseGroup>();
+const phaseGroupIdToEntrants = new Map<number, Entrant[]>();
+const phaseGroupIdToSets = new Map<number, Sets>();
+export function getCurrentTournament() {
+  if (!currentTournament) {
+    return undefined;
+  }
+
+  const tournament: Tournament = { ...currentTournament };
+  const events = tournamentSlugToEventIds
+    .get(tournament.slug)!
+    .map((eventId) => {
+      const event: Event = { ...idToEvent.get(eventId)! };
+      event.phases = (eventIdToPhaseIds.get(eventId) || []).map((phaseId) => {
+        const phase: Phase = { ...idToPhase.get(phaseId)! };
+        phase.phaseGroups = (phaseIdToPhaseGroupIds.get(phaseId) || []).map(
+          (groupId) => {
+            const group: PhaseGroup = { ...idToPhaseGroup.get(groupId)! };
+            group.entrants = phaseGroupIdToEntrants.get(groupId) || [];
+            group.sets = phaseGroupIdToSets.get(groupId) || {
+              completedSets: [],
+              pendingSets: [],
+            };
+            return group;
+          },
+        );
+        return phase;
+      });
+      return event;
+    });
+  tournament.events = events;
+  return tournament;
+}
 
 async function wrappedFetch(
   input: URL | RequestInfo,
@@ -138,7 +179,9 @@ export async function getTournament(
   const streamsPromise = wrappedFetch(
     `https://api.smash.gg/station_queue/${id}`,
   );
-  const events = (json.entities.event as Array<any>)
+  const events: Event[] = [];
+  const eventIds: number[] = [];
+  (json.entities.event as Array<any>)
     .filter((event: any) => {
       const isMelee = event.videogameId === 1;
       const isSinglesOrDoubles =
@@ -147,16 +190,19 @@ export async function getTournament(
           event.teamRosterSize.maxPlayers === 2);
       return isMelee && isSinglesOrDoubles;
     })
-    .map(
-      (event: any): Event => ({
+    .forEach((event: any) => {
+      const newEvent: Event = {
         id: event.id,
         name: event.name,
         slug: event.slug,
         isOnline: event.isOnline,
         state: event.state,
         phases: [],
-      }),
-    );
+      };
+      events.push(newEvent);
+      eventIds.push(event.id);
+      idToEvent.set(event.id, newEvent);
+    });
 
   let nextData;
   let page = 1;
@@ -191,6 +237,8 @@ export async function getTournament(
     });
   }
 
+  currentTournament = { name, slug, events: [] };
+  tournamentSlugToEventIds.set(slug, eventIds);
   return { name, slug, events };
 }
 
@@ -199,21 +247,36 @@ export async function getEvent(id: number): Promise<Event> {
     `https://api.smash.gg/event/${id}?expand[]=phase`,
   );
   const json = await response.json();
+  const phases: Phase[] = [];
+  const phaseIds: number[] = [];
+  (json.entities.phase as Array<any>).forEach((phase) => {
+    const newPhase: Phase = {
+      id: phase.id,
+      name: phase.name,
+      phaseGroups: [],
+      state: phase.state,
+    };
+    phases.push(newPhase);
+    phaseIds.push(phase.id);
+    idToPhase.set(phase.id, newPhase);
+  });
   const { event } = json.entities;
+  idToEvent.set(id, {
+    id: event.id,
+    name: event.name,
+    slug: event.slug,
+    isOnline: event.isOnline,
+    state: event.state,
+    phases: [],
+  });
+  eventIdToPhaseIds.set(id, phaseIds);
   return {
     id: event.id,
     name: event.name,
     slug: event.slug,
     isOnline: event.isOnline,
     state: event.state,
-    phases: json.entities.phase.map(
-      (phase: any): Phase => ({
-        id: phase.id,
-        name: phase.name,
-        phaseGroups: [],
-        state: phase.state,
-      }),
-    ),
+    phases,
   };
 }
 
@@ -222,28 +285,41 @@ export async function getPhase(id: number): Promise<Phase> {
     `https://api.smash.gg/phase/${id}?expand[]=groups`,
   );
   const json = await response.json();
+  const phaseGroups: PhaseGroup[] = [];
+  const phaseGroupIds: number[] = [];
+  (json.entities.groups as Array<any>)
+    .sort((groupA, groupB) =>
+      groupA.displayIdentifier.localeCompare(groupB.displayIdentifier),
+    )
+    .forEach((group) => {
+      const newPhaseGroup: PhaseGroup = {
+        id: group.id,
+        bracketType: group.groupTypeId,
+        entrants: [],
+        name: group.displayIdentifier,
+        sets: {
+          pendingSets: [],
+          completedSets: [],
+        },
+        state: group.state,
+      };
+      phaseGroups.push(newPhaseGroup);
+      phaseGroupIds.push(group.id);
+      idToPhaseGroup.set(group.id, newPhaseGroup);
+    });
   const { phase } = json.entities;
+  idToPhase.set(id, {
+    id: phase.id,
+    name: phase.name,
+    state: phase.state,
+    phaseGroups: [],
+  });
+  phaseIdToPhaseGroupIds.set(id, phaseGroupIds);
   return {
     id: phase.id,
     name: phase.name,
     state: phase.state,
-    phaseGroups: json.entities.groups
-      .map(
-        (group: any): PhaseGroup => ({
-          id: group.id,
-          bracketType: phase.bracketType,
-          entrants: [],
-          name: group.displayIdentifier,
-          sets: {
-            pendingSets: [],
-            completedSets: [],
-          },
-          state: group.state,
-        }),
-      )
-      .sort((phaseGroupA: PhaseGroup, phaseGroupB: PhaseGroup) =>
-        phaseGroupA.name.localeCompare(phaseGroupB.name),
-      ),
+    phaseGroups,
   };
 }
 
@@ -438,13 +514,23 @@ export async function getPhaseGroup(
   pendingSets.sort((a, b) => (a.ordinal || a.round) - (b.ordinal || b.round));
   completedSets.sort((a, b) => (b.ordinal || b.round) - (a.ordinal || a.round));
 
+  idToPhaseGroup.set(id, {
+    id,
+    bracketType,
+    entrants: [],
+    name,
+    state,
+    sets: { completedSets: [], pendingSets: [] },
+  });
+  phaseGroupIdToEntrants.set(id, entrants);
+  phaseGroupIdToSets.set(id, { completedSets, pendingSets });
   return {
     id,
     bracketType,
     entrants,
     name,
     state,
-    sets: { pendingSets, completedSets },
+    sets: { completedSets, pendingSets },
   };
 }
 
@@ -575,7 +661,7 @@ export async function updateSet(key: string, set: StartggSet): Promise<Set> {
 async function startPhaseGroupsInner(
   key: string,
   phaseGroupAndSetIds: { phaseGroupId: number; setId: string }[],
-  idToPhaseGroup: Map<number, PhaseGroup>,
+  idToStartPhaseGroup: Map<number, PhaseGroup>,
 ) {
   if (phaseGroupAndSetIds.length === 0) {
     throw new Error('No startable pools found.');
@@ -603,7 +689,7 @@ async function startPhaseGroupsInner(
   await Promise.all(
     phaseGroupAndSetIds.map(async ({ phaseGroupId }) => {
       Object.assign(
-        idToPhaseGroup.get(phaseGroupId)!,
+        idToStartPhaseGroup.get(phaseGroupId)!,
         await getPhaseGroup(key, phaseGroupId),
       );
     }),
@@ -644,7 +730,7 @@ export async function startEvent(key: string, eventId: number) {
     throw new Error('Maybe try again or start phases individually?');
   }
   const retPhases: Phase[] = [];
-  const idToPhaseGroup = new Map<number, PhaseGroup>();
+  const idToStartPhaseGroup = new Map<number, PhaseGroup>();
   const phaseGroupAndSetIds: { phaseGroupId: number; setId: string }[] = [];
   phases.forEach((phase) => {
     const phaseGroups: PhaseGroup[] = [];
@@ -663,7 +749,7 @@ export async function startEvent(key: string, eventId: number) {
           state: 2,
         };
         phaseGroups.push(newPhaseGroup);
-        idToPhaseGroup.set(phaseGroup.id, newPhaseGroup);
+        idToStartPhaseGroup.set(phaseGroup.id, newPhaseGroup);
         const setNodes = phaseGroup.sets.nodes;
         if (Array.isArray(setNodes) && setNodes.length > 0) {
           const { id } = setNodes[0];
@@ -686,7 +772,7 @@ export async function startEvent(key: string, eventId: number) {
   const error = await startPhaseGroupsInner(
     key,
     phaseGroupAndSetIds,
-    idToPhaseGroup,
+    idToStartPhaseGroup,
   );
   return { error, phases: retPhases };
 }
@@ -723,7 +809,7 @@ export async function startPhase(key: string, phaseId: number) {
   }
 
   const retPhaseGroups: PhaseGroup[] = [];
-  const idToPhaseGroup = new Map<number, PhaseGroup>();
+  const idToStartPhaseGroup = new Map<number, PhaseGroup>();
   const phaseGroupAndSetIds: { phaseGroupId: number; setId: string }[] = [];
   phaseGroupNodes.forEach((phaseGroup) => {
     const newPhaseGroup: PhaseGroup = {
@@ -738,7 +824,7 @@ export async function startPhase(key: string, phaseId: number) {
       state: 2,
     };
     retPhaseGroups.push(newPhaseGroup);
-    idToPhaseGroup.set(phaseGroup.id, newPhaseGroup);
+    idToStartPhaseGroup.set(phaseGroup.id, newPhaseGroup);
     const setNodes = phaseGroup.sets.nodes;
     if (Array.isArray(setNodes) && setNodes.length > 0) {
       const { id } = setNodes[0];
@@ -753,7 +839,7 @@ export async function startPhase(key: string, phaseId: number) {
   const error = await startPhaseGroupsInner(
     key,
     phaseGroupAndSetIds,
-    idToPhaseGroup,
+    idToStartPhaseGroup,
   );
   return { error, phaseGroups: retPhaseGroups };
 }
@@ -782,7 +868,7 @@ export async function startPhaseGroup(key: string, phaseGroupId: number) {
     throw new Error('No startable sets found.');
   }
 
-  const idToPhaseGroup = new Map<number, PhaseGroup>([
+  const idToStartPhaseGroup = new Map<number, PhaseGroup>([
     [
       phaseGroup.id,
       {
@@ -807,7 +893,7 @@ export async function startPhaseGroup(key: string, phaseGroupId: number) {
   const error = await startPhaseGroupsInner(
     key,
     phaseGroupAndSetIds,
-    idToPhaseGroup,
+    idToStartPhaseGroup,
   );
-  return { error, sets: idToPhaseGroup.get(phaseGroup.id)!.sets };
+  return { error, sets: idToStartPhaseGroup.get(phaseGroup.id)!.sets };
 }

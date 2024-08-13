@@ -54,6 +54,8 @@ const electronHandler = {
     ipcRenderer.invoke('enforceReplays', replays),
   getCopyDir: (): Promise<string> => ipcRenderer.invoke('getCopyDir'),
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
+  getCurrentTournament: (): Promise<Tournament | undefined> =>
+    ipcRenderer.invoke('getCurrentTournament'),
   getTournament: (slug: string): Promise<Tournament> =>
     ipcRenderer.invoke('getTournament', slug),
   getEvent: (id: number): Promise<Event> => ipcRenderer.invoke('getEvent', id),

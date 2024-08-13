@@ -37,6 +37,7 @@ import {
   startEvent,
   startPhase,
   startPhaseGroup,
+  getCurrentTournament,
 } from './startgg';
 import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
 import {
@@ -224,6 +225,9 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   let sggApiKey = store.has('sggApiKey')
     ? (store.get('sggApiKey') as string)
     : '';
+
+  ipcMain.removeHandler('getCurrentTournament');
+  ipcMain.handle('getCurrentTournament', getCurrentTournament);
 
   ipcMain.removeHandler('getTournament');
   ipcMain.handle(
