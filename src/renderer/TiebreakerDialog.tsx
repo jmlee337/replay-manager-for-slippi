@@ -73,7 +73,7 @@ export default function TiebreakerDialog({
                       wasReported: false,
                       entrant1Score: null,
                       entrant2Score: null,
-                      ordinal: 0,
+                      ordinal: null,
                       stream: null,
                       winnerId: null,
                     });

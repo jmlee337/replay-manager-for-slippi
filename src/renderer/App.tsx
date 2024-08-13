@@ -129,7 +129,7 @@ const EMPTY_SET: Set = {
   ],
   entrant2Score: null,
   stream: null,
-  ordinal: 0,
+  ordinal: null,
   wasReported: false,
 };
 

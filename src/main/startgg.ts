@@ -248,7 +248,7 @@ export async function getPhase(id: number): Promise<Phase> {
 }
 
 const reportedSetIds = new Map<number, boolean>();
-const setIdToOrdinal = new Map<number, number>();
+const setIdToOrdinal = new Map<number, number | null>();
 
 // 1838376 genesis-9-1
 // 2254448 test-tournament-sorry
@@ -435,8 +435,8 @@ export async function getPhaseGroup(
       } while (missingStreamSets.length > 0);
     }
   }
-  pendingSets.sort((a, b) => a.ordinal - b.ordinal);
-  completedSets.sort((a, b) => b.ordinal - a.ordinal);
+  pendingSets.sort((a, b) => (a.ordinal || a.round) - (b.ordinal || b.round));
+  completedSets.sort((a, b) => (b.ordinal || b.round) - (a.ordinal || a.round));
 
   return {
     id,
@@ -530,7 +530,7 @@ function gqlSetToSet(set: any): Set {
             path: set.stream.streamName,
           }
         : null,
-    ordinal: setIdToOrdinal.get(set.id)!,
+    ordinal: setIdToOrdinal.get(set.id) as number | null,
     wasReported: reportedSetIds.has(set.id),
   };
 }

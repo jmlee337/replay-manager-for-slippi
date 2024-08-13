@@ -72,7 +72,7 @@ export type Set = {
   entrant2Participants: Participant[];
   entrant2Score: string | null;
   stream: Stream | null;
-  ordinal: number;
+  ordinal: number | null; // can be null for start.gg non-DE and challonge swiss
   wasReported: boolean;
 };
 
@@ -214,7 +214,7 @@ export type Context = {
     set: {
       id?: number;
       fullRoundText: string;
-      ordinal: number;
+      ordinal: number | null;
       round: number;
       stream: Stream | null;
     };
@@ -227,7 +227,7 @@ export type Context = {
     set: {
       id?: number;
       fullRoundText: string;
-      ordinal: number;
+      ordinal: number | null;
       round: number;
       stream: Stream | null;
     };
