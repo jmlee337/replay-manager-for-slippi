@@ -230,7 +230,13 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('getTournament');
   ipcMain.handle(
     'getTournament',
-    async (event: IpcMainInvokeEvent, slug: string) => getTournament(slug),
+    async (event: IpcMainInvokeEvent, slug: string) => {
+      if (!sggApiKey) {
+        throw new Error('Please set start.gg API key');
+      }
+
+      return getTournament(sggApiKey, slug);
+    },
   );
 
   ipcMain.removeHandler('getEvent');
@@ -249,14 +255,13 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     async (
       event: IpcMainInvokeEvent,
       id: number,
-      isDoubles: boolean,
       updatedSets?: Map<number, Set>,
     ) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      return getPhaseGroup(sggApiKey, id, isDoubles, updatedSets);
+      return getPhaseGroup(sggApiKey, id, updatedSets);
     },
   );
 

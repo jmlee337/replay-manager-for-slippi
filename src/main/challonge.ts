@@ -280,8 +280,8 @@ export async function getChallongeTournament(
     name,
     entrants,
     sets: {
-      pendingSets: pendingSets.sort((a, b) => a.ordinal! - b.ordinal!),
-      completedSets: completedSets.sort((a, b) => b.ordinal! - a.ordinal!),
+      pendingSets: pendingSets.sort((a, b) => a.ordinal - b.ordinal),
+      completedSets: completedSets.sort((a, b) => b.ordinal - a.ordinal),
     },
     state,
     slug,

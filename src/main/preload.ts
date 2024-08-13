@@ -18,6 +18,7 @@ import {
   Set,
   Sets,
   StartggSet,
+  Tournament,
 } from '../common/types';
 
 const electronHandler = {
@@ -54,16 +55,15 @@ const electronHandler = {
     ipcRenderer.invoke('enforceReplays', replays),
   getCopyDir: (): Promise<string> => ipcRenderer.invoke('getCopyDir'),
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
-  getTournament: (slug: string): Promise<{ name: string; events: Event[] }> =>
+  getTournament: (slug: string): Promise<Tournament> =>
     ipcRenderer.invoke('getTournament', slug),
   getEvent: (id: number): Promise<Event> => ipcRenderer.invoke('getEvent', id),
   getPhase: (id: number): Promise<Phase> => ipcRenderer.invoke('getPhase', id),
   getPhaseGroup: (
     id: number,
-    isDoubles: boolean,
     updatedSets?: Map<number, Set>,
   ): Promise<PhaseGroup> =>
-    ipcRenderer.invoke('getPhaseGroup', id, isDoubles, updatedSets),
+    ipcRenderer.invoke('getPhaseGroup', id, updatedSets),
   startSet: (id: number): Promise<Set> => ipcRenderer.invoke('startSet', id),
   reportSet: (set: StartggSet): Promise<Set[]> =>
     ipcRenderer.invoke('reportSet', set),

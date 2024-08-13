@@ -129,7 +129,7 @@ const EMPTY_SET: Set = {
   ],
   entrant2Score: null,
   stream: null,
-  ordinal: null,
+  ordinal: 0,
   wasReported: false,
 };
 
@@ -623,11 +623,7 @@ function Hello() {
 
     let newPhaseGroup;
     try {
-      newPhaseGroup = await window.electron.getPhaseGroup(
-        id,
-        editEvent.isDoubles,
-        updatedSets,
-      );
+      newPhaseGroup = await window.electron.getPhaseGroup(id, updatedSets);
     } catch (e: any) {
       showErrorDialog([e.toString()]);
       return;
@@ -1446,6 +1442,7 @@ function Hello() {
                 set: {
                   id: copySet.id > 0 ? copySet.id : undefined,
                   fullRoundText: copySet.fullRoundText,
+                  ordinal: copySet.ordinal,
                   round: copySet.round,
                   stream: copySet.stream,
                 },

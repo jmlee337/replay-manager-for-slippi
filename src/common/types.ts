@@ -72,7 +72,7 @@ export type Set = {
   entrant2Participants: Participant[];
   entrant2Score: string | null;
   stream: Stream | null;
-  ordinal: number | null;
+  ordinal: number;
   wasReported: boolean;
 };
 
@@ -108,7 +108,6 @@ export type Event = {
   id: number;
   name: string;
   slug: string;
-  isDoubles: boolean;
   isOnline: boolean;
   state: State;
   phases: Phase[];
@@ -215,6 +214,7 @@ export type Context = {
     set: {
       id?: number;
       fullRoundText: string;
+      ordinal: number;
       round: number;
       stream: Stream | null;
     };
@@ -227,7 +227,7 @@ export type Context = {
     set: {
       id?: number;
       fullRoundText: string;
-      ordinal: number | null;
+      ordinal: number;
       round: number;
       stream: Stream | null;
     };
