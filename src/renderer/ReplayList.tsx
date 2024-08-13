@@ -337,6 +337,7 @@ const ReplayListItem = memo(function ReplayListItem({
 });
 
 export default function ReplayList({
+  dirInit,
   numAvailablePlayers,
   replays,
   selectedChipData,
@@ -348,6 +349,7 @@ export default function ReplayList({
   elevateChips,
   elevateNames,
 }: {
+  dirInit: boolean;
   numAvailablePlayers: number;
   replays: Replay[];
   selectedChipData: PlayerOverrides;
@@ -373,7 +375,9 @@ export default function ReplayList({
       }}
     >
       {replays.length === 0 ? (
-        <Alert severity="warning">No replays in folder</Alert>
+        <Alert severity="warning" sx={{ mb: '8px', pl: '24px' }}>
+          {dirInit ? 'Click refresh replays!' : 'No replays in folder.'}
+        </Alert>
       ) : (
         replays.map((replay, index) => (
           <ReplayListItem

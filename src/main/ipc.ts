@@ -117,6 +117,11 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     mode = newMode;
   });
 
+  ipcMain.removeHandler('getReplaysDir');
+  ipcMain.handle('getReplaysDir', () =>
+    replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : '',
+  );
+
   let chosenReplaysDir = '';
   ipcMain.removeHandler('chooseReplaysDir');
   ipcMain.handle('chooseReplaysDir', async () => {
@@ -202,6 +207,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       enforceReplays(replays),
   );
 
+  let copyDir = '';
+  ipcMain.removeHandler('getCopyDir');
+  ipcMain.handle('getCopyDir', () => copyDir);
+
   ipcMain.removeHandler('chooseCopyDir');
   ipcMain.handle('chooseCopyDir', async () => {
     const openDialogRes = await dialog.showOpenDialog({
@@ -210,7 +219,8 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     if (openDialogRes.canceled) {
       return '';
     }
-    return openDialogRes.filePaths[0];
+    [copyDir] = openDialogRes.filePaths;
+    return copyDir;
   });
 
   let sggApiKey = store.has('sggApiKey')

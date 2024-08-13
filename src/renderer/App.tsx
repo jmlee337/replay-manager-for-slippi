@@ -165,7 +165,6 @@ function Hello() {
   const [folderNameFormat, setFolderNameFormat] = useState('');
   const [appVersion, setAppVersion] = useState('');
   const [latestAppVersion, setLatestAppVersion] = useState('');
-  // copy settings
   const [copySettings, setCopySettings] = useState<CopySettings>({
     output: Output.FILES,
     writeContext: false,
@@ -173,17 +172,20 @@ function Hello() {
     writeFileNames: false,
     writeStartTimes: false,
   });
-  // report settings
   const [reportSettings, setReportSettings] = useState<ReportSettings>({
     alsoCopy: false,
     alsoDelete: false,
   });
-  // admined tournaments
   const [adminedTournaments, setAdminedTournaments] = useState<
     AdminedTournament[]
   >([]);
   const [gettingAdminedTournaments, setGettingAdminedTournaments] =
     useState(true);
+
+  // initial state
+  const [dir, setDir] = useState('');
+  const [dirInit, setDirInit] = useState(false);
+  const [copyDir, setCopyDir] = useState('');
   useEffect(() => {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
@@ -199,6 +201,10 @@ function Hello() {
       const folderNameFormatPromise = window.electron.getFolderNameFormat();
       const copySettingsPromise = window.electron.getCopySettings();
       const reportSettingsPromise = window.electron.getReportSettings();
+
+      // initial state
+      const replaysDirPromise = window.electron.getReplaysDir();
+      const copyDirPromise = window.electron.getCopyDir();
 
       // req network
       const latestAppVersionPromise = window.electron.getLatestVersion();
@@ -217,6 +223,12 @@ function Hello() {
       setGuidedMode(await guidedModePromise);
       setCopySettings(await copySettingsPromise);
       setReportSettings(await reportSettingsPromise);
+
+      // initial state
+      const replaysDir = await replaysDirPromise;
+      setDir(replaysDir);
+      setDirInit(replaysDir.length > 0);
+      setCopyDir(await copyDirPromise);
 
       // req network
       const errorMessages: string[] = [];
@@ -271,7 +283,6 @@ function Hello() {
 
   // Replay list
   const [allReplaysSelected, setAllReplaysSelected] = useState(true);
-  const [dir, setDir] = useState('');
   const [dirDeleteDialogOpen, setDirDeleteDialogOpen] = useState(false);
   const [dirDeleting, setDirDeleting] = useState(false);
   const [dirExists, setDirExists] = useState(true);
@@ -365,6 +376,7 @@ function Hello() {
       );
       setDir(newDir);
       setDirExists(true);
+      setDirInit(false);
       resetOverrides();
       setReplays(newReplays);
       setReplayLoadCount((r) => r + 1);
@@ -384,7 +396,6 @@ function Hello() {
   const [challongeTournaments, setChallongeTournaments] = useState(
     new Map<string, ChallongeTournament>(),
   );
-  const [copyDir, setCopyDir] = useState('');
   const [manualNames, setManualNames] = useState<string[]>([]);
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
   const [slug, setSlug] = useState('');
@@ -444,6 +455,7 @@ function Hello() {
       setBatchActives(
         getNewBatchActives(newReplays.filter((replay) => replay.selected)),
       );
+      setDirInit(false);
       resetOverrides();
       setReplays(newReplays);
       setReplayLoadCount((r) => r + 1);
@@ -1709,6 +1721,7 @@ function Hello() {
           {dir &&
             (dirExists ? (
               <ReplayList
+                dirInit={dirInit}
                 numAvailablePlayers={availablePlayers.length}
                 replays={replays}
                 selectedChipData={selectedChipData}

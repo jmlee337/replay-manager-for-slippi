@@ -21,6 +21,7 @@ import {
 } from '../common/types';
 
 const electronHandler = {
+  getReplaysDir: (): Promise<string> => ipcRenderer.invoke('getReplaysDir'),
   chooseReplaysDir: (): Promise<string> =>
     ipcRenderer.invoke('chooseReplaysDir'),
   deleteReplaysDir: (): Promise<void> => ipcRenderer.invoke('deleteReplaysDir'),
@@ -51,6 +52,7 @@ const electronHandler = {
     ),
   enforceReplays: (replays: Replay[]): Promise<EnforceResult[]> =>
     ipcRenderer.invoke('enforceReplays', replays),
+  getCopyDir: (): Promise<string> => ipcRenderer.invoke('getCopyDir'),
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
   getTournament: (slug: string): Promise<{ name: string; events: Event[] }> =>
     ipcRenderer.invoke('getTournament', slug),
