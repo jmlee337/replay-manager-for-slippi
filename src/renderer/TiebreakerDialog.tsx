@@ -64,7 +64,7 @@ export default function TiebreakerDialog({
                     selectSet({
                       id: -1,
                       state: State.PENDING,
-                      round: 0,
+                      round: Number.MAX_SAFE_INTEGER,
                       fullRoundText: 'Tie-Breaker',
                       entrant1Id: selectedEntrant.id,
                       entrant1Participants: selectedEntrant.participants,

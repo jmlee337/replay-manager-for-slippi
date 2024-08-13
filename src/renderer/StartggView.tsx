@@ -47,54 +47,22 @@ function SetView({
   set,
   entrant1Names,
   entrant2Names,
-  eventId,
-  eventName,
-  eventSlug,
-  phaseId,
-  phaseName,
-  phaseGroupId,
-  phaseGroupName,
   vlerkMode,
   selectSet,
 }: {
   set: Set;
   entrant1Names: NameWithHighlight[];
   entrant2Names: NameWithHighlight[];
-  eventId: number;
-  eventName: string;
-  eventSlug: string;
-  phaseId: number;
-  phaseName: string;
-  phaseGroupId: number;
-  phaseGroupName: string;
   vlerkMode: boolean;
-  selectSet: (
-    set: Set,
-    phaseGroupId: number,
-    phaseGroupName: string,
-    phaseId: number,
-    phaseName: string,
-    eventId: number,
-    eventName: string,
-    eventSlug: string,
-  ) => void;
+  selectSet: () => void;
 }) {
   return (
     <ListItemButton
       dense
       disableGutters
-      onClick={() =>
-        selectSet(
-          set,
-          phaseGroupId,
-          phaseGroupName,
-          phaseId,
-          phaseName,
-          eventId,
-          eventName,
-          eventSlug,
-        )
-      }
+      onClick={() => {
+        selectSet();
+      }}
     >
       <SetViewInner
         entrant1Names={entrant1Names}
@@ -117,10 +85,7 @@ function PhaseGroupView({
   isStartable,
   elevateStartButton,
   eventId,
-  eventName,
-  eventSlug,
   phaseId,
-  phaseName,
   tournamentSlug,
   searchSubstr,
   vlerkMode,
@@ -133,10 +98,7 @@ function PhaseGroupView({
   isStartable: boolean;
   elevateStartButton: boolean;
   eventId: number;
-  eventName: string;
-  eventSlug: string;
   phaseId: number;
-  phaseName: string;
   tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
@@ -145,16 +107,7 @@ function PhaseGroupView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
-  selectSet: (
-    set: Set,
-    phaseGroupId: number,
-    phaseGroupName: string,
-    phaseId: number,
-    phaseName: string,
-    eventId: number,
-    eventName: string,
-    eventSlug: string,
-  ) => void;
+  selectSet: (set: Set) => void;
   showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
@@ -274,15 +227,8 @@ function PhaseGroupView({
                 set={setWithNames.set}
                 entrant1Names={setWithNames.entrant1Names}
                 entrant2Names={setWithNames.entrant2Names}
-                eventId={eventId}
-                eventName={eventName}
-                eventSlug={eventSlug}
-                phaseId={phaseId}
-                phaseName={phaseName}
-                phaseGroupId={phaseGroup.id}
-                phaseGroupName={phaseGroup.name}
                 vlerkMode={vlerkMode}
-                selectSet={selectSet}
+                selectSet={() => selectSet(setWithNames.set)}
               />
             ))}
             {completedSetsToShow.length > 0 && (
@@ -313,15 +259,8 @@ function PhaseGroupView({
                       set={setWithNames.set}
                       entrant1Names={setWithNames.entrant1Names}
                       entrant2Names={setWithNames.entrant2Names}
-                      eventId={eventId}
-                      eventName={eventName}
-                      eventSlug={eventSlug}
-                      phaseId={phaseId}
-                      phaseName={phaseName}
-                      phaseGroupId={phaseGroup.id}
-                      phaseGroupName={phaseGroup.name}
                       vlerkMode={vlerkMode}
-                      selectSet={selectSet}
+                      selectSet={() => selectSet(setWithNames.set)}
                     />
                   ))}
                 </Collapse>
@@ -333,16 +272,7 @@ function PhaseGroupView({
                 <TiebreakerDialog
                   entrants={phaseGroup.entrants}
                   selectSet={(set: Set) => {
-                    selectSet(
-                      set,
-                      phaseGroup.id,
-                      phaseGroup.name,
-                      phaseId,
-                      phaseName,
-                      eventId,
-                      eventName,
-                      eventSlug,
-                    );
+                    selectSet(set);
                   }}
                 />
               )}
@@ -359,8 +289,6 @@ function PhaseView({
   isStartable,
   elevateStartButton,
   eventId,
-  eventName,
-  eventSlug,
   tournamentSlug,
   searchSubstr,
   vlerkMode,
@@ -374,8 +302,6 @@ function PhaseView({
   isStartable: boolean;
   elevateStartButton: boolean;
   eventId: number;
-  eventName: string;
-  eventSlug: string;
   tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
@@ -385,16 +311,7 @@ function PhaseView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
-  selectSet: (
-    set: Set,
-    phaseGroupId: number,
-    phaseGroupName: string,
-    phaseId: number,
-    phaseName: string,
-    eventId: number,
-    eventName: string,
-    eventSlug: string,
-  ) => void;
+  selectSet: (set: Set, phaseGroupId: number, phaseGroupName: string) => void;
   showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
@@ -491,15 +408,14 @@ function PhaseView({
               isStartable={isStartable}
               elevateStartButton={elevateStartButton}
               eventId={eventId}
-              eventName={eventName}
-              eventSlug={eventSlug}
               phaseId={phase.id}
-              phaseName={phase.name}
               tournamentSlug={tournamentSlug}
               searchSubstr={searchSubstr}
               vlerkMode={vlerkMode}
               getPhaseGroup={getPhaseGroup}
-              selectSet={selectSet}
+              selectSet={(set: Set) =>
+                selectSet(set, phaseGroup.id, phaseGroup.name)
+              }
               showError={showError}
             />
           ))}
@@ -541,9 +457,6 @@ function EventView({
     phaseGroupName: string,
     phaseId: number,
     phaseName: string,
-    eventId: number,
-    eventName: string,
-    eventSlug: string,
   ) => void;
   showError: (error: string) => void;
 }) {
@@ -651,14 +564,24 @@ function EventView({
               isStartable={!event.isOnline}
               elevateStartButton={elevateStartButton}
               eventId={event.id}
-              eventName={event.name}
-              eventSlug={event.slug}
               tournamentSlug={tournamentSlug}
               searchSubstr={searchSubstr}
               vlerkMode={vlerkMode}
               getPhase={getPhase}
               getPhaseGroup={getPhaseGroup}
-              selectSet={selectSet}
+              selectSet={(
+                set: Set,
+                phaseGroupId: number,
+                phaseGroupName: string,
+              ) =>
+                selectSet(
+                  set,
+                  phaseGroupId,
+                  phaseGroupName,
+                  phase.id,
+                  phase.name,
+                )
+              }
               showError={showError}
             />
           ))}
@@ -721,7 +644,24 @@ export default function StartggView({
             getEvent={getEvent}
             getPhase={getPhase}
             getPhaseGroup={getPhaseGroup}
-            selectSet={selectSet}
+            selectSet={(
+              set: Set,
+              phaseGroupId: number,
+              phaseGroupName: string,
+              phaseId: number,
+              phaseName: string,
+            ) =>
+              selectSet(
+                set,
+                phaseGroupId,
+                phaseGroupName,
+                phaseId,
+                phaseName,
+                event.id,
+                event.name,
+                event.slug,
+              )
+            }
             showError={showError}
           />
         ))}
