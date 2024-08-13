@@ -597,18 +597,6 @@ function Hello() {
   };
 
   // start.gg tournament view
-  const getPhaseGroupEntrants = async (phaseGroup: PhaseGroup) => {
-    try {
-      const entrants = await window.electron.getPhaseGroupEntrants(
-        phaseGroup.id,
-      );
-      phaseGroup.entrants = entrants;
-      setTournament({ ...tournament });
-    } catch (e: any) {
-      showErrorDialog([e.toString()]);
-    }
-  };
-
   const getPhaseGroup = async (
     id: number,
     phaseId: number,
@@ -638,7 +626,6 @@ function Hello() {
       (phaseGroup) => phaseGroup.id === id,
     );
     if (editPhaseGroup) {
-      newPhaseGroup.entrants = editPhaseGroup.entrants;
       Object.assign(editPhaseGroup, newPhaseGroup);
       if (selectedSet.id > 0) {
         const updatedSelectedSet =
@@ -1810,7 +1797,6 @@ function Hello() {
               getPhaseGroup={(id: number, phaseId: number, eventId: number) =>
                 getPhaseGroup(id, phaseId, eventId, true)
               }
-              getPhaseGroupEntrants={getPhaseGroupEntrants}
               selectSet={(
                 set: Set,
                 phaseGroupId: number,

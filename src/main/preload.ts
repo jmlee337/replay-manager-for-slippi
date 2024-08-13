@@ -6,7 +6,6 @@ import {
   Context,
   CopySettings,
   EnforceResult,
-  Entrant,
   Event,
   InvalidReplay,
   Mode,
@@ -69,8 +68,6 @@ const electronHandler = {
     ipcRenderer.invoke('reportSet', set),
   updateSet: (set: StartggSet): Promise<Set> =>
     ipcRenderer.invoke('updateSet', set),
-  getPhaseGroupEntrants: (id: number): Promise<Entrant[]> =>
-    ipcRenderer.invoke('getPhaseGroupEntrants', id),
   startEvent: (id: number): Promise<{ error: string; phases: Phase[] }> =>
     ipcRenderer.invoke('startEvent', id),
   startPhase: (

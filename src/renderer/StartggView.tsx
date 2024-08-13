@@ -125,7 +125,6 @@ function PhaseGroupView({
   searchSubstr,
   vlerkMode,
   getPhaseGroup,
-  getPhaseGroupEntrants,
   selectSet,
   setTournament,
   showError,
@@ -147,7 +146,6 @@ function PhaseGroupView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
-  getPhaseGroupEntrants: (phaseGroup: PhaseGroup) => Promise<void>;
   selectSet: (
     set: Set,
     phaseGroupId: number,
@@ -345,9 +343,6 @@ function PhaseGroupView({
               phaseGroup.sets.pendingSets.length === 0 && (
                 <TiebreakerDialog
                   entrants={phaseGroup.entrants}
-                  getEntrants={async () => {
-                    await getPhaseGroupEntrants(phaseGroup);
-                  }}
                   selectSet={(set: Set) => {
                     selectSet(
                       set,
@@ -382,7 +377,6 @@ function PhaseView({
   vlerkMode,
   getPhase,
   getPhaseGroup,
-  getPhaseGroupEntrants,
   selectSet,
   setTournament,
   showError,
@@ -403,7 +397,6 @@ function PhaseView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
-  getPhaseGroupEntrants: (phaseGroup: PhaseGroup) => Promise<void>;
   selectSet: (
     set: Set,
     phaseGroupId: number,
@@ -527,7 +520,6 @@ function PhaseView({
               searchSubstr={searchSubstr}
               vlerkMode={vlerkMode}
               getPhaseGroup={getPhaseGroup}
-              getPhaseGroupEntrants={getPhaseGroupEntrants}
               selectSet={selectSet}
               setTournament={setTournament}
               showError={showError}
@@ -549,7 +541,6 @@ function EventView({
   getEvent,
   getPhase,
   getPhaseGroup,
-  getPhaseGroupEntrants,
   selectSet,
   setTournament,
   showError,
@@ -567,7 +558,6 @@ function EventView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
-  getPhaseGroupEntrants: (phaseGroup: PhaseGroup) => Promise<void>;
   selectSet: (
     set: Set,
     phaseGroupId: number,
@@ -700,7 +690,6 @@ function EventView({
               vlerkMode={vlerkMode}
               getPhase={getPhase}
               getPhaseGroup={getPhaseGroup}
-              getPhaseGroupEntrants={getPhaseGroupEntrants}
               selectSet={selectSet}
               setTournament={setTournament}
               showError={showError}
@@ -720,7 +709,6 @@ export default function StartggView({
   getEvent,
   getPhase,
   getPhaseGroup,
-  getPhaseGroupEntrants,
   selectSet,
   setTournament,
 }: {
@@ -735,7 +723,6 @@ export default function StartggView({
     phaseId: number,
     eventId: number,
   ) => Promise<void>;
-  getPhaseGroupEntrants: (phaseGroup: PhaseGroup) => Promise<void>;
   selectSet: (
     set: Set,
     phaseGroupId: number,
@@ -769,7 +756,6 @@ export default function StartggView({
             getEvent={getEvent}
             getPhase={getPhase}
             getPhaseGroup={getPhaseGroup}
-            getPhaseGroupEntrants={getPhaseGroupEntrants}
             selectSet={selectSet}
             setTournament={setTournament}
             showError={showError}

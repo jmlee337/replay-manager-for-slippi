@@ -572,64 +572,6 @@ export async function updateSet(key: string, set: StartggSet): Promise<Set> {
   return gqlSetToSet(data.updateBracketSet);
 }
 
-const PHASE_GROUP_ENTRANTS_QUERY = `
-  query PhaseGroupQuery($id: ID!, $page: Int) {
-    phaseGroup(id: $id) {
-      standings(query: {page: $page, perPage: 128}) {
-        pageInfo {
-          totalPages
-        }
-        nodes {
-          entrant {
-            id
-            participants {
-              gamerTag
-              prefix
-              player {
-                user {
-                  genderPronoun
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-// 2549545 test-tournament-sorry
-// 2139098 the-off-season-2-2 1-000-melee-doubles
-export async function getPhaseGroupEntrants(
-  key: string,
-  id: number,
-): Promise<Entrant[]> {
-  let page = 1;
-  let nextData;
-  const entrants: Entrant[] = [];
-  do {
-    // eslint-disable-next-line no-await-in-loop
-    nextData = await fetchGql(key, PHASE_GROUP_ENTRANTS_QUERY, {
-      id,
-      page,
-    });
-    const newEntrants: Entrant[] = nextData.phaseGroup.standings.nodes.map(
-      (standing: any) => ({
-        id: standing.entrant.id,
-        participants: standing.entrant.participants.map((participant: any) => ({
-          displayName: participant.gamerTag,
-          prefix: participant.prefix,
-          pronouns: participant.player.user?.genderPronoun ?? '',
-        })),
-      }),
-    );
-    entrants.push(...newEntrants);
-
-    page += 1;
-  } while (page <= nextData.phaseGroup.standings.pageInfo.totalPages);
-  return entrants;
-}
-
 async function startPhaseGroupsInner(
   key: string,
   phaseGroupAndSetIds: { phaseGroupId: number; setId: string }[],

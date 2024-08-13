@@ -189,7 +189,6 @@ export default function ChallongeView({
               tournament.sets.pendingSets.length === 0 && (
                 <TiebreakerDialog
                   entrants={tournament.entrants}
-                  getEntrants={() => Promise.resolve()}
                   selectSet={selectSet}
                 />
               )}

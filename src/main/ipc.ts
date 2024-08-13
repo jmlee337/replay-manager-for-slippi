@@ -15,7 +15,6 @@ import {
   ChallongeMatchItem,
   Context,
   CopySettings,
-  Entrant,
   Mode,
   Output,
   Phase,
@@ -35,7 +34,6 @@ import {
   reportSet,
   updateSet,
   getTournaments,
-  getPhaseGroupEntrants,
   startEvent,
   startPhase,
   startPhaseGroup,
@@ -298,18 +296,6 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       return updateSet(sggApiKey, set);
-    },
-  );
-
-  ipcMain.removeHandler('getPhaseGroupEntrants');
-  ipcMain.handle(
-    'getPhaseGroupEntrants',
-    async (event: IpcMainInvokeEvent, id: number): Promise<Entrant[]> => {
-      if (!sggApiKey) {
-        throw new Error('Please set start.gg API key');
-      }
-
-      return getPhaseGroupEntrants(sggApiKey, id);
     },
   );
 
