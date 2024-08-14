@@ -2,11 +2,34 @@ import {
   AdminedTournament,
   ChallongeMatchItem,
   ChallongeTournament,
-  Entrant,
   Set,
   State,
   Stream,
 } from '../common/types';
+
+const tournaments = new Map<string, ChallongeTournament>();
+const idToSet = new Map<number, Set>();
+let selectedTournamentSlug = '';
+let selectedSetId = 0;
+export function getCurrentTournaments() {
+  return tournaments;
+}
+
+export function getSelectedChallongeSet() {
+  return idToSet.get(selectedSetId);
+}
+
+export function setSelectedChallongeSetId(id: number) {
+  selectedSetId = id;
+}
+
+export function getSelectedTournament() {
+  return tournaments.get(selectedTournamentSlug);
+}
+
+export function setSelectedTournament(slug: string) {
+  selectedTournamentSlug = slug;
+}
 
 async function wrappedFetch(url: string, init: RequestInit) {
   const response = await fetch(url, init);
@@ -158,24 +181,25 @@ export async function getChallongeTournament(
   const { name, tournament_type: tournamentType } =
     tournamentJson.data.attributes;
   const state = apiStateToState(tournamentJson.data.attributes.state);
+  const newTournament: ChallongeTournament = {
+    entrants: [],
+    name,
+    sets: {
+      completedSets: [],
+      pendingSets: [],
+    },
+    slug,
+    state,
+    tournamentType,
+  };
+  tournaments.set(slug, newTournament);
   if (state === State.PENDING) {
-    return {
-      entrants: [],
-      name,
-      sets: {
-        completedSets: [],
-        pendingSets: [],
-      },
-      slug,
-      state,
-      tournamentType,
-    };
+    return newTournament;
   }
 
   let participantsPage = 0;
   let participantsCount = 0;
   let participantsSeen = 0;
-  const entrants: Entrant[] = [];
   do {
     participantsPage += 1;
     // eslint-disable-next-line no-await-in-loop
@@ -187,7 +211,7 @@ export async function getChallongeTournament(
     data
       .filter((participant: any) => participant.type === 'participant')
       .forEach((participant: any) => {
-        entrants.push({
+        newTournament.entrants.push({
           id: participant.id,
           participants: [
             {
@@ -209,8 +233,6 @@ export async function getChallongeTournament(
   let matchesPage = 0;
   let matchesCount = 0;
   let matchesSeen = 0;
-  const pendingSets: Set[] = [];
-  const completedSets: Set[] = [];
   do {
     matchesPage += 1;
     // eslint-disable-next-line no-await-in-loop
@@ -267,26 +289,19 @@ export async function getChallongeTournament(
         return toSet(match, idToFullRoundText, stationIdToStream);
       })
       .forEach((set) => {
+        idToSet.set(set.id, set);
         if (set.state === State.COMPLETED) {
-          completedSets.push(set);
+          newTournament.sets.completedSets.push(set);
         } else {
-          pendingSets.push(set);
+          newTournament.sets.pendingSets.push(set);
         }
       });
     matchesCount = json.meta.count;
     matchesSeen += data.length;
   } while (matchesSeen < matchesCount);
-  return {
-    name,
-    entrants,
-    sets: {
-      pendingSets: pendingSets.sort((a, b) => a.ordinal! - b.ordinal!),
-      completedSets: completedSets.sort((a, b) => b.ordinal! - a.ordinal!),
-    },
-    state,
-    slug,
-    tournamentType,
-  };
+  newTournament.sets.pendingSets.sort((a, b) => a.ordinal! - b.ordinal!);
+  newTournament.sets.completedSets.sort((a, b) => b.ordinal! - a.ordinal!);
+  return newTournament;
 }
 
 export async function startChallongeSet(

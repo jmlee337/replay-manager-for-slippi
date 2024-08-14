@@ -44,7 +44,12 @@ import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
 import {
   getChallongeTournament,
   getChallongeTournaments,
+  getCurrentTournaments,
+  getSelectedChallongeSet,
+  getSelectedTournament,
   reportChallongeSet,
+  setSelectedChallongeSetId,
+  setSelectedTournament,
   startChallongeSet,
 } from './challonge';
 
@@ -229,17 +234,6 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
 
   ipcMain.removeHandler('getCurrentTournament');
   ipcMain.handle('getCurrentTournament', getCurrentTournament);
-
-  ipcMain.removeHandler('getSelectedSet');
-  ipcMain.handle('getSelectedSet', getSelectedSet);
-
-  ipcMain.removeHandler('setSelectedSetId');
-  ipcMain.handle(
-    'setSelectedSetId',
-    (event: IpcMainInvokeEvent, selectedSetId: number) => {
-      setSelectedSetId(selectedSetId);
-    },
-  );
 
   ipcMain.removeHandler('getSelectedSetChain');
   ipcMain.handle('getSelectedSetChain', getSelectedSetChain);
@@ -480,6 +474,20 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
+  ipcMain.removeHandler('getCurrentChallongeTournaments');
+  ipcMain.handle('getCurrentChallongeTournaments', getCurrentTournaments);
+
+  ipcMain.removeHandler('getSelectedChallongeTournament');
+  ipcMain.handle('getSelectedChallongeTournament', getSelectedTournament);
+
+  ipcMain.removeHandler('setSelectedChallongeTournament');
+  ipcMain.handle(
+    'setSelectedChallongeTournament',
+    (event: IpcMainInvokeEvent, slug: string) => {
+      setSelectedTournament(slug);
+    },
+  );
+
   ipcMain.removeHandler('getChallongeTournament');
   ipcMain.handle(
     'getChallongeTournament',
@@ -530,6 +538,29 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     }
     return [];
   });
+
+  ipcMain.removeHandler('getSelectedSet');
+  ipcMain.handle('getSelectedSet', () => {
+    if (mode === Mode.STARTGG) {
+      return getSelectedSet();
+    }
+    if (mode === Mode.CHALLONGE) {
+      return getSelectedChallongeSet();
+    }
+    return undefined;
+  });
+
+  ipcMain.removeHandler('setSelectedSetId');
+  ipcMain.handle(
+    'setSelectedSetId',
+    (event: IpcMainInvokeEvent, selectedSetId: number) => {
+      if (mode === Mode.STARTGG) {
+        setSelectedSetId(selectedSetId);
+      } else if (mode === Mode.CHALLONGE) {
+        setSelectedChallongeSetId(selectedSetId);
+      }
+    },
+  );
 
   ipcMain.removeHandler('getAutoDetectUsb');
   ipcMain.handle('getAutoDetectUsb', () => autoDetectUsb);

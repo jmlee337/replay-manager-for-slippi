@@ -192,6 +192,11 @@ function Hello() {
     name: '',
     events: [],
   });
+  const [challongeTournaments, setChallongeTournaments] = useState(
+    new Map<string, ChallongeTournament>(),
+  );
+  const [selectedChallongeTournament, setSelectedChallongeTournament] =
+    useState({ name: '', slug: '' });
   useEffect(() => {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
@@ -214,6 +219,10 @@ function Hello() {
       const tournamentPromise = window.electron.getCurrentTournament();
       const selectedSetPromise = window.electron.getSelectedSet();
       const selectedSetChainPromise = window.electron.getSelectedSetChain();
+      const challongeTournamentsPromise =
+        window.electron.getCurrentChallongeTournaments();
+      const selectedChallongeTournamentPromise =
+        window.electron.getSelectedChallongeTournament();
 
       // req network
       const latestAppVersionPromise = window.electron.getLatestVersion();
@@ -259,6 +268,12 @@ function Hello() {
           phaseGroupId: phaseGroup.id,
           phaseGroupName: phaseGroup.name,
         });
+      }
+      setChallongeTournaments(await challongeTournamentsPromise);
+      const initSelectedChallongeTournament =
+        await selectedChallongeTournamentPromise;
+      if (initSelectedChallongeTournament) {
+        setSelectedChallongeTournament(initSelectedChallongeTournament);
       }
 
       // req network
@@ -424,9 +439,6 @@ function Hello() {
     setGettingReplays(false);
   };
 
-  const [challongeTournaments, setChallongeTournaments] = useState(
-    new Map<string, ChallongeTournament>(),
-  );
   const [manualNames, setManualNames] = useState<string[]>([]);
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
 
@@ -888,8 +900,6 @@ function Hello() {
   };
 
   // set controls
-  const [selectedChallongeTournament, setSelectedChallongeTournament] =
-    useState({ name: '', slug: '' });
   const selectSet = (set: Set) => {
     const newOverrides = [
       { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
@@ -929,7 +939,7 @@ function Hello() {
     });
     await window.electron.setSelectedSetChain(eventId, phaseId, phaseGroupId);
   };
-  const selectChallongeSet = (
+  const selectChallongeSet = async (
     set: Set,
     selectedTournament: ChallongeTournament,
   ) => {
@@ -938,6 +948,9 @@ function Hello() {
       name: selectedTournament.name,
       slug: selectedTournament.slug,
     });
+    await window.electron.setSelectedChallongeTournament(
+      selectedTournament.slug,
+    );
   };
 
   const [startingSet, setStartingSet] = useState(false);
@@ -2006,6 +2019,7 @@ function Hello() {
           setSelectedSetChain(EMPTY_SELECTED_SET_CHAIN);
           setSelectedChallongeTournament({ name: '', slug: '' });
           await window.electron.setSelectedSetChain(0, 0, 0);
+          await window.electron.setSelectedChallongeTournament('');
         }}
         startggApiKey={startggApiKey}
         setStartggApiKey={setStartggApiKey}
