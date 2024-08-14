@@ -121,6 +121,9 @@ const electronHandler = {
   ): Promise<Set> => ipcRenderer.invoke('reportChallongeSet', slug, id, items),
   getTournaments: (): Promise<AdminedTournament[]> =>
     ipcRenderer.invoke('getTournaments'),
+  getManualNames: (): Promise<string[]> => ipcRenderer.invoke('getManualNames'),
+  setManualNames: (names: string[]): Promise<void> =>
+    ipcRenderer.invoke('setManualNames', names),
   getAutoDetectUsb: (): Promise<boolean> =>
     ipcRenderer.invoke('getAutoDetectUsb'),
   setAutoDetectUsb: (autoDetectUsb: boolean): Promise<void> =>

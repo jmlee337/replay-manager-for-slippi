@@ -562,6 +562,21 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
+  let manualNames = store.has('manualNames')
+    ? (store.get('manualNames') as string[])
+    : [];
+  ipcMain.removeHandler('getManualNames');
+  ipcMain.handle('getManualNames', () => manualNames);
+
+  ipcMain.removeHandler('setManualNames');
+  ipcMain.handle(
+    'setManualNames',
+    (event: IpcMainInvokeEvent, newManualNames: string[]) => {
+      store.set('manualNames', newManualNames);
+      manualNames = newManualNames;
+    },
+  );
+
   ipcMain.removeHandler('getAutoDetectUsb');
   ipcMain.handle('getAutoDetectUsb', () => autoDetectUsb);
 

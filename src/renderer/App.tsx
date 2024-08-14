@@ -197,6 +197,7 @@ function Hello() {
   );
   const [selectedChallongeTournament, setSelectedChallongeTournament] =
     useState({ name: '', slug: '' });
+  const [manualNames, setManualNames] = useState<string[]>([]);
   useEffect(() => {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
@@ -223,6 +224,7 @@ function Hello() {
         window.electron.getCurrentChallongeTournaments();
       const selectedChallongeTournamentPromise =
         window.electron.getSelectedChallongeTournament();
+      const manualNamesPromise = window.electron.getManualNames();
 
       // req network
       const latestAppVersionPromise = window.electron.getLatestVersion();
@@ -275,6 +277,7 @@ function Hello() {
       if (initSelectedChallongeTournament) {
         setSelectedChallongeTournament(initSelectedChallongeTournament);
       }
+      setManualNames(await manualNamesPromise);
 
       // req network
       const errorMessages: string[] = [];
@@ -439,7 +442,10 @@ function Hello() {
     setGettingReplays(false);
   };
 
-  const [manualNames, setManualNames] = useState<string[]>([]);
+  const setManualNamesOuter = async (names: string[]) => {
+    setManualNames(names);
+    await window.electron.setManualNames(names);
+  };
   const [manualDialogOpen, setManualDialogOpen] = useState(false);
 
   const [guideState, setGuideState] = useState(GuideState.NONE);
@@ -1555,7 +1561,7 @@ function Hello() {
                 manualDialogOpen={manualDialogOpen}
                 setManualDialogOpen={setManualDialogOpen}
                 manualNames={manualNames}
-                setManualNames={setManualNames}
+                setManualNames={setManualNamesOuter}
               />
             )}
           </AppBarSection>
@@ -1765,7 +1771,7 @@ function Hello() {
                 getStartggTournament={getTournament}
                 getChallongeTournament={getChallongeTournament}
                 manualNames={manualNames}
-                setManualNames={setManualNames}
+                setManualNames={setManualNamesOuter}
                 copyDir={copyDir}
                 setCopyDir={setCopyDir}
                 confirmedCopySettings={confirmedCopySettings}

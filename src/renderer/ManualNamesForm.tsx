@@ -21,7 +21,7 @@ export default function ManualNamesForm({
 }: {
   close: () => void;
   manualNames: string[];
-  setManualNames: (manualNames: string[]) => void;
+  setManualNames: (manualNames: string[]) => Promise<void>;
 }) {
   return (
     <>
@@ -35,7 +35,7 @@ export default function ManualNamesForm({
           event.preventDefault();
           event.stopPropagation();
           if (rawNames) {
-            setManualNames(rawNames.split('\n'));
+            await setManualNames(rawNames.split('\n'));
             close();
           }
         }}

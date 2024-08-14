@@ -52,7 +52,7 @@ export default function GuidedDialog({
   ) => Promise<boolean>;
   getChallongeTournament: (maybeSlug: string) => Promise<void>;
   manualNames: string[];
-  setManualNames: (manualNames: string[]) => void;
+  setManualNames: (manualNames: string[]) => Promise<void>;
   copyDir: string;
   setCopyDir: (copyDir: string) => void;
   confirmedCopySettings: boolean;

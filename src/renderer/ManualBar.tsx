@@ -11,7 +11,7 @@ export default function ManualBar({
   manualDialogOpen: boolean;
   setManualDialogOpen: (newManualDialogOpen: boolean) => void;
   manualNames: string[];
-  setManualNames: (newManualNames: string[]) => void;
+  setManualNames: (newManualNames: string[]) => Promise<void>;
 }) {
   return (
     <Stack direction="row">
