@@ -714,15 +714,16 @@ const REPORT_BRACKET_SET_MUTATION = `
     reportBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {${GQL_SET_INNER}}
   }
 `;
-export async function reportSet(key: string, set: StartggSet): Promise<Set[]> {
+export async function reportSet(key: string, set: StartggSet) {
   const data = await fetchGql(key, REPORT_BRACKET_SET_MUTATION, set);
   reportedSetIds.set(set.setId, true);
-  return data.reportBracketSet
+  const updatedSets = (data.reportBracketSet as any[])
     .filter(
       (bracketSet: any) =>
         bracketSet.slots[0].entrant && bracketSet.slots[1].entrant,
     )
     .map(gqlSetToSet);
+  return new Map(updatedSets.map((updatedSet) => [updatedSet.id, updatedSet]));
 }
 
 const UPDATE_BRACKET_SET_MUTATION = `

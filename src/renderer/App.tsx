@@ -945,11 +945,7 @@ function Hello() {
     setStartingSet(true);
     try {
       if (mode === Mode.STARTGG) {
-        const updatedSet = await window.electron.startSet(setId);
-        await getPhaseGroup(
-          selectedSetChain.phaseGroupId,
-          new Map([[updatedSet.id, updatedSet]]),
-        );
+        await window.electron.startSet(setId);
       } else if (mode === Mode.CHALLONGE) {
         const updatedSet = await window.electron.startChallongeSet(
           selectedChallongeTournament.slug,
@@ -968,18 +964,11 @@ function Hello() {
   };
 
   const reportStartggSet = async (set: StartggSet, update: boolean) => {
-    const updatedSets = new Map<number, Set>();
-    if (update) {
-      const updatedSet = await window.electron.updateSet(set);
-      updatedSets.set(updatedSet.id, updatedSet);
-    } else {
-      (await window.electron.reportSet(set)).forEach((updatedSet) => {
-        updatedSets.set(updatedSet.id, updatedSet);
-      });
-    }
-    await getPhaseGroup(selectedSetChain.phaseGroupId, updatedSets);
+    const updatedSet = update
+      ? await window.electron.updateSet(set)
+      : await window.electron.reportSet(set);
     resetDq();
-    return updatedSets.get(set.setId);
+    return updatedSet;
   };
   const reportChallongeSet = async (
     matchId: number,

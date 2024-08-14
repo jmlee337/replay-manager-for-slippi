@@ -332,24 +332,45 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('startSet');
   ipcMain.handle(
     'startSet',
-    async (event: IpcMainInvokeEvent, setId: number): Promise<Set> => {
+    async (event: IpcMainInvokeEvent, setId: number) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      return startSet(sggApiKey, setId);
+      const updatedSet = await startSet(sggApiKey, setId);
+      await getPhaseGroup(
+        sggApiKey,
+        getSelectedSetChain().phaseGroup!.id,
+        new Map([[updatedSet.id, updatedSet]]),
+      );
+      mainWindow.webContents.send(
+        'startggTournament',
+        getSelectedSet(),
+        getCurrentTournament(),
+      );
     },
   );
 
   ipcMain.removeHandler('reportSet');
   ipcMain.handle(
     'reportSet',
-    async (event: IpcMainInvokeEvent, set: StartggSet): Promise<Set[]> => {
+    async (event: IpcMainInvokeEvent, set: StartggSet): Promise<Set> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      return reportSet(sggApiKey, set);
+      const updatedSets = await reportSet(sggApiKey, set);
+      await getPhaseGroup(
+        sggApiKey,
+        getSelectedSetChain().phaseGroup!.id,
+        updatedSets,
+      );
+      mainWindow.webContents.send(
+        'startggTournament',
+        getSelectedSet(),
+        getCurrentTournament(),
+      );
+      return updatedSets.get(set.setId)!;
     },
   );
 
@@ -361,7 +382,18 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         throw new Error('Please set start.gg API key');
       }
 
-      return updateSet(sggApiKey, set);
+      const updatedSet = await updateSet(sggApiKey, set);
+      await getPhaseGroup(
+        sggApiKey,
+        getSelectedSetChain().phaseGroup!.id,
+        new Map([[updatedSet.id, updatedSet]]),
+      );
+      mainWindow.webContents.send(
+        'startggTournament',
+        getSelectedSet(),
+        getCurrentTournament(),
+      );
+      return updatedSet;
     },
   );
 
