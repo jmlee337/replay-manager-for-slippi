@@ -22,6 +22,8 @@ const phaseIdToPhaseGroupIds = new Map<number, number[]>();
 const idToPhaseGroup = new Map<number, PhaseGroup>();
 const phaseGroupIdToEntrants = new Map<number, Entrant[]>();
 const phaseGroupIdToSets = new Map<number, Sets>();
+const idToSet = new Map<number, Set>();
+let selectedSetId = 0;
 export function getCurrentTournament() {
   if (!currentTournament) {
     return undefined;
@@ -51,6 +53,18 @@ export function getCurrentTournament() {
     });
   tournament.events = events;
   return tournament;
+}
+
+export function getSelectedSet() {
+  if (!selectedSetId) {
+    return undefined;
+  }
+
+  return idToSet.get(selectedSetId);
+}
+
+export function setSelectedSetId(id: number) {
+  selectedSetId = id;
 }
 
 async function wrappedFetch(
@@ -148,181 +162,6 @@ function getDomain(streamSource: number) {
 
 const playerIdToPronouns = new Map<number, string>();
 const idToStream = new Map<number, Stream>();
-const TOURNAMENT_PARTICIPANTS_QUERY = `
-  query TournamentParticipantsQuery($slug: String, $eventIds: [ID], $page: Int) {
-    tournament(slug: $slug) {
-      participants(query: {page: $page, perPage: 499, filter: {eventIds: $eventIds}}) {
-        pageInfo {
-          totalPages
-        }
-        nodes {
-          player {
-            id
-            user {
-              genderPronoun
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-export async function getTournament(
-  key: string,
-  slug: string,
-): Promise<Tournament> {
-  const response = await wrappedFetch(
-    `https://api.smash.gg/tournament/${slug}?expand[]=event`,
-  );
-  const json = await response.json();
-  const { id, name } = json.entities.tournament;
-  const streamsPromise = wrappedFetch(
-    `https://api.smash.gg/station_queue/${id}`,
-  );
-  const events: Event[] = [];
-  const eventIds: number[] = [];
-  (json.entities.event as Array<any>)
-    .filter((event: any) => {
-      const isMelee = event.videogameId === 1;
-      const isSinglesOrDoubles =
-        event.teamRosterSize === null ||
-        (event.teamRosterSize.minPlayers === 2 &&
-          event.teamRosterSize.maxPlayers === 2);
-      return isMelee && isSinglesOrDoubles;
-    })
-    .forEach((event: any) => {
-      const newEvent: Event = {
-        id: event.id,
-        name: event.name,
-        slug: event.slug,
-        isOnline: event.isOnline,
-        state: event.state,
-        phases: [],
-      };
-      events.push(newEvent);
-      eventIds.push(event.id);
-      idToEvent.set(event.id, newEvent);
-    });
-
-  let nextData;
-  let page = 1;
-  do {
-    // eslint-disable-next-line no-await-in-loop
-    nextData = await fetchGql(key, TOURNAMENT_PARTICIPANTS_QUERY, {
-      page,
-      slug,
-      eventIds: events.map((event) => event.id),
-    });
-    const { nodes } = nextData.tournament.participants;
-    if (Array.isArray(nodes)) {
-      nodes.forEach((participant) => {
-        playerIdToPronouns.set(
-          participant.player.id,
-          participant.player.user?.genderPronoun || '',
-        );
-      });
-    }
-    page += 1;
-  } while (page <= nextData.tournament.participants.pageInfo.totalPages);
-
-  const streamsResponse = await streamsPromise;
-  const streamsJson = await streamsResponse.json();
-  const streams = streamsJson.data?.entities?.stream;
-  if (Array.isArray(streams)) {
-    streams.forEach((stream) => {
-      idToStream.set(stream.id, {
-        domain: getDomain(stream.streamSource),
-        path: stream.streamName,
-      });
-    });
-  }
-
-  currentTournament = { name, slug, events: [] };
-  tournamentSlugToEventIds.set(slug, eventIds);
-  return { name, slug, events };
-}
-
-export async function getEvent(id: number): Promise<Event> {
-  const response = await wrappedFetch(
-    `https://api.smash.gg/event/${id}?expand[]=phase`,
-  );
-  const json = await response.json();
-  const phases: Phase[] = [];
-  const phaseIds: number[] = [];
-  (json.entities.phase as Array<any>).forEach((phase) => {
-    const newPhase: Phase = {
-      id: phase.id,
-      name: phase.name,
-      phaseGroups: [],
-      state: phase.state,
-    };
-    phases.push(newPhase);
-    phaseIds.push(phase.id);
-    idToPhase.set(phase.id, newPhase);
-  });
-  const { event } = json.entities;
-  idToEvent.set(id, {
-    id: event.id,
-    name: event.name,
-    slug: event.slug,
-    isOnline: event.isOnline,
-    state: event.state,
-    phases: [],
-  });
-  eventIdToPhaseIds.set(id, phaseIds);
-  return {
-    id: event.id,
-    name: event.name,
-    slug: event.slug,
-    isOnline: event.isOnline,
-    state: event.state,
-    phases,
-  };
-}
-
-export async function getPhase(id: number): Promise<Phase> {
-  const response = await wrappedFetch(
-    `https://api.smash.gg/phase/${id}?expand[]=groups`,
-  );
-  const json = await response.json();
-  const phaseGroups: PhaseGroup[] = [];
-  const phaseGroupIds: number[] = [];
-  (json.entities.groups as Array<any>)
-    .sort((groupA, groupB) =>
-      groupA.displayIdentifier.localeCompare(groupB.displayIdentifier),
-    )
-    .forEach((group) => {
-      const newPhaseGroup: PhaseGroup = {
-        id: group.id,
-        bracketType: group.groupTypeId,
-        entrants: [],
-        name: group.displayIdentifier,
-        sets: {
-          pendingSets: [],
-          completedSets: [],
-        },
-        state: group.state,
-      };
-      phaseGroups.push(newPhaseGroup);
-      phaseGroupIds.push(group.id);
-      idToPhaseGroup.set(group.id, newPhaseGroup);
-    });
-  const { phase } = json.entities;
-  idToPhase.set(id, {
-    id: phase.id,
-    name: phase.name,
-    state: phase.state,
-    phaseGroups: [],
-  });
-  phaseIdToPhaseGroupIds.set(id, phaseGroupIds);
-  return {
-    id: phase.id,
-    name: phase.name,
-    state: phase.state,
-    phaseGroups,
-  };
-}
-
 const reportedSetIds = new Map<number, boolean>();
 const setIdToOrdinal = new Map<number, number | null>();
 
@@ -483,6 +322,7 @@ export async function getPhaseGroup(
       } else {
         pendingSets.push(newSet);
       }
+      idToSet.set(newSet.id, newSet);
     });
 
     if (missingStreamSets.length > 0) {
@@ -532,6 +372,227 @@ export async function getPhaseGroup(
     state,
     sets: { completedSets, pendingSets },
   };
+}
+
+export async function getPhase(key: string, id: number, recursive: boolean) {
+  const response = await wrappedFetch(
+    `https://api.smash.gg/phase/${id}?expand[]=groups`,
+  );
+  const json = await response.json();
+  const phaseGroups: PhaseGroup[] = [];
+  const phaseGroupIds: number[] = [];
+  (json.entities.groups as Array<any>)
+    .sort((groupA, groupB) =>
+      groupA.displayIdentifier.localeCompare(groupB.displayIdentifier),
+    )
+    .forEach((group) => {
+      const newPhaseGroup: PhaseGroup = {
+        id: group.id,
+        bracketType: group.groupTypeId,
+        entrants: [],
+        name: group.displayIdentifier,
+        sets: {
+          pendingSets: [],
+          completedSets: [],
+        },
+        state: group.state,
+      };
+      phaseGroups.push(newPhaseGroup);
+      phaseGroupIds.push(group.id);
+      idToPhaseGroup.set(group.id, newPhaseGroup);
+    });
+  const { phase } = json.entities;
+  idToPhase.set(id, {
+    id: phase.id,
+    name: phase.name,
+    state: phase.state,
+    phaseGroups: [],
+  });
+  phaseIdToPhaseGroupIds.set(id, phaseGroupIds);
+
+  const phaseGroupIdsWithChildren = phaseGroupIds.filter((phaseGroupId) => {
+    const maybeSets = phaseGroupIdToSets.get(phaseGroupId);
+    return (
+      maybeSets &&
+      (maybeSets.completedSets.length > 0 || maybeSets.pendingSets.length > 0)
+    );
+  });
+  if (recursive) {
+    await Promise.all(
+      phaseGroupIds.map(async (phaseGroupId) =>
+        getPhaseGroup(key, phaseGroupId),
+      ),
+    );
+  } else if (phaseGroupIdsWithChildren.length > 0) {
+    await Promise.all(
+      phaseGroupIdsWithChildren.map(async (phaseGroupId) =>
+        getPhaseGroup(key, phaseGroupId),
+      ),
+    );
+  } else if (phaseGroupIds.length === 1) {
+    await getPhaseGroup(key, phaseGroupIds[0]);
+  }
+}
+
+export async function getEvent(key: string, id: number, recursive: boolean) {
+  const response = await wrappedFetch(
+    `https://api.smash.gg/event/${id}?expand[]=phase`,
+  );
+  const json = await response.json();
+  const phases: Phase[] = [];
+  const phaseIds: number[] = [];
+  (json.entities.phase as Array<any>).forEach((phase) => {
+    const newPhase: Phase = {
+      id: phase.id,
+      name: phase.name,
+      phaseGroups: [],
+      state: phase.state,
+    };
+    phases.push(newPhase);
+    phaseIds.push(phase.id);
+    idToPhase.set(phase.id, newPhase);
+  });
+  const { event } = json.entities;
+  idToEvent.set(id, {
+    id: event.id,
+    name: event.name,
+    slug: event.slug,
+    isOnline: event.isOnline,
+    state: event.state,
+    phases: [],
+  });
+  eventIdToPhaseIds.set(id, phaseIds);
+
+  const phaseIdsWithChildren = phaseIds.filter((phaseId) => {
+    const maybePhaseGroupIds = phaseIdToPhaseGroupIds.get(phaseId);
+    return maybePhaseGroupIds && maybePhaseGroupIds.length > 0;
+  });
+  if (recursive) {
+    await Promise.all(
+      phaseIds.map(async (phaseId) => getPhase(key, phaseId, recursive)),
+    );
+  } else if (phaseIdsWithChildren.length > 0) {
+    await Promise.all(
+      phaseIdsWithChildren.map(async (phaseId) =>
+        getPhase(key, phaseId, recursive),
+      ),
+    );
+  } else if (phaseIds.length === 1) {
+    await getPhase(key, phaseIds[0], recursive);
+  }
+}
+const TOURNAMENT_PARTICIPANTS_QUERY = `
+  query TournamentParticipantsQuery($slug: String, $eventIds: [ID], $page: Int) {
+    tournament(slug: $slug) {
+      participants(query: {page: $page, perPage: 499, filter: {eventIds: $eventIds}}) {
+        pageInfo {
+          totalPages
+        }
+        nodes {
+          player {
+            id
+            user {
+              genderPronoun
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+export async function getTournament(
+  key: string,
+  slug: string,
+  recursive: boolean,
+) {
+  const response = await wrappedFetch(
+    `https://api.smash.gg/tournament/${slug}?expand[]=event`,
+  );
+  const json = await response.json();
+  const { id, name } = json.entities.tournament;
+  const events: Event[] = [];
+  const eventIds: number[] = [];
+  (json.entities.event as Array<any>)
+    .filter((event: any) => {
+      const isMelee = event.videogameId === 1;
+      const isSinglesOrDoubles =
+        event.teamRosterSize === null ||
+        (event.teamRosterSize.minPlayers === 2 &&
+          event.teamRosterSize.maxPlayers === 2);
+      return isMelee && isSinglesOrDoubles;
+    })
+    .forEach((event: any) => {
+      const newEvent: Event = {
+        id: event.id,
+        name: event.name,
+        slug: event.slug,
+        isOnline: event.isOnline,
+        state: event.state,
+        phases: [],
+      };
+      events.push(newEvent);
+      eventIds.push(event.id);
+      idToEvent.set(event.id, newEvent);
+    });
+
+  const eventIdsWithChildren = eventIds.filter((eventId) => {
+    const maybePhaseIds = eventIdToPhaseIds.get(eventId);
+    return maybePhaseIds && maybePhaseIds.length > 0;
+  });
+
+  if (eventIdsWithChildren.length === 0) {
+    const streamsPromise = wrappedFetch(
+      `https://api.smash.gg/station_queue/${id}`,
+    );
+    let nextData;
+    let page = 1;
+    do {
+      // eslint-disable-next-line no-await-in-loop
+      nextData = await fetchGql(key, TOURNAMENT_PARTICIPANTS_QUERY, {
+        page,
+        slug,
+        eventIds: events.map((event) => event.id),
+      });
+      const { nodes } = nextData.tournament.participants;
+      if (Array.isArray(nodes)) {
+        nodes.forEach((participant) => {
+          playerIdToPronouns.set(
+            participant.player.id,
+            participant.player.user?.genderPronoun || '',
+          );
+        });
+      }
+      page += 1;
+    } while (page <= nextData.tournament.participants.pageInfo.totalPages);
+
+    const streamsResponse = await streamsPromise;
+    const streamsJson = await streamsResponse.json();
+    const streams = streamsJson.data?.entities?.stream;
+    if (Array.isArray(streams)) {
+      streams.forEach((stream) => {
+        idToStream.set(stream.id, {
+          domain: getDomain(stream.streamSource),
+          path: stream.streamName,
+        });
+      });
+    }
+  }
+
+  currentTournament = { name, slug, events: [] };
+  tournamentSlugToEventIds.set(slug, eventIds);
+  if (recursive) {
+    await Promise.all(
+      eventIds.map(async (eventId) => getEvent(key, eventId, recursive)),
+    );
+  } else if (eventIdsWithChildren.length > 0) {
+    await Promise.all(
+      eventIdsWithChildren.map(async (eventId) =>
+        getEvent(key, eventId, recursive),
+      ),
+    );
+  } else if (eventIds.length === 1) {
+    await getEvent(key, eventIds[0], recursive);
+  }
 }
 
 const GQL_SET_INNER = `

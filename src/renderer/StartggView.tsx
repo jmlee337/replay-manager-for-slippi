@@ -102,11 +102,7 @@ function PhaseGroupView({
   tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
-  getPhaseGroup: (
-    id: number,
-    phaseId: number,
-    eventId: number,
-  ) => Promise<void>;
+  getPhaseGroup: (id: number) => Promise<void>;
   selectSet: (set: Set) => void;
   showError: (error: string) => void;
 }) {
@@ -117,7 +113,7 @@ function PhaseGroupView({
 
   const get = async () => {
     setGetting(true);
-    await getPhaseGroup(phaseGroup.id, phaseId, eventId);
+    await getPhaseGroup(phaseGroup.id);
     setGetting(false);
   };
   const start = async () => {
@@ -305,12 +301,8 @@ function PhaseView({
   tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
-  getPhase: (id: number, eventId: number) => Promise<void>;
-  getPhaseGroup: (
-    id: number,
-    phaseId: number,
-    eventId: number,
-  ) => Promise<void>;
+  getPhase: (id: number) => Promise<void>;
+  getPhaseGroup: (id: number) => Promise<void>;
   selectSet: (set: Set, phaseGroupId: number, phaseGroupName: string) => void;
   showError: (error: string) => void;
 }) {
@@ -320,7 +312,7 @@ function PhaseView({
 
   const get = async () => {
     setGetting(true);
-    await getPhase(phase.id, eventId);
+    await getPhase(phase.id);
     setGetting(false);
   };
   const start = async () => {
@@ -445,12 +437,8 @@ function EventView({
   searchSubstr: string;
   vlerkMode: boolean;
   getEvent: (id: number) => Promise<void>;
-  getPhase: (id: number, eventId: number) => Promise<void>;
-  getPhaseGroup: (
-    id: number,
-    phaseId: number,
-    eventId: number,
-  ) => Promise<void>;
+  getPhase: (id: number) => Promise<void>;
+  getPhaseGroup: (id: number) => Promise<void>;
   selectSet: (
     set: Set,
     phaseGroupId: number,
@@ -606,12 +594,8 @@ export default function StartggView({
   tournament: Tournament;
   vlerkMode: boolean;
   getEvent: (id: number) => Promise<void>;
-  getPhase: (id: number, eventId: number) => Promise<void>;
-  getPhaseGroup: (
-    id: number,
-    phaseId: number,
-    eventId: number,
-  ) => Promise<void>;
+  getPhase: (id: number) => Promise<void>;
+  getPhaseGroup: (id: number) => Promise<void>;
   selectSet: (
     set: Set,
     phaseGroupId: number,

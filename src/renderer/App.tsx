@@ -39,13 +39,10 @@ import {
   ContextScore,
   ContextSlot,
   CopySettings,
-  Event,
   GuideState,
   InvalidReplay,
   Mode,
   Output,
-  Phase,
-  PhaseGroup,
   PlayerOverrides,
   Replay,
   ReportSettings,
@@ -185,6 +182,7 @@ function Hello() {
   const [dir, setDir] = useState('');
   const [dirInit, setDirInit] = useState(false);
   const [copyDir, setCopyDir] = useState('');
+  const [selectedSet, setSelectedSet] = useState<Set>(EMPTY_SET);
   const [slug, setSlug] = useState('');
   const [tournament, setTournament] = useState<Tournament>({
     slug: '',
@@ -211,6 +209,7 @@ function Hello() {
       const replaysDirPromise = window.electron.getReplaysDir();
       const copyDirPromise = window.electron.getCopyDir();
       const tournamentPromise = window.electron.getCurrentTournament();
+      const selectedSetPromise = window.electron.getSelectedSet();
 
       // req network
       const latestAppVersionPromise = window.electron.getLatestVersion();
@@ -239,6 +238,10 @@ function Hello() {
       if (currentTournament) {
         setSlug(currentTournament.slug);
         setTournament(currentTournament);
+      }
+      const initSelectedSet = await selectedSetPromise;
+      if (initSelectedSet) {
+        setSelectedSet(initSelectedSet);
       }
 
       // req network
@@ -528,7 +531,10 @@ function Hello() {
     resetDq();
   };
   useEffect(() => {
-    window.electron.onTournament((e, newTournament) => {
+    window.electron.onTournament((e, newSelectedSet, newTournament) => {
+      if (newSelectedSet) {
+        setSelectedSet(newSelectedSet);
+      }
       if (newTournament) {
         if (
           tournamentSet &&
@@ -541,8 +547,14 @@ function Hello() {
         }
         setTournament(newTournament);
       }
-    });
-  }, [confirmedCopySettings, copyDirSet, tournamentSet, tournamentStarted]);
+    }, selectedSet.id);
+  }, [
+    confirmedCopySettings,
+    copyDirSet,
+    selectedSet,
+    tournamentSet,
+    tournamentStarted,
+  ]);
   useEffect(() => {
     window.electron.onUsb((e, newDir) => {
       setDir(newDir);
@@ -551,7 +563,6 @@ function Hello() {
     });
   }, [refreshReplays]);
 
-  const [selectedSet, setSelectedSet] = useState<Set>(EMPTY_SET);
   const availablePlayers: PlayerOverrides[] = [];
   selectedSet.entrant1Participants.forEach((participant) => {
     availablePlayers.push({
@@ -618,51 +629,11 @@ function Hello() {
   };
 
   // start.gg tournament view
-  const getPhaseGroup = async (
-    id: number,
-    phaseId: number,
-    eventId: number,
-    isRoot: boolean,
-    updatedSets?: Map<number, Set>,
-  ) => {
-    const editEvent = tournament.events.find((event) => event.id === eventId);
-    if (!editEvent) {
-      return;
-    }
-
-    let newPhaseGroup;
+  const getPhaseGroup = async (id: number, updatedSets?: Map<number, Set>) => {
     try {
-      newPhaseGroup = await window.electron.getPhaseGroup(id, updatedSets);
+      await window.electron.getPhaseGroup(id, updatedSets);
     } catch (e: any) {
       showErrorDialog([e.toString()]);
-      return;
-    }
-
-    const editPhase = editEvent.phases.find((phase) => phase.id === phaseId);
-    if (!editPhase) {
-      return;
-    }
-
-    const editPhaseGroup = editPhase.phaseGroups.find(
-      (phaseGroup) => phaseGroup.id === id,
-    );
-    if (editPhaseGroup) {
-      Object.assign(editPhaseGroup, newPhaseGroup);
-      if (selectedSet.id > 0) {
-        const updatedSelectedSet =
-          newPhaseGroup.sets.completedSets.find(
-            (set) => set.id === selectedSet.id,
-          ) ||
-          newPhaseGroup.sets.pendingSets.find(
-            (set) => set.id === selectedSet.id,
-          );
-        if (updatedSelectedSet) {
-          setSelectedSet(updatedSelectedSet);
-        }
-      }
-      if (isRoot) {
-        setTournament({ ...tournament });
-      }
     }
   };
 
@@ -861,125 +832,19 @@ function Hello() {
     );
   };
 
-  const getPhase = async (
-    id: number,
-    eventId: number,
-    isRoot: boolean,
-    fullyRecursive: boolean = false,
-  ) => {
-    let newPhase;
+  const getPhase = async (id: number, recursive: boolean = false) => {
     try {
-      newPhase = await window.electron.getPhase(id);
+      await window.electron.getPhase(id, recursive);
     } catch (e: any) {
       showErrorDialog([e.toString()]);
-      return;
-    }
-
-    const editEvent = tournament.events.find((event) => event.id === eventId);
-    if (!editEvent) {
-      return;
-    }
-
-    const editPhase = editEvent.phases.find((phase) => phase.id === id);
-    if (editPhase) {
-      if (editPhase.phaseGroups.length > 0) {
-        const phaseGroupsMap = new Map<number, PhaseGroup>();
-        editPhase.phaseGroups.forEach((phaseGroup) => {
-          phaseGroupsMap.set(phaseGroup.id, phaseGroup);
-        });
-        newPhase.phaseGroups.forEach((phaseGroup) => {
-          const existingPhaseGroup = phaseGroupsMap.get(phaseGroup.id);
-          if (existingPhaseGroup) {
-            phaseGroup.entrants = existingPhaseGroup.entrants;
-            phaseGroup.sets = existingPhaseGroup.sets;
-          }
-        });
-      }
-      Object.assign(editPhase, newPhase);
-      const phaseGroupsWithChildren = newPhase.phaseGroups.filter(
-        (phaseGroup) =>
-          phaseGroup.sets.completedSets.length > 0 ||
-          phaseGroup.sets.pendingSets.length > 0,
-      );
-      if (fullyRecursive) {
-        await Promise.all(
-          newPhase.phaseGroups.map(async (phaseGroup) =>
-            getPhaseGroup(phaseGroup.id, id, eventId, false),
-          ),
-        );
-      } else if (phaseGroupsWithChildren.length > 0) {
-        await Promise.all(
-          phaseGroupsWithChildren.map(async (phaseGroup) =>
-            getPhaseGroup(phaseGroup.id, id, eventId, false),
-          ),
-        );
-      } else if (newPhase.phaseGroups.length === 1) {
-        await getPhaseGroup(newPhase.phaseGroups[0].id, id, eventId, false);
-      }
-      if (isRoot) {
-        setTournament({ ...tournament });
-      }
     }
   };
 
-  const getEvent = async (
-    id: number,
-    isRoot: boolean,
-    fullyRecursive: boolean = false,
-  ) => {
-    let newEvent;
+  const getEvent = async (id: number, recursive: boolean = false) => {
     try {
-      newEvent = await window.electron.getEvent(id);
+      await window.electron.getEvent(id, recursive);
     } catch (e: any) {
       showErrorDialog([e.toString()]);
-      return;
-    }
-
-    const editEvent = tournament.events.find((event) => event.id === id);
-    if (editEvent) {
-      if (editEvent.phases.length > 0) {
-        const phasesMap = new Map<number, Phase>();
-        editEvent.phases.forEach((phase) => {
-          phasesMap.set(phase.id, phase);
-        });
-        newEvent.phases.forEach((phase) => {
-          const existingPhase = phasesMap.get(phase.id);
-          if (existingPhase) {
-            phase.phaseGroups = existingPhase.phaseGroups;
-          }
-        });
-      }
-      Object.assign(editEvent, newEvent);
-      const phasesWithChildren = newEvent.phases.filter(
-        (phase) => phase.phaseGroups.length > 0,
-      );
-      if (fullyRecursive) {
-        await Promise.all(
-          newEvent.phases.map(async (phase) =>
-            getPhase(phase.id, id, false, true),
-          ),
-        );
-      } else if (phasesWithChildren.length > 0) {
-        await Promise.all(
-          phasesWithChildren.map(async (phase) =>
-            getPhase(phase.id, id, false),
-          ),
-        );
-      } else if (newEvent.phases.length === 1) {
-        await getPhase(newEvent.phases[0].id, id, false);
-      }
-      if (
-        newEvent.state !== State.PENDING &&
-        tournamentSet &&
-        copyDirSet &&
-        confirmedCopySettings &&
-        !tournamentStarted
-      ) {
-        setGuideBackdropOpen(false);
-      }
-      if (isRoot) {
-        setTournament({ ...tournament });
-      }
     }
   };
 
@@ -988,50 +853,16 @@ function Hello() {
       return false;
     }
 
-    let newTournament;
     setGettingTournament(true);
     try {
-      newTournament = await window.electron.getTournament(maybeSlug);
+      await window.electron.getTournament(maybeSlug, initial && vlerkMode);
+      return true;
     } catch (e: any) {
       showErrorDialog([e.toString()]);
-      setGettingTournament(false);
       return false;
+    } finally {
+      setGettingTournament(false);
     }
-
-    if (tournament.slug === maybeSlug && tournament.events.length > 0) {
-      const eventsMap = new Map<number, Event>();
-      tournament.events.forEach((event) => {
-        eventsMap.set(event.id, event);
-      });
-      newTournament.events.forEach((event) => {
-        const existingEvent = eventsMap.get(event.id);
-        if (existingEvent) {
-          event.phases = existingEvent.phases;
-        }
-      });
-    }
-    tournament.events = newTournament.events;
-    tournament.name = newTournament.name;
-    tournament.slug = maybeSlug;
-    const eventsWithChildren = newTournament.events.filter(
-      (event) => event.phases.length > 0,
-    );
-    if (initial && vlerkMode) {
-      await Promise.all(
-        newTournament.events.map(async (event) =>
-          getEvent(event.id, false, true),
-        ),
-      );
-    } else if (eventsWithChildren.length > 0) {
-      await Promise.all(
-        eventsWithChildren.map(async (event) => getEvent(event.id, false)),
-      );
-    } else if (newTournament.events.length === 1) {
-      await getEvent(newTournament.events[0].id, false);
-    }
-    setTournament(tournament);
-    setGettingTournament(false);
-    return true;
   };
 
   // set controls
@@ -1097,9 +928,6 @@ function Hello() {
         const updatedSet = await window.electron.startSet(setId);
         await getPhaseGroup(
           selectedSetChain.phaseGroupId,
-          selectedSetChain.phaseId,
-          selectedSetChain.eventId,
-          true,
           new Map([[updatedSet.id, updatedSet]]),
         );
       } else if (mode === Mode.CHALLONGE) {
@@ -1129,13 +957,7 @@ function Hello() {
         updatedSets.set(updatedSet.id, updatedSet);
       });
     }
-    await getPhaseGroup(
-      selectedSetChain.phaseGroupId,
-      selectedSetChain.phaseId,
-      selectedSetChain.eventId,
-      true,
-      updatedSets,
-    );
+    await getPhaseGroup(selectedSetChain.phaseGroupId, updatedSets);
     resetDq();
     return updatedSets.get(set.setId);
   };
@@ -1811,13 +1633,9 @@ function Hello() {
               searchSubstr={searchSubstr}
               tournament={tournament}
               vlerkMode={vlerkMode}
-              getEvent={(id: number) => getEvent(id, true)}
-              getPhase={(id: number, eventId: number) =>
-                getPhase(id, eventId, true)
-              }
-              getPhaseGroup={(id: number, phaseId: number, eventId: number) =>
-                getPhaseGroup(id, phaseId, eventId, true)
-              }
+              getEvent={(id: number) => getEvent(id)}
+              getPhase={(id: number) => getPhase(id)}
+              getPhaseGroup={(id: number) => getPhaseGroup(id)}
               selectSet={(
                 set: Set,
                 phaseGroupId: number,

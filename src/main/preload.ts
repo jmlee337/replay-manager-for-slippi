@@ -6,12 +6,9 @@ import {
   Context,
   CopySettings,
   EnforceResult,
-  Event,
   InvalidReplay,
   Mode,
   Output,
-  Phase,
-  PhaseGroup,
   Replay,
   ReportSettings,
   Set,
@@ -55,14 +52,15 @@ const electronHandler = {
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
   getCurrentTournament: (): Promise<Tournament | undefined> =>
     ipcRenderer.invoke('getCurrentTournament'),
-  getTournament: (slug: string): Promise<Tournament> =>
-    ipcRenderer.invoke('getTournament', slug),
-  getEvent: (id: number): Promise<Event> => ipcRenderer.invoke('getEvent', id),
-  getPhase: (id: number): Promise<Phase> => ipcRenderer.invoke('getPhase', id),
-  getPhaseGroup: (
-    id: number,
-    updatedSets?: Map<number, Set>,
-  ): Promise<PhaseGroup> =>
+  getSelectedSet: (): Promise<Set | undefined> =>
+    ipcRenderer.invoke('getSelectedSet'),
+  getTournament: (slug: string, recursive: boolean): Promise<void> =>
+    ipcRenderer.invoke('getTournament', slug, recursive),
+  getEvent: (id: number, recursive: boolean): Promise<void> =>
+    ipcRenderer.invoke('getEvent', id, recursive),
+  getPhase: (id: number, recursive: boolean): Promise<void> =>
+    ipcRenderer.invoke('getPhase', id, recursive),
+  getPhaseGroup: (id: number, updatedSets?: Map<number, Set>): Promise<void> =>
     ipcRenderer.invoke('getPhaseGroup', id, updatedSets),
   startSet: (id: number): Promise<Set> => ipcRenderer.invoke('startSet', id),
   reportSet: (set: StartggSet): Promise<Set[]> =>
@@ -146,11 +144,14 @@ const electronHandler = {
   onTournament: (
     callback: (
       event: IpcRendererEvent,
+      selectedSet: Set | undefined,
       tournament: Tournament | undefined,
     ) => void,
+    selectedSetId: number,
   ) => {
     ipcRenderer.removeAllListeners('startggTournament');
     ipcRenderer.on('startggTournament', callback);
+    ipcRenderer.invoke('setSelectedSetId', selectedSetId);
   },
   onUsb: (callback: (event: IpcRendererEvent, newDir: string) => void) => {
     ipcRenderer.removeAllListeners('usbstorage');
