@@ -399,7 +399,7 @@ export async function getPhase(key: string, id: number, recursive: boolean) {
   const json = await response.json();
   const phaseGroups: PhaseGroup[] = [];
   const phaseGroupIds: number[] = [];
-  (json.entities.groups as Array<any>)
+  (json.entities.groups as any[])
     .sort((groupA, groupB) =>
       groupA.displayIdentifier.localeCompare(groupB.displayIdentifier),
     )
@@ -459,7 +459,7 @@ export async function getEvent(key: string, id: number, recursive: boolean) {
   const json = await response.json();
   const phases: Phase[] = [];
   const phaseIds: number[] = [];
-  (json.entities.phase as Array<any>).forEach((phase) => {
+  (json.entities.phase as any[]).forEach((phase) => {
     const newPhase: Phase = {
       id: phase.id,
       name: phase.name,
@@ -530,7 +530,7 @@ export async function getTournament(
   const { id, name } = json.entities.tournament;
   const events: Event[] = [];
   const eventIds: number[] = [];
-  (json.entities.event as Array<any>)
+  (json.entities.event as any[])
     .filter((event: any) => {
       const isMelee = event.videogameId === 1;
       const isSinglesOrDoubles =

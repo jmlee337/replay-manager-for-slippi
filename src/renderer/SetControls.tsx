@@ -359,7 +359,9 @@ export default function SetControls({
                   }
                   setEnforcing(false);
                 })
-                .catch(() => {});
+                .catch(() => {
+                  setEnforcing(false);
+                });
             }
             setOpen(true);
           }}
