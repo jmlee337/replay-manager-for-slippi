@@ -107,12 +107,9 @@ const electronHandler = {
   > => ipcRenderer.invoke('getSelectedChallongeTournament'),
   setSelectedChallongeTournament: (slug: string): Promise<void> =>
     ipcRenderer.invoke('setSelectedChallongeTournament', slug),
-  getChallongeTournament: (
-    slug: string,
-    updatedSet?: Set,
-  ): Promise<ChallongeTournament> =>
-    ipcRenderer.invoke('getChallongeTournament', slug, updatedSet),
-  startChallongeSet: (slug: string, id: number): Promise<Set> =>
+  getChallongeTournament: (slug: string): Promise<void> =>
+    ipcRenderer.invoke('getChallongeTournament', slug),
+  startChallongeSet: (slug: string, id: number): Promise<void> =>
     ipcRenderer.invoke('startChallongeSet', slug, id),
   reportChallongeSet: (
     slug: string,
@@ -169,13 +166,16 @@ const electronHandler = {
   onTournament: (
     callback: (
       event: IpcRendererEvent,
-      selectedSet: Set | undefined,
-      tournament: Tournament | undefined,
+      data: {
+        selectedSet?: Set;
+        startggTournament?: Tournament;
+        challongeTournaments?: Map<string, ChallongeTournament>;
+      },
     ) => void,
     selectedSetId: number,
   ) => {
-    ipcRenderer.removeAllListeners('startggTournament');
-    ipcRenderer.on('startggTournament', callback);
+    ipcRenderer.removeAllListeners('tournament');
+    ipcRenderer.on('tournament', callback);
     ipcRenderer.invoke('setSelectedSetId', selectedSetId);
   },
   onUsb: (callback: (event: IpcRendererEvent, newDir: string) => void) => {

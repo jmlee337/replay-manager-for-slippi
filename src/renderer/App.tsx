@@ -566,23 +566,47 @@ function Hello() {
     resetDq();
   };
   useEffect(() => {
-    window.electron.onTournament((e, newSelectedSet, newTournament) => {
-      if (newSelectedSet) {
-        setSelectedSet(newSelectedSet);
-      }
-      if (newTournament) {
-        if (
-          tournamentSet &&
-          copyDirSet &&
-          confirmedCopySettings &&
-          !tournamentStarted &&
-          newTournament.events.some((event) => event.state !== State.PENDING)
-        ) {
-          setGuideBackdropOpen(false);
+    window.electron.onTournament(
+      (
+        e,
+        {
+          selectedSet: newSelectedSet,
+          startggTournament: newTournament,
+          challongeTournaments: newChallongeTournaments,
+        },
+      ) => {
+        if (newSelectedSet) {
+          setSelectedSet(newSelectedSet);
         }
-        setTournament(newTournament);
-      }
-    }, selectedSet.id);
+        if (newTournament) {
+          if (
+            tournamentSet &&
+            copyDirSet &&
+            confirmedCopySettings &&
+            !tournamentStarted &&
+            newTournament.events.some((event) => event.state !== State.PENDING)
+          ) {
+            setGuideBackdropOpen(false);
+          }
+          setTournament(newTournament);
+        }
+        if (newChallongeTournaments) {
+          if (
+            tournamentSet &&
+            copyDirSet &&
+            confirmedCopySettings &&
+            !tournamentStarted &&
+            Array.from(newChallongeTournaments.values()).some(
+              (ct) => ct.state !== State.PENDING,
+            )
+          ) {
+            setGuideBackdropOpen(false);
+          }
+          setChallongeTournaments(newChallongeTournaments);
+        }
+      },
+      selectedSet.id,
+    );
   }, [
     confirmedCopySettings,
     copyDirSet,
@@ -621,41 +645,14 @@ function Hello() {
   const [searchSubstr, setSearchSubstr] = useState('');
 
   // Challonge tournament view
-  const getChallongeTournament = async (
-    maybeSlug: string,
-    updatedSet?: Set,
-  ) => {
+  const getChallongeTournament = async (maybeSlug: string) => {
     if (!maybeSlug) {
       return;
     }
 
     setGettingTournament(true);
     try {
-      const updatedChallongeTournament =
-        await window.electron.getChallongeTournament(maybeSlug, updatedSet);
-      challongeTournaments.set(maybeSlug, updatedChallongeTournament);
-      if (
-        updatedChallongeTournament.state !== State.PENDING &&
-        tournamentSet &&
-        copyDirSet &&
-        confirmedCopySettings &&
-        !tournamentStarted
-      ) {
-        setGuideBackdropOpen(false);
-      }
-      setChallongeTournaments(new Map(challongeTournaments));
-      if (selectedSet.id > 0) {
-        const updatedSelectedSet =
-          updatedChallongeTournament.sets.completedSets.find(
-            (set) => set.id === selectedSet.id,
-          ) ||
-          updatedChallongeTournament.sets.pendingSets.find(
-            (set) => set.id === selectedSet.id,
-          );
-        if (updatedSelectedSet) {
-          setSelectedSet(updatedSelectedSet);
-        }
-      }
+      await window.electron.getChallongeTournament(maybeSlug);
     } catch (e: any) {
       showErrorDialog([e.toString()]);
     } finally {
@@ -966,13 +963,9 @@ function Hello() {
       if (mode === Mode.STARTGG) {
         await window.electron.startSet(setId);
       } else if (mode === Mode.CHALLONGE) {
-        const updatedSet = await window.electron.startChallongeSet(
+        await window.electron.startChallongeSet(
           selectedChallongeTournament.slug,
           setId,
-        );
-        await getChallongeTournament(
-          selectedChallongeTournament.slug,
-          updatedSet,
         );
       }
     } catch (e: any) {
@@ -993,14 +986,11 @@ function Hello() {
     matchId: number,
     items: ChallongeMatchItem[],
   ) => {
-    const reportSlug = selectedChallongeTournament.slug;
     const updatedSet = await window.electron.reportChallongeSet(
-      reportSlug,
+      selectedChallongeTournament.slug,
       matchId,
       items,
     );
-    setSelectedSet(updatedSet);
-    await getChallongeTournament(reportSlug, updatedSet);
     resetDq();
     return updatedSet;
   };

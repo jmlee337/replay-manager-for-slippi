@@ -260,11 +260,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       await getTournament(sggApiKey, slug, recursive);
-      mainWindow.webContents.send(
-        'startggTournament',
-        getSelectedSet(),
-        getCurrentTournament(),
-      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
     },
   );
 
@@ -277,11 +276,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       await getEvent(sggApiKey, id, recursive);
-      mainWindow.webContents.send(
-        'startggTournament',
-        getSelectedSet(),
-        getCurrentTournament(),
-      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
     },
   );
 
@@ -294,11 +292,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       await getPhase(sggApiKey, id, recursive);
-      mainWindow.webContents.send(
-        'startggTournament',
-        getSelectedSet(),
-        getCurrentTournament(),
-      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
     },
   );
 
@@ -315,11 +312,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       await getPhaseGroup(sggApiKey, id, updatedSets);
-      mainWindow.webContents.send(
-        'startggTournament',
-        getSelectedSet(),
-        getCurrentTournament(),
-      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
     },
   );
 
@@ -337,11 +333,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         getSelectedSetChain().phaseGroup!.id,
         new Map([[updatedSet.id, updatedSet]]),
       );
-      mainWindow.webContents.send(
-        'startggTournament',
-        getSelectedSet(),
-        getCurrentTournament(),
-      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
     },
   );
 
@@ -359,11 +354,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         getSelectedSetChain().phaseGroup!.id,
         updatedSets,
       );
-      mainWindow.webContents.send(
-        'startggTournament',
-        getSelectedSet(),
-        getCurrentTournament(),
-      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
       return updatedSets.get(set.setId)!;
     },
   );
@@ -382,11 +376,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         getSelectedSetChain().phaseGroup!.id,
         new Map([[updatedSet.id, updatedSet]]),
       );
-      mainWindow.webContents.send(
-        'startggTournament',
-        getSelectedSet(),
-        getCurrentTournament(),
-      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
       return updatedSet;
     },
   );
@@ -400,11 +393,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       await startEvent(sggApiKey, id);
-      mainWindow.webContents.send(
-        'startggTournament',
-        getSelectedSet(),
-        getCurrentTournament(),
-      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
     },
   );
 
@@ -417,11 +409,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       await startPhase(sggApiKey, id, eventId);
-      mainWindow.webContents.send(
-        'startggTournament',
-        getSelectedSet(),
-        getCurrentTournament(),
-      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
     },
   );
 
@@ -439,11 +430,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       await startPhaseGroup(sggApiKey, id, phaseId, eventId);
-      mainWindow.webContents.send(
-        'startggTournament',
-        getSelectedSet(),
-        getCurrentTournament(),
-      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
     },
   );
 
@@ -491,31 +481,40 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('getChallongeTournament');
   ipcMain.handle(
     'getChallongeTournament',
-    (event: IpcMainInvokeEvent, slug: string, updatedSet?: Set) => {
+    async (event: IpcMainInvokeEvent, slug: string, updatedSet?: Set) => {
       if (!challongeApiKey) {
         throw new Error('Please set Challonge API key.');
       }
 
-      return getChallongeTournament(challongeApiKey, slug, updatedSet);
+      await getChallongeTournament(challongeApiKey, slug, updatedSet);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedChallongeSet(),
+        challongeTournaments: getCurrentTournaments(),
+      });
     },
   );
 
   ipcMain.removeHandler('startChallongeSet');
   ipcMain.handle(
     'startChallongeSet',
-    (event: IpcMainInvokeEvent, slug: string, id: number) => {
+    async (event: IpcMainInvokeEvent, slug: string, id: number) => {
       if (!challongeApiKey) {
         throw new Error('Please set Challonge API key.');
       }
 
-      return startChallongeSet(slug, id, challongeApiKey);
+      const updatedSet = await startChallongeSet(slug, id, challongeApiKey);
+      await getChallongeTournament(challongeApiKey, slug, updatedSet);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedChallongeSet(),
+        challongeTournaments: getCurrentTournaments(),
+      });
     },
   );
 
   ipcMain.removeHandler('reportChallongeSet');
   ipcMain.handle(
     'reportChallongeSet',
-    (
+    async (
       event: IpcMainInvokeEvent,
       slug: string,
       id: number,
@@ -524,7 +523,19 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       if (!challongeApiKey) {
         throw new Error('Please set Challonge API key.');
       }
-      return reportChallongeSet(slug, id, items, challongeApiKey);
+
+      const updatedSet = await reportChallongeSet(
+        slug,
+        id,
+        items,
+        challongeApiKey,
+      );
+      await getChallongeTournament(challongeApiKey, slug, updatedSet);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedChallongeSet(),
+        challongeTournaments: getCurrentTournaments(),
+      });
+      return updatedSet;
     },
   );
 
