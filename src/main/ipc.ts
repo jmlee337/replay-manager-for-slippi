@@ -37,6 +37,8 @@ import {
   getCurrentTournament,
   getSelectedSet,
   setSelectedSetId,
+  getSelectedSetChain,
+  setSelectedSetChain,
 } from './startgg';
 import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
 import {
@@ -234,8 +236,24 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('setSelectedSetId');
   ipcMain.handle(
     'setSelectedSetId',
-    async (event: IpcMainInvokeEvent, selectedSetId: number) => {
+    (event: IpcMainInvokeEvent, selectedSetId: number) => {
       setSelectedSetId(selectedSetId);
+    },
+  );
+
+  ipcMain.removeHandler('getSelectedSetChain');
+  ipcMain.handle('getSelectedSetChain', getSelectedSetChain);
+
+  ipcMain.removeHandler('setSelectedSetChain');
+  ipcMain.handle(
+    'setSelectedSetChain',
+    (
+      event: IpcMainInvokeEvent,
+      eventId: number,
+      phaseId: number,
+      phaseGroupId: number,
+    ) => {
+      setSelectedSetChain(eventId, phaseId, phaseGroupId);
     },
   );
 

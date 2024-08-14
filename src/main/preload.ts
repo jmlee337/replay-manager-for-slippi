@@ -6,9 +6,12 @@ import {
   Context,
   CopySettings,
   EnforceResult,
+  Event,
   InvalidReplay,
   Mode,
   Output,
+  Phase,
+  PhaseGroup,
   Replay,
   ReportSettings,
   Set,
@@ -54,6 +57,17 @@ const electronHandler = {
     ipcRenderer.invoke('getCurrentTournament'),
   getSelectedSet: (): Promise<Set | undefined> =>
     ipcRenderer.invoke('getSelectedSet'),
+  getSelectedSetChain: (): Promise<{
+    event: Event | undefined;
+    phase: Phase | undefined;
+    phaseGroup: PhaseGroup | undefined;
+  }> => ipcRenderer.invoke('getSelectedSetChain'),
+  setSelectedSetChain: (
+    eventId: number,
+    phaseId: number,
+    phaseGroupId: number,
+  ): Promise<void> =>
+    ipcRenderer.invoke('setSelectedSetChain', eventId, phaseId, phaseGroupId),
   getTournament: (slug: string, recursive: boolean): Promise<void> =>
     ipcRenderer.invoke('getTournament', slug, recursive),
   getEvent: (id: number, recursive: boolean): Promise<void> =>

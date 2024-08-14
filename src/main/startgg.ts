@@ -24,6 +24,9 @@ const phaseGroupIdToEntrants = new Map<number, Entrant[]>();
 const phaseGroupIdToSets = new Map<number, Sets>();
 const idToSet = new Map<number, Set>();
 let selectedSetId = 0;
+let selectedPhaseGroupId = 0;
+let selectedPhaseId = 0;
+let selectedEventId = 0;
 export function getCurrentTournament() {
   if (!currentTournament) {
     return undefined;
@@ -56,15 +59,29 @@ export function getCurrentTournament() {
 }
 
 export function getSelectedSet() {
-  if (!selectedSetId) {
-    return undefined;
-  }
-
   return idToSet.get(selectedSetId);
 }
 
 export function setSelectedSetId(id: number) {
   selectedSetId = id;
+}
+
+export function getSelectedSetChain() {
+  return {
+    event: idToEvent.get(selectedEventId),
+    phase: idToPhase.get(selectedPhaseId),
+    phaseGroup: idToPhaseGroup.get(selectedPhaseGroupId),
+  };
+}
+
+export function setSelectedSetChain(
+  eventId: number,
+  phaseId: number,
+  phaseGroupId: number,
+) {
+  selectedEventId = eventId;
+  selectedPhaseId = phaseId;
+  selectedPhaseGroupId = phaseGroupId;
 }
 
 async function wrappedFetch(

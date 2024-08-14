@@ -54,7 +54,7 @@ function SetView({
   entrant1Names: NameWithHighlight[];
   entrant2Names: NameWithHighlight[];
   vlerkMode: boolean;
-  selectSet: () => void;
+  selectSet: () => Promise<void>;
 }) {
   return (
     <ListItemButton
@@ -103,7 +103,7 @@ function PhaseGroupView({
   searchSubstr: string;
   vlerkMode: boolean;
   getPhaseGroup: (id: number) => Promise<void>;
-  selectSet: (set: Set) => void;
+  selectSet: (set: Set) => Promise<void>;
   showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
@@ -267,9 +267,7 @@ function PhaseGroupView({
               phaseGroup.sets.pendingSets.length === 0 && (
                 <TiebreakerDialog
                   entrants={phaseGroup.entrants}
-                  selectSet={(set: Set) => {
-                    selectSet(set);
-                  }}
+                  selectSet={(set: Set) => selectSet(set)}
                 />
               )}
           </Block>
@@ -288,6 +286,7 @@ function PhaseView({
   tournamentSlug,
   searchSubstr,
   vlerkMode,
+  selectedPhaseGroupId,
   getPhase,
   getPhaseGroup,
   selectSet,
@@ -301,9 +300,14 @@ function PhaseView({
   tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
+  selectedPhaseGroupId: number;
   getPhase: (id: number) => Promise<void>;
   getPhaseGroup: (id: number) => Promise<void>;
-  selectSet: (set: Set, phaseGroupId: number, phaseGroupName: string) => void;
+  selectSet: (
+    set: Set,
+    phaseGroupId: number,
+    phaseGroupName: string,
+  ) => Promise<void>;
   showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
@@ -396,7 +400,10 @@ function PhaseView({
             <PhaseGroupView
               key={phaseGroup.id}
               phaseGroup={phaseGroup}
-              initiallyOpen={phase.phaseGroups.length === 1}
+              initiallyOpen={
+                phase.phaseGroups.length === 1 ||
+                phaseGroup.id === selectedPhaseGroupId
+              }
               isStartable={isStartable}
               elevateStartButton={elevateStartButton}
               eventId={eventId}
@@ -424,6 +431,8 @@ function EventView({
   tournamentSlug,
   searchSubstr,
   vlerkMode,
+  selectedPhaseId,
+  selectedPhaseGroupId,
   getEvent,
   getPhase,
   getPhaseGroup,
@@ -436,6 +445,8 @@ function EventView({
   tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
+  selectedPhaseId: number;
+  selectedPhaseGroupId: number;
   getEvent: (id: number) => Promise<void>;
   getPhase: (id: number) => Promise<void>;
   getPhaseGroup: (id: number) => Promise<void>;
@@ -445,7 +456,7 @@ function EventView({
     phaseGroupName: string,
     phaseId: number,
     phaseName: string,
-  ) => void;
+  ) => Promise<void>;
   showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
@@ -548,13 +559,16 @@ function EventView({
             <PhaseView
               key={phase.id}
               phase={phase}
-              initiallyOpen={event.phases.length === 1}
+              initiallyOpen={
+                event.phases.length === 1 || phase.id === selectedPhaseId
+              }
               isStartable={!event.isOnline}
               elevateStartButton={elevateStartButton}
               eventId={event.id}
               tournamentSlug={tournamentSlug}
               searchSubstr={searchSubstr}
               vlerkMode={vlerkMode}
+              selectedPhaseGroupId={selectedPhaseGroupId}
               getPhase={getPhase}
               getPhaseGroup={getPhaseGroup}
               selectSet={(
@@ -584,6 +598,9 @@ export default function StartggView({
   searchSubstr,
   tournament,
   vlerkMode,
+  selectedEventId,
+  selectedPhaseId,
+  selectedPhaseGroupId,
   getEvent,
   getPhase,
   getPhaseGroup,
@@ -593,6 +610,9 @@ export default function StartggView({
   searchSubstr: string;
   tournament: Tournament;
   vlerkMode: boolean;
+  selectedEventId: number;
+  selectedPhaseId: number;
+  selectedPhaseGroupId: number;
   getEvent: (id: number) => Promise<void>;
   getPhase: (id: number) => Promise<void>;
   getPhaseGroup: (id: number) => Promise<void>;
@@ -605,7 +625,7 @@ export default function StartggView({
     eventId: number,
     eventName: string,
     eventSlug: string,
-  ) => void;
+  ) => Promise<void>;
 }) {
   const [error, setError] = useState('');
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
@@ -620,11 +640,15 @@ export default function StartggView({
           <EventView
             key={event.id}
             event={event}
-            initiallyOpen={tournament.events.length === 1}
+            initiallyOpen={
+              tournament.events.length === 1 || event.id === selectedEventId
+            }
             elevateStartButton={elevateStartButton}
             tournamentSlug={tournament.slug}
             searchSubstr={searchSubstr}
             vlerkMode={vlerkMode}
+            selectedPhaseId={selectedPhaseId}
+            selectedPhaseGroupId={selectedPhaseGroupId}
             getEvent={getEvent}
             getPhase={getPhase}
             getPhaseGroup={getPhaseGroup}

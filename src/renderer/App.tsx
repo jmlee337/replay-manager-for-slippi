@@ -183,6 +183,9 @@ function Hello() {
   const [dirInit, setDirInit] = useState(false);
   const [copyDir, setCopyDir] = useState('');
   const [selectedSet, setSelectedSet] = useState<Set>(EMPTY_SET);
+  const [selectedSetChain, setSelectedSetChain] = useState(
+    EMPTY_SELECTED_SET_CHAIN,
+  );
   const [slug, setSlug] = useState('');
   const [tournament, setTournament] = useState<Tournament>({
     slug: '',
@@ -210,6 +213,7 @@ function Hello() {
       const copyDirPromise = window.electron.getCopyDir();
       const tournamentPromise = window.electron.getCurrentTournament();
       const selectedSetPromise = window.electron.getSelectedSet();
+      const selectedSetChainPromise = window.electron.getSelectedSetChain();
 
       // req network
       const latestAppVersionPromise = window.electron.getLatestVersion();
@@ -242,6 +246,19 @@ function Hello() {
       const initSelectedSet = await selectedSetPromise;
       if (initSelectedSet) {
         setSelectedSet(initSelectedSet);
+      }
+      const initSelectedSetChain = await selectedSetChainPromise;
+      const { event, phase, phaseGroup } = initSelectedSetChain;
+      if (event && phase && phaseGroup) {
+        setSelectedSetChain({
+          eventId: event.id,
+          eventName: event.name,
+          eventSlug: event.slug,
+          phaseId: phase.id,
+          phaseName: phase.name,
+          phaseGroupId: phaseGroup.id,
+          phaseGroupName: phaseGroup.name,
+        });
       }
 
       // req network
@@ -856,6 +873,11 @@ function Hello() {
     setGettingTournament(true);
     try {
       await window.electron.getTournament(maybeSlug, initial && vlerkMode);
+      if (slug !== maybeSlug) {
+        setSelectedSet(EMPTY_SET);
+        setSelectedSetChain(EMPTY_SELECTED_SET_CHAIN);
+        await window.electron.setSelectedSetChain(0, 0, 0);
+      }
       return true;
     } catch (e: any) {
       showErrorDialog([e.toString()]);
@@ -866,9 +888,6 @@ function Hello() {
   };
 
   // set controls
-  const [selectedSetChain, setSelectedSetChain] = useState(
-    EMPTY_SELECTED_SET_CHAIN,
-  );
   const [selectedChallongeTournament, setSelectedChallongeTournament] =
     useState({ name: '', slug: '' });
   const selectSet = (set: Set) => {
@@ -888,7 +907,7 @@ function Hello() {
     setOverrides(newOverrides);
     setReplays(newReplays);
   };
-  const selectStartggSet = (
+  const selectStartggSet = async (
     set: Set,
     phaseGroupId: number,
     phaseGroupName: string,
@@ -908,6 +927,7 @@ function Hello() {
       phaseGroupId,
       phaseGroupName,
     });
+    await window.electron.setSelectedSetChain(eventId, phaseId, phaseGroupId);
   };
   const selectChallongeSet = (
     set: Set,
@@ -1633,10 +1653,13 @@ function Hello() {
               searchSubstr={searchSubstr}
               tournament={tournament}
               vlerkMode={vlerkMode}
+              selectedEventId={selectedSetChain.eventId}
+              selectedPhaseId={selectedSetChain.phaseId}
+              selectedPhaseGroupId={selectedSetChain.phaseGroupId}
               getEvent={(id: number) => getEvent(id)}
               getPhase={(id: number) => getPhase(id)}
               getPhaseGroup={(id: number) => getPhaseGroup(id)}
-              selectSet={(
+              selectSet={async (
                 set: Set,
                 phaseGroupId: number,
                 phaseGroupName: string,
@@ -1646,7 +1669,7 @@ function Hello() {
                 eventName: string,
                 eventSlug: string,
               ) => {
-                selectStartggSet(
+                await selectStartggSet(
                   set,
                   phaseGroupId,
                   phaseGroupName,
@@ -1988,10 +2011,12 @@ function Hello() {
         latestAppVersion={latestAppVersion}
         gotSettings={gotSettings}
         mode={mode}
-        setMode={(newMode: Mode) => {
+        setMode={async (newMode: Mode) => {
           setMode(newMode);
           setSelectedSet(EMPTY_SET);
           setSelectedSetChain(EMPTY_SELECTED_SET_CHAIN);
+          setSelectedChallongeTournament({ name: '', slug: '' });
+          await window.electron.setSelectedSetChain(0, 0, 0);
         }}
         startggApiKey={startggApiKey}
         setStartggApiKey={setStartggApiKey}

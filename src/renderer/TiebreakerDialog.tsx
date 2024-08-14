@@ -14,7 +14,7 @@ export default function TiebreakerDialog({
   selectSet,
 }: {
   entrants: Entrant[];
-  selectSet: (set: Set) => void;
+  selectSet: (set: Set) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [selectedEntrant, setSelectedEntrant] = useState<Entrant>({

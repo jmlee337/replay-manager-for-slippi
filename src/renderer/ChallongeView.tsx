@@ -190,7 +190,9 @@ export default function ChallongeView({
               tournament.sets.pendingSets.length === 0 && (
                 <TiebreakerDialog
                   entrants={tournament.entrants}
-                  selectSet={selectSet}
+                  selectSet={async (set: Set) => {
+                    selectSet(set);
+                  }}
                 />
               )}
           </div>
