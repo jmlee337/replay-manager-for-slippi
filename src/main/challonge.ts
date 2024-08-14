@@ -84,6 +84,7 @@ export async function getChallongeTournaments(
   }));
 }
 
+const matchIdToStream = new Map<number, Stream | null>();
 function getStreamFromMatch(
   match: any,
   stationIdToStream: Map<string, Stream>,
@@ -93,10 +94,13 @@ function getStreamFromMatch(
     const url = new URL(stationUrl);
     const pathnameParts = url.pathname.split('/');
     const stationId = pathnameParts[pathnameParts.length - 1].split('.')[0];
-    if (stationIdToStream.has(stationId)) {
-      return stationIdToStream.get(stationId)!;
+    const stream = stationIdToStream.get(stationId);
+    if (stream) {
+      matchIdToStream.set(match.id, stream);
+      return stream;
     }
   }
+  matchIdToStream.set(match.id, null);
   return null;
 }
 
@@ -152,6 +156,7 @@ const toSet = (
     stream: getStreamFromMatch(match, stationIdToStream),
     ordinal: match.attributes.suggested_play_order,
     wasReported: false,
+    updatedAtMs: new Date(match.attributes.timestamps.updated_at).getTime(),
   };
 };
 
@@ -172,7 +177,6 @@ function apiStateToState(apiState: string) {
 export async function getChallongeTournament(
   key: string,
   slug: string,
-  updatedSet?: Set,
 ): Promise<ChallongeTournament> {
   const tournamentJson = await get(
     `https://api.challonge.com/v2.1/tournaments/${slug}.json`,
@@ -281,15 +285,19 @@ export async function getChallongeTournament(
           match.attributes.state === 'complete',
       )
       .map((match) => {
-        if (updatedSet && match.id === updatedSet.id) {
-          const mergedSet: Set = { ...updatedSet };
-          mergedSet.stream = getStreamFromMatch(match, stationIdToStream);
-          return mergedSet;
+        const existingSet = idToSet.get(match.id);
+        if (
+          existingSet &&
+          existingSet.updatedAtMs >
+            new Date(match.attributes.timestamps.updated_at).getTime()
+        ) {
+          return existingSet;
         }
-        return toSet(match, idToFullRoundText, stationIdToStream);
+        const newSet = toSet(match, idToFullRoundText, stationIdToStream);
+        idToSet.set(newSet.id, newSet);
+        return newSet;
       })
       .forEach((set) => {
-        idToSet.set(set.id, set);
         if (set.state === State.COMPLETED) {
           newTournament.sets.completedSets.push(set);
         } else {
@@ -308,7 +316,7 @@ export async function startChallongeSet(
   tournamentSlug: string,
   matchId: number,
   key: string,
-): Promise<Set> {
+) {
   const url = `https://api.challonge.com/v1/tournaments/${tournamentSlug}/matches/${matchId}/mark_as_underway.json?api_key=${key}`;
   const data = await wrappedFetch(url, {
     method: 'POST',
@@ -316,7 +324,7 @@ export async function startChallongeSet(
   const { match } = data;
   const { round } = match;
   const fullRoundPrefix = round > 0 ? 'Winners Round' : 'Losers Round';
-  return {
+  idToSet.set(matchId, {
     id: match.id,
     state: State.STARTED,
     round,
@@ -340,10 +348,11 @@ export async function startChallongeSet(
       },
     ],
     entrant2Score: null,
-    stream: null,
+    stream: matchIdToStream.get(match.id) || null,
     ordinal: match.suggested_play_order,
     wasReported: false,
-  };
+    updatedAtMs: new Date(match.updated_at).getTime(),
+  });
 }
 
 export async function reportChallongeSet(
@@ -360,9 +369,11 @@ export async function reportChallongeSet(
       tie: false,
     },
   };
-  return toSet(
+  const updatedSet = toSet(
     (await put(url, data, key)).data,
     slugToFinalsMap.get(tournamentSlug) || new Map<number, string>(),
     slugToStationsMap.get(tournamentSlug) || new Map<string, Stream>(),
   );
+  idToSet.set(matchId, updatedSet);
+  return updatedSet;
 }

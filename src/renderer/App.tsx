@@ -127,6 +127,7 @@ const EMPTY_SET: Set = {
   stream: null,
   ordinal: null,
   wasReported: false,
+  updatedAtMs: 0,
 };
 
 const EMPTY_SELECTED_SET_CHAIN = {
@@ -661,9 +662,9 @@ function Hello() {
   };
 
   // start.gg tournament view
-  const getPhaseGroup = async (id: number, updatedSets?: Map<number, Set>) => {
+  const getPhaseGroup = async (id: number) => {
     try {
-      await window.electron.getPhaseGroup(id, updatedSets);
+      await window.electron.getPhaseGroup(id);
     } catch (e: any) {
       showErrorDialog([e.toString()]);
     }
@@ -1656,7 +1657,7 @@ function Hello() {
               selectedPhaseGroupId={selectedSetChain.phaseGroupId}
               getEvent={(id: number) => getEvent(id)}
               getPhase={(id: number) => getPhase(id)}
-              getPhaseGroup={(id: number) => getPhaseGroup(id)}
+              getPhaseGroup={getPhaseGroup}
               selectSet={async (
                 set: Set,
                 phaseGroupId: number,

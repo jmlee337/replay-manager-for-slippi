@@ -211,10 +211,7 @@ export default function SetControls({
     matchId: number,
     items: ChallongeMatchItem[],
   ) => Promise<Set>;
-  reportStartggSet: (
-    set: StartggSet,
-    update: boolean,
-  ) => Promise<Set | undefined>;
+  reportStartggSet: (set: StartggSet, update: boolean) => Promise<Set>;
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
   resetGuide: () => void;
   mode: Mode;

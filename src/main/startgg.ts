@@ -188,11 +188,7 @@ const setIdToOrdinal = new Map<number, number | null>();
 // 2139098 the-off-season-2-2 1-000-melee-doubles
 // state {1: not started, 2: started, 3: completed}
 // sort: completed reverse chronological, then call order
-export async function getPhaseGroup(
-  key: string,
-  id: number,
-  updatedSets?: Map<number, Set>,
-): Promise<PhaseGroup> {
+export async function getPhaseGroup(key: string, id: number) {
   const response = await wrappedFetch(
     `https://api.smash.gg/phase_group/${id}?expand[]=sets&expand[]=seeds`,
   );
@@ -292,19 +288,23 @@ export async function getPhaseGroup(
     const setsToUpdate = new Map<number, Set>();
     const missingStreamSets: { setId: number; streamId: number }[] = [];
     sets.forEach((set) => {
-      if (set.unreachable) {
+      const { id: setId, unreachable } = set;
+      if (unreachable) {
         return;
       }
       let newSet: Set | undefined;
-      if (updatedSets && updatedSets.has(set.id)) {
-        newSet = updatedSets.get(set.id)!;
+      const updatedAtMs = set.updatedAt * 1000;
+      const existingSet = idToSet.get(setId);
+      if (existingSet && existingSet.updatedAtMs > updatedAtMs) {
+        newSet = existingSet;
       } else {
-        const { id: setId, entrant1Id, entrant2Id, streamId } = set;
+        const { entrant1Id, entrant2Id, streamId } = set;
         if (
           !Number.isInteger(setId) ||
           !Number.isInteger(entrant1Id) ||
           !Number.isInteger(entrant2Id)
         ) {
+          idToSet.delete(setId);
           return;
         }
 
@@ -327,7 +327,9 @@ export async function getPhaseGroup(
           stream,
           ordinal: set.callOrder,
           wasReported: reportedSetIds.has(setId),
+          updatedAtMs,
         };
+        idToSet.set(setId, newSet);
         setIdToOrdinal.set(setId, newSet.ordinal);
         if (Number.isInteger(streamId) && !idToStream.has(streamId)) {
           missingStreamSets.push({ setId, streamId });
@@ -339,7 +341,6 @@ export async function getPhaseGroup(
       } else {
         pendingSets.push(newSet);
       }
-      idToSet.set(newSet.id, newSet);
     });
 
     if (missingStreamSets.length > 0) {
@@ -661,7 +662,7 @@ function gqlParticipantToParticipant(participant: ApiParticipant): Participant {
     prefix: participant.prefix || '',
   };
 }
-function gqlSetToSet(set: any): Set {
+function gqlSetToSet(set: any, updatedAtMs: number): Set {
   const slot1 = set.slots[0];
   const slot2 = set.slots[1];
   const entrant1Participants: Participant[] = slot1.entrant.participants.map(
@@ -696,6 +697,7 @@ function gqlSetToSet(set: any): Set {
         : null,
     ordinal: setIdToOrdinal.get(set.id) as number | null,
     wasReported: reportedSetIds.has(set.id),
+    updatedAtMs,
   };
 }
 
@@ -705,8 +707,9 @@ const MARK_SET_IN_PROGRESS_MUTATION = `
   }
 `;
 export async function startSet(key: string, setId: number) {
+  const updatedAtMs = Date.now();
   const data = await fetchGql(key, MARK_SET_IN_PROGRESS_MUTATION, { setId });
-  return gqlSetToSet(data.markSetInProgress);
+  idToSet.set(setId, gqlSetToSet(data.markSetInProgress, updatedAtMs));
 }
 
 const REPORT_BRACKET_SET_MUTATION = `
@@ -715,14 +718,19 @@ const REPORT_BRACKET_SET_MUTATION = `
   }
 `;
 export async function reportSet(key: string, set: StartggSet) {
+  const updatedAtMs = Date.now();
   const data = await fetchGql(key, REPORT_BRACKET_SET_MUTATION, set);
   reportedSetIds.set(set.setId, true);
   const updatedSets = (data.reportBracketSet as any[])
     .filter(
-      (bracketSet: any) =>
+      (bracketSet) =>
         bracketSet.slots[0].entrant && bracketSet.slots[1].entrant,
     )
-    .map(gqlSetToSet);
+    .map((bracketSet) => {
+      const updatedSet = gqlSetToSet(bracketSet, updatedAtMs);
+      idToSet.set(updatedSet.id, updatedSet);
+      return updatedSet;
+    });
   return new Map(updatedSets.map((updatedSet) => [updatedSet.id, updatedSet]));
 }
 
@@ -731,10 +739,13 @@ const UPDATE_BRACKET_SET_MUTATION = `
     updateBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {${GQL_SET_INNER}}
   }
 `;
-export async function updateSet(key: string, set: StartggSet): Promise<Set> {
+export async function updateSet(key: string, set: StartggSet) {
+  const updatedAtMs = Date.now();
   const data = await fetchGql(key, UPDATE_BRACKET_SET_MUTATION, set);
   reportedSetIds.set(set.setId, true);
-  return gqlSetToSet(data.updateBracketSet);
+  const updatedSet = gqlSetToSet(data.updateBracketSet, updatedAtMs);
+  idToSet.set(updatedSet.id, updatedSet);
+  return updatedSet;
 }
 
 async function startPhaseGroupsInner(

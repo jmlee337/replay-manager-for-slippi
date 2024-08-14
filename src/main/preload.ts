@@ -74,8 +74,8 @@ const electronHandler = {
     ipcRenderer.invoke('getEvent', id, recursive),
   getPhase: (id: number, recursive: boolean): Promise<void> =>
     ipcRenderer.invoke('getPhase', id, recursive),
-  getPhaseGroup: (id: number, updatedSets?: Map<number, Set>): Promise<void> =>
-    ipcRenderer.invoke('getPhaseGroup', id, updatedSets),
+  getPhaseGroup: (id: number): Promise<void> =>
+    ipcRenderer.invoke('getPhaseGroup', id),
   startSet: (id: number): Promise<void> => ipcRenderer.invoke('startSet', id),
   reportSet: (set: StartggSet): Promise<Set> =>
     ipcRenderer.invoke('reportSet', set),

@@ -74,6 +74,7 @@ export type Set = {
   stream: Stream | null;
   ordinal: number | null; // can be null for start.gg non-DE and challonge swiss
   wasReported: boolean;
+  updatedAtMs: number;
 };
 
 export type Sets = {

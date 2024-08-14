@@ -302,16 +302,12 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('getPhaseGroup');
   ipcMain.handle(
     'getPhaseGroup',
-    async (
-      event: IpcMainInvokeEvent,
-      id: number,
-      updatedSets?: Map<number, Set>,
-    ) => {
+    async (event: IpcMainInvokeEvent, id: number) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      await getPhaseGroup(sggApiKey, id, updatedSets);
+      await getPhaseGroup(sggApiKey, id);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -327,12 +323,8 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         throw new Error('Please set start.gg API key');
       }
 
-      const updatedSet = await startSet(sggApiKey, setId);
-      await getPhaseGroup(
-        sggApiKey,
-        getSelectedSetChain().phaseGroup!.id,
-        new Map([[updatedSet.id, updatedSet]]),
-      );
+      await startSet(sggApiKey, setId);
+      await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -349,11 +341,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       const updatedSets = await reportSet(sggApiKey, set);
-      await getPhaseGroup(
-        sggApiKey,
-        getSelectedSetChain().phaseGroup!.id,
-        updatedSets,
-      );
+      await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -371,11 +359,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       }
 
       const updatedSet = await updateSet(sggApiKey, set);
-      await getPhaseGroup(
-        sggApiKey,
-        getSelectedSetChain().phaseGroup!.id,
-        new Map([[updatedSet.id, updatedSet]]),
-      );
+      await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -481,12 +465,12 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('getChallongeTournament');
   ipcMain.handle(
     'getChallongeTournament',
-    async (event: IpcMainInvokeEvent, slug: string, updatedSet?: Set) => {
+    async (event: IpcMainInvokeEvent, slug: string) => {
       if (!challongeApiKey) {
         throw new Error('Please set Challonge API key.');
       }
 
-      await getChallongeTournament(challongeApiKey, slug, updatedSet);
+      await getChallongeTournament(challongeApiKey, slug);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedChallongeSet(),
         challongeTournaments: getCurrentTournaments(),
@@ -502,8 +486,8 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         throw new Error('Please set Challonge API key.');
       }
 
-      const updatedSet = await startChallongeSet(slug, id, challongeApiKey);
-      await getChallongeTournament(challongeApiKey, slug, updatedSet);
+      await startChallongeSet(slug, id, challongeApiKey);
+      await getChallongeTournament(challongeApiKey, slug);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedChallongeSet(),
         challongeTournaments: getCurrentTournaments(),
@@ -530,7 +514,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         items,
         challongeApiKey,
       );
-      await getChallongeTournament(challongeApiKey, slug, updatedSet);
+      await getChallongeTournament(challongeApiKey, slug);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedChallongeSet(),
         challongeTournaments: getCurrentTournaments(),

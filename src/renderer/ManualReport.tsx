@@ -42,10 +42,7 @@ export default function ManualReport({
     matchId: number,
     items: ChallongeMatchItem[],
   ) => Promise<Set>;
-  reportStartggSet: (
-    set: StartggSet,
-    update: boolean,
-  ) => Promise<Set | undefined>;
+  reportStartggSet: (set: StartggSet, update: boolean) => Promise<Set>;
   selectedSet: Set;
 }) {
   const [open, setOpen] = useState(false);
