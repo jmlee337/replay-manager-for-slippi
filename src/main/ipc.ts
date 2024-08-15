@@ -707,9 +707,9 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     }
     const newCopySettings: CopySettings = {
       output: Output.ZIP,
-      writeContext: false,
+      writeContext: true,
       writeDisplayNames: true,
-      writeFileNames: false,
+      writeFileNames: true,
       writeStartTimes: true,
     };
     store.set('copySettings', newCopySettings);
@@ -730,8 +730,8 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       return store.get('reportSettings') as ReportSettings;
     }
     const newReportSettings: ReportSettings = {
-      alsoCopy: false,
-      alsoDelete: false,
+      alsoCopy: true,
+      alsoDelete: true,
     };
     store.set('reportSettings', newReportSettings);
     return newReportSettings;
