@@ -182,6 +182,7 @@ const electronHandler = {
     ipcRenderer.removeAllListeners('usbstorage');
     ipcRenderer.on('usbstorage', callback);
   },
+  update: (): Promise<void> => ipcRenderer.invoke('update'),
   isMac: process.platform === 'darwin',
 };
 

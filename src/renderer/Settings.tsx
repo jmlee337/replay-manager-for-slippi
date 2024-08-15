@@ -1,4 +1,8 @@
-import { ContentCopy, Settings as SettingsIcon } from '@mui/icons-material';
+import {
+  CloudDownload,
+  ContentCopy,
+  Settings as SettingsIcon,
+} from '@mui/icons-material';
 import {
   Alert,
   Button,
@@ -417,15 +421,22 @@ export default function Settings({
             </Stack>
           </Stack>
           {needUpdate && (
-            <Alert severity="warning">
-              Update available!{' '}
-              <a
-                href="https://github.com/jmlee337/replay-manager-for-slippi/releases/latest"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Version {latestAppVersion}
-              </a>
+            <Alert
+              severity="warning"
+              style={{ marginTop: '8px' }}
+              action={
+                <Button
+                  endIcon={<CloudDownload />}
+                  variant="contained"
+                  onClick={() => {
+                    window.electron.update();
+                  }}
+                >
+                  Quit and download
+                </Button>
+              }
+            >
+              Update available! Version {latestAppVersion}
             </Alert>
           )}
         </DialogContent>

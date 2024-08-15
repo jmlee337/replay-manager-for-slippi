@@ -5,6 +5,7 @@ import {
   dialog,
   ipcMain,
   IpcMainInvokeEvent,
+  shell,
 } from 'electron';
 import Store from 'electron-store';
 import { rm } from 'fs/promises';
@@ -793,5 +794,13 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     );
     const json = await response.json();
     return json[0].tag_name;
+  });
+
+  ipcMain.removeHandler('update');
+  ipcMain.handle('update', async () => {
+    await shell.openExternal(
+      'https://github.com/jmlee337/replay-manager-for-slippi/releases/latest',
+    );
+    app.quit();
   });
 }
