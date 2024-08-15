@@ -25,6 +25,13 @@ It enables a workflow where Slippi replays are collected set-by-set, used to rep
 ![ezgif-2-9c596e3604](https://github.com/user-attachments/assets/4f88c0ca-0efd-4968-b791-ffed3eed193e)
 - Can use a manually entered list of names if not using start.gg or challonge  
 ![Screenshot 2024-08-09 at 20 49 31](https://github.com/user-attachments/assets/a4335fb1-c6f1-4299-b586-a1805d759847)
+- Search player tags with ctrl/cmd-f  
+![Untitled2](https://github.com/user-attachments/assets/5e5a2215-85e0-4f6e-ab1d-2f4bd67f58f7)
+- Re-order replays/fix start times with ctrl/cmd-t  
+![Untitled](https://github.com/user-attachments/assets/853fa3b0-37f8-4cce-a230-7dd49b816e32)
+- Generate context for tiebreaker sets  
+![Screenshot 2024-08-15 at 16 07 49](https://github.com/user-attachments/assets/147ed7e2-b8f3-4a96-86a2-aff7bede9c45)
+![Screenshot 2024-08-15 at 16 07 18](https://github.com/user-attachments/assets/c10b8882-42a5-4428-bf9c-61a56c0f2172)
 
 ## Users
 Please [check discussions/ask for help](https://github.com/jmlee337/replay-manager-for-slippi/discussions) before [checking issues/filing a bug report or feature request](https://github.com/jmlee337/replay-manager-for-slippi/issues).
