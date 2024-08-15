@@ -14,6 +14,7 @@ import {
   Divider,
   IconButton,
   InputBase,
+  ListItem,
   Paper,
   Stack,
   Toolbar,
@@ -21,6 +22,8 @@ import {
   Typography,
 } from '@mui/material';
 import {
+  ArrowDownward,
+  ArrowUpward,
   Backup,
   DeleteForever,
   DeleteForeverOutlined,
@@ -52,7 +55,7 @@ import {
   Tournament,
 } from '../common/types';
 import { DraggableChip, DroppableChip } from './DragAndDrop';
-import ReplayList from './ReplayList';
+import ReplayList, { SkewReplay } from './ReplayList';
 import StartggView from './StartggView';
 import './App.css';
 import CopyControls from './CopyControls';
@@ -139,6 +142,25 @@ const EMPTY_SELECTED_SET_CHAIN = {
   phaseGroupId: 0,
   phaseGroupName: '',
 };
+
+function hasTimeSkew(replays: Replay[]) {
+  if (replays.length < 2) {
+    return false;
+  }
+
+  for (let i = 0; i < replays.length - 1; i += 1) {
+    const firstMs = replays[i].startAt?.getTime();
+    const secondMs = replays[i + 1].startAt?.getTime();
+    if (
+      firstMs !== undefined &&
+      secondMs !== undefined &&
+      secondMs - firstMs > 3600000
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
 
 function Hello() {
   const [errors, setErrors] = useState<string[]>([]);
@@ -407,13 +429,14 @@ function Hello() {
     });
   };
   const [replayLoadCount, setReplayLoadCount] = useState(0);
-  const [wasDeleted, setWasDeleted] = useState(false);
   const copyControlsRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (scrollToBottom && copyControlsRef.current) {
       copyControlsRef.current.scrollIntoView(false);
     }
   }, [replayLoadCount, scrollToBottom]);
+  const [skewDialogOpen, setSkewDialogOpen] = useState(false);
+  const [wasDeleted, setWasDeleted] = useState(false);
   const chooseDir = async () => {
     setGettingReplays(true);
     const newDir = await window.electron.chooseReplaysDir();
@@ -428,6 +451,9 @@ function Hello() {
       setDirExists(true);
       setDirInit(false);
       resetOverrides();
+      if (hasTimeSkew(newReplays)) {
+        setSkewDialogOpen(true);
+      }
       setReplays(newReplays);
       setReplayLoadCount((r) => r + 1);
       if (invalidReplays.length > 0) {
@@ -501,6 +527,9 @@ function Hello() {
       );
       setDirInit(false);
       resetOverrides();
+      if (hasTimeSkew(newReplays)) {
+        setSkewDialogOpen(true);
+      }
       setReplays(newReplays);
       setReplayLoadCount((r) => r + 1);
       if (invalidReplays.length > 0) {
@@ -1566,33 +1595,112 @@ function Hello() {
         <TopColumn flexGrow={1} minWidth="600px">
           {dir &&
             (dirExists ? (
-              <ReplayList
-                dirInit={dirInit}
-                numAvailablePlayers={availablePlayers.length}
-                replays={replays}
-                selectedChipData={selectedChipData}
-                findUnusedPlayer={findUnusedPlayer}
-                onClick={onReplayClick}
-                onOverride={onPlayerOverride}
-                resetSelectedChipData={resetSelectedChipData}
-                elevate={
-                  guideActive &&
-                  guideBackdropOpen &&
-                  guideState === GuideState.REPLAYS
-                }
-                elevateChips={
-                  guideActive &&
-                  guideBackdropOpen &&
-                  guideState === GuideState.PLAYERS &&
-                  numBatchActive !== 2 &&
-                  numBatchActive !== 4
-                }
-                elevateNames={
-                  guideActive &&
-                  guideBackdropOpen &&
-                  guideState === GuideState.PLAYERS
-                }
-              />
+              <>
+                <ReplayList
+                  dirInit={dirInit}
+                  numAvailablePlayers={availablePlayers.length}
+                  replays={replays}
+                  selectedChipData={selectedChipData}
+                  findUnusedPlayer={findUnusedPlayer}
+                  onClick={onReplayClick}
+                  onOverride={onPlayerOverride}
+                  resetSelectedChipData={resetSelectedChipData}
+                  elevate={
+                    guideActive &&
+                    guideBackdropOpen &&
+                    guideState === GuideState.REPLAYS
+                  }
+                  elevateChips={
+                    guideActive &&
+                    guideBackdropOpen &&
+                    guideState === GuideState.PLAYERS &&
+                    numBatchActive !== 2 &&
+                    numBatchActive !== 4
+                  }
+                  elevateNames={
+                    guideActive &&
+                    guideBackdropOpen &&
+                    guideState === GuideState.PLAYERS
+                  }
+                />
+                <Dialog
+                  open={skewDialogOpen}
+                  onClose={() => {
+                    setSkewDialogOpen(false);
+                  }}
+                >
+                  <DialogTitle>Large time gap detected!</DialogTitle>
+                  <DialogContent>
+                    {replays.map((replay, i) => (
+                      <ListItem key={replay.fileName} disableGutters>
+                        <Stack alignItems="center" direction="row" gap="8px">
+                          <SkewReplay replay={replay} />
+                          {i === 0 ? (
+                            <Tooltip placement="left" title="First">
+                              <div style={{ height: '40px', width: '40px' }} />
+                            </Tooltip>
+                          ) : (
+                            <Tooltip placement="left" title="Move up">
+                              <IconButton
+                                onClick={() => {
+                                  const arr = [...replays];
+                                  [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+                                  setReplays(arr);
+                                }}
+                              >
+                                <ArrowUpward />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {i === replays.length - 1 ? (
+                            <Tooltip placement="right" title="Last">
+                              <div style={{ height: '40px', width: '40px' }} />
+                            </Tooltip>
+                          ) : (
+                            <Tooltip placement="right" title="Move down">
+                              <IconButton
+                                onClick={() => {
+                                  const arr = [...replays];
+                                  [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+                                  setReplays(arr);
+                                }}
+                              >
+                                <ArrowDownward />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Stack>
+                      </ListItem>
+                    ))}
+                  </DialogContent>
+                  <DialogActions>
+                    <Button
+                      variant="contained"
+                      onClick={() => {
+                        for (let i = replays.length - 1; i > 0; i -= 1) {
+                          const firstMs = replays[i - 1].startAt!.getTime();
+                          const secondMs = replays[i].startAt!.getTime();
+                          if (
+                            firstMs > secondMs ||
+                            secondMs - firstMs > 3600000
+                          ) {
+                            const durationMs = Math.ceil(
+                              (replays[i - 1].lastFrame + 124) / frameMsDivisor,
+                            );
+                            replays[i - 1].startAt = new Date(
+                              secondMs - durationMs,
+                            );
+                          }
+                        }
+                        setReplays([...replays]);
+                        setSkewDialogOpen(false);
+                      }}
+                    >
+                      Fix!
+                    </Button>
+                  </DialogActions>
+                </Dialog>
+              </>
             ) : (
               <Alert
                 severity={wasDeleted ? 'warning' : 'error'}

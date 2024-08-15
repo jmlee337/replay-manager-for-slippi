@@ -102,6 +102,39 @@ export const stageNames = new Map([
   [32, 'Final Destination'],
 ]);
 
+// Stage ID (not internal stage ID) to short name
+export const shortStageNames = new Map([
+  [2, 'FoD'],
+  [3, 'PS'],
+  [4, 'PC'],
+  [5, 'KJ'],
+  [6, 'Brinstar'],
+  [7, 'Corneria'],
+  [8, 'YS'],
+  [9, 'Onett'],
+  [10, 'MC'],
+  [11, 'RC'],
+  [12, 'JJ'],
+  [13, 'GB'],
+  [14, 'Temple'],
+  [15, 'BD'],
+  [16, 'YI'],
+  [17, 'GG'],
+  [18, 'Fourside'],
+  [19, 'MK'],
+  [20, 'MKII'],
+  [22, 'Venom'],
+  [23, 'PF'],
+  [24, 'BB'],
+  [25, 'IM'],
+  [27, 'FZ'],
+  [28, 'DL'],
+  [29, 'YI64'],
+  [30, 'KJ64'],
+  [31, 'BF'],
+  [32, 'FD'],
+]);
+
 export const stageStartggIds = new Map([
   [2, 11], // FoD
   [3, 15], // PS

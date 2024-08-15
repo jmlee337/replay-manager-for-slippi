@@ -4,10 +4,12 @@ import {
   Box,
   Checkbox,
   Chip,
+  createTheme,
   IconButton,
   List,
   ListItemButton,
   Stack,
+  ThemeProvider,
   Tooltip,
 } from '@mui/material';
 import {
@@ -23,6 +25,7 @@ import {
   characterNames,
   frameMsDivisor,
   isValidCharacter,
+  shortStageNames,
   stageNames,
 } from '../common/constants';
 import { DroppableChip } from './DragAndDrop';
@@ -64,6 +67,78 @@ const getCharacterIcon = (
     }
   }
 };
+
+export function SkewReplay({ replay }: { replay: Replay }) {
+  const time = replay.startAt
+    ? format(replay.startAt, 'h:mmaaa')
+    : 'Time unknown';
+  const dateShort = replay.startAt
+    ? format(replay.startAt, 'yyyy MMM dd')
+    : 'Date unknown';
+  const duration = format(
+    new Date((replay.lastFrame + 124) / frameMsDivisor),
+    "m'm'ss's'",
+  );
+  const shortStageName =
+    shortStageNames.get(replay.stageId) || replay.stageId.toString();
+  return (
+    <Stack width="275px">
+      <Stack direction="row">
+        <ThemeProvider
+          theme={createTheme({
+            components: {
+              MuiChip: {
+                styleOverrides: {
+                  label: {
+                    alignItems: 'center',
+                    display: 'flex',
+                    flexGrow: 1,
+                  },
+                },
+              },
+            },
+          })}
+        >
+          {replay.players.map((player) =>
+            player.playerType === 0 || player.playerType === 1 ? (
+              <Chip
+                key={player.port}
+                icon={
+                  isValidCharacter(player.externalCharacterId) ? (
+                    <Avatar
+                      alt={characterNames.get(player.externalCharacterId)}
+                      src={getCharacterIcon(
+                        player.externalCharacterId,
+                        player.costumeIndex,
+                      )}
+                      style={{ height: '24px', width: '24px' }}
+                      variant="square"
+                    />
+                  ) : undefined
+                }
+                style={{ width: '25%' }}
+                variant="outlined"
+              />
+            ) : (
+              <Chip
+                key={player.port}
+                icon={<HideSource />}
+                style={{ width: '25%' }}
+              />
+            ),
+          )}
+        </ThemeProvider>
+      </Stack>
+      <Stack direction="row" typography="caption">
+        <Box width="50%">
+          {dateShort}, {time}
+        </Box>
+        <Box width="25%">{shortStageName}</Box>
+        <Box width="25%">{duration}</Box>
+      </Stack>
+    </Stack>
+  );
+}
 
 const ReplayListItem = memo(function ReplayListItem({
   index,

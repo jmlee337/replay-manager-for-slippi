@@ -31,7 +31,11 @@ import {
   Player,
   Replay,
 } from '../common/types';
-import { isValidCharacter, legalStages } from '../common/constants';
+import {
+  frameMsDivisor,
+  isValidCharacter,
+  legalStages,
+} from '../common/constants';
 
 // https://github.com/project-slippi/slippi-launcher/blob/ae8bb69e235b6e46b24bc966aeaa80f45030c6f9/src/replays/file_system_replay_provider/load_file.ts#L91-L101
 // ty vince
@@ -450,6 +454,7 @@ export async function getReplaysInDir(
         fileHandle.close();
       }
     });
+
   const replays = (
     (await Promise.all(objs)).filter(
       (replayOrInvalidReplay) =>
@@ -462,8 +467,27 @@ export async function getReplaysInDir(
         return diff;
       }
     }
+    if (replayA.startAt) {
+      return -1;
+    }
+    if (replayB.startAt) {
+      return 1;
+    }
     return replayA.fileName.localeCompare(replayB.fileName);
   });
+  if (replays.length > 1 && replays[0].startAt) {
+    for (let i = 0; i < replays.length - 1; i += 1) {
+      if (replays[i + 1].startAt === undefined) {
+        const durationMs = Math.ceil(
+          (replays[i].lastFrame + 124) / frameMsDivisor,
+        );
+        replays[i + 1].startAt = new Date(
+          replays[i].startAt!.getTime() + durationMs,
+        );
+      }
+    }
+  }
+
   const invalidReplays = (
     (await Promise.all(objs)).filter(
       (replayOrInvalidReplay) =>
