@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
+import { GlobalHotKeys } from 'react-hotkeys';
 import {
   AdminedTournament,
   ChallongeMatchItem,
@@ -435,6 +436,7 @@ function Hello() {
       copyControlsRef.current.scrollIntoView(false);
     }
   }, [replayLoadCount, scrollToBottom]);
+  const [skewDetected, setSkewDetected] = useState(false);
   const [skewDialogOpen, setSkewDialogOpen] = useState(false);
   const [wasDeleted, setWasDeleted] = useState(false);
   const chooseDir = async () => {
@@ -451,7 +453,9 @@ function Hello() {
       setDirExists(true);
       setDirInit(false);
       resetOverrides();
-      if (hasTimeSkew(newReplays)) {
+      const skew = hasTimeSkew(newReplays);
+      setSkewDetected(skew);
+      if (skew) {
         setSkewDialogOpen(true);
       }
       setReplays(newReplays);
@@ -527,7 +531,9 @@ function Hello() {
       );
       setDirInit(false);
       resetOverrides();
-      if (hasTimeSkew(newReplays)) {
+      const skew = hasTimeSkew(newReplays);
+      setSkewDetected(skew);
+      if (skew) {
         setSkewDialogOpen(true);
       }
       setReplays(newReplays);
@@ -1629,7 +1635,11 @@ function Hello() {
                     setSkewDialogOpen(false);
                   }}
                 >
-                  <DialogTitle>Large time gap detected!</DialogTitle>
+                  <DialogTitle>
+                    {skewDetected
+                      ? 'Large time gap detected!'
+                      : 'Re-order replays'}
+                  </DialogTitle>
                   <DialogContent>
                     {replays.map((replay, i) => (
                       <ListItem key={replay.fileName} disableGutters>
@@ -1700,6 +1710,16 @@ function Hello() {
                     </Button>
                   </DialogActions>
                 </Dialog>
+                <GlobalHotKeys
+                  keyMap={{
+                    SKEW: window.electron.isMac ? 'command+t' : 'ctrl+t',
+                  }}
+                  handlers={{
+                    SKEW: () => {
+                      setSkewDialogOpen(true);
+                    },
+                  }}
+                />
               </>
             ) : (
               <Alert
