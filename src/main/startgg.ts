@@ -758,8 +758,8 @@ async function startPhaseGroupsInner(
 
   const inner = phaseGroupAndSetIds
     .map(
-      (phaseGroupAndSetId) => `
-        ${phaseGroupAndSetId.setId}: reportBracketSet(setId: "${phaseGroupAndSetId.setId}") {
+      (phaseGroupAndSetId, i) => `
+        m${i}: reportBracketSet(setId: "${phaseGroupAndSetId.setId}") {
           id
         }`,
     )
