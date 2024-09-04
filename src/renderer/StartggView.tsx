@@ -307,6 +307,7 @@ function PhaseView({
     set: Set,
     phaseGroupId: number,
     phaseGroupName: string,
+    phaseGroupBracketType: number,
   ) => Promise<void>;
   showError: (error: string) => void;
 }) {
@@ -413,7 +414,12 @@ function PhaseView({
               vlerkMode={vlerkMode}
               getPhaseGroup={getPhaseGroup}
               selectSet={(set: Set) =>
-                selectSet(set, phaseGroup.id, phaseGroup.name)
+                selectSet(
+                  set,
+                  phaseGroup.id,
+                  phaseGroup.name,
+                  phaseGroup.bracketType,
+                )
               }
               showError={showError}
             />
@@ -454,6 +460,7 @@ function EventView({
     set: Set,
     phaseGroupId: number,
     phaseGroupName: string,
+    phaseGroupBracketType: number,
     phaseId: number,
     phaseName: string,
   ) => Promise<void>;
@@ -575,11 +582,13 @@ function EventView({
                 set: Set,
                 phaseGroupId: number,
                 phaseGroupName: string,
+                phaseGroupBracketType: number,
               ) =>
                 selectSet(
                   set,
                   phaseGroupId,
                   phaseGroupName,
+                  phaseGroupBracketType,
                   phase.id,
                   phase.name,
                 )
@@ -620,6 +629,7 @@ export default function StartggView({
     set: Set,
     phaseGroupId: number,
     phaseGroupName: string,
+    phaseGroupBracketType: number,
     phaseId: number,
     phaseName: string,
     eventId: number,
@@ -656,6 +666,7 @@ export default function StartggView({
               set: Set,
               phaseGroupId: number,
               phaseGroupName: string,
+              phaseGroupBracketType: number,
               phaseId: number,
               phaseName: string,
             ) =>
@@ -663,6 +674,7 @@ export default function StartggView({
                 set,
                 phaseGroupId,
                 phaseGroupName,
+                phaseGroupBracketType,
                 phaseId,
                 phaseName,
                 event.id,

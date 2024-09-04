@@ -142,6 +142,7 @@ const EMPTY_SELECTED_SET_CHAIN = {
   phaseName: '',
   phaseGroupId: 0,
   phaseGroupName: '',
+  phaseGroupBracketType: 0,
 };
 
 function hasTimeSkew(replays: Replay[]) {
@@ -220,7 +221,7 @@ function Hello() {
     new Map<string, ChallongeTournament>(),
   );
   const [selectedChallongeTournament, setSelectedChallongeTournament] =
-    useState({ name: '', slug: '' });
+    useState({ name: '', slug: '', tournamentType: '' });
   const [manualNames, setManualNames] = useState<string[]>([]);
   useEffect(() => {
     const inner = async () => {
@@ -293,6 +294,7 @@ function Hello() {
           phaseName: phase.name,
           phaseGroupId: phaseGroup.id,
           phaseGroupName: phaseGroup.name,
+          phaseGroupBracketType: phaseGroup.bracketType,
         });
       }
       setChallongeTournaments(await challongeTournamentsPromise);
@@ -960,6 +962,7 @@ function Hello() {
     set: Set,
     phaseGroupId: number,
     phaseGroupName: string,
+    phaseGroupBracketType: number,
     phaseId: number,
     phaseName: string,
     eventId: number,
@@ -975,6 +978,7 @@ function Hello() {
       phaseName,
       phaseGroupId,
       phaseGroupName,
+      phaseGroupBracketType,
     });
     await window.electron.setSelectedSetChain(eventId, phaseId, phaseGroupId);
   };
@@ -986,6 +990,7 @@ function Hello() {
     setSelectedChallongeTournament({
       name: selectedTournament.name,
       slug: selectedTournament.slug,
+      tournamentType: selectedTournament.tournamentType,
     });
     await window.electron.setSelectedChallongeTournament(
       selectedTournament.slug,
@@ -1322,6 +1327,7 @@ function Hello() {
                 phaseGroup: {
                   id: selectedSetChain.phaseGroupId,
                   name: selectedSetChain.phaseGroupName,
+                  bracketType: selectedSetChain.phaseGroupBracketType,
                 },
                 set: {
                   id: copySet.id > 0 ? copySet.id : undefined,
@@ -1336,6 +1342,7 @@ function Hello() {
                 tournament: {
                   name: selectedChallongeTournament.name,
                   slug: selectedChallongeTournament.slug,
+                  tournamentType: selectedChallongeTournament.tournamentType,
                 },
                 set: {
                   id: copySet.id > 0 ? copySet.id : undefined,
@@ -1790,6 +1797,7 @@ function Hello() {
                 set: Set,
                 phaseGroupId: number,
                 phaseGroupName: string,
+                phaseGroupBracketType: number,
                 phaseId: number,
                 phaseName: string,
                 eventId: number,
@@ -1800,6 +1808,7 @@ function Hello() {
                   set,
                   phaseGroupId,
                   phaseGroupName,
+                  phaseGroupBracketType,
                   phaseId,
                   phaseName,
                   eventId,
@@ -2142,7 +2151,11 @@ function Hello() {
           setMode(newMode);
           setSelectedSet(EMPTY_SET);
           setSelectedSetChain(EMPTY_SELECTED_SET_CHAIN);
-          setSelectedChallongeTournament({ name: '', slug: '' });
+          setSelectedChallongeTournament({
+            name: '',
+            slug: '',
+            tournamentType: '',
+          });
           await window.electron.setSelectedSetChain(0, 0, 0);
           await window.electron.setSelectedChallongeTournament('');
         }}

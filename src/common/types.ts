@@ -131,6 +131,7 @@ export type ChallongeTournament = {
   slug: string;
   sets: Sets;
   state: State;
+  // can be 'swiss' or 'round robin' among others
   tournamentType: string;
 };
 
@@ -211,6 +212,14 @@ export type Context = {
     phaseGroup: {
       id: number;
       name: string;
+      /**
+       * 1: SINGLE_ELIMINATION
+       * 2: DOUBLE_ELIMINATION
+       * 3: ROUND_ROBIN
+       * 4: SWISS
+       * https://developer.start.gg/reference/brackettype.doc
+       */
+      bracketType: number;
     };
     set: {
       id?: number;
@@ -224,6 +233,8 @@ export type Context = {
     tournament: {
       name: string;
       slug: string;
+      // can be 'swiss' or 'round robin' among others
+      tournamentType: string;
     };
     set: {
       id?: number;
