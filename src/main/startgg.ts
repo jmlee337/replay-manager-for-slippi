@@ -190,7 +190,7 @@ const setIdToOrdinal = new Map<number, number | null>();
 // sort: completed reverse chronological, then call order
 export async function getPhaseGroup(key: string, id: number) {
   const response = await wrappedFetch(
-    `https://api.smash.gg/phase_group/${id}?expand[]=sets&expand[]=seeds`,
+    `https://api.smash.gg/phase_group/${id}?expand[]=sets&expand[]=entrants`,
   );
   const json = await response.json();
   const phaseGroup = json.entities.groups;
@@ -200,12 +200,12 @@ export async function getPhaseGroup(key: string, id: number) {
     state,
   } = phaseGroup;
 
-  const { seeds } = json.entities;
+  const { entrants: apiEntrants } = json.entities;
   const entrants: Entrant[] = [];
-  if (!Array.isArray(seeds)) {
+  if (!Array.isArray(apiEntrants)) {
     throw new Error(`phaseGroup: ${id} doesn't have seeds array.`);
   }
-  if (seeds.length === 0) {
+  if (apiEntrants.length === 0) {
     return {
       id,
       bracketType,
@@ -222,14 +222,14 @@ export async function getPhaseGroup(key: string, id: number) {
     participantId: number;
     playerId: number;
   }[] = [];
-  seeds.forEach((seed) => {
-    const { entrantId } = seed;
-    if (!Number.isInteger(entrantId)) {
+  apiEntrants.forEach((entrant) => {
+    const { id: entrantId } = entrant;
+    if (!Number.isInteger(id)) {
       return;
     }
 
     const participants: Participant[] = [];
-    Array.from(Object.values(seed.mutations.participants)).forEach(
+    Array.from(Object.values(entrant.mutations.participants)).forEach(
       (participant: any) => {
         const {
           id: participantId,
