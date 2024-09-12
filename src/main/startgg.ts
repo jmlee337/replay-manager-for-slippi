@@ -285,13 +285,84 @@ export async function getPhaseGroup(key: string, id: number) {
   const pendingSets: Set[] = [];
   const { sets } = json.entities;
   if (Array.isArray(sets)) {
+    const reachableSets = sets.filter((set) => !set.unreachable);
+    const gfr = reachableSets.find(
+      (set) => set.fullRoundText === 'Grand Final Reset',
+    );
+    if (gfr) {
+      gfr.round += 1;
+    }
+
+    const idToOrdinal = new Map<number, number>();
+    if (bracketType === 2) {
+      const idToApiSet = new Map<number, any>();
+      reachableSets.forEach((set) => idToApiSet.set(set.id, set));
+
+      const stack: any[] = [];
+      const winnersQueue: any[] = [];
+      let losersQueue: any[] = [];
+
+      const gfs = reachableSets
+        .filter((set) => set.isGF)
+        .sort((setA, setB) => setB.round - setA.round);
+      if (gfs.length === 2) {
+        stack.push(gfs[0]);
+        stack.push(gfs[1]);
+        // queue losers finals
+        if (gfs[1].entrant2PrereqType === 'set') {
+          losersQueue.push(idToApiSet.get(gfs[1].entrant2PrereqId));
+        }
+      } else {
+        reachableSets
+          .filter((set) => set.wProgressionSeedId && set.round < 0)
+          .sort((setA, setB) => setA.round - setB.round)
+          .forEach((set) => {
+            losersQueue.push(set);
+          });
+      }
+
+      while (losersQueue.length > 0) {
+        const newLosersQueue: any[] = [];
+        while (losersQueue.length > 0) {
+          const curr = losersQueue.shift();
+          stack.push(curr);
+
+          if (curr.entrant1PrereqType === 'set') {
+            const pushSet = idToApiSet.get(curr.entrant1PrereqId);
+            if (curr.entrant1PrereqCondition === 'winner') {
+              newLosersQueue.push(pushSet);
+            } else {
+              winnersQueue.push(pushSet);
+            }
+          }
+          if (curr.entrant2PrereqType === 'set') {
+            const pushSet = idToApiSet.get(curr.entrant2PrereqId);
+            if (curr.entrant2PrereqCondition === 'winner') {
+              newLosersQueue.push(pushSet);
+            } else {
+              winnersQueue.push(pushSet);
+            }
+          }
+        }
+        while (winnersQueue.length > 0) {
+          const curr = winnersQueue.shift();
+          stack.push(curr);
+        }
+        losersQueue = newLosersQueue;
+      }
+
+      let ordinal = 1;
+      while (stack.length > 0) {
+        const curr = stack.pop();
+        idToOrdinal.set(curr.id, ordinal);
+        ordinal += 1;
+      }
+    }
+
     const setsToUpdate = new Map<number, Set>();
     const missingStreamSets: { setId: number; streamId: number }[] = [];
-    sets.forEach((set) => {
-      const { id: setId, unreachable } = set;
-      if (unreachable) {
-        return;
-      }
+    reachableSets.forEach((set) => {
+      const { id: setId } = set;
       let newSet: Set | undefined;
       const updatedAtMs = set.updatedAt * 1000;
       const existingSet = idToSet.get(setId);
@@ -325,7 +396,7 @@ export async function getPhaseGroup(key: string, id: number) {
           entrant2Participants,
           entrant2Score: set.entrant2Score,
           stream,
-          ordinal: set.callOrder,
+          ordinal: idToOrdinal.get(setId) ?? set.callOrder,
           wasReported: reportedSetIds.has(setId),
           updatedAtMs,
         };
