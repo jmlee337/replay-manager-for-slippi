@@ -293,7 +293,7 @@ export async function getPhaseGroup(key: string, id: number) {
       gfr.round += 1;
     }
 
-    const idToOrdinal = new Map<number, number>();
+    const idToDEOrdinal = new Map<number, number>();
     if (bracketType === 2) {
       const idToApiSet = new Map<number, any>();
       reachableSets.forEach((set) => idToApiSet.set(set.id, set));
@@ -354,7 +354,7 @@ export async function getPhaseGroup(key: string, id: number) {
       let ordinal = 1;
       while (stack.length > 0) {
         const curr = stack.pop();
-        idToOrdinal.set(curr.id, ordinal);
+        idToDEOrdinal.set(curr.id, ordinal);
         ordinal += 1;
       }
     }
@@ -396,7 +396,7 @@ export async function getPhaseGroup(key: string, id: number) {
           entrant2Participants,
           entrant2Score: set.entrant2Score,
           stream,
-          ordinal: idToOrdinal.get(setId) ?? set.callOrder,
+          ordinal: idToDEOrdinal.get(setId) ?? set.callOrder,
           wasReported: reportedSetIds.has(setId),
           updatedAtMs,
         };
