@@ -89,6 +89,8 @@ export type PhaseGroup = {
    * 2: DOUBLE_ELIMINATION
    * 3: ROUND_ROBIN
    * 4: SWISS
+   * 6: CUSTOM_SCHEDULE
+   * 7: MATCHMAKING (not supported)
    * https://developer.start.gg/reference/brackettype.doc
    */
   bracketType: number;

@@ -188,7 +188,10 @@ const setIdToOrdinal = new Map<number, number | null>();
 // 2139098 the-off-season-2-2 1-000-melee-doubles
 // state {1: not started, 2: started, 3: completed}
 // sort: completed reverse chronological, then call order
-export async function getPhaseGroup(key: string, id: number) {
+export async function getPhaseGroup(
+  key: string,
+  id: number,
+): Promise<PhaseGroup> {
   const response = await wrappedFetch(
     `https://api.smash.gg/phase_group/${id}?expand[]=sets&expand[]=entrants`,
   );
@@ -199,13 +202,20 @@ export async function getPhaseGroup(key: string, id: number) {
     displayIdentifier: name,
     state,
   } = phaseGroup;
+  const isBracketTypeValid =
+    bracketType === 1 || // SINGLE_ELIMINATION
+    bracketType === 2 || // DOUBLE_ELIMINATION
+    bracketType === 3 || // ROUND_ROBIN
+    bracketType === 4 || // SWISS
+    bracketType === 6; // CUSTOM_SCHEDULE
 
   const { entrants: apiEntrants } = json.entities;
   const entrants: Entrant[] = [];
-  if (!Array.isArray(apiEntrants)) {
-    throw new Error(`phaseGroup: ${id} doesn't have seeds array.`);
-  }
-  if (apiEntrants.length === 0) {
+  if (
+    !isBracketTypeValid ||
+    !Array.isArray(apiEntrants) ||
+    apiEntrants.length === 0
+  ) {
     return {
       id,
       bracketType,
