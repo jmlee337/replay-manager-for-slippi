@@ -25,6 +25,8 @@ Mac users, please see how to [open an app from an unidentified developer](https:
 ![ezgif-7-34f4f654c4](https://github.com/user-attachments/assets/2363ca84-0464-4963-b0aa-1f27911bfe70)
 - Swap Zelda/Sheik  
 ![ezgif-2-9c596e3604](https://github.com/user-attachments/assets/4f88c0ca-0efd-4968-b791-ffed3eed193e)
+- Re-time replays according to your PC clock (so you don't have to keep your Wii clocks in sync)  
+![image](https://github.com/user-attachments/assets/6f3ad5e9-9d26-4997-a524-c016ac9202d3)
 - Can use a manually entered list of names if not using start.gg or challonge  
 ![Screenshot 2024-08-09 at 20 49 31](https://github.com/user-attachments/assets/a4335fb1-c6f1-4299-b586-a1805d759847)
 - Search player tags with ctrl/cmd-f  
