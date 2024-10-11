@@ -112,7 +112,7 @@ async function wrappedFetch(
       });
     }
     const keyErr =
-      response.status === 400
+      response.status === 400 || response.status === 401
         ? ' ***start.gg API key invalid or expired!***'
         : '';
     throw new Error(`${response.status} - ${response.statusText}.${keyErr}`);

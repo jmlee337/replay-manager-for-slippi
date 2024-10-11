@@ -309,17 +309,22 @@ function Hello() {
       const errorMessages: string[] = [];
       try {
         setLatestAppVersion(await latestAppVersionPromise);
-      } catch {
-        errorMessages.push('Unable to check for updates.');
+      } catch (e: any) {
+        errorMessages.push(
+          `Unable to check for updates: ${e instanceof Error ? e.message : e}`,
+        );
       }
       try {
         setAdminedTournaments(await tournamentsPromise);
-      } catch {
-        errorMessages.push('Unable to fetch admined tournaments.');
+      } catch (e: any) {
+        errorMessages.push(
+          `Unable to fetch admined tournaments: ${
+            e instanceof Error ? e.message : e
+          }`,
+        );
       }
       setGettingAdminedTournaments(false);
       if (errorMessages.length > 0) {
-        errorMessages.push('Are you connected to the internet?');
         showErrorDialog(errorMessages);
       }
 
