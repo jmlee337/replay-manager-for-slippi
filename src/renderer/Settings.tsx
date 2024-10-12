@@ -63,6 +63,7 @@ export default function Settings({
   folderNameFormat,
   setFolderNameFormat,
   setAdminedTournaments,
+  showErrorDialog,
 }: {
   appVersion: string;
   latestAppVersion: string;
@@ -88,6 +89,7 @@ export default function Settings({
   folderNameFormat: string;
   setFolderNameFormat: (folderNameFormat: string) => void;
   setAdminedTournaments: (tournaments: AdminedTournament[]) => void;
+  showErrorDialog: (errors: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -136,11 +138,6 @@ export default function Settings({
     setHasAutoOpened(true);
   }
 
-  const getTournaments = async () => {
-    setAdminedTournaments(await window.electron.getTournaments());
-    setShouldGetTournaments(false);
-  };
-
   return (
     <>
       <Tooltip title="Settings">
@@ -156,24 +153,30 @@ export default function Settings({
         fullWidth
         open={open}
         onClose={async () => {
-          const promises = [
+          await Promise.all([
             window.electron.setChallongeKey(challongeApiKey),
             window.electron.setStartggKey(startggApiKey),
             window.electron.setFileNameFormat(fileNameFormat),
             window.electron.setFolderNameFormat(folderNameFormat),
-          ];
+          ]);
           if (shouldGetTournaments) {
             if (
               (mode === Mode.STARTGG && startggApiKey) ||
               (mode === Mode.CHALLONGE && challongeApiKey)
             ) {
-              promises.push(getTournaments());
+              try {
+                setAdminedTournaments(await window.electron.getTournaments());
+              } catch (e: any) {
+                showErrorDialog([e instanceof Error ? e.message : e]);
+                return;
+              } finally {
+                setShouldGetTournaments(false);
+              }
             } else {
               setAdminedTournaments([]);
               setShouldGetTournaments(false);
             }
           }
-          await Promise.all(promises);
           setOpen(false);
         }}
       >

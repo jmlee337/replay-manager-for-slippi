@@ -2183,6 +2183,7 @@ function Hello() {
         folderNameFormat={folderNameFormat}
         setFolderNameFormat={setFolderNameFormat}
         setAdminedTournaments={setAdminedTournaments}
+        showErrorDialog={showErrorDialog}
       />
     </>
   );
