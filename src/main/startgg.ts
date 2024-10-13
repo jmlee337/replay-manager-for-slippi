@@ -381,12 +381,23 @@ export async function getPhaseGroup(
       if (existingSet && existingSet.updatedAtMs > updatedAtMs) {
         newSet = existingSet;
       } else {
-        const { entrant1Id, entrant2Id, streamId } = set;
+        // always skip preview sets and bye sets
         if (
           !Number.isInteger(setId) ||
-          !Number.isInteger(entrant1Id) ||
-          !Number.isInteger(entrant2Id)
+          set.entrant1PrereqType === 'bye' ||
+          set.entrant2PrereqType === 'bye'
         ) {
+          idToSet.delete(setId);
+          return;
+        }
+
+        // always record ordinal for gqlSet conversion
+        const ordinal = idToDEOrdinal.get(setId) ?? set.callOrder;
+        setIdToOrdinal.set(setId, ordinal);
+
+        // skip this set if not fully populated
+        const { entrant1Id, entrant2Id, streamId } = set;
+        if (!Number.isInteger(entrant1Id) || !Number.isInteger(entrant2Id)) {
           idToSet.delete(setId);
           return;
         }
@@ -401,19 +412,18 @@ export async function getPhaseGroup(
           round: set.round,
           fullRoundText: set.fullRoundText,
           winnerId: set.winnerId,
-          entrant1Id: set.entrant1Id,
+          entrant1Id,
           entrant1Participants,
           entrant1Score: set.entrant1Score,
-          entrant2Id: set.entrant2Id,
+          entrant2Id,
           entrant2Participants,
           entrant2Score: set.entrant2Score,
           stream,
-          ordinal: idToDEOrdinal.get(setId) ?? set.callOrder,
+          ordinal,
           wasReported: reportedSetIds.has(setId),
           updatedAtMs,
         };
         idToSet.set(setId, newSet);
-        setIdToOrdinal.set(setId, newSet.ordinal);
         if (Number.isInteger(streamId) && !idToStream.has(streamId)) {
           missingStreamSets.push({ setId, streamId });
           setsToUpdate.set(setId, newSet);
