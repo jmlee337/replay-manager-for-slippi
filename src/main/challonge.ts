@@ -32,7 +32,12 @@ export function setSelectedTournament(slug: string) {
 }
 
 async function wrappedFetch(url: string, init: RequestInit) {
-  const response = await fetch(url, init);
+  let response: Response | undefined;
+  try {
+    response = await fetch(url, init);
+  } catch {
+    throw new Error('***You may not be connected to the internet***');
+  }
   if (!response.ok) {
     const keyErr =
       response.status === 401

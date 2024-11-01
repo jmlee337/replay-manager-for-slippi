@@ -88,7 +88,12 @@ async function wrappedFetch(
   input: URL | RequestInfo,
   init?: RequestInit | undefined,
 ): Promise<Response> {
-  const response = await fetch(input, init);
+  let response: Response | undefined;
+  try {
+    response = await fetch(input, init);
+  } catch {
+    throw new Error('***You may not be connected to the internet***');
+  }
   if (!response.ok) {
     if (
       response.status === 500 ||

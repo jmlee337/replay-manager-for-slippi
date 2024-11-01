@@ -789,9 +789,14 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
 
   ipcMain.removeHandler('getLatestVersion');
   ipcMain.handle('getLatestVersion', async () => {
-    const response = await fetch(
-      'https://api.github.com/repos/jmlee337/replay-manager-for-slippi/releases',
-    );
+    let response: Response | undefined;
+    try {
+      response = await fetch(
+        'https://api.github.com/repos/jmlee337/replay-manager-for-slippi/releases',
+      );
+    } catch {
+      throw new Error('***You may not be connected to the internet***');
+    }
     const json = await response.json();
     return json[0].tag_name;
   });
