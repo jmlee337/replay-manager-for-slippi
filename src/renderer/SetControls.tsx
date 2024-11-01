@@ -331,11 +331,20 @@ export default function SetControls({
 
   const gfDeleteOverride =
     set.fullRoundText === 'Grand Final' && hasRemainingReplays;
-  const reportCopyDelete = `Report${reportSettings.alsoCopy ? ', Copy' : ''}${
-    reportSettings.alsoCopy && reportSettings.alsoDelete && !gfDeleteOverride
-      ? ', Delete'
-      : ''
-  }`;
+  let reportCopyDelete = '';
+  if (enforcing) {
+    reportCopyDelete = 'Checking with SLP Enforcer';
+  } else if (reportSettings.alsoCopy && copyDisabled) {
+    reportCopyDelete = 'Copy folder not set';
+  } else {
+    reportCopyDelete = 'Report';
+    if (reportSettings.alsoCopy) {
+      reportCopyDelete += ', Copy';
+    }
+    if (reportSettings.alsoDelete) {
+      reportCopyDelete += ', Delete';
+    }
+  }
   return (
     <>
       {validSelections.valid && (winnerId || isDq) ? (
@@ -480,7 +489,7 @@ export default function SetControls({
           <Stack justifyContent="flex-end">
             <LabeledCheckbox
               checked={reportSettings.alsoCopy}
-              label="Also Copy"
+              label="Copy replays after reporting"
               labelPlacement="start"
               set={(checked: boolean) => {
                 const newReportSettings = { ...reportSettings };
@@ -494,7 +503,7 @@ export default function SetControls({
               label={
                 gfDeleteOverride
                   ? 'Delete disabled, possible Grand Finals Reset replays detected'
-                  : 'Also Delete'
+                  : '...then delete originals and eject'
               }
               labelPlacement="start"
               set={(checked: boolean) => {

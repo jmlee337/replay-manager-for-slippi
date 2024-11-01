@@ -1438,7 +1438,7 @@ function Hello() {
               />
               {dir && dirExists && !gettingReplays && replays.length > 0 && (
                 <>
-                  <Tooltip arrow title="Delete replays folder">
+                  <Tooltip arrow title="Delete replays folder and eject">
                     <IconButton onClick={() => setDirDeleteDialogOpen(true)}>
                       <DeleteForeverOutlined />
                     </IconButton>
@@ -1452,7 +1452,8 @@ function Hello() {
                     <DialogTitle>Delete Replays Folder?</DialogTitle>
                     <DialogContent>
                       <Alert severity="warning">
-                        {replays.length} replays will be deleted!
+                        {replays.length} replays will be deleted! (And the drive
+                        will be ejected if applicable)
                       </Alert>
                     </DialogContent>
                     <DialogActions>
