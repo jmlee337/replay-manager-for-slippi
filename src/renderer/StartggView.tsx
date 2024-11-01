@@ -217,8 +217,9 @@ function PhaseGroupView({
         </ListItemButton>
         <Collapse in={open}>
           <Block>
-            {(phaseGroup.state === State.STARTED ||
-              phaseGroup.state === State.COMPLETED) &&
+            {!getting &&
+              (phaseGroup.state === State.STARTED ||
+                phaseGroup.state === State.COMPLETED) &&
               phaseGroup.sets.completedSets.length === 0 &&
               phaseGroup.sets.pendingSets.length === 0 && (
                 <Typography
