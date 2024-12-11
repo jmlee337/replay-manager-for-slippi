@@ -98,6 +98,7 @@ export type PhaseGroup = {
   name: string;
   sets: Sets;
   state: State;
+  maybeBugged: boolean;
 };
 
 export type Phase = {

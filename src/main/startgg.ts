@@ -230,6 +230,7 @@ export async function getPhaseGroup(
       name,
       state,
       sets: { completedSets: [], pendingSets: [] },
+      maybeBugged: false,
     };
   }
 
@@ -300,6 +301,7 @@ export async function getPhaseGroup(
 
   const completedSets: Set[] = [];
   const pendingSets: Set[] = [];
+  let hasOnlyPreviewSets = false;
   const { sets } = json.entities;
   if (Array.isArray(sets)) {
     const reachableSets = sets.filter((set) => !set.unreachable);
@@ -378,6 +380,9 @@ export async function getPhaseGroup(
 
     const setsToUpdate = new Map<number, Set>();
     const missingStreamSets: { setId: number; streamId: number }[] = [];
+    if (reachableSets.length > 0) {
+      hasOnlyPreviewSets = true;
+    }
     reachableSets.forEach((set) => {
       const { id: setId } = set;
       let newSet: Set | undefined;
@@ -385,6 +390,7 @@ export async function getPhaseGroup(
       const existingSet = idToSet.get(setId);
       if (existingSet && existingSet.updatedAtMs > updatedAtMs) {
         newSet = existingSet;
+        hasOnlyPreviewSets = false;
       } else {
         // always skip preview sets and bye sets
         if (
@@ -395,6 +401,7 @@ export async function getPhaseGroup(
           idToSet.delete(setId);
           return;
         }
+        hasOnlyPreviewSets = false;
 
         // always record ordinal for gqlSet conversion
         const ordinal = idToDEOrdinal.get(setId) ?? set.callOrder;
@@ -469,6 +476,9 @@ export async function getPhaseGroup(
   }
   pendingSets.sort((a, b) => (a.ordinal || a.round) - (b.ordinal || b.round));
   completedSets.sort((a, b) => (b.ordinal || b.round) - (a.ordinal || a.round));
+  const maybeBugged =
+    hasOnlyPreviewSets &&
+    (state === State.STARTED || state === State.COMPLETED);
 
   idToPhaseGroup.set(id, {
     id,
@@ -477,6 +487,7 @@ export async function getPhaseGroup(
     name,
     state,
     sets: { completedSets: [], pendingSets: [] },
+    maybeBugged,
   });
   phaseGroupIdToEntrants.set(id, entrants);
   phaseGroupIdToSets.set(id, { completedSets, pendingSets });
@@ -487,6 +498,7 @@ export async function getPhaseGroup(
     name,
     state,
     sets: { completedSets, pendingSets },
+    maybeBugged,
   };
 }
 
@@ -512,6 +524,7 @@ export async function getPhase(key: string, id: number, recursive: boolean) {
           completedSets: [],
         },
         state: group.state,
+        maybeBugged: false,
       };
       phaseGroups.push(newPhaseGroup);
       phaseGroupIds.push(group.id);

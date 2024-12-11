@@ -217,28 +217,24 @@ function PhaseGroupView({
         </ListItemButton>
         <Collapse in={open}>
           <Block>
-            {!getting &&
-              (phaseGroup.state === State.STARTED ||
-                phaseGroup.state === State.COMPLETED) &&
-              phaseGroup.sets.completedSets.length === 0 &&
-              phaseGroup.sets.pendingSets.length === 0 && (
-                <Typography
-                  alignItems="center"
-                  display="flex"
-                  justifyContent="right"
-                  variant="subtitle2"
-                  width="100%"
+            {!getting && phaseGroup.maybeBugged && (
+              <Typography
+                alignItems="center"
+                display="flex"
+                justifyContent="right"
+                variant="subtitle2"
+                width="100%"
+              >
+                Pool may be bugged,&nbsp;
+                <a
+                  href="https://github.com/jmlee337/replay-manager-for-slippi/blob/main/src/docs/started-preview.md"
+                  target="_blank"
+                  rel="noreferrer"
                 >
-                  Pool may be bugged,&nbsp;
-                  <a
-                    href="https://github.com/jmlee337/replay-manager-for-slippi/blob/main/src/docs/started-preview.md"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    see fixes
-                  </a>
-                </Typography>
-              )}
+                  see fixes
+                </a>
+              </Typography>
+            )}
             {pendingSetsToShow.map((setWithNames) => (
               <SetView
                 key={setWithNames.set.id}
