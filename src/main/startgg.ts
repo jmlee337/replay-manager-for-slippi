@@ -806,8 +806,14 @@ const MARK_SET_IN_PROGRESS_MUTATION = `
 `;
 export async function startSet(key: string, setId: number) {
   const updatedAtMs = Date.now();
-  const data = await fetchGql(key, MARK_SET_IN_PROGRESS_MUTATION, { setId });
-  idToSet.set(setId, gqlSetToSet(data.markSetInProgress, updatedAtMs));
+  try {
+    const data = await fetchGql(key, MARK_SET_IN_PROGRESS_MUTATION, { setId });
+    idToSet.set(setId, gqlSetToSet(data.markSetInProgress, updatedAtMs));
+  } catch (e: any) {
+    if (e.message !== 'Set is already started') {
+      throw e;
+    }
+  }
 }
 
 const REPORT_BRACKET_SET_MUTATION = `
