@@ -299,7 +299,7 @@ export async function getChallongeTournament(
           return existingSet;
         }
         const newSet = toSet(match, idToFullRoundText, stationIdToStream);
-        idToSet.set(newSet.id, newSet);
+        idToSet.set(newSet.id as number, newSet);
         return newSet;
       })
       .forEach((set) => {
