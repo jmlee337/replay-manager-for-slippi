@@ -50,6 +50,9 @@ import {
   PlayerOverrides,
   Replay,
   ReportSettings,
+  SelectedEvent,
+  SelectedPhase,
+  SelectedPhaseGroup,
   Set,
   StartggSet,
   State,
@@ -134,15 +137,14 @@ const EMPTY_SET: Set = {
   updatedAtMs: 0,
 };
 
-const EMPTY_SELECTED_SET_CHAIN = {
-  eventId: 0,
-  eventName: '',
-  eventSlug: '',
-  phaseId: 0,
-  phaseName: '',
-  phaseGroupId: 0,
-  phaseGroupName: '',
-  phaseGroupBracketType: 0,
+const EMPTY_SELECTED_SET_CHAIN: {
+  event?: SelectedEvent;
+  phase?: SelectedPhase;
+  phaseGroup?: SelectedPhaseGroup;
+} = {
+  event: undefined,
+  phase: undefined,
+  phaseGroup: undefined,
 };
 
 function hasTimeSkew(replays: Replay[]) {
@@ -285,18 +287,11 @@ function Hello() {
       }
       const initSelectedSetChain = await selectedSetChainPromise;
       const { event, phase, phaseGroup } = initSelectedSetChain;
-      if (event && phase && phaseGroup) {
-        setSelectedSetChain({
-          eventId: event.id,
-          eventName: event.name,
-          eventSlug: event.slug,
-          phaseId: phase.id,
-          phaseName: phase.name,
-          phaseGroupId: phaseGroup.id,
-          phaseGroupName: phaseGroup.name,
-          phaseGroupBracketType: phaseGroup.bracketType,
-        });
-      }
+      setSelectedSetChain({
+        event,
+        phase,
+        phaseGroup,
+      });
       setChallongeTournaments(await challongeTournamentsPromise);
       const initSelectedChallongeTournament =
         await selectedChallongeTournamentPromise;
@@ -965,27 +960,21 @@ function Hello() {
   };
   const selectStartggSet = async (
     set: Set,
-    phaseGroupId: number,
-    phaseGroupName: string,
-    phaseGroupBracketType: number,
-    phaseId: number,
-    phaseName: string,
-    eventId: number,
-    eventName: string,
-    eventSlug: string,
+    phaseGroup: SelectedPhaseGroup,
+    phase: SelectedPhase,
+    event: SelectedEvent,
   ) => {
     selectSet(set);
     setSelectedSetChain({
-      eventId,
-      eventName,
-      eventSlug,
-      phaseId,
-      phaseName,
-      phaseGroupId,
-      phaseGroupName,
-      phaseGroupBracketType,
+      event,
+      phase,
+      phaseGroup,
     });
-    await window.electron.setSelectedSetChain(eventId, phaseId, phaseGroupId);
+    await window.electron.setSelectedSetChain(
+      event.id,
+      phase.id,
+      phaseGroup.id,
+    );
   };
   const selectChallongeSet = async (
     set: Set,
@@ -1205,11 +1194,17 @@ function Hello() {
         subdir = subdir.replace('{games}', selectedReplays.length.toString(10));
         // do last in case event/phase/phase group names contain template strings LOL
         if (mode === Mode.STARTGG) {
-          subdir = subdir.replace('{event}', selectedSetChain.eventName);
-          subdir = subdir.replace('{phase}', selectedSetChain.phaseName);
+          subdir = subdir.replace(
+            '{event}',
+            selectedSetChain.event?.name ?? '',
+          );
+          subdir = subdir.replace(
+            '{phase}',
+            selectedSetChain.phase?.name ?? '',
+          );
           subdir = subdir.replace(
             '{phaseGroup}',
-            selectedSetChain.phaseGroupName,
+            selectedSetChain.phaseGroup?.name ?? '',
           );
         }
         // do last in case player names contain template strings LOL
@@ -1320,20 +1315,9 @@ function Hello() {
                 tournament: {
                   name: tournament.name,
                 },
-                event: {
-                  id: selectedSetChain.eventId,
-                  name: selectedSetChain.eventName,
-                  slug: selectedSetChain.eventSlug,
-                },
-                phase: {
-                  id: selectedSetChain.phaseId,
-                  name: selectedSetChain.phaseName,
-                },
-                phaseGroup: {
-                  id: selectedSetChain.phaseGroupId,
-                  name: selectedSetChain.phaseGroupName,
-                  bracketType: selectedSetChain.phaseGroupBracketType,
-                },
+                event: selectedSetChain.event!,
+                phase: selectedSetChain.phase!,
+                phaseGroup: selectedSetChain.phaseGroup!,
                 set: {
                   id: copySet.id > 0 ? copySet.id : undefined,
                   fullRoundText: copySet.fullRoundText,
@@ -1793,34 +1777,19 @@ function Hello() {
               searchSubstr={searchSubstr}
               tournament={tournament}
               vlerkMode={vlerkMode}
-              selectedEventId={selectedSetChain.eventId}
-              selectedPhaseId={selectedSetChain.phaseId}
-              selectedPhaseGroupId={selectedSetChain.phaseGroupId}
+              selectedEventId={selectedSetChain.event?.id}
+              selectedPhaseId={selectedSetChain.phase?.id}
+              selectedPhaseGroupId={selectedSetChain.phaseGroup?.id}
               getEvent={(id: number) => getEvent(id)}
               getPhase={(id: number) => getPhase(id)}
               getPhaseGroup={getPhaseGroup}
               selectSet={async (
                 set: Set,
-                phaseGroupId: number,
-                phaseGroupName: string,
-                phaseGroupBracketType: number,
-                phaseId: number,
-                phaseName: string,
-                eventId: number,
-                eventName: string,
-                eventSlug: string,
+                phaseGroup: SelectedPhaseGroup,
+                phase: SelectedPhase,
+                event: SelectedEvent,
               ) => {
-                await selectStartggSet(
-                  set,
-                  phaseGroupId,
-                  phaseGroupName,
-                  phaseGroupBracketType,
-                  phaseId,
-                  phaseName,
-                  eventId,
-                  eventName,
-                  eventSlug,
-                );
+                await selectStartggSet(set, phaseGroup, phase, event);
                 if (guideState !== GuideState.NONE) {
                   setGuideState(GuideState.REPLAYS);
                 }

@@ -182,6 +182,35 @@ export type EnforceResult = {
   playerFailures: EnforcePlayerFailure[];
 };
 
+export type SelectedEvent = {
+  id: number;
+  name: string;
+  slug: string;
+  hasSiblings: boolean;
+};
+
+export type SelectedPhase = {
+  id: number;
+  name: string;
+  hasSiblings: boolean;
+};
+
+export type SelectedPhaseGroup = {
+  id: number;
+  name: string;
+  /**
+   * 1: SINGLE_ELIMINATION
+   * 2: DOUBLE_ELIMINATION
+   * 3: ROUND_ROBIN
+   * 4: SWISS
+   * 6: CUSTOM_SCHEDULE
+   * 7: MATCHMAKING (not supported)
+   * https://developer.start.gg/reference/brackettype.doc
+   */
+  bracketType: number;
+  hasSiblings: boolean;
+};
+
 export type ContextSlot = {
   displayNames: string[];
   ports: number[];
@@ -203,27 +232,9 @@ export type Context = {
     tournament: {
       name: string;
     };
-    event: {
-      id: number;
-      name: string;
-      slug: string;
-    };
-    phase: {
-      id: number;
-      name: string;
-    };
-    phaseGroup: {
-      id: number;
-      name: string;
-      /**
-       * 1: SINGLE_ELIMINATION
-       * 2: DOUBLE_ELIMINATION
-       * 3: ROUND_ROBIN
-       * 4: SWISS
-       * https://developer.start.gg/reference/brackettype.doc
-       */
-      bracketType: number;
-    };
+    event: SelectedEvent;
+    phase: SelectedPhase;
+    phaseGroup: SelectedPhaseGroup;
     set: {
       id?: number;
       fullRoundText: string;

@@ -6,14 +6,14 @@ import {
   Context,
   CopySettings,
   EnforceResult,
-  Event,
   InvalidReplay,
   Mode,
   Output,
-  Phase,
-  PhaseGroup,
   Replay,
   ReportSettings,
+  SelectedEvent,
+  SelectedPhase,
+  SelectedPhaseGroup,
   Set,
   StartggSet,
   Tournament,
@@ -58,9 +58,9 @@ const electronHandler = {
   getSelectedSet: (): Promise<Set | undefined> =>
     ipcRenderer.invoke('getSelectedSet'),
   getSelectedSetChain: (): Promise<{
-    event: Event | undefined;
-    phase: Phase | undefined;
-    phaseGroup: PhaseGroup | undefined;
+    event?: SelectedEvent;
+    phase?: SelectedPhase;
+    phaseGroup?: SelectedPhaseGroup;
   }> => ipcRenderer.invoke('getSelectedSetChain'),
   setSelectedSetChain: (
     eventId: number,

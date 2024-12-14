@@ -25,6 +25,9 @@ import {
   NameWithHighlight,
   Phase,
   PhaseGroup,
+  SelectedEvent,
+  SelectedPhase,
+  SelectedPhaseGroup,
   Set,
   State,
   Tournament,
@@ -318,15 +321,10 @@ function PhaseView({
   tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
-  selectedPhaseGroupId: number;
+  selectedPhaseGroupId: number | undefined;
   getPhase: (id: number) => Promise<void>;
   getPhaseGroup: (id: number) => Promise<void>;
-  selectSet: (
-    set: Set,
-    phaseGroupId: number,
-    phaseGroupName: string,
-    phaseGroupBracketType: number,
-  ) => Promise<void>;
+  selectSet: (set: Set, phaseGroup: SelectedPhaseGroup) => Promise<void>;
   showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
@@ -432,12 +430,12 @@ function PhaseView({
               vlerkMode={vlerkMode}
               getPhaseGroup={getPhaseGroup}
               selectSet={(set: Set) =>
-                selectSet(
-                  set,
-                  phaseGroup.id,
-                  phaseGroup.name,
-                  phaseGroup.bracketType,
-                )
+                selectSet(set, {
+                  id: phaseGroup.id,
+                  name: phaseGroup.name,
+                  bracketType: phaseGroup.bracketType,
+                  hasSiblings: phase.phaseGroups.length > 1,
+                })
               }
               showError={showError}
             />
@@ -469,18 +467,15 @@ function EventView({
   tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
-  selectedPhaseId: number;
-  selectedPhaseGroupId: number;
+  selectedPhaseId: number | undefined;
+  selectedPhaseGroupId: number | undefined;
   getEvent: (id: number) => Promise<void>;
   getPhase: (id: number) => Promise<void>;
   getPhaseGroup: (id: number) => Promise<void>;
   selectSet: (
     set: Set,
-    phaseGroupId: number,
-    phaseGroupName: string,
-    phaseGroupBracketType: number,
-    phaseId: number,
-    phaseName: string,
+    phaseGroup: SelectedPhaseGroup,
+    phase: SelectedPhase,
   ) => Promise<void>;
   showError: (error: string) => void;
 }) {
@@ -596,20 +591,12 @@ function EventView({
               selectedPhaseGroupId={selectedPhaseGroupId}
               getPhase={getPhase}
               getPhaseGroup={getPhaseGroup}
-              selectSet={(
-                set: Set,
-                phaseGroupId: number,
-                phaseGroupName: string,
-                phaseGroupBracketType: number,
-              ) =>
-                selectSet(
-                  set,
-                  phaseGroupId,
-                  phaseGroupName,
-                  phaseGroupBracketType,
-                  phase.id,
-                  phase.name,
-                )
+              selectSet={(set: Set, phaseGroup: SelectedPhaseGroup) =>
+                selectSet(set, phaseGroup, {
+                  id: phase.id,
+                  name: phase.name,
+                  hasSiblings: event.phases.length > 1,
+                })
               }
               showError={showError}
             />
@@ -637,22 +624,17 @@ export default function StartggView({
   searchSubstr: string;
   tournament: Tournament;
   vlerkMode: boolean;
-  selectedEventId: number;
-  selectedPhaseId: number;
-  selectedPhaseGroupId: number;
+  selectedEventId: number | undefined;
+  selectedPhaseId: number | undefined;
+  selectedPhaseGroupId: number | undefined;
   getEvent: (id: number) => Promise<void>;
   getPhase: (id: number) => Promise<void>;
   getPhaseGroup: (id: number) => Promise<void>;
   selectSet: (
     set: Set,
-    phaseGroupId: number,
-    phaseGroupName: string,
-    phaseGroupBracketType: number,
-    phaseId: number,
-    phaseName: string,
-    eventId: number,
-    eventName: string,
-    eventSlug: string,
+    phaseGroup: SelectedPhaseGroup,
+    phase: SelectedPhase,
+    event: SelectedEvent,
   ) => Promise<void>;
 }) {
   const [error, setError] = useState('');
@@ -682,23 +664,15 @@ export default function StartggView({
             getPhaseGroup={getPhaseGroup}
             selectSet={(
               set: Set,
-              phaseGroupId: number,
-              phaseGroupName: string,
-              phaseGroupBracketType: number,
-              phaseId: number,
-              phaseName: string,
+              phaseGroup: SelectedPhaseGroup,
+              phase: SelectedPhase,
             ) =>
-              selectSet(
-                set,
-                phaseGroupId,
-                phaseGroupName,
-                phaseGroupBracketType,
-                phaseId,
-                phaseName,
-                event.id,
-                event.name,
-                event.slug,
-              )
+              selectSet(set, phaseGroup, phase, {
+                id: event.id,
+                name: event.name,
+                slug: event.slug,
+                hasSiblings: tournament.events.length > 1,
+              })
             }
             showError={showError}
           />

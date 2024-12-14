@@ -5,6 +5,9 @@ import {
   Participant,
   Phase,
   PhaseGroup,
+  SelectedEvent,
+  SelectedPhase,
+  SelectedPhaseGroup,
   Set,
   Sets,
   StartggSet,
@@ -66,11 +69,43 @@ export function setSelectedSetId(id: number) {
   selectedSetId = id;
 }
 
-export function getSelectedSetChain() {
+export function getSelectedSetChain(): {
+  event?: SelectedEvent;
+  phase?: SelectedPhase;
+  phaseGroup?: SelectedPhaseGroup;
+} {
+  const event = idToEvent.get(selectedEventId);
+  const phase = idToPhase.get(selectedPhaseId);
+  const phaseGroup = idToPhaseGroup.get(selectedPhaseGroupId);
   return {
-    event: idToEvent.get(selectedEventId),
-    phase: idToPhase.get(selectedPhaseId),
-    phaseGroup: idToPhaseGroup.get(selectedPhaseGroupId),
+    event:
+      event && currentTournament
+        ? {
+            id: event.id,
+            name: event.name,
+            slug: event.slug,
+            hasSiblings:
+              tournamentSlugToEventIds.get(currentTournament.slug)!.length > 1,
+          }
+        : undefined,
+    phase:
+      phase && currentTournament
+        ? {
+            id: phase.id,
+            name: phase.name,
+            hasSiblings: eventIdToPhaseIds.get(selectedEventId)!.length > 1,
+          }
+        : undefined,
+    phaseGroup:
+      phaseGroup && currentTournament
+        ? {
+            id: phaseGroup.id,
+            name: phaseGroup.name,
+            bracketType: phaseGroup.bracketType,
+            hasSiblings:
+              phaseIdToPhaseGroupIds.get(selectedPhaseId)!.length > 1,
+          }
+        : undefined,
   };
 }
 
