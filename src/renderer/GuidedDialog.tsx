@@ -21,7 +21,6 @@ export default function GuidedDialog({
   gettingTournament,
   tournamentSet,
   copyDirSet,
-  tournamentStarted,
   setStartggTournamentSlug,
   getStartggTournament,
   getChallongeTournament,
@@ -44,7 +43,6 @@ export default function GuidedDialog({
   gettingTournament: boolean;
   tournamentSet: boolean;
   copyDirSet: boolean;
-  tournamentStarted: boolean;
   setStartggTournamentSlug: (startggTournamentSlug: string) => void;
   getStartggTournament: (
     maybeSlug: string,
@@ -94,9 +92,7 @@ export default function GuidedDialog({
             <Button
               onClick={() => {
                 setConfirmedCopySettings(true);
-                setBackdropOpen(
-                  !tournamentStarted || state !== GuideState.NONE,
-                );
+                setBackdropOpen(state !== GuideState.NONE);
               }}
               variant="contained"
             >
@@ -116,34 +112,6 @@ export default function GuidedDialog({
         {tournamentSet &&
           copyDirSet &&
           confirmedCopySettings &&
-          !tournamentStarted && (
-            <>
-              <Alert severity="warning">
-                {mode === Mode.STARTGG ? (
-                  <>
-                    Start event (refresh event
-                    <br />
-                    if you start on website)
-                  </>
-                ) : (
-                  'Start tournament (then refresh)'
-                )}
-              </Alert>
-              <Button
-                disabled={backdropOpen}
-                onClick={() => {
-                  setBackdropOpen(true);
-                }}
-                variant="contained"
-              >
-                Highlight Step
-              </Button>
-            </>
-          )}
-        {tournamentSet &&
-          copyDirSet &&
-          confirmedCopySettings &&
-          tournamentStarted &&
           state === GuideState.NONE && (
             <Alert severity="success">
               Guided mode ready, insert USB drive...

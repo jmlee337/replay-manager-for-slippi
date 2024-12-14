@@ -51,13 +51,11 @@ function SetView({
 }
 
 export default function ChallongeView({
-  elevateStartButton,
   searchSubstr,
   tournament,
   getChallongeTournament,
   selectSet,
 }: {
-  elevateStartButton: boolean;
   searchSubstr: string;
   tournament: ChallongeTournament;
   getChallongeTournament: () => Promise<void>;
@@ -102,13 +100,7 @@ export default function ChallongeView({
           >
             {tournament.name}
           </div>
-          <Box
-            bgcolor={elevateStartButton ? 'white' : undefined}
-            sx={{
-              zIndex: (theme) =>
-                elevateStartButton ? theme.zIndex.drawer + 2 : undefined,
-            }}
-          >
+          <Box>
             <Tooltip arrow title="Refresh tournament">
               <IconButton
                 onClick={(ev) => {
@@ -122,13 +114,7 @@ export default function ChallongeView({
             </Tooltip>
           </Box>
           {tournament.state === State.PENDING && (
-            <Box
-              bgcolor={elevateStartButton ? 'white' : undefined}
-              sx={{
-                zIndex: (theme) =>
-                  elevateStartButton ? theme.zIndex.drawer + 2 : undefined,
-              }}
-            >
+            <Box>
               <Tooltip arrow title="Start tournament on website">
                 <IconButton
                   onClick={(ev) => {

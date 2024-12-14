@@ -82,7 +82,6 @@ function PhaseGroupView({
   phaseGroup,
   initiallyOpen,
   isOnline,
-  elevateStartButton,
   eventId,
   phaseId,
   tournamentSlug,
@@ -94,7 +93,6 @@ function PhaseGroupView({
   phaseGroup: PhaseGroup;
   initiallyOpen: boolean;
   isOnline: boolean;
-  elevateStartButton: boolean;
   eventId: number;
   phaseId: number;
   tournamentSlug: string;
@@ -158,13 +156,7 @@ function PhaseGroupView({
             </IconButton>
           </Tooltip>
           {phaseGroup.state === State.PENDING && (
-            <Box
-              bgcolor={elevateStartButton ? 'white' : undefined}
-              sx={{
-                zIndex: (theme) =>
-                  elevateStartButton ? theme.zIndex.drawer + 2 : undefined,
-              }}
-            >
+            <Box>
               {isOnline && (
                 <Tooltip arrow title="Start pool on website">
                   <IconButton
@@ -249,7 +241,6 @@ function PhaseView({
   phase,
   initiallyOpen,
   isOnline,
-  elevateStartButton,
   eventId,
   tournamentSlug,
   searchSubstr,
@@ -262,7 +253,6 @@ function PhaseView({
   phase: Phase;
   initiallyOpen: boolean;
   isOnline: boolean;
-  elevateStartButton: boolean;
   eventId: number;
   tournamentSlug: string;
   searchSubstr: string;
@@ -293,21 +283,7 @@ function PhaseView({
         }}
         sx={{ typography: 'caption' }}
       >
-        {open ? (
-          <KeyboardArrowDown />
-        ) : (
-          <Box
-            bgcolor={elevateStartButton && isOnline ? 'white' : undefined}
-            sx={{
-              zIndex: (theme) =>
-                elevateStartButton && isOnline
-                  ? theme.zIndex.drawer + 2
-                  : undefined,
-            }}
-          >
-            <KeyboardArrowRight />
-          </Box>
-        )}
+        {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
         <Name>{phase.name}</Name>
         {'\u00A0'}({phase.id})
         <Tooltip arrow title="Refresh phase">
@@ -333,7 +309,6 @@ function PhaseView({
                 phaseGroup.id === selectedPhaseGroupId
               }
               isOnline={isOnline}
-              elevateStartButton={elevateStartButton}
               eventId={eventId}
               phaseId={phase.id}
               tournamentSlug={tournamentSlug}
@@ -359,7 +334,6 @@ function PhaseView({
 function EventView({
   event,
   initiallyOpen,
-  elevateStartButton,
   tournamentSlug,
   searchSubstr,
   vlerkMode,
@@ -372,7 +346,6 @@ function EventView({
 }: {
   event: Event;
   initiallyOpen: boolean;
-  elevateStartButton: boolean;
   tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
@@ -408,32 +381,10 @@ function EventView({
         }}
         sx={{ typography: 'caption' }}
       >
-        {open ? (
-          <KeyboardArrowDown />
-        ) : (
-          <Box
-            bgcolor={elevateStartButton && event.isOnline ? 'white' : undefined}
-            sx={{
-              zIndex: (theme) =>
-                elevateStartButton && event.isOnline
-                  ? theme.zIndex.drawer + 2
-                  : undefined,
-            }}
-          >
-            <KeyboardArrowRight />
-          </Box>
-        )}
+        {open ? <KeyboardArrowDown /> : <KeyboardArrowRight />}
         <Name>{event.name}</Name>
         {'\u00A0'}({event.id})
-        <Box
-          bgcolor={elevateStartButton && event.isOnline ? 'white' : undefined}
-          sx={{
-            zIndex: (theme) =>
-              elevateStartButton && event.isOnline
-                ? theme.zIndex.drawer + 2
-                : undefined,
-          }}
-        >
+        <Box>
           <Tooltip arrow title="Refresh event">
             <IconButton
               onClick={(ev) => {
@@ -457,7 +408,6 @@ function EventView({
                 event.phases.length === 1 || phase.id === selectedPhaseId
               }
               isOnline={event.isOnline}
-              elevateStartButton={elevateStartButton}
               eventId={event.id}
               tournamentSlug={tournamentSlug}
               searchSubstr={searchSubstr}
@@ -481,7 +431,6 @@ function EventView({
 }
 
 export default function StartggView({
-  elevateStartButton,
   searchSubstr,
   tournament,
   vlerkMode,
@@ -493,7 +442,6 @@ export default function StartggView({
   getPhaseGroup,
   selectSet,
 }: {
-  elevateStartButton: boolean;
   searchSubstr: string;
   tournament: Tournament;
   vlerkMode: boolean;
@@ -519,7 +467,6 @@ export default function StartggView({
           initiallyOpen={
             tournament.events.length === 1 || event.id === selectedEventId
           }
-          elevateStartButton={elevateStartButton}
           tournamentSlug={tournament.slug}
           searchSubstr={searchSubstr}
           vlerkMode={vlerkMode}

@@ -490,20 +490,8 @@ function Hello() {
     (mode === Mode.CHALLONGE && challongeTournaments.size > 0) ||
     (mode === Mode.MANUAL && manualNames.length > 0);
   const copyDirSet = copyDir.length > 0;
-  const tournamentStarted =
-    (mode === Mode.STARTGG &&
-      tournament.events.some((event) => event.state !== State.PENDING)) ||
-    (mode === Mode.CHALLONGE &&
-      Array.from(challongeTournaments.values()).some(
-        (challongeTournament) => challongeTournament.state !== State.PENDING,
-      )) ||
-    mode === Mode.MANUAL;
   const guideActive =
-    guidedMode &&
-    tournamentSet &&
-    copyDirSet &&
-    confirmedCopySettings &&
-    tournamentStarted;
+    guidedMode && tournamentSet && copyDirSet && confirmedCopySettings;
   const refreshReplays = useCallback(
     async (triggerGuide?: boolean) => {
       let newReplays: Replay[] = [];
@@ -617,27 +605,13 @@ function Hello() {
           setSelectedSet(newSelectedSet);
         }
         if (newTournament) {
-          if (
-            tournamentSet &&
-            copyDirSet &&
-            confirmedCopySettings &&
-            !tournamentStarted &&
-            newTournament.events.some((event) => event.state !== State.PENDING)
-          ) {
+          if (tournamentSet && copyDirSet && confirmedCopySettings) {
             setGuideBackdropOpen(false);
           }
           setTournament(newTournament);
         }
         if (newChallongeTournaments) {
-          if (
-            tournamentSet &&
-            copyDirSet &&
-            confirmedCopySettings &&
-            !tournamentStarted &&
-            Array.from(newChallongeTournaments.values()).some(
-              (ct) => ct.state !== State.PENDING,
-            )
-          ) {
+          if (tournamentSet && copyDirSet && confirmedCopySettings) {
             setGuideBackdropOpen(false);
           }
           setChallongeTournaments(newChallongeTournaments);
@@ -645,13 +619,7 @@ function Hello() {
       },
       selectedSet.id,
     );
-  }, [
-    confirmedCopySettings,
-    copyDirSet,
-    selectedSet,
-    tournamentSet,
-    tournamentStarted,
-  ]);
+  }, [confirmedCopySettings, copyDirSet, selectedSet, tournamentSet]);
   useEffect(() => {
     window.electron.onUsb((e, newDir) => {
       setDir(newDir);
@@ -1801,14 +1769,6 @@ function Hello() {
                   setGuideState(GuideState.REPLAYS);
                 }
               }}
-              elevateStartButton={
-                guidedMode &&
-                guideBackdropOpen &&
-                tournamentSet &&
-                copyDirSet &&
-                confirmedCopySettings &&
-                !tournamentStarted
-              }
             />
           )}
           {mode === Mode.CHALLONGE &&
@@ -1827,14 +1787,6 @@ function Hello() {
                       setGuideState(GuideState.REPLAYS);
                     }
                   }}
-                  elevateStartButton={
-                    guidedMode &&
-                    guideBackdropOpen &&
-                    tournamentSet &&
-                    copyDirSet &&
-                    confirmedCopySettings &&
-                    !tournamentStarted
-                  }
                 />
               ),
             )}
@@ -1876,7 +1828,6 @@ function Hello() {
                 gettingTournament={gettingTournament}
                 tournamentSet={tournamentSet}
                 copyDirSet={copyDirSet}
-                tournamentStarted={tournamentStarted}
                 setStartggTournamentSlug={setSlug}
                 getStartggTournament={getTournament}
                 getChallongeTournament={getChallongeTournament}
