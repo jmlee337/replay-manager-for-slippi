@@ -76,21 +76,12 @@ const electronHandler = {
     ipcRenderer.invoke('getPhase', id, recursive),
   getPhaseGroup: (id: number): Promise<void> =>
     ipcRenderer.invoke('getPhaseGroup', id),
-  startSet: (id: number): Promise<void> => ipcRenderer.invoke('startSet', id),
+  startSet: (id: number | string): Promise<void> =>
+    ipcRenderer.invoke('startSet', id),
   reportSet: (set: StartggSet): Promise<Set> =>
     ipcRenderer.invoke('reportSet', set),
   updateSet: (set: StartggSet): Promise<Set> =>
     ipcRenderer.invoke('updateSet', set),
-  startEvent: (id: number): Promise<void> =>
-    ipcRenderer.invoke('startEvent', id),
-  startPhase: (id: number, eventId: number): Promise<void> =>
-    ipcRenderer.invoke('startPhase', id, eventId),
-  startPhaseGroup: (
-    id: number,
-    phaseId: number,
-    eventId: number,
-  ): Promise<void> =>
-    ipcRenderer.invoke('startPhaseGroup', id, phaseId, eventId),
   getMode: (): Promise<Mode> => ipcRenderer.invoke('getMode'),
   setMode: (mode: Mode): Promise<void> => ipcRenderer.invoke('setMode', mode),
   getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
@@ -172,7 +163,7 @@ const electronHandler = {
         challongeTournaments?: Map<string, ChallongeTournament>;
       },
     ) => void,
-    selectedSetId: number,
+    selectedSetId: number | string,
   ) => {
     ipcRenderer.removeAllListeners('tournament');
     ipcRenderer.on('tournament', callback);

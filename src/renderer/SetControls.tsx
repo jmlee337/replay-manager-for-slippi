@@ -89,13 +89,7 @@ function setAndReplaysValid(selectedReplays: Replay[], set: Set, mode: Mode) {
       }
       return false;
     }
-    if (!Number.isInteger) {
-      if (!reason) {
-        reason = 'Preview sets cannot be reported';
-      }
-      return false;
-    }
-    if (set.id < 0) {
+    if (Number.isInteger(set.id) && (set.id as number) < 0) {
       if (!reason) {
         reason = 'Tiebreaker sets cannot be reported';
       }
@@ -539,7 +533,7 @@ export default function SetControls({
                   );
                 } else if (mode === Mode.CHALLONGE) {
                   updatedSet = await reportChallongeSet(
-                    set.id,
+                    set.id as number,
                     challongeMatchItems,
                   );
                 }

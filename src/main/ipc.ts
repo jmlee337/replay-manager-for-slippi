@@ -32,9 +32,6 @@ import {
   reportSet,
   updateSet,
   getTournaments,
-  startEvent,
-  startPhase,
-  startPhaseGroup,
   getCurrentTournament,
   getSelectedSet,
   setSelectedSetId,
@@ -319,7 +316,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('startSet');
   ipcMain.handle(
     'startSet',
-    async (event: IpcMainInvokeEvent, setId: number) => {
+    async (event: IpcMainInvokeEvent, setId: number | string) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
@@ -366,59 +363,6 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         startggTournament: getCurrentTournament(),
       });
       return updatedSet;
-    },
-  );
-
-  ipcMain.removeHandler('startEvent');
-  ipcMain.handle(
-    'startEvent',
-    async (event: IpcMainInvokeEvent, id: number) => {
-      if (!sggApiKey) {
-        throw new Error('Please set start.gg API key');
-      }
-
-      await startEvent(sggApiKey, id);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedSet(),
-        startggTournament: getCurrentTournament(),
-      });
-    },
-  );
-
-  ipcMain.removeHandler('startPhase');
-  ipcMain.handle(
-    'startPhase',
-    async (event: IpcMainInvokeEvent, id: number, eventId: number) => {
-      if (!sggApiKey) {
-        throw new Error('Please set start.gg API key');
-      }
-
-      await startPhase(sggApiKey, id, eventId);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedSet(),
-        startggTournament: getCurrentTournament(),
-      });
-    },
-  );
-
-  ipcMain.removeHandler('startPhaseGroup');
-  ipcMain.handle(
-    'startPhaseGroup',
-    async (
-      event: IpcMainInvokeEvent,
-      id: number,
-      phaseId: number,
-      eventId: number,
-    ) => {
-      if (!sggApiKey) {
-        throw new Error('Please set start.gg API key');
-      }
-
-      await startPhaseGroup(sggApiKey, id, phaseId, eventId);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedSet(),
-        startggTournament: getCurrentTournament(),
-      });
     },
   );
 
@@ -549,11 +493,11 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('setSelectedSetId');
   ipcMain.handle(
     'setSelectedSetId',
-    (event: IpcMainInvokeEvent, selectedSetId: number) => {
+    (event: IpcMainInvokeEvent, selectedSetId: number | string) => {
       if (mode === Mode.STARTGG) {
         setSelectedSetId(selectedSetId);
       } else if (mode === Mode.CHALLONGE) {
-        setSelectedChallongeSetId(selectedSetId);
+        setSelectedChallongeSetId(selectedSetId as number);
       }
     },
   );

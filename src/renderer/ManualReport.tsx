@@ -109,7 +109,9 @@ export default function ManualReport({
           <IconButton
             color="primary"
             disabled={
-              selectedSet.id <= 0 || selectedSet.state === State.COMPLETED
+              (Number.isInteger(selectedSet.id) &&
+                (selectedSet.id as number) <= 0) ||
+              selectedSet.state === State.COMPLETED
             }
             size="small"
             onClick={() => {
@@ -339,7 +341,10 @@ export default function ManualReport({
                     selectedSet.state === State.COMPLETED,
                   );
                 } else if (mode === Mode.CHALLONGE) {
-                  await reportChallongeSet(selectedSet.id, challongeMatchItems);
+                  await reportChallongeSet(
+                    selectedSet.id as number,
+                    challongeMatchItems,
+                  );
                 }
                 resetForm();
                 setOpen(false);

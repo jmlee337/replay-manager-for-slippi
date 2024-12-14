@@ -3,10 +3,6 @@ import {
   Box,
   CircularProgress,
   Collapse,
-  Dialog,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
   IconButton,
   ListItemButton,
   Tooltip,
@@ -85,7 +81,7 @@ function SetView({
 function PhaseGroupView({
   phaseGroup,
   initiallyOpen,
-  isStartable,
+  isOnline,
   elevateStartButton,
   eventId,
   phaseId,
@@ -94,11 +90,10 @@ function PhaseGroupView({
   vlerkMode,
   getPhaseGroup,
   selectSet,
-  showError,
 }: {
   phaseGroup: PhaseGroup;
   initiallyOpen: boolean;
-  isStartable: boolean;
+  isOnline: boolean;
   elevateStartButton: boolean;
   eventId: number;
   phaseId: number;
@@ -107,10 +102,8 @@ function PhaseGroupView({
   vlerkMode: boolean;
   getPhaseGroup: (id: number) => Promise<void>;
   selectSet: (set: Set) => Promise<void>;
-  showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
-  const [starting, setStarting] = useState(false);
   const [completedOpen, setCompletedOpen] = useState(vlerkMode);
   const [open, setOpen] = useState(initiallyOpen);
 
@@ -118,18 +111,6 @@ function PhaseGroupView({
     setGetting(true);
     await getPhaseGroup(phaseGroup.id);
     setGetting(false);
-  };
-  const start = async () => {
-    setStarting(true);
-    try {
-      await window.electron.startPhaseGroup(phaseGroup.id, phaseId, eventId);
-    } catch (e: any) {
-      if (e instanceof Error) {
-        showError(e.message);
-      }
-    } finally {
-      setStarting(false);
-    }
   };
 
   const pendingSetsToShow = filterSets(
@@ -184,23 +165,7 @@ function PhaseGroupView({
                   elevateStartButton ? theme.zIndex.drawer + 2 : undefined,
               }}
             >
-              {isStartable ? (
-                <Tooltip arrow title="Start pool (lock seeds)">
-                  <IconButton
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      start();
-                    }}
-                    size="small"
-                  >
-                    {starting ? (
-                      <CircularProgress size="24px" />
-                    ) : (
-                      <PlayArrow />
-                    )}
-                  </IconButton>
-                </Tooltip>
-              ) : (
+              {isOnline && (
                 <Tooltip arrow title="Start pool on website">
                   <IconButton
                     onClick={(ev) => {
@@ -220,24 +185,6 @@ function PhaseGroupView({
         </ListItemButton>
         <Collapse in={open}>
           <Block>
-            {!getting && phaseGroup.maybeBugged && (
-              <Typography
-                alignItems="center"
-                display="flex"
-                justifyContent="right"
-                variant="subtitle2"
-                width="100%"
-              >
-                Pool may be bugged,&nbsp;
-                <a
-                  href="https://github.com/jmlee337/replay-manager-for-slippi/blob/main/src/docs/started-preview.md"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  see fixes
-                </a>
-              </Typography>
-            )}
             {pendingSetsToShow.map((setWithNames) => (
               <SetView
                 key={setWithNames.set.id}
@@ -301,7 +248,7 @@ function PhaseGroupView({
 function PhaseView({
   phase,
   initiallyOpen,
-  isStartable,
+  isOnline,
   elevateStartButton,
   eventId,
   tournamentSlug,
@@ -311,11 +258,10 @@ function PhaseView({
   getPhase,
   getPhaseGroup,
   selectSet,
-  showError,
 }: {
   phase: Phase;
   initiallyOpen: boolean;
-  isStartable: boolean;
+  isOnline: boolean;
   elevateStartButton: boolean;
   eventId: number;
   tournamentSlug: string;
@@ -325,28 +271,14 @@ function PhaseView({
   getPhase: (id: number) => Promise<void>;
   getPhaseGroup: (id: number) => Promise<void>;
   selectSet: (set: Set, phaseGroup: SelectedPhaseGroup) => Promise<void>;
-  showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
-  const [starting, setStarting] = useState(false);
   const [open, setOpen] = useState(initiallyOpen);
 
   const get = async () => {
     setGetting(true);
     await getPhase(phase.id);
     setGetting(false);
-  };
-  const start = async () => {
-    setStarting(true);
-    try {
-      await window.electron.startPhase(phase.id, eventId);
-    } catch (e: any) {
-      if (e instanceof Error) {
-        showError(e.message);
-      }
-    } finally {
-      setStarting(false);
-    }
   };
   return (
     <>
@@ -365,10 +297,10 @@ function PhaseView({
           <KeyboardArrowDown />
         ) : (
           <Box
-            bgcolor={elevateStartButton && !isStartable ? 'white' : undefined}
+            bgcolor={elevateStartButton && isOnline ? 'white' : undefined}
             sx={{
               zIndex: (theme) =>
-                elevateStartButton && !isStartable
+                elevateStartButton && isOnline
                   ? theme.zIndex.drawer + 2
                   : undefined,
             }}
@@ -389,27 +321,6 @@ function PhaseView({
             {getting ? <CircularProgress size="24px" /> : <Refresh />}
           </IconButton>
         </Tooltip>
-        {isStartable && phase.state === State.PENDING && (
-          <Box
-            bgcolor={elevateStartButton ? 'white' : undefined}
-            sx={{
-              zIndex: (theme) =>
-                elevateStartButton ? theme.zIndex.drawer + 2 : undefined,
-            }}
-          >
-            <Tooltip arrow title="Start phase (lock seeds and pools)">
-              <IconButton
-                onClick={(ev) => {
-                  ev.stopPropagation();
-                  start();
-                }}
-                size="small"
-              >
-                {starting ? <CircularProgress size="24px" /> : <PlayArrow />}
-              </IconButton>
-            </Tooltip>
-          </Box>
-        )}
       </ListItemButton>
       <Collapse in={open}>
         <Block>
@@ -421,7 +332,7 @@ function PhaseView({
                 phase.phaseGroups.length === 1 ||
                 phaseGroup.id === selectedPhaseGroupId
               }
-              isStartable={isStartable}
+              isOnline={isOnline}
               elevateStartButton={elevateStartButton}
               eventId={eventId}
               phaseId={phase.id}
@@ -437,7 +348,6 @@ function PhaseView({
                   hasSiblings: phase.phaseGroups.length > 1,
                 })
               }
-              showError={showError}
             />
           ))}
         </Block>
@@ -459,7 +369,6 @@ function EventView({
   getPhase,
   getPhaseGroup,
   selectSet,
-  showError,
 }: {
   event: Event;
   initiallyOpen: boolean;
@@ -477,28 +386,14 @@ function EventView({
     phaseGroup: SelectedPhaseGroup,
     phase: SelectedPhase,
   ) => Promise<void>;
-  showError: (error: string) => void;
 }) {
   const [getting, setGetting] = useState(false);
-  const [starting, setStarting] = useState(false);
   const [open, setOpen] = useState(initiallyOpen);
 
   const get = async () => {
     setGetting(true);
     await getEvent(event.id);
     setGetting(false);
-  };
-  const start = async () => {
-    setStarting(true);
-    try {
-      await window.electron.startEvent(event.id);
-    } catch (e: any) {
-      if (e instanceof Error) {
-        showError(e.message);
-      }
-    } finally {
-      setStarting(false);
-    }
   };
   return (
     <>
@@ -551,27 +446,6 @@ function EventView({
             </IconButton>
           </Tooltip>
         </Box>
-        {!event.isOnline && event.state === State.PENDING && (
-          <Box
-            bgcolor={elevateStartButton ? 'white' : undefined}
-            sx={{
-              zIndex: (theme) =>
-                elevateStartButton ? theme.zIndex.drawer + 2 : undefined,
-            }}
-          >
-            <Tooltip arrow title="Start event (lock seeds, phases, and pools)">
-              <IconButton
-                onClick={(ev) => {
-                  ev.stopPropagation();
-                  start();
-                }}
-                size="small"
-              >
-                {starting ? <CircularProgress size="24px" /> : <PlayArrow />}
-              </IconButton>
-            </Tooltip>
-          </Box>
-        )}
       </ListItemButton>
       <Collapse in={open}>
         <Block>
@@ -582,7 +456,7 @@ function EventView({
               initiallyOpen={
                 event.phases.length === 1 || phase.id === selectedPhaseId
               }
-              isStartable={!event.isOnline}
+              isOnline={event.isOnline}
               elevateStartButton={elevateStartButton}
               eventId={event.id}
               tournamentSlug={tournamentSlug}
@@ -598,7 +472,6 @@ function EventView({
                   hasSiblings: event.phases.length > 1,
                 })
               }
-              showError={showError}
             />
           ))}
         </Block>
@@ -637,58 +510,38 @@ export default function StartggView({
     event: SelectedEvent,
   ) => Promise<void>;
 }) {
-  const [error, setError] = useState('');
-  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
-  const showError = (newError: string) => {
-    setError(newError);
-    setErrorDialogOpen(true);
-  };
   return (
-    <>
-      <Box bgcolor="white">
-        {tournament.events.map((event) => (
-          <EventView
-            key={event.id}
-            event={event}
-            initiallyOpen={
-              tournament.events.length === 1 || event.id === selectedEventId
-            }
-            elevateStartButton={elevateStartButton}
-            tournamentSlug={tournament.slug}
-            searchSubstr={searchSubstr}
-            vlerkMode={vlerkMode}
-            selectedPhaseId={selectedPhaseId}
-            selectedPhaseGroupId={selectedPhaseGroupId}
-            getEvent={getEvent}
-            getPhase={getPhase}
-            getPhaseGroup={getPhaseGroup}
-            selectSet={(
-              set: Set,
-              phaseGroup: SelectedPhaseGroup,
-              phase: SelectedPhase,
-            ) =>
-              selectSet(set, phaseGroup, phase, {
-                id: event.id,
-                name: event.name,
-                slug: event.slug,
-                hasSiblings: tournament.events.length > 1,
-              })
-            }
-            showError={showError}
-          />
-        ))}
-      </Box>
-      <Dialog
-        open={errorDialogOpen}
-        onClose={() => {
-          setErrorDialogOpen(false);
-        }}
-      >
-        <DialogTitle>Error! (You may want to copy this message)</DialogTitle>
-        <DialogContent>
-          <DialogContentText>{error}</DialogContentText>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Box bgcolor="white">
+      {tournament.events.map((event) => (
+        <EventView
+          key={event.id}
+          event={event}
+          initiallyOpen={
+            tournament.events.length === 1 || event.id === selectedEventId
+          }
+          elevateStartButton={elevateStartButton}
+          tournamentSlug={tournament.slug}
+          searchSubstr={searchSubstr}
+          vlerkMode={vlerkMode}
+          selectedPhaseId={selectedPhaseId}
+          selectedPhaseGroupId={selectedPhaseGroupId}
+          getEvent={getEvent}
+          getPhase={getPhase}
+          getPhaseGroup={getPhaseGroup}
+          selectSet={(
+            set: Set,
+            phaseGroup: SelectedPhaseGroup,
+            phase: SelectedPhase,
+          ) =>
+            selectSet(set, phaseGroup, phase, {
+              id: event.id,
+              name: event.name,
+              slug: event.slug,
+              hasSiblings: tournament.events.length > 1,
+            })
+          }
+        />
+      ))}
+    </Box>
   );
 }

@@ -992,7 +992,7 @@ function Hello() {
   };
 
   const [startingSet, setStartingSet] = useState(false);
-  const startSet = async (setId: number) => {
+  const startSet = async (setId: number | string) => {
     setStartingSet(true);
     try {
       if (mode === Mode.STARTGG) {
@@ -1000,7 +1000,7 @@ function Hello() {
       } else if (mode === Mode.CHALLONGE) {
         await window.electron.startChallongeSet(
           selectedChallongeTournament.slug,
-          setId,
+          setId as number,
         );
       }
     } catch (e: any) {
@@ -1319,7 +1319,11 @@ function Hello() {
                 phase: selectedSetChain.phase!,
                 phaseGroup: selectedSetChain.phaseGroup!,
                 set: {
-                  id: copySet.id > 0 ? copySet.id : undefined,
+                  id:
+                    typeof copySet.id === 'string' ||
+                    (Number.isInteger(copySet.id) && copySet.id > 0)
+                      ? copySet.id
+                      : undefined,
                   fullRoundText: copySet.fullRoundText,
                   ordinal: copySet.ordinal,
                   round: copySet.round,
@@ -1334,7 +1338,10 @@ function Hello() {
                   tournamentType: selectedChallongeTournament.tournamentType,
                 },
                 set: {
-                  id: copySet.id > 0 ? copySet.id : undefined,
+                  id:
+                    Number.isInteger(copySet.id) && (copySet.id as number) > 0
+                      ? (copySet.id as number)
+                      : undefined,
                   fullRoundText: copySet.fullRoundText,
                   ordinal: copySet.ordinal,
                   round: copySet.round,
@@ -1923,7 +1930,10 @@ function Hello() {
                   >
                     <Typography lineHeight="20px" variant="caption">
                       {selectedSet.fullRoundText}
-                      {selectedSet.id > 0 && ` (${selectedSet.id})`}
+                      {(typeof selectedSet.id === 'string' ||
+                        (Number.isInteger(selectedSet.id) &&
+                          selectedSet.id > 0)) &&
+                        ` (${selectedSet.id})`}
                     </Typography>
                     {selectedSet.state === State.STARTED && (
                       <>
@@ -2041,7 +2051,9 @@ function Hello() {
                     color="primary"
                     disabled={
                       !(
-                        selectedSet.id > 0 &&
+                        (typeof selectedSet.id === 'string' ||
+                          (Number.isInteger(selectedSet.id) &&
+                            selectedSet.id > 0)) &&
                         (selectedSet.state === State.PENDING ||
                           selectedSet.state === State.CALLED)
                       ) || startingSet

@@ -60,7 +60,7 @@ export type Stream = {
 };
 
 export type Set = {
-  id: number;
+  id: number | string;
   state: State;
   round: number;
   fullRoundText: string;
@@ -98,7 +98,6 @@ export type PhaseGroup = {
   name: string;
   sets: Sets;
   state: State;
-  maybeBugged: boolean;
 };
 
 export type Phase = {
@@ -152,7 +151,7 @@ export type StartggGame = {
 };
 
 export type StartggSet = {
-  setId: number;
+  setId: number | string;
   winnerId: number;
   isDQ: boolean;
   gameData: StartggGame[];
@@ -236,7 +235,7 @@ export type Context = {
     phase: SelectedPhase;
     phaseGroup: SelectedPhaseGroup;
     set: {
-      id?: number;
+      id?: number | string;
       fullRoundText: string;
       ordinal: number | null;
       round: number;
