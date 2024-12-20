@@ -422,7 +422,7 @@ export async function getPhaseGroup(
       if (existingSet && existingSet.updatedAtMs > updatedAtMs) {
         newSet = existingSet;
         if (newSet.ordinal === null) {
-          newSet.ordinal = idToDEOrdinal.get(setId) ?? set.callOrder;
+          newSet.ordinal = idToDEOrdinal.get(setId) ?? set.callOrder ?? null;
           setIdToOrdinal.set(setId, newSet.ordinal);
         }
       } else {
@@ -436,7 +436,7 @@ export async function getPhaseGroup(
         }
 
         // always record ordinal for gqlSet conversion
-        const ordinal = idToDEOrdinal.get(setId) ?? set.callOrder;
+        const ordinal = idToDEOrdinal.get(setId) ?? set.callOrder ?? null;
         setIdToOrdinal.set(setId, ordinal);
 
         // skip this set if not fully populated
@@ -506,8 +506,8 @@ export async function getPhaseGroup(
       } while (missingStreamSets.length > 0);
     }
   }
-  pendingSets.sort((a, b) => (a.ordinal || a.round) - (b.ordinal || b.round));
-  completedSets.sort((a, b) => (b.ordinal || b.round) - (a.ordinal || a.round));
+  pendingSets.sort((a, b) => (a.ordinal ?? a.round) - (b.ordinal ?? b.round));
+  completedSets.sort((a, b) => (b.ordinal ?? b.round) - (a.ordinal ?? a.round));
 
   idToPhaseGroup.set(id, {
     id,
@@ -832,7 +832,7 @@ function gqlSetToSet(set: any, updatedAtMs: number): Set {
             path: set.stream.streamName,
           }
         : null,
-    ordinal: setIdToOrdinal.get(set.id) as number | null,
+    ordinal: setIdToOrdinal.get(set.id) ?? null,
     wasReported: reportedSetIds.has(set.id),
     updatedAtMs,
   };
