@@ -173,12 +173,15 @@ export enum Output {
 export type EnforcePlayerFailure = {
   checkNames: string[];
   displayName: string | undefined;
+  entrantId: number | undefined;
   port: number;
 };
 
 export type EnforceResult = {
   fileName: string;
+  gameNum: number;
   playerFailures: EnforcePlayerFailure[];
+  stageId: number;
 };
 
 export type SelectedEvent = {

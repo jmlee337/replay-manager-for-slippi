@@ -793,12 +793,17 @@ export async function enforceReplays(
 ): Promise<EnforceResult[]> {
   const checks = ListChecks();
   return Promise.all(
-    replays.map(async (replay) => {
+    replays.map(async (replay, gameI) => {
       const buffer = await fsReadFile(replay.filePath);
       const game = new SlippiGame(buffer.buffer);
 
       const playerFailures: EnforcePlayerFailure[] = [];
-      const ret = { playerFailures, fileName: replay.fileName };
+      const ret = {
+        playerFailures,
+        fileName: replay.fileName,
+        gameNum: gameI + 1,
+        stageId: replay.stageId,
+      };
       if (isSlpMinVersion(game)) {
         return ret;
       }
@@ -817,8 +822,9 @@ export async function enforceReplays(
           const playerFailure: EnforcePlayerFailure = {
             checkNames: [],
             displayName:
-              replayPlayer?.playerOverrides?.displayName ||
+              replayPlayer?.playerOverrides.displayName ||
               replayPlayer?.displayName,
+            entrantId: replayPlayer?.playerOverrides.entrantId || undefined,
             port,
           };
           for (let i = 0; i < checks.length; i += 1) {

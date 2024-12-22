@@ -1,4 +1,4 @@
-import { Backup } from '@mui/icons-material';
+import { Backup, VideogameAssetOff } from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -10,6 +10,7 @@ import {
   DialogContentText,
   DialogTitle,
   Divider,
+  IconButton,
   Stack,
   Tooltip,
 } from '@mui/material';
@@ -328,7 +329,10 @@ export default function SetControls({
   let reportCopyDelete = '';
   if (enforcing) {
     reportCopyDelete = 'Checking with SLP Enforcer';
-  } else if (reportSettings.alsoCopy && copyDisabled) {
+  } else if (
+    (reportSettings.alsoCopy || enforcerErrors.length > 0) &&
+    copyDisabled
+  ) {
     reportCopyDelete = 'Copy folder not set';
   } else {
     reportCopyDelete = 'Report';
@@ -389,6 +393,7 @@ export default function SetControls({
             isDQ: false,
             gameData: [],
           });
+          setEnforcerErrors([]);
         }}
       >
         <DialogTitle>
@@ -509,10 +514,25 @@ export default function SetControls({
           </Stack>
         </DialogContent>
         <DialogActions>
+          {enforcerErrors.length > 0 && (
+            <Tooltip
+              placement="top"
+              title="Controller Ruleset Violation Detected"
+            >
+              <IconButton
+                onClick={() => {
+                  setEnforcerErrorOpen(true);
+                }}
+              >
+                <VideogameAssetOff />
+              </IconButton>
+            </Tooltip>
+          )}
           <Button
             disabled={
               reporting ||
-              (reportSettings.alsoCopy && copyDisabled) ||
+              ((reportSettings.alsoCopy || enforcerErrors.length > 0) &&
+                copyDisabled) ||
               enforcing
             }
             endIcon={
@@ -537,6 +557,31 @@ export default function SetControls({
                     challongeMatchItems,
                   );
                 }
+                if (enforcerErrors.length > 0) {
+                  const entrantIdToDisplayName = new Map<number, string>();
+                  enforcerErrors.forEach(({ playerFailures }) => {
+                    playerFailures.forEach((playerFailure) => {
+                      if (
+                        playerFailure.displayName &&
+                        playerFailure.entrantId
+                      ) {
+                        entrantIdToDisplayName.set(
+                          playerFailure.entrantId,
+                          playerFailure.displayName,
+                        );
+                      }
+                    });
+                  });
+                  window.electron.appendEnforcerResult(
+                    Array.from(entrantIdToDisplayName.entries())
+                      .map(
+                        ([entrantId, displayName]) =>
+                          `${set.id},${entrantId},${displayName}`,
+                      )
+                      .join('\n')
+                      .concat('\n'),
+                  );
+                }
                 if (reportSettings.alsoCopy) {
                   await copyReplays(updatedSet);
                 }
@@ -554,6 +599,7 @@ export default function SetControls({
                   isDQ: false,
                   gameData: [],
                 });
+                setEnforcerErrors([]);
                 resetGuide();
               } catch (e: any) {
                 const message = e instanceof Error ? e.message : e;
@@ -595,37 +641,27 @@ export default function SetControls({
         open={enforcerErrorOpen}
         onClose={() => {
           setEnforcerErrorOpen(false);
-          setEnforcerErrors([]);
         }}
       >
-        <DialogTitle>SLP Enforcer!</DialogTitle>
+        <DialogTitle>Controller Ruleset Violation Detected</DialogTitle>
         <DialogContent sx={{ width: '500px' }}>
-          {enforcerErrors.map((enforcerResult) => (
-            <Stack key={enforcerResult.fileName}>
-              <Box typography="body2">{enforcerResult.fileName}</Box>
-              {enforcerResult.playerFailures.map((enforcePlayerFailure) => (
-                <Box
-                  key={enforcePlayerFailure.port}
-                  marginLeft="8px"
-                  typography="caption"
-                >
-                  {enforcePlayerFailure.displayName}:{' '}
-                  {enforcePlayerFailure.checkNames.join(', ')}
+          <Stack spacing="8px">
+            {enforcerErrors.map((enforcerResult) => (
+              <Box key={enforcerResult.fileName}>
+                <Box typography="caption">
+                  ({enforcerResult.gameNum}){' '}
+                  {stageNames.get(enforcerResult.stageId)}
                 </Box>
-              ))}
-            </Stack>
-          ))}
+                {enforcerResult.playerFailures.map((enforcePlayerFailure) => (
+                  <Box key={enforcePlayerFailure.port} typography="body2">
+                    {enforcePlayerFailure.displayName}:{' '}
+                    {enforcePlayerFailure.checkNames.join(', ')}
+                  </Box>
+                ))}
+              </Box>
+            ))}
+          </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setEnforcerErrorOpen(false);
-              setEnforcerErrors([]);
-            }}
-          >
-            Close
-          </Button>
-        </DialogActions>
       </Dialog>
     </>
   );

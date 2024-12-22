@@ -8,7 +8,7 @@ import {
   shell,
 } from 'electron';
 import Store from 'electron-store';
-import { rm } from 'fs/promises';
+import { appendFile, rm } from 'fs/promises';
 import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
@@ -211,6 +211,18 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   );
 
   let copyDir = '';
+  ipcMain.removeHandler('appendEnforcerResult');
+  ipcMain.handle(
+    'appendEnforcerResult',
+    async (event: IpcMainInvokeEvent, str: string) => {
+      if (!copyDir) {
+        throw new Error('must set copy dir');
+      }
+
+      await appendFile(path.join(copyDir, 'enforcer.csv'), str);
+    },
+  );
+
   ipcMain.removeHandler('getCopyDir');
   ipcMain.handle('getCopyDir', () => copyDir);
 
