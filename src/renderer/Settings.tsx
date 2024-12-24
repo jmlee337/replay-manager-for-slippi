@@ -331,7 +331,7 @@ export default function Settings({
             />
             <LabeledCheckbox
               checked={useEnforcer}
-              label="Use SLP Enforcer"
+              label="Use SLP Enforcer (logged to copy folder enforcer.csv)"
               labelPlacement="end"
               set={async (checked) => {
                 await window.electron.setUseEnforcer(checked);

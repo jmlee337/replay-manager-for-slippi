@@ -1015,7 +1015,7 @@ function Hello() {
   const [copyErrorDialogOpen, setCopyErrorDialogOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
 
-  const onCopy = async (set?: Set) => {
+  const onCopy = async (set?: Set, violatorDisplayNames?: string[]) => {
     setIsCopying(true);
     const copySet = set ?? selectedSet;
 
@@ -1342,6 +1342,24 @@ function Hello() {
         copySettings.writeDisplayNames,
         context,
       );
+      if (violatorDisplayNames && violatorDisplayNames.length > 0) {
+        const vsStr = `${copySet.entrant1Participants
+          .map((participant) => participant.displayName)
+          .join('/')} vs ${copySet.entrant2Participants
+          .map((participant) => participant.displayName)
+          .join('/')}`;
+        await window.electron.appendEnforcerResult(
+          violatorDisplayNames
+            .map(
+              (displayName) =>
+                `${displayName},${format(startDate, 'HH:mm')},${
+                  copySet.fullRoundText
+                },${vsStr}`,
+            )
+            .join('\n')
+            .concat('\n'),
+        );
+      }
       setCopySuccess('Success!');
       setTimeout(() => setCopySuccess(''), 5000);
     } finally {

@@ -200,7 +200,7 @@ export default function SetControls({
   vlerkMode,
   elevate,
 }: {
-  copyReplays: (set?: Set) => Promise<void>;
+  copyReplays: (set?: Set, violatorDisplayNames?: string[]) => Promise<void>;
   deleteReplays: () => Promise<void>;
   reportChallongeSet: (
     matchId: number,
@@ -329,10 +329,7 @@ export default function SetControls({
   let reportCopyDelete = '';
   if (enforcing) {
     reportCopyDelete = 'Checking with SLP Enforcer';
-  } else if (
-    (reportSettings.alsoCopy || enforcerErrors.length > 0) &&
-    copyDisabled
-  ) {
+  } else if (reportSettings.alsoCopy && copyDisabled) {
     reportCopyDelete = 'Copy folder not set';
   } else {
     reportCopyDelete = 'Report';
@@ -531,8 +528,7 @@ export default function SetControls({
           <Button
             disabled={
               reporting ||
-              ((reportSettings.alsoCopy || enforcerErrors.length > 0) &&
-                copyDisabled) ||
+              (reportSettings.alsoCopy && copyDisabled) ||
               enforcing
             }
             endIcon={
@@ -557,7 +553,7 @@ export default function SetControls({
                     challongeMatchItems,
                   );
                 }
-                if (enforcerErrors.length > 0) {
+                if (reportSettings.alsoCopy) {
                   const entrantIdToDisplayName = new Map<number, string>();
                   enforcerErrors.forEach(({ playerFailures }) => {
                     playerFailures.forEach((playerFailure) => {
@@ -572,18 +568,10 @@ export default function SetControls({
                       }
                     });
                   });
-                  window.electron.appendEnforcerResult(
-                    Array.from(entrantIdToDisplayName.entries())
-                      .map(
-                        ([entrantId, displayName]) =>
-                          `${set.id},${entrantId},${displayName}`,
-                      )
-                      .join('\n')
-                      .concat('\n'),
+                  await copyReplays(
+                    updatedSet,
+                    Array.from(entrantIdToDisplayName.values()),
                   );
-                }
-                if (reportSettings.alsoCopy) {
-                  await copyReplays(updatedSet);
                 }
                 if (
                   reportSettings.alsoCopy &&
