@@ -119,6 +119,7 @@ export type Event = {
 export type Tournament = {
   slug: string;
   name: string;
+  location: string;
   events: Event[];
 };
 
@@ -233,6 +234,7 @@ export type Context = {
   startgg?: {
     tournament: {
       name: string;
+      location: string;
     };
     event: SelectedEvent;
     phase: SelectedPhase;

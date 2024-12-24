@@ -217,6 +217,7 @@ function Hello() {
   const [tournament, setTournament] = useState<Tournament>({
     slug: '',
     name: '',
+    location: '',
     events: [],
   });
   const [challongeTournaments, setChallongeTournaments] = useState(
@@ -1282,6 +1283,7 @@ function Hello() {
               context.startgg = {
                 tournament: {
                   name: tournament.name,
+                  location: tournament.location,
                 },
                 event: selectedSetChain.event!,
                 phase: selectedSetChain.phase!,

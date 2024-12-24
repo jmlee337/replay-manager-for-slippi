@@ -664,7 +664,7 @@ export async function getTournament(
     `https://api.smash.gg/tournament/${slug}?expand[]=event`,
   );
   const json = await response.json();
-  const { id, name } = json.entities.tournament;
+  const { id, name, locationDisplayName: location } = json.entities.tournament;
   const events: Event[] = [];
   const eventIds: number[] = [];
   (json.entities.event as any[])
@@ -733,7 +733,7 @@ export async function getTournament(
     }
   }
 
-  currentTournament = { name, slug, events: [] };
+  currentTournament = { name, slug, location, events: [] };
   tournamentSlugToEventIds.set(slug, eventIds);
   if (recursive) {
     await Promise.all(
