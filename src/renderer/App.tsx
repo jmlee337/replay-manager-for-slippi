@@ -1266,6 +1266,25 @@ function Hello() {
           }
           scores.push({ slots: [slots[0], slots[1]] });
         });
+        const lastScore = scores[scores.length - 1];
+        const finalScore: ContextScore = {
+          slots: [
+            {
+              displayNames: lastScore.slots[0].displayNames,
+              ports: lastScore.slots[0].ports,
+              prefixes: lastScore.slots[0].prefixes,
+              pronouns: lastScore.slots[0].pronouns,
+              score: gameScores[0],
+            },
+            {
+              displayNames: lastScore.slots[1].displayNames,
+              ports: lastScore.slots[1].ports,
+              prefixes: lastScore.slots[1].prefixes,
+              pronouns: lastScore.slots[1].pronouns,
+              score: gameScores[1],
+            },
+          ],
+        };
         if (canWriteContext) {
           context = {
             bestOf: Math.max(gameScores[0], gameScores[1]) * 2 - 1,
@@ -1275,6 +1294,7 @@ function Hello() {
               )
               .reduce((prev, curr) => prev + curr, 0),
             scores,
+            finalScore,
             startMs: startDate.getTime(),
           };
 

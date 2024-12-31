@@ -231,6 +231,7 @@ export type Context = {
   bestOf: number;
   durationMs: number;
   scores: ContextScore[];
+  finalScore: ContextScore;
   startgg?: {
     tournament: {
       name: string;
