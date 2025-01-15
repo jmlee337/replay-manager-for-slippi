@@ -403,11 +403,8 @@ export async function getPhaseGroup(
         losersQueue = newLosersQueue;
       }
 
-      let ordinal = 1;
-      while (stack.length > 0) {
-        const curr = stack.pop();
-        idToDEOrdinal.set(curr.id, ordinal);
-        ordinal += 1;
+      for (let i = 0; i < stack.length; i += 1) {
+        idToDEOrdinal.set(stack[i].id, -i);
       }
     }
 
