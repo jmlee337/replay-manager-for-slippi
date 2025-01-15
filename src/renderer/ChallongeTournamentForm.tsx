@@ -4,24 +4,29 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
   ListItemButton,
   ListItemText,
   Stack,
   TextField,
+  Tooltip,
 } from '@mui/material';
 import { FormEvent } from 'react';
+import { Refresh } from '@mui/icons-material';
 import { AdminedTournament } from '../common/types';
 
 export default function ChallongeTournamentForm({
   gettingAdminedTournaments,
   adminedTournaments,
   gettingTournament,
+  getAdminedTournaments,
   getTournament,
   close,
 }: {
   gettingAdminedTournaments: boolean;
   adminedTournaments: AdminedTournament[];
   gettingTournament: boolean;
+  getAdminedTournaments: () => Promise<void>;
   getTournament: (maybeSlug: string) => Promise<void>;
   close: () => void;
 }) {
@@ -40,13 +45,30 @@ export default function ChallongeTournamentForm({
 
   return (
     <>
-      <DialogTitle>Add Challonge tournament</DialogTitle>
-      <DialogContent>
+      <Stack
+        alignItems="center"
+        direction="row"
+        justifyContent="space-between"
+        marginRight="24px"
+      >
+        <DialogTitle>Add Challonge tournament</DialogTitle>
+        {gettingAdminedTournaments ? (
+          <CircularProgress size="24px" style={{ padding: '8px' }} />
+        ) : (
+          <Tooltip title="Refresh">
+            <IconButton onClick={getAdminedTournaments}>
+              <Refresh />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Stack>
+      <DialogContent sx={{ pt: 0 }}>
         <form
           style={{
             alignItems: 'center',
             display: 'flex',
             marginTop: '8px',
+            marginBottom: '8px',
             gap: '8px',
           }}
           onSubmit={getTournamentOnSubmit}
@@ -68,7 +90,7 @@ export default function ChallongeTournamentForm({
             Add!
           </Button>
         </form>
-        {gettingAdminedTournaments ? (
+        {gettingAdminedTournaments && adminedTournaments.length === 0 ? (
           <Stack direction="row" marginTop="8px" spacing="8px">
             <CircularProgress size="24px" />
             <DialogContentText>

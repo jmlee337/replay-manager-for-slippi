@@ -1557,6 +1557,21 @@ function Hello() {
                     gettingAdminedTournaments={gettingAdminedTournaments}
                     adminedTournaments={adminedTournaments}
                     gettingTournament={gettingTournament}
+                    getAdminedTournaments={async () => {
+                      setGettingAdminedTournaments(true);
+                      try {
+                        setAdminedTournaments(
+                          await window.electron.getTournaments(),
+                        );
+                      } catch (e: unknown) {
+                        showErrorDialog([
+                          `Unable to fetch admined tournaments: ${
+                            e instanceof Error ? e.message : e
+                          }`,
+                        ]);
+                      }
+                      setGettingAdminedTournaments(false);
+                    }}
                     getTournament={getTournament}
                     setSlug={setSlug}
                     close={() => {
@@ -1592,6 +1607,21 @@ function Hello() {
                     gettingAdminedTournaments={gettingAdminedTournaments}
                     adminedTournaments={adminedTournaments}
                     gettingTournament={gettingTournament}
+                    getAdminedTournaments={async () => {
+                      setGettingAdminedTournaments(true);
+                      try {
+                        setAdminedTournaments(
+                          await window.electron.getTournaments(),
+                        );
+                      } catch (e: unknown) {
+                        showErrorDialog([
+                          `Unable to fetch admined tournaments: ${
+                            e instanceof Error ? e.message : e
+                          }`,
+                        ]);
+                      }
+                      setGettingAdminedTournaments(false);
+                    }}
                     getTournament={getChallongeTournament}
                     close={() => {
                       setSlugDialogOpen(false);
