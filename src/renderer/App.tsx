@@ -1901,6 +1901,21 @@ function Hello() {
                 mode={mode}
                 gettingAdminedTournaments={gettingAdminedTournaments}
                 adminedTournaments={adminedTournaments}
+                getAdminedTournaments={async () => {
+                  setGettingAdminedTournaments(true);
+                  try {
+                    setAdminedTournaments(
+                      await window.electron.getTournaments(),
+                    );
+                  } catch (e: unknown) {
+                    showErrorDialog([
+                      `Unable to fetch admined tournaments: ${
+                        e instanceof Error ? e.message : e
+                      }`,
+                    ]);
+                  }
+                  setGettingAdminedTournaments(false);
+                }}
                 gettingTournament={gettingTournament}
                 tournamentSet={tournamentSet}
                 copyDirSet={copyDirSet}

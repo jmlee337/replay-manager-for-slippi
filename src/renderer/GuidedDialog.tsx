@@ -18,6 +18,7 @@ export default function GuidedDialog({
   mode,
   gettingAdminedTournaments,
   adminedTournaments,
+  getAdminedTournaments,
   gettingTournament,
   tournamentSet,
   copyDirSet,
@@ -40,6 +41,7 @@ export default function GuidedDialog({
   mode: Mode;
   gettingAdminedTournaments: boolean;
   adminedTournaments: AdminedTournament[];
+  getAdminedTournaments: () => Promise<void>;
   gettingTournament: boolean;
   tournamentSet: boolean;
   copyDirSet: boolean;
@@ -167,6 +169,7 @@ export default function GuidedDialog({
             gettingAdminedTournaments={gettingAdminedTournaments}
             adminedTournaments={adminedTournaments}
             gettingTournament={gettingTournament}
+            getAdminedTournaments={getAdminedTournaments}
             getTournament={getStartggTournament}
             setSlug={setStartggTournamentSlug}
             close={() => {
@@ -182,6 +185,7 @@ export default function GuidedDialog({
             gettingAdminedTournaments={gettingAdminedTournaments}
             adminedTournaments={adminedTournaments}
             gettingTournament={gettingTournament}
+            getAdminedTournaments={getAdminedTournaments}
             getTournament={getChallongeTournament}
             close={() => {
               if (copyDir) {
