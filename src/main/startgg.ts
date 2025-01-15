@@ -366,6 +366,11 @@ export async function getPhaseGroup(
         }
       } else {
         reachableSets
+          .filter((set) => set.wProgressionSeedId && set.lProgressionSeedId)
+          .forEach((set) => {
+            stack.push(set);
+          });
+        reachableSets
           .filter((set) => set.wProgressionSeedId && set.round < 0)
           .sort((setA, setB) => setA.round - setB.round)
           .forEach((set) => {
