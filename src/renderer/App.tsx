@@ -363,6 +363,7 @@ function Hello() {
   const [dirDeleting, setDirDeleting] = useState(false);
   const [dirExists, setDirExists] = useState(true);
   const [replays, setReplays] = useState<Replay[]>([]);
+  const [invalidReplays, setInvalidReplays] = useState<InvalidReplay[]>([]);
   const [gettingReplays, setGettingReplays] = useState(false);
   let hasRemainingReplays = false;
   const selectedReplays: Replay[] = [];
@@ -446,7 +447,7 @@ function Hello() {
     setGettingReplays(true);
     const newDir = await window.electron.chooseReplaysDir();
     if (newDir && newDir !== dir) {
-      const { replays: newReplays, invalidReplays } =
+      const { replays: newReplays, invalidReplays: newInvalidReplays } =
         await window.electron.getReplaysInDir();
       applyAllReplaysSelected(newReplays, allReplaysSelected);
       setBatchActives(
@@ -463,9 +464,10 @@ function Hello() {
       }
       setReplays(newReplays);
       setReplayLoadCount((r) => r + 1);
-      if (invalidReplays.length > 0) {
+      setInvalidReplays(newInvalidReplays);
+      if (newInvalidReplays.length > 0) {
         showErrorDialog(
-          invalidReplays.map(
+          newInvalidReplays.map(
             (invalidReplay) =>
               `${invalidReplay.fileName}: ${invalidReplay.invalidReason}`,
           ),
@@ -496,12 +498,12 @@ function Hello() {
   const refreshReplays = useCallback(
     async (triggerGuide?: boolean) => {
       let newReplays: Replay[] = [];
-      let invalidReplays: InvalidReplay[] = [];
+      let newInvalidReplays: InvalidReplay[] = [];
       setGettingReplays(true);
       try {
         const res = await window.electron.getReplaysInDir();
         newReplays = res.replays;
-        invalidReplays = res.invalidReplays;
+        newInvalidReplays = res.invalidReplays;
         setDirExists(true);
         if (triggerGuide && newReplays.length > 0) {
           setGuideState(
@@ -529,9 +531,10 @@ function Hello() {
       }
       setReplays(newReplays);
       setReplayLoadCount((r) => r + 1);
-      if (invalidReplays.length > 0) {
+      setInvalidReplays(newInvalidReplays);
+      if (newInvalidReplays.length > 0) {
         showErrorDialog(
-          invalidReplays.map(
+          newInvalidReplays.map(
             (invalidReplay) =>
               `${invalidReplay.fileName}: ${invalidReplay.invalidReason}`,
           ),
@@ -1435,58 +1438,61 @@ function Hello() {
                 value={dir || 'Set replays folder...'}
                 style={{ flexGrow: 1 }}
               />
-              {dir && dirExists && !gettingReplays && replays.length > 0 && (
-                <>
-                  <Tooltip arrow title="Delete replays folder and eject">
-                    <IconButton onClick={() => setDirDeleteDialogOpen(true)}>
-                      <DeleteForeverOutlined />
-                    </IconButton>
-                  </Tooltip>
-                  <Dialog
-                    open={dirDeleteDialogOpen}
-                    onClose={() => {
-                      setDirDeleteDialogOpen(false);
-                    }}
-                  >
-                    <DialogTitle>Delete Replays Folder?</DialogTitle>
-                    <DialogContent>
-                      <Alert severity="warning">
-                        {replays.length} replays will be deleted! (And the drive
-                        will be ejected if applicable)
-                      </Alert>
-                    </DialogContent>
-                    <DialogActions>
-                      <Button
-                        disabled={dirDeleting}
-                        endIcon={
-                          dirDeleting ? (
-                            <CircularProgress size="24px" />
-                          ) : (
-                            <DeleteForever />
-                          )
-                        }
-                        onClick={async () => {
-                          setDirDeleting(true);
-                          try {
-                            await deleteDir();
-                            setGuideState(GuideState.NONE);
-                          } catch (e: any) {
-                            showErrorDialog([
-                              e instanceof Error ? e.message : e,
-                            ]);
-                          } finally {
-                            setDirDeleteDialogOpen(false);
-                            setDirDeleting(false);
+              {dir &&
+                dirExists &&
+                !gettingReplays &&
+                (replays.length > 0 || invalidReplays.length > 0) && (
+                  <>
+                    <Tooltip arrow title="Delete replays folder and eject">
+                      <IconButton onClick={() => setDirDeleteDialogOpen(true)}>
+                        <DeleteForeverOutlined />
+                      </IconButton>
+                    </Tooltip>
+                    <Dialog
+                      open={dirDeleteDialogOpen}
+                      onClose={() => {
+                        setDirDeleteDialogOpen(false);
+                      }}
+                    >
+                      <DialogTitle>Delete Replays Folder?</DialogTitle>
+                      <DialogContent>
+                        <Alert severity="warning">
+                          {replays.length} replays will be deleted! (And the
+                          drive will be ejected if applicable)
+                        </Alert>
+                      </DialogContent>
+                      <DialogActions>
+                        <Button
+                          disabled={dirDeleting}
+                          endIcon={
+                            dirDeleting ? (
+                              <CircularProgress size="24px" />
+                            ) : (
+                              <DeleteForever />
+                            )
                           }
-                        }}
-                        variant="contained"
-                      >
-                        Delete
-                      </Button>
-                    </DialogActions>
-                  </Dialog>
-                </>
-              )}
+                          onClick={async () => {
+                            setDirDeleting(true);
+                            try {
+                              await deleteDir();
+                              setGuideState(GuideState.NONE);
+                            } catch (e: any) {
+                              showErrorDialog([
+                                e instanceof Error ? e.message : e,
+                              ]);
+                            } finally {
+                              setDirDeleteDialogOpen(false);
+                              setDirDeleting(false);
+                            }
+                          }}
+                          variant="contained"
+                        >
+                          Delete
+                        </Button>
+                      </DialogActions>
+                    </Dialog>
+                  </>
+                )}
               {dir && !gettingReplays && (
                 <Tooltip arrow title="Refresh replays">
                   <IconButton onClick={() => refreshReplays()}>
