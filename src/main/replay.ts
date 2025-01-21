@@ -17,7 +17,6 @@ import {
   ListChecks,
   SlippiGame,
   getCoordListFromGame,
-  isBoxController,
   isSlpMinVersion,
 } from 'slp-enforcer';
 import { app } from 'electron';
@@ -832,16 +831,9 @@ export async function enforceReplays(
             const isMainStick =
               checkName !== 'Disallowed Analog C-Stick Values';
             const coords = getCoordListFromGame(game, port - 1, isMainStick);
-            if (
-              isBoxController(
-                isMainStick
-                  ? coords
-                  : getCoordListFromGame(game, port - 1, true),
-              )
-            ) {
-              if (checks[i].checkFunction(game, port - 1, coords)) {
-                playerFailure.checkNames.push(checkName);
-              }
+            const checkResult = checks[i].checkFunction(game, port - 1, coords);
+            if (checkResult.result) {
+              playerFailure.checkNames.push(checkName);
             }
           }
           if (playerFailure.checkNames.length > 0) {
