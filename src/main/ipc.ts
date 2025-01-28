@@ -54,6 +54,7 @@ import {
   connectToHost,
   getHost,
   setCopyDir,
+  setMainWindow,
   startBroadcasting,
   startHostServer,
   startListening,
@@ -253,6 +254,8 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     setCopyDir(copyDir);
     return copyDir;
   });
+
+  setMainWindow(mainWindow);
 
   ipcMain.removeHandler('getCopyHost');
   ipcMain.handle('getCopyHost', getHost);

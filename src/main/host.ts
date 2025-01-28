@@ -153,7 +153,7 @@ export function connectToHost(newAddress: string) {
     name = '';
   }
 
-  webSocket = new WebSocket(`${newAddress}:${PORT}`);
+  webSocket = new WebSocket(`ws://${newAddress}:${PORT}`);
   webSocket.onopen = () => {
     address = newAddress;
     name = newName;
