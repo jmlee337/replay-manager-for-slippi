@@ -50,6 +50,17 @@ import {
   setSelectedTournament,
   startChallongeSet,
 } from './challonge';
+import {
+  connectToHost,
+  getHost,
+  setCopyDir,
+  startBroadcasting,
+  startHostServer,
+  startListening,
+  stopBroadcasting,
+  stopHostServer,
+  stopListening,
+} from './host';
 
 export default function setupIPCs(mainWindow: BrowserWindow): void {
   const store = new Store();
@@ -177,12 +188,12 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     return getReplaysInDir(replayDirs[replayDirs.length - 1]);
   });
 
+  let copyDir = '';
   ipcMain.removeHandler('writeReplays');
   ipcMain.handle(
     'writeReplays',
     async (
       event: IpcMainInvokeEvent,
-      dir: string,
       fileNames: string[],
       output: Output,
       replays: Replay[],
@@ -190,9 +201,13 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       subdir: string,
       writeDisplayNames: boolean,
       context: Context | undefined,
-    ) =>
-      writeReplays(
-        dir,
+    ) => {
+      if (!copyDir) {
+        throw new Error('copy dir not set');
+      }
+
+      return writeReplays(
+        copyDir,
         fileNames,
         output,
         replays,
@@ -200,7 +215,8 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         subdir,
         writeDisplayNames,
         context,
-      ),
+      );
+    },
   );
 
   ipcMain.removeHandler('enforceReplays');
@@ -210,7 +226,6 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       enforceReplays(replays),
   );
 
-  let copyDir = '';
   ipcMain.removeHandler('appendEnforcerResult');
   ipcMain.handle(
     'appendEnforcerResult',
@@ -235,8 +250,35 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       return '';
     }
     [copyDir] = openDialogRes.filePaths;
+    setCopyDir(copyDir);
     return copyDir;
   });
+
+  ipcMain.removeHandler('getCopyHost');
+  ipcMain.handle('getCopyHost', getHost);
+
+  ipcMain.removeHandler('startListeningForHosts');
+  ipcMain.handle('startListeningForHosts', startListening);
+
+  ipcMain.removeHandler('stopListeningForHosts');
+  ipcMain.handle('stopListeningForHosts', stopListening);
+
+  ipcMain.removeHandler('connectToHost');
+  ipcMain.handle('connectToHost', (event, address: string) =>
+    connectToHost(address),
+  );
+
+  ipcMain.removeHandler('startHostServer');
+  ipcMain.handle('startHostServer', startHostServer);
+
+  ipcMain.removeHandler('stopHostServer');
+  ipcMain.handle('stopHostServer', stopHostServer);
+
+  ipcMain.removeHandler('startBroadcastingHost');
+  ipcMain.handle('startBroadcastingHost', startBroadcasting);
+
+  ipcMain.removeHandler('stopBroadcastingHost');
+  ipcMain.handle('stopBroadcastingHost', stopBroadcasting);
 
   let sggApiKey = store.has('sggApiKey')
     ? (store.get('sggApiKey') as string)

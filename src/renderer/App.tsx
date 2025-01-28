@@ -57,6 +57,7 @@ import {
   StartggSet,
   State,
   Tournament,
+  CopyRemote,
 } from '../common/types';
 import { DraggableChip, DroppableChip } from './DragAndDrop';
 import ReplayList, { SkewReplay } from './ReplayList';
@@ -209,6 +210,10 @@ function Hello() {
   const [dir, setDir] = useState('');
   const [dirInit, setDirInit] = useState(false);
   const [copyDir, setCopyDir] = useState('');
+  const [copyHost, setCopyHost] = useState<CopyRemote>({
+    name: '',
+    address: '',
+  });
   const [selectedSet, setSelectedSet] = useState<Set>(EMPTY_SET);
   const [selectedSetChain, setSelectedSetChain] = useState(
     EMPTY_SELECTED_SET_CHAIN,
@@ -245,6 +250,7 @@ function Hello() {
       // initial state
       const replaysDirPromise = window.electron.getReplaysDir();
       const copyDirPromise = window.electron.getCopyDir();
+      const copyHostPromise = window.electron.getCopyHost();
       const tournamentPromise = window.electron.getCurrentTournament();
       const selectedSetPromise = window.electron.getSelectedSet();
       const selectedSetChainPromise = window.electron.getSelectedSetChain();
@@ -277,6 +283,7 @@ function Hello() {
       setDir(replaysDir);
       setDirInit(replaysDir.length > 0);
       setCopyDir(await copyDirPromise);
+      setCopyHost(await copyHostPromise);
       const currentTournament = await tournamentPromise;
       if (currentTournament) {
         setSlug(currentTournament.slug);
@@ -1358,7 +1365,6 @@ function Hello() {
 
     try {
       await window.electron.writeReplays(
-        copyDir,
         fileNames,
         copySettings.output,
         selectedReplays,
@@ -1783,6 +1789,8 @@ function Hello() {
           <CopyControls
             dir={copyDir}
             setDir={setCopyDir}
+            host={copyHost}
+            setHost={setCopyHost}
             error={copyError}
             setError={setCopyError}
             errorDialogOpen={copyErrorDialogOpen}

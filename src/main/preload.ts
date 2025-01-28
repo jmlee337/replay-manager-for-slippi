@@ -17,6 +17,8 @@ import {
   Set,
   StartggSet,
   Tournament,
+  WebSocketServerStatus,
+  CopyRemote,
 } from '../common/types';
 
 const electronHandler = {
@@ -29,7 +31,6 @@ const electronHandler = {
     invalidReplays: InvalidReplay[];
   }> => ipcRenderer.invoke('getReplaysInDir'),
   writeReplays: (
-    dir: string,
     fileNames: string[],
     output: Output,
     replays: Replay[],
@@ -40,7 +41,6 @@ const electronHandler = {
   ): Promise<void> =>
     ipcRenderer.invoke(
       'writeReplays',
-      dir,
       fileNames,
       output,
       replays,
@@ -55,6 +55,43 @@ const electronHandler = {
     ipcRenderer.invoke('appendEnforcerResult', str),
   getCopyDir: (): Promise<string> => ipcRenderer.invoke('getCopyDir'),
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
+  getCopyHost: (): Promise<CopyRemote> => ipcRenderer.invoke('getCopyHost'),
+  startListeningForHosts: (): Promise<string> =>
+    ipcRenderer.invoke('startListeningForHosts'),
+  stopListeningForHosts: (): Promise<void> =>
+    ipcRenderer.invoke('stopListeningForHosts'),
+  onCopyHosts: (
+    callback: (event: IpcRendererEvent, hosts: CopyRemote[]) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('copyHosts');
+    ipcRenderer.on('copyHosts', callback);
+  },
+  connectToHost: (address: string): Promise<void> =>
+    ipcRenderer.invoke('connectToHost', address),
+  onCopyHost: (
+    callback: (event: IpcRendererEvent, host: CopyRemote) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('copyHost');
+    ipcRenderer.on('copyHost', callback);
+  },
+  startHostServer: (): Promise<string> => ipcRenderer.invoke('startHostServer'),
+  stopHostServer: (): Promise<void> => ipcRenderer.invoke('stopHostServer'),
+  startBroadcastingHost: (): Promise<void> =>
+    ipcRenderer.invoke('startBroadcastingHost'),
+  stopBroadcastingHost: (): Promise<void> =>
+    ipcRenderer.invoke('stopBroadcastingHost'),
+  onCopyClients: (
+    callback: (event: IpcRendererEvent, clients: CopyRemote[]) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('copyClients');
+    ipcRenderer.on('copyClients', callback);
+  },
+  onHostServerStatus: (
+    callback: (event: IpcRendererEvent, status: WebSocketServerStatus) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('hostServerStatus');
+    ipcRenderer.on('hostServerStatus', callback);
+  },
   getCurrentTournament: (): Promise<Tournament | undefined> =>
     ipcRenderer.invoke('getCurrentTournament'),
   getSelectedSet: (): Promise<Set | undefined> =>

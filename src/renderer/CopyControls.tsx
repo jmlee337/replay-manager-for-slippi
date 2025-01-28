@@ -1,22 +1,178 @@
-import { FolderOpen } from '@mui/icons-material';
+import { BrowserUpdated, Close, FolderOpen, Router } from '@mui/icons-material';
 import {
   Button,
+  CircularProgress,
+  Dialog,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   IconButton,
   InputBase,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
   MenuItem,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-import { CopySettings, Output } from '../common/types';
+import { useEffect, useState } from 'react';
+import {
+  CopySettings,
+  Output,
+  WebSocketServerStatus,
+  CopyRemote,
+} from '../common/types';
 import ErrorDialog from './ErrorDialog';
 import LabeledCheckbox from './LabeledCheckbox';
+
+function ClientsDialog({ disabled }: { disabled: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState(WebSocketServerStatus.STOPPED);
+  const [clients, setClients] = useState<CopyRemote[]>([]);
+  const [selfName, setSelfName] = useState('');
+  useEffect(() => {
+    window.electron.onHostServerStatus((event, newStatus) => {
+      setStatus(newStatus);
+    });
+    window.electron.onCopyClients((event, newClients) => {
+      setClients(newClients);
+    });
+  }, []);
+
+  return (
+    <>
+      <Button
+        disabled={disabled}
+        endIcon={<BrowserUpdated />}
+        onClick={async () => {
+          setSelfName(await window.electron.startHostServer());
+          await window.electron.startBroadcastingHost();
+          setOpen(true);
+        }}
+      >
+        {status === WebSocketServerStatus.STOPPED
+          ? 'Host on LAN'
+          : `Add Clients (${clients.length})`}
+      </Button>
+      <Dialog
+        open={open}
+        onClose={async () => {
+          if (clients.length === 0) {
+            await window.electron.stopHostServer();
+          }
+          await window.electron.stopBroadcastingHost();
+          setOpen(false);
+        }}
+      >
+        <DialogTitle>Hosting on LAN...</DialogTitle>
+        <DialogContent>
+          <DialogContentText>Hosting as {selfName}</DialogContentText>
+          <List>
+            {clients.map(({ address, name }) => (
+              <ListItem
+                key={address}
+                disablePadding
+                style={{ marginRight: '-16px', width: 'calc(100% + 16px)' }}
+                secondaryAction={
+                  <Tooltip title="Disconnect">
+                    <IconButton edge="end">
+                      <Close />
+                    </IconButton>
+                  </Tooltip>
+                }
+              >
+                <ListItemText>
+                  {address} - {name}
+                </ListItemText>
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function HostsDialog({
+  disabled,
+  setHost,
+}: {
+  disabled: boolean;
+  setHost: (host: CopyRemote) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [hosts, setHosts] = useState<CopyRemote[]>([]);
+  const [selfName, setSelfName] = useState('');
+  useEffect(() => {
+    window.electron.onCopyHosts((event, newHosts) => {
+      setHosts(newHosts);
+    });
+  }, []);
+
+  return (
+    <>
+      <Tooltip title="Search LAN">
+        <IconButton
+          disabled={disabled}
+          onClick={async () => {
+            setHosts([]);
+            setSelfName(await window.electron.startListeningForHosts());
+            setOpen(true);
+          }}
+        >
+          <Router />
+        </IconButton>
+      </Tooltip>
+      <Dialog
+        open={open}
+        onClose={async () => {
+          await window.electron.stopListeningForHosts();
+          setOpen(false);
+        }}
+      >
+        <DialogTitle>Searching LAN for host Replay Manager...</DialogTitle>
+        <DialogContent>
+          <DialogContentText>Searching as {selfName}</DialogContentText>
+          <List>
+            {hosts.map(({ address, name }) => (
+              <ListItem
+                key={address}
+                disablePadding
+                style={{ margin: '0 -16px', width: 'calc(100% + 32px)' }}
+              >
+                <ListItemButton
+                  onClick={async () => {
+                    await window.electron.connectToHost(address);
+                    setHost({ address, name });
+                    await window.electron.stopListeningForHosts();
+                    setOpen(false);
+                  }}
+                >
+                  <ListItemText>
+                    {address} - {name}
+                  </ListItemText>
+                </ListItemButton>
+              </ListItem>
+            ))}
+            <ListItem disableGutters>
+              <CircularProgress size="24px" />
+            </ListItem>
+          </List>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 export default function CopyControls({
   dir,
   setDir,
+  host,
+  setHost,
   error,
   setError,
   errorDialogOpen,
@@ -31,6 +187,8 @@ export default function CopyControls({
 }: {
   dir: string;
   setDir: (dir: string) => void;
+  host: CopyRemote;
+  setHost: (host: CopyRemote) => void;
   error: string;
   setError: (error: string) => void;
   errorDialogOpen: boolean;
@@ -58,11 +216,17 @@ export default function CopyControls({
           <InputBase
             disabled
             size="small"
-            value={dir || 'Set copy folder...'}
+            value={
+              host.name && host.address
+                ? `${host.address} - ${host.name}`
+                : dir || 'Set copy folder...'
+            }
             style={{ flexGrow: 1 }}
           />
-          <Tooltip arrow title="Set copy folder">
-            <IconButton aria-label="Set copy folder" onClick={chooseDir}>
+          <ClientsDialog disabled={!dir} />
+          <HostsDialog disabled={false} setHost={setHost} />
+          <Tooltip title="Set copy folder">
+            <IconButton onClick={chooseDir}>
               <FolderOpen />
             </IconButton>
           </Tooltip>
