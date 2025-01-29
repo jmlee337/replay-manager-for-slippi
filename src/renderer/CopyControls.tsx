@@ -29,7 +29,13 @@ import {
 import ErrorDialog from './ErrorDialog';
 import LabeledCheckbox from './LabeledCheckbox';
 
-function ClientsDialog({ disabled }: { disabled: boolean }) {
+function ClientsDialog({
+  disabled,
+  setHosting,
+}: {
+  disabled: boolean;
+  setHosting: (hosting: boolean) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState(WebSocketServerStatus.STOPPED);
   const [clients, setClients] = useState<CopyRemote[]>([]);
@@ -37,7 +43,10 @@ function ClientsDialog({ disabled }: { disabled: boolean }) {
   useEffect(() => {
     window.electron.onHostServerStatus((event, newStatus) => {
       setStatus(newStatus);
+      setHosting(newStatus !== WebSocketServerStatus.STOPPED);
     });
+  }, [setHosting]);
+  useEffect(() => {
     window.electron.onCopyClients((event, newClients) => {
       setClients(newClients);
     });
@@ -67,6 +76,7 @@ function ClientsDialog({ disabled }: { disabled: boolean }) {
           await window.electron.stopBroadcastingHost();
           setOpen(false);
         }}
+        fullWidth
       >
         <DialogTitle>Hosting on LAN...</DialogTitle>
         <DialogContent>
@@ -98,10 +108,10 @@ function ClientsDialog({ disabled }: { disabled: boolean }) {
 }
 
 function HostsDialog({
-  disabled,
+  host,
   setHost,
 }: {
-  disabled: boolean;
+  host: CopyRemote;
   setHost: (host: CopyRemote) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -116,16 +126,16 @@ function HostsDialog({
   return (
     <>
       <Tooltip title="Search LAN">
-        <IconButton
-          disabled={disabled}
+        <Button
           onClick={async () => {
             setHosts([]);
             setSelfName(await window.electron.startListeningForHosts());
             setOpen(true);
           }}
+          endIcon={<Router />}
         >
-          <Router />
-        </IconButton>
+          {host.address && host.name ? 'Connected' : 'Search LAN'}
+        </Button>
       </Tooltip>
       <Dialog
         open={open}
@@ -133,11 +143,29 @@ function HostsDialog({
           await window.electron.stopListeningForHosts();
           setOpen(false);
         }}
+        fullWidth
       >
         <DialogTitle>Searching LAN for host Replay Manager...</DialogTitle>
         <DialogContent>
           <DialogContentText>Searching as {selfName}</DialogContentText>
           <List>
+            {host.address && host.name && (
+              <ListItem
+                disablePadding
+                style={{ marginRight: '-16px', width: 'calc(100% + 16px)' }}
+                secondaryAction={
+                  <Tooltip title="Disconnect">
+                    <IconButton edge="end">
+                      <Close />
+                    </IconButton>
+                  </Tooltip>
+                }
+              >
+                <ListItemText>
+                  {host.address} - {host.name}
+                </ListItemText>
+              </ListItem>
+            )}
             {hosts.map(({ address, name }) => (
               <ListItem
                 key={address}
@@ -171,8 +199,7 @@ function HostsDialog({
 export default function CopyControls({
   dir,
   setDir,
-  host,
-  setHost,
+  useLAN,
   error,
   setError,
   errorDialogOpen,
@@ -187,8 +214,7 @@ export default function CopyControls({
 }: {
   dir: string;
   setDir: (dir: string) => void;
-  host: CopyRemote;
-  setHost: (host: CopyRemote) => void;
+  useLAN: boolean;
   error: string;
   setError: (error: string) => void;
   errorDialogOpen: boolean;
@@ -201,6 +227,25 @@ export default function CopyControls({
   setCopySettings: (newCopySettings: CopySettings) => Promise<void>;
   elevateSettings: boolean;
 }) {
+  const [hosting, setHosting] = useState(false);
+  const [host, setHost] = useState<CopyRemote>({
+    name: '',
+    address: '',
+  });
+
+  useEffect(() => {
+    (async () => {
+      const hostPromise = window.electron.getCopyHost();
+      setHost(await hostPromise);
+    })();
+  }, []);
+
+  useEffect(() => {
+    window.electron.onCopyHost((event, newHost) => {
+      setHost(newHost);
+    });
+  }, []);
+
   const chooseDir = async () => {
     const newDir = await window.electron.chooseCopyDir();
     if (newDir) {
@@ -223,8 +268,14 @@ export default function CopyControls({
             }
             style={{ flexGrow: 1 }}
           />
-          <ClientsDialog disabled={!dir} />
-          <HostsDialog disabled={false} setHost={setHost} />
+          {useLAN && (
+            <>
+              {!(host.address && host.name) && (
+                <ClientsDialog disabled={!dir} setHosting={setHosting} />
+              )}
+              {!hosting && <HostsDialog host={host} setHost={setHost} />}
+            </>
+          )}
           <Tooltip title="Set copy folder">
             <IconButton onClick={chooseDir}>
               <FolderOpen />

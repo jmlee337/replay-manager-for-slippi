@@ -48,16 +48,14 @@ export default function Settings({
   setStartggApiKey,
   challongeApiKey,
   setChallongeApiKey,
-  autoDetectUsb,
-  setAutoDetectUsb,
-  scrollToBottom,
-  setScrollToBottom,
   useEnforcer,
   setUseEnforcer,
   vlerkMode,
   setVlerkMode,
   guidedMode,
   setGuidedMode,
+  useLAN,
+  setUseLAN,
   fileNameFormat,
   setFileNameFormat,
   folderNameFormat,
@@ -74,16 +72,14 @@ export default function Settings({
   setStartggApiKey: (key: string) => void;
   challongeApiKey: string;
   setChallongeApiKey: (key: string) => void;
-  autoDetectUsb: boolean;
-  setAutoDetectUsb: (autoDetectUsb: boolean) => void;
-  scrollToBottom: boolean;
-  setScrollToBottom: (scrollToBottom: boolean) => void;
   useEnforcer: boolean;
   setUseEnforcer: (useEnforcer: boolean) => void;
   vlerkMode: boolean;
   setVlerkMode: (vlerkMode: boolean) => void;
   guidedMode: boolean;
   setGuidedMode: (guidedMode: boolean) => void;
+  useLAN: boolean;
+  setUseLAN: (useLAN: boolean) => void;
   fileNameFormat: string;
   setFileNameFormat: (fileNameFormat: string) => void;
   folderNameFormat: string;
@@ -302,31 +298,12 @@ export default function Settings({
           )}
           <Stack>
             <LabeledCheckbox
-              checked={autoDetectUsb}
-              label="Auto-detect USB"
-              labelPlacement="end"
-              set={async (checked) => {
-                await window.electron.setAutoDetectUsb(checked);
-                setAutoDetectUsb(checked);
-              }}
-            />
-            <LabeledCheckbox
               checked={guidedMode}
-              disabled={!autoDetectUsb}
               label="Use guided mode"
               labelPlacement="end"
               set={async (checked) => {
                 await window.electron.setGuidedMode(checked);
                 setGuidedMode(checked);
-              }}
-            />
-            <LabeledCheckbox
-              checked={scrollToBottom}
-              label="Auto-scroll to end of replay list"
-              labelPlacement="end"
-              set={async (checked) => {
-                await window.electron.setScrollToBottom(checked);
-                setScrollToBottom(checked);
               }}
             />
             <LabeledCheckbox
@@ -358,6 +335,15 @@ export default function Settings({
               set={async (checked) => {
                 await window.electron.setVlerkMode(checked);
                 setVlerkMode(checked);
+              }}
+            />
+            <LabeledCheckbox
+              checked={useLAN}
+              label="Use LAN (feature preview)"
+              labelPlacement="end"
+              set={async (checked) => {
+                await window.electron.setUseLAN(checked);
+                setUseLAN(checked);
               }}
             />
             <DialogContentText>

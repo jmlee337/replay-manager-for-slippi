@@ -174,6 +174,12 @@ export function connectToHost(newAddress: string) {
   };
 }
 
+export function disconnectFromHost() {
+  if (webSocket) {
+    webSocket.close();
+  }
+}
+
 export function getHost(): CopyRemote {
   return { address, name };
 }
@@ -275,7 +281,7 @@ export function openReplay(subdir: string, fileName: string) {
         webSocket?.removeEventListener('message', listener);
         if (error) {
           reject(new Error(error));
-        } else if (Number.isFinite(fd)) {
+        } else if (Number.isInteger(fd)) {
           resolve(fd);
         }
       }
@@ -293,7 +299,7 @@ export function openReplay(subdir: string, fileName: string) {
 }
 
 export function writeReplayData(fd: number, data: Buffer) {
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<number>((resolve, reject) => {
     if (!webSocket) {
       reject();
       return;
@@ -307,13 +313,15 @@ export function writeReplayData(fd: number, data: Buffer) {
         return;
       }
 
-      const { ordinal, error } = JSON.parse(event.data) as HostResponse;
+      const { ordinal, error, bytesWritten } = JSON.parse(
+        event.data,
+      ) as HostResponse & { bytesWritten: number };
       if (ordinal === requestOrdinal) {
         webSocket?.removeEventListener('message', listener);
         if (error) {
           reject(new Error(error));
-        } else {
-          resolve();
+        } else if (Number.isInteger(bytesWritten)) {
+          resolve(bytesWritten);
         }
       }
     };
@@ -564,9 +572,10 @@ export function startHostServer(): Promise<string> {
               const filePath = path.join(writeDir, hostRequest.fileName);
               const fileHandle = await open(filePath, 'w');
               fdToFileHandle.set(fileHandle.fd, fileHandle);
-              const response: HostResponse = {
+              const response: HostResponse & { fd: number } = {
                 ordinal: hostRequest.ordinal,
                 error: '',
+                fd: fileHandle.fd,
               };
               newWebSocket.send(JSON.stringify(response));
             } catch (e: unknown) {
@@ -590,10 +599,13 @@ export function startHostServer(): Promise<string> {
             }
 
             try {
-              await fileHandle.write(Buffer.from(hostRequest.data));
-              const response: HostResponse = {
+              const writeResponse = await fileHandle.write(
+                Buffer.from(hostRequest.data),
+              );
+              const response: HostResponse & { bytesWritten: number } = {
                 ordinal: hostRequest.ordinal,
                 error: '',
+                bytesWritten: writeResponse.bytesWritten,
               };
               newWebSocket.send(JSON.stringify(response));
             } catch (e: unknown) {

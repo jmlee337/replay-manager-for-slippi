@@ -68,6 +68,8 @@ const electronHandler = {
   },
   connectToHost: (address: string): Promise<void> =>
     ipcRenderer.invoke('connectToHost', address),
+  disconnectFromHost: (): Promise<void> =>
+    ipcRenderer.invoke('disconnectFromHost'),
   onCopyHost: (
     callback: (event: IpcRendererEvent, host: CopyRemote) => void,
   ) => {
@@ -151,14 +153,9 @@ const electronHandler = {
   getManualNames: (): Promise<string[]> => ipcRenderer.invoke('getManualNames'),
   setManualNames: (names: string[]): Promise<void> =>
     ipcRenderer.invoke('setManualNames', names),
-  getAutoDetectUsb: (): Promise<boolean> =>
-    ipcRenderer.invoke('getAutoDetectUsb'),
-  setAutoDetectUsb: (autoDetectUsb: boolean): Promise<void> =>
-    ipcRenderer.invoke('setAutoDetectUsb', autoDetectUsb),
-  getScrollToBottom: (): Promise<boolean> =>
-    ipcRenderer.invoke('getScrollToBottom'),
-  setScrollToBottom: (scrollToBottom: boolean): Promise<void> =>
-    ipcRenderer.invoke('setScrollToBottom', scrollToBottom),
+  getUseLAN: (): Promise<boolean> => ipcRenderer.invoke('getUseLAN'),
+  setUseLAN: (useLAN: boolean): Promise<void> =>
+    ipcRenderer.invoke('setUseLAN', useLAN),
   getUseEnforcer: (): Promise<boolean> => ipcRenderer.invoke('getUseEnforcer'),
   setUseEnforcer: (useEnforcer: boolean): Promise<void> =>
     ipcRenderer.invoke('setUseEnforcer', useEnforcer),
