@@ -53,6 +53,7 @@ import {
 import {
   connectToHost,
   disconnectFromHost,
+  getCopyClients,
   getHost,
   setCopyDir,
   setMainWindow,
@@ -251,6 +252,9 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
 
   ipcMain.removeHandler('disconnectFromHost');
   ipcMain.handle('disconnectFromHost', () => disconnectFromHost);
+
+  ipcMain.removeHandler('getCopyClients');
+  ipcMain.handle('getCopyClients', getCopyClients);
 
   ipcMain.removeHandler('startHostServer');
   ipcMain.handle('startHostServer', startHostServer);

@@ -14,6 +14,13 @@ import {
   WebSocketServerStatus,
 } from '../common/types';
 
+const PORT = 52455;
+
+type HostMessage = {
+  type: 'name';
+  name: string;
+};
+
 type HostRequest = {
   ordinal: number;
 } & (
@@ -55,8 +62,6 @@ type HostResponse = {
   ordinal: number;
   error: string;
 };
-
-const PORT = 52455;
 
 function getComputerName() {
   switch (process.platform) {
@@ -141,10 +146,7 @@ let address = '';
 let name = '';
 let webSocket: WebSocket | null = null;
 export function connectToHost(newAddress: string) {
-  const newName = addressToName.get(newAddress);
-  if (!newName) {
-    throw new Error('address not known');
-  }
+  const newName = addressToName.get(newAddress) ?? '';
 
   if (webSocket) {
     webSocket.onclose = () => {};
@@ -153,25 +155,49 @@ export function connectToHost(newAddress: string) {
     name = '';
   }
 
-  webSocket = new WebSocket(`ws://${newAddress}:${PORT}`);
-  webSocket.onopen = () => {
-    address = newAddress;
-    name = newName;
-    mainWindow?.webContents.send('copyHost', { address, name });
+  webSocket = new WebSocket(`ws://${newAddress}:${PORT}`, {
+    handshakeTimeout: 1000,
+  });
+  webSocket.addEventListener('message', (event) => {
+    if (typeof event.data !== 'string') {
+      return;
+    }
 
-    const request: HostRequest = {
-      ordinal: 0,
-      request: 'computerName',
-      name: getComputerName(),
-    };
-    webSocket?.send(JSON.stringify(request));
-  };
+    const message = JSON.parse(event.data) as HostMessage;
+    if (message.type === 'name') {
+      name = message.name;
+      mainWindow?.webContents.send('copyHost', { address, name });
+    }
+  });
   webSocket.onclose = () => {
     address = '';
     name = '';
     mainWindow?.webContents.send('copyHost', { address, name });
     webSocket = null;
   };
+  return new Promise<void>((resolve, reject) => {
+    if (!webSocket) {
+      reject();
+      return;
+    }
+
+    webSocket.onopen = () => {
+      address = newAddress;
+      name = newName;
+      mainWindow?.webContents.send('copyHost', { address, name });
+
+      const request: HostRequest = {
+        ordinal: 0,
+        request: 'computerName',
+        name: getComputerName(),
+      };
+      webSocket?.send(JSON.stringify(request));
+      resolve();
+    };
+    webSocket.onerror = (event) => {
+      reject(event.error);
+    };
+  });
 }
 
 export function disconnectFromHost() {
@@ -436,6 +462,14 @@ function sendCopyClients() {
         name: clientName,
       }),
     ),
+  );
+}
+export function getCopyClients() {
+  return Array.from(clientAddressToNameAndWebSocket).map(
+    ([clientAddress, { name: clientName }]): CopyRemote => ({
+      address: clientAddress,
+      name: clientName,
+    }),
   );
 }
 
@@ -743,18 +777,23 @@ let broadcastSocket: Socket | null = null;
 let timeout: NodeJS.Timeout | null = null;
 export function startBroadcasting() {
   if (broadcastSocket) {
-    return Promise.resolve();
+    return Promise.resolve(broadcastSocket.address().address);
   }
   if (!webSocketServer) {
     return Promise.reject(new Error('must start hostServer first'));
   }
 
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     broadcastSocket = createSocket('udp4');
     broadcastSocket.on('error', (e) => {
       reject(e);
     });
     broadcastSocket.on('connect', () => {
+      if (!broadcastSocket) {
+        reject();
+        return;
+      }
+
       const selfName = getComputerName();
       const broadcast = () => {
         if (broadcastSocket) {
@@ -765,7 +804,7 @@ export function startBroadcasting() {
         }
       };
       broadcast();
-      resolve();
+      resolve(broadcastSocket.address().address);
     });
     broadcastSocket.connect(PORT, '255.255.255.255');
   });
