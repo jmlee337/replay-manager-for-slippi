@@ -794,6 +794,7 @@ export function startBroadcasting() {
         return;
       }
 
+      broadcastSocket.setBroadcast(true);
       const selfName = getComputerName();
       const broadcast = () => {
         if (broadcastSocket) {
