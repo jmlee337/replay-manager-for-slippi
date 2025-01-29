@@ -41,6 +41,12 @@ export default function SearchBox({
             onKeyDown={(event) => {
               if (event.key === 'Escape') {
                 clearSearch();
+              } else if (
+                ((window.electron.isMac && event.metaKey) ||
+                  (!window.electron.isMac && event.ctrlKey)) &&
+                event.key === 'f'
+              ) {
+                searchInputRef.current?.select();
               }
             }}
             inputRef={searchInputRef}
@@ -75,7 +81,7 @@ export default function SearchBox({
           },
           FIND: () => {
             setShowSearch(true);
-            searchInputRef.current?.focus();
+            searchInputRef.current?.select();
           },
         }}
       />
