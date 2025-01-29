@@ -13,6 +13,7 @@ import {
   Output,
   WebSocketServerStatus,
 } from '../common/types';
+import { IncomingMessage } from 'http';
 
 const PORT = 52455;
 
@@ -481,6 +482,7 @@ export function kickCopyClient(clientAddress: string) {
   nameAndWebSocket.webSocket.close();
 }
 
+let broadcastSocket: Socket | null = null;
 let webSocketServer: WebSocketServer | null = null;
 const subdirToWriteDir = new Map<string, string>();
 const fdToFileHandle = new Map<number, FileHandle>();
@@ -494,7 +496,13 @@ export function startHostServer(): Promise<string> {
 
   clientAddressToNameAndWebSocket.clear();
   sendCopyClients();
-  webSocketServer = new WebSocketServer({ port: PORT });
+  webSocketServer = new WebSocketServer({
+    port: PORT,
+    verifyClient: ({ req }: { req: IncomingMessage }) =>
+      !!broadcastSocket &&
+      req.socket.remoteAddress &&
+      !clientAddressToNameAndWebSocket.has(req.socket.remoteAddress),
+  });
   webSocketServer.on('error', (error) => {
     webSocketServerStatusError = error.message;
   });
@@ -781,7 +789,6 @@ export function stopHostServer() {
   });
 }
 
-let broadcastSocket: Socket | null = null;
 let timeout: NodeJS.Timeout | null = null;
 export function startBroadcasting() {
   if (broadcastSocket) {
