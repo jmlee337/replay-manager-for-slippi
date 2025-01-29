@@ -179,8 +179,6 @@ function Hello() {
   const [mode, setMode] = useState<Mode>(Mode.STARTGG);
   const [startggApiKey, setStartggApiKey] = useState('');
   const [challongeApiKey, setChallongeApiKey] = useState('');
-  const [autoDetectUsb, setAutoDetectUsb] = useState(false);
-  const [scrollToBottom, setScrollToBottom] = useState(false);
   const [useEnforcer, setUseEnforcer] = useState(false);
   const [vlerkMode, setVlerkMode] = useState(false);
   const [guidedMode, setGuidedMode] = useState(false);
@@ -209,6 +207,7 @@ function Hello() {
   const [dir, setDir] = useState('');
   const [dirInit, setDirInit] = useState(false);
   const [copyDir, setCopyDir] = useState('');
+  const [useLAN, setUseLAN] = useState(false);
   const [selectedSet, setSelectedSet] = useState<Set>(EMPTY_SET);
   const [selectedSetChain, setSelectedSetChain] = useState(
     EMPTY_SELECTED_SET_CHAIN,
@@ -232,8 +231,6 @@ function Hello() {
       const modePromise = window.electron.getMode();
       const startggKeyPromise = window.electron.getStartggKey();
       const challongeKeyPromise = window.electron.getChallongeKey();
-      const autoDetectUsbPromise = window.electron.getAutoDetectUsb();
-      const scrollToBottomPromise = window.electron.getScrollToBottom();
       const useEnforcerPromise = window.electron.getUseEnforcer();
       const vlerkModePromise = window.electron.getVlerkMode();
       const guidedModePromise = window.electron.getGuidedMode();
@@ -245,6 +242,7 @@ function Hello() {
       // initial state
       const replaysDirPromise = window.electron.getReplaysDir();
       const copyDirPromise = window.electron.getCopyDir();
+      const useLANPromise = window.electron.getUseLAN();
       const tournamentPromise = window.electron.getCurrentTournament();
       const selectedSetPromise = window.electron.getSelectedSet();
       const selectedSetChainPromise = window.electron.getSelectedSetChain();
@@ -262,8 +260,7 @@ function Hello() {
       setMode(await modePromise);
       setStartggApiKey(await startggKeyPromise);
       setChallongeApiKey(await challongeKeyPromise);
-      setAutoDetectUsb(await autoDetectUsbPromise);
-      setScrollToBottom(await scrollToBottomPromise);
+      setUseLAN(await useLANPromise);
       setUseEnforcer(await useEnforcerPromise);
       setFileNameFormat(await fileNameFormatPromise);
       setFolderNameFormat(await folderNameFormatPromise);
@@ -436,10 +433,10 @@ function Hello() {
   const [replayLoadCount, setReplayLoadCount] = useState(0);
   const copyControlsRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (scrollToBottom && copyControlsRef.current) {
+    if (copyControlsRef.current) {
       copyControlsRef.current.scrollIntoView(false);
     }
-  }, [replayLoadCount, scrollToBottom]);
+  }, [replayLoadCount]);
   const [skewDetected, setSkewDetected] = useState(false);
   const [skewDialogOpen, setSkewDialogOpen] = useState(false);
   const [wasDeleted, setWasDeleted] = useState(false);
@@ -1358,7 +1355,6 @@ function Hello() {
 
     try {
       await window.electron.writeReplays(
-        copyDir,
         fileNames,
         copySettings.output,
         selectedReplays,
@@ -1783,6 +1779,7 @@ function Hello() {
           <CopyControls
             dir={copyDir}
             setDir={setCopyDir}
+            useLAN={useLAN}
             error={copyError}
             setError={setCopyError}
             errorDialogOpen={copyErrorDialogOpen}
@@ -1894,7 +1891,7 @@ function Hello() {
               {batchChip(2)}
               {batchChip(3)}
             </Stack>
-            {autoDetectUsb && guidedMode ? (
+            {guidedMode ? (
               <GuidedDialog
                 open={guidedDialogOpen}
                 setOpen={setGuidedDialogOpen}
@@ -2192,10 +2189,8 @@ function Hello() {
         setStartggApiKey={setStartggApiKey}
         challongeApiKey={challongeApiKey}
         setChallongeApiKey={setChallongeApiKey}
-        autoDetectUsb={autoDetectUsb}
-        setAutoDetectUsb={setAutoDetectUsb}
-        scrollToBottom={scrollToBottom}
-        setScrollToBottom={setScrollToBottom}
+        useLAN={useLAN}
+        setUseLAN={setUseLAN}
         useEnforcer={useEnforcer}
         setUseEnforcer={setUseEnforcer}
         vlerkMode={vlerkMode}

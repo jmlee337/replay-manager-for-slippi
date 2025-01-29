@@ -34,5 +34,6 @@ module.exports = {
   globals: {
     RequestInfo: true,
     RequestInit: true,
+    NodeJS: true,
   },
 };

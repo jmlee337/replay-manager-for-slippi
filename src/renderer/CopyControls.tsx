@@ -1,22 +1,323 @@
-import { FolderOpen } from '@mui/icons-material';
+import { BrowserUpdated, Close, FolderOpen, Router } from '@mui/icons-material';
 import {
+  Alert,
   Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   IconButton,
   InputBase,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
   MenuItem,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-import { CopySettings, Output } from '../common/types';
+import { useEffect, useState } from 'react';
+import {
+  CopySettings,
+  Output,
+  WebSocketServerStatus,
+  CopyRemote,
+} from '../common/types';
 import ErrorDialog from './ErrorDialog';
 import LabeledCheckbox from './LabeledCheckbox';
+
+function ClientsDialog({
+  disabled,
+  setHosting,
+}: {
+  disabled: boolean;
+  setHosting: (hosting: boolean) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState(WebSocketServerStatus.STOPPED);
+  const [clients, setClients] = useState<CopyRemote[]>([]);
+  const [selfAddress, setSelfAddress] = useState('');
+  const [selfName, setSelfName] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      setClients(await window.electron.getCopyClients());
+    })();
+  }, []);
+
+  useEffect(() => {
+    window.electron.onHostServerStatus((event, newStatus) => {
+      setStatus(newStatus);
+      setHosting(newStatus !== WebSocketServerStatus.STOPPED);
+    });
+  }, [setHosting]);
+  useEffect(() => {
+    window.electron.onCopyClients((event, newClients) => {
+      setClients(newClients);
+    });
+  }, []);
+
+  const [stopOpen, setStopOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        disabled={disabled}
+        endIcon={<BrowserUpdated />}
+        onClick={async () => {
+          setSelfName(await window.electron.startHostServer());
+          setSelfAddress(await window.electron.startBroadcastingHost());
+          setOpen(true);
+        }}
+      >
+        {status === WebSocketServerStatus.STOPPED
+          ? 'Host on LAN'
+          : `Add Clients (${clients.length})`}
+      </Button>
+      <Dialog
+        open={open}
+        onClose={async () => {
+          if (clients.length === 0) {
+            await window.electron.stopHostServer();
+          }
+          await window.electron.stopBroadcastingHost();
+          setOpen(false);
+        }}
+        fullWidth
+      >
+        <DialogTitle>Hosting on LAN...</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Hosting at {selfAddress} - {selfName}
+          </DialogContentText>
+          <List>
+            {clients.map(({ address, name }) => (
+              <ListItem
+                key={address}
+                disablePadding
+                style={{ marginRight: '-16px', width: 'calc(100% + 16px)' }}
+                secondaryAction={
+                  <Tooltip title="Disconnect">
+                    <IconButton
+                      edge="end"
+                      onClick={async () => {
+                        await window.electron.kickCopyClient(address);
+                      }}
+                    >
+                      <Close />
+                    </IconButton>
+                  </Tooltip>
+                }
+              >
+                <ListItemText>
+                  {address} - {name}
+                </ListItemText>
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              setStopOpen(true);
+            }}
+          >
+            Stop Hosting
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={stopOpen}
+        onClose={() => {
+          setStopOpen(false);
+        }}
+      >
+        <DialogTitle>Stop hosting on LAN?</DialogTitle>
+        <DialogActions>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setStopOpen(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={async () => {
+              await window.electron.stopHostServer();
+              setStopOpen(false);
+              setOpen(false);
+            }}
+          >
+            Stop
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
+
+function HostsDialog({ host }: { host: CopyRemote }) {
+  const [open, setOpen] = useState(false);
+  const [hosts, setHosts] = useState<CopyRemote[]>([]);
+  const [selfName, setSelfName] = useState('');
+  useEffect(() => {
+    window.electron.onCopyHosts((event, newHosts) => {
+      setHosts(newHosts);
+    });
+  }, []);
+
+  const [connecting, setConnecting] = useState(false);
+  const [manualAddress, setManualAddress] = useState('');
+  const [error, setError] = useState('');
+
+  return (
+    <>
+      <Tooltip title="Search LAN">
+        <Button
+          onClick={async () => {
+            setHosts([]);
+            setError('');
+            setSelfName(await window.electron.startListeningForHosts());
+            setOpen(true);
+          }}
+          endIcon={<Router />}
+        >
+          {host.address && host.name ? 'Connected' : 'Search LAN'}
+        </Button>
+      </Tooltip>
+      <Dialog
+        open={open}
+        onClose={async () => {
+          await window.electron.stopListeningForHosts();
+          setOpen(false);
+        }}
+        fullWidth
+      >
+        <DialogTitle>Searching LAN for host Replay Manager...</DialogTitle>
+        <DialogContent>
+          <form
+            style={{
+              alignItems: 'center',
+              display: 'flex',
+              marginTop: '8px',
+              marginBottom: '8px',
+              gap: '8px',
+            }}
+            onSubmit={async (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+
+              setConnecting(true);
+              await window.electron.stopListeningForHosts();
+              try {
+                await window.electron.connectToHost(manualAddress);
+                setOpen(false);
+              } catch (e: unknown) {
+                if (e instanceof Error) {
+                  setError(e.message);
+                }
+              } finally {
+                setConnecting(false);
+              }
+            }}
+          >
+            <TextField
+              autoFocus
+              label="IP Address"
+              placeholder="192.168.0.106"
+              size="small"
+              variant="outlined"
+              value={manualAddress}
+              onChange={(event) => {
+                setManualAddress(event.target.value);
+              }}
+            />
+            <Button
+              disabled={connecting}
+              endIcon={connecting && <CircularProgress size="24px" />}
+              type="submit"
+              variant="contained"
+            >
+              Connect
+            </Button>
+          </form>
+          {error && <Alert severity="error">{error}</Alert>}
+          <DialogContentText>Searching as {selfName}</DialogContentText>
+          <List>
+            {host.address && host.name && (
+              <ListItem
+                disablePadding
+                style={{ marginRight: '-16px', width: 'calc(100% + 16px)' }}
+                secondaryAction={
+                  <Tooltip title="Disconnect">
+                    <IconButton
+                      edge="end"
+                      onClick={async () => {
+                        await window.electron.disconnectFromHost();
+                      }}
+                    >
+                      <Close />
+                    </IconButton>
+                  </Tooltip>
+                }
+              >
+                <ListItemText>
+                  {host.address} - {host.name}
+                </ListItemText>
+              </ListItem>
+            )}
+            {hosts.map(({ address, name }) => (
+              <ListItem
+                key={address}
+                disablePadding
+                style={{ margin: '0 -16px', width: 'calc(100% + 32px)' }}
+              >
+                <ListItemButton
+                  onClick={async () => {
+                    setConnecting(true);
+                    await window.electron.stopListeningForHosts();
+                    try {
+                      await window.electron.connectToHost(address);
+                      setOpen(false);
+                    } catch (e: unknown) {
+                      if (e instanceof Error) {
+                        setError(e.message);
+                      }
+                    } finally {
+                      setConnecting(false);
+                    }
+                  }}
+                >
+                  <ListItemText>
+                    {address} - {name}
+                  </ListItemText>
+                </ListItemButton>
+              </ListItem>
+            ))}
+            <ListItem disableGutters>
+              <CircularProgress size="24px" />
+            </ListItem>
+          </List>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 export default function CopyControls({
   dir,
   setDir,
+  useLAN,
   error,
   setError,
   errorDialogOpen,
@@ -31,6 +332,7 @@ export default function CopyControls({
 }: {
   dir: string;
   setDir: (dir: string) => void;
+  useLAN: boolean;
   error: string;
   setError: (error: string) => void;
   errorDialogOpen: boolean;
@@ -43,6 +345,25 @@ export default function CopyControls({
   setCopySettings: (newCopySettings: CopySettings) => Promise<void>;
   elevateSettings: boolean;
 }) {
+  const [hosting, setHosting] = useState(false);
+  const [host, setHost] = useState<CopyRemote>({
+    name: '',
+    address: '',
+  });
+
+  useEffect(() => {
+    (async () => {
+      const hostPromise = window.electron.getCopyHost();
+      setHost(await hostPromise);
+    })();
+  }, []);
+
+  useEffect(() => {
+    window.electron.onCopyHost((event, newHost) => {
+      setHost(newHost);
+    });
+  }, []);
+
   const chooseDir = async () => {
     const newDir = await window.electron.chooseCopyDir();
     if (newDir) {
@@ -58,11 +379,23 @@ export default function CopyControls({
           <InputBase
             disabled
             size="small"
-            value={dir || 'Set copy folder...'}
+            value={
+              host.name && host.address
+                ? `${host.address} - ${host.name}`
+                : dir || 'Set copy folder...'
+            }
             style={{ flexGrow: 1 }}
           />
-          <Tooltip arrow title="Set copy folder">
-            <IconButton aria-label="Set copy folder" onClick={chooseDir}>
+          {useLAN && (
+            <>
+              {!(host.address && host.name) && (
+                <ClientsDialog disabled={!dir} setHosting={setHosting} />
+              )}
+              {!hosting && <HostsDialog host={host} />}
+            </>
+          )}
+          <Tooltip title="Set copy folder">
+            <IconButton onClick={chooseDir}>
               <FolderOpen />
             </IconButton>
           </Tooltip>
@@ -179,7 +512,11 @@ export default function CopyControls({
           />
           {success && <Typography variant="caption">{success}</Typography>}
           <Button
-            disabled={isCopying || !dir || !hasSelectedReplays}
+            disabled={
+              isCopying ||
+              (!dir && !host.address && !host.name) ||
+              !hasSelectedReplays
+            }
             onClick={async () => {
               try {
                 await onCopy();

@@ -17,13 +17,13 @@ import {
   ListChecks,
   SlippiGame,
   getCoordListFromGame,
-  isBoxController,
   isSlpMinVersion,
 } from 'slp-enforcer';
 import { app } from 'electron';
 import { parse } from 'date-fns';
 import {
   Context,
+  CopyRemote,
   EnforcePlayerFailure,
   EnforceResult,
   InvalidReplay,
@@ -36,6 +36,14 @@ import {
   isValidCharacter,
   legalStages,
 } from '../common/constants';
+import {
+  closeReplay,
+  initSubdir,
+  openReplay,
+  writeContext,
+  writeReplayData,
+  zipSubdir,
+} from './host';
 
 // https://github.com/project-slippi/slippi-launcher/blob/ae8bb69e235b6e46b24bc966aeaa80f45030c6f9/src/replays/file_system_replay_provider/load_file.ts#L91-L101
 // ty vince
@@ -557,6 +565,7 @@ const PLAYED_ON = Buffer.from([
 
 export async function writeReplays(
   dir: string,
+  host: CopyRemote,
   fileNames: string[],
   output: Output,
   replays: Replay[],
@@ -576,6 +585,7 @@ export async function writeReplays(
     );
   }
 
+  const isRemote = host.address && host.name;
   const sanitizedFileNames = fileNames.map((fileName) => sanitize(fileName));
   const sanitizedSubdir = sanitize(subdir);
 
@@ -583,40 +593,47 @@ export async function writeReplays(
     output === Output.ZIP
       ? join(app.getPath('temp'), sanitizedSubdir)
       : join(dir, sanitizedSubdir);
-  const writeFilePromises: Promise<{
-    writeFilePath: string;
-    writeFileName: string;
-  }>[] = [];
-  if (sanitizedSubdir) {
-    if (output === Output.ZIP) {
-      const tempDir = app.getPath('temp');
-      await access(tempDir).catch(() => mkdir(tempDir));
-    }
-    await mkdir(writeDir);
-    if (context) {
-      const contextFilePath = join(writeDir, 'context.json');
-      const contextFile = await open(contextFilePath, 'w');
-      await contextFile.writeFile(JSON.stringify(context));
-      await contextFile.close();
-      writeFilePromises.push(
-        Promise.resolve({
-          writeFilePath: contextFilePath,
-          writeFileName: 'context.json',
-        }),
-      );
-    }
-  } else if (output === Output.FOLDER || output === Output.ZIP) {
+  if (!sanitizedSubdir && (output === Output.FOLDER || output === Output.ZIP)) {
     throw new Error('subdir');
+  }
+  if (isRemote) {
+    await initSubdir(sanitizedSubdir, output);
+  }
+  if (sanitizedSubdir) {
+    if (!isRemote) {
+      if (output === Output.ZIP) {
+        const tempDir = app.getPath('temp');
+        await access(tempDir).catch(() => mkdir(tempDir));
+      }
+      await mkdir(writeDir);
+    }
+    if (context) {
+      if (isRemote) {
+        await writeContext(sanitizedSubdir, context);
+      } else {
+        const contextFilePath = join(writeDir, 'context.json');
+        const contextFile = await open(contextFilePath, 'w');
+        await contextFile.writeFile(JSON.stringify(context));
+        await contextFile.close();
+      }
+    }
   }
 
   const replayFilePromises = replays.map(async (replay, i) => {
     const readFile = await open(replay.filePath);
 
-    const writeFileName = sanitizedFileNames.length
-      ? sanitizedFileNames[i]
-      : replay.fileName;
-    const writeFilePath = join(writeDir, writeFileName);
-    const writeFile = await open(writeFilePath, 'w');
+    let fd = 0;
+    let writeFile: FileHandle | null = null;
+    if (isRemote) {
+      fd = await openReplay(
+        sanitizedSubdir,
+        sanitizedFileNames[i] ?? replay.fileName,
+      );
+    } else {
+      const writeFileName = sanitizedFileNames[i] ?? replay.fileName;
+      const writeFilePath = join(writeDir, writeFileName);
+      writeFile = await open(writeFilePath, 'w');
+    }
 
     try {
       // raw element
@@ -636,8 +653,10 @@ export async function writeReplays(
         actualRawElementLength.copy(rawHeader, 11);
       }
 
-      const rawHeaderWrite = await writeFile.write(rawHeader);
-      if (rawHeaderWrite.bytesWritten !== 15) {
+      let bytesWritten = isRemote
+        ? await writeReplayData(fd, rawHeader)
+        : (await writeFile!.write(rawHeader)).bytesWritten;
+      if (bytesWritten !== 15) {
         throw new Error('raw element header write');
       }
 
@@ -684,8 +703,10 @@ export async function writeReplays(
           Buffer.from(fixedDisplayNameArr).copy(rawElement, offset);
         });
       }
-      const rawElementWrite = await writeFile.write(rawElement);
-      if (rawElementWrite.bytesWritten !== rawElementReadLength) {
+      bytesWritten = isRemote
+        ? await writeReplayData(fd, rawElement)
+        : (await writeFile!.write(rawElement)).bytesWritten;
+      if (bytesWritten !== rawElementReadLength) {
         throw new Error('raw element write');
       }
 
@@ -720,13 +741,17 @@ export async function writeReplays(
             startAtLengthOffset + newStartAtLength + 1,
             startAtLengthOffset + startAtLength + 1,
           );
-          const newMetadataWrite = await writeFile.write(newMetadata);
-          if (newMetadataWrite.bytesWritten !== newMetadata.length) {
+          bytesWritten = isRemote
+            ? await writeReplayData(fd, newMetadata)
+            : (await writeFile!.write(newMetadata)).bytesWritten;
+          if (bytesWritten !== newMetadata.length) {
             throw new Error('metadata write (with start time override)');
           }
         } else {
-          const metadataWrite = await writeFile.write(metadata);
-          if (metadataWrite.bytesWritten !== metadataLength) {
+          bytesWritten = isRemote
+            ? await writeReplayData(fd, metadata)
+            : (await writeFile!.write(metadata)).bytesWritten;
+          if (bytesWritten !== metadataLength) {
             throw new Error('metadata write');
           }
         }
@@ -753,8 +778,10 @@ export async function writeReplays(
         bufs.push(PLAYED_ON);
         const bufsLength = bufs.reduce((acc, buf) => acc + buf.length, 0);
         const metadata = Buffer.concat(bufs, bufsLength);
-        const metadataWrite = await writeFile.write(metadata);
-        if (metadataWrite.bytesWritten !== metadata.length) {
+        bytesWritten = isRemote
+          ? await writeReplayData(fd, metadata)
+          : (await writeFile!.write(metadata)).bytesWritten;
+        if (bytesWritten !== metadata.length) {
           throw new Error(
             startTimes.length
               ? 'metadata creation (with start time override)'
@@ -762,29 +789,37 @@ export async function writeReplays(
           );
         }
       }
-
-      return { writeFilePath, writeFileName };
     } finally {
-      readFile.close();
-      writeFile.close();
+      const promises = [readFile.close()];
+      if (writeFile) {
+        promises.push(writeFile.close());
+      }
+      if (fd) {
+        promises.push(closeReplay(fd));
+      }
+      await Promise.all(promises);
     }
   });
-  writeFilePromises.push(...replayFilePromises);
+  await Promise.all(replayFilePromises);
 
-  const writeFiles = await Promise.all(writeFilePromises);
   if (output === Output.ZIP && sanitizedSubdir) {
-    const zipFile = new ZipFile();
-    const zipFilePromise = new Promise((resolve) => {
-      zipFile.outputStream
-        .pipe(createWriteStream(`${join(dir, sanitizedSubdir)}.zip`))
-        .on('close', resolve);
-    });
-    writeFiles.forEach((writeFile) => {
-      zipFile.addFile(writeFile.writeFilePath, writeFile.writeFileName);
-    });
-    zipFile.end();
-    await zipFilePromise;
-    await rm(writeDir, { recursive: true });
+    if (isRemote) {
+      await zipSubdir(sanitizedSubdir);
+    } else {
+      const tempDirFileNames = await readdir(writeDir);
+      const zipFile = new ZipFile();
+      const zipFilePromise = new Promise((resolve) => {
+        zipFile.outputStream
+          .pipe(createWriteStream(`${join(dir, sanitizedSubdir)}.zip`))
+          .on('close', resolve);
+      });
+      tempDirFileNames.forEach((fileName) => {
+        zipFile.addFile(join(writeDir, fileName), fileName);
+      });
+      zipFile.end();
+      await zipFilePromise;
+      await rm(writeDir, { recursive: true });
+    }
   }
 }
 
@@ -832,16 +867,9 @@ export async function enforceReplays(
             const isMainStick =
               checkName !== 'Disallowed Analog C-Stick Values';
             const coords = getCoordListFromGame(game, port - 1, isMainStick);
-            if (
-              isBoxController(
-                isMainStick
-                  ? coords
-                  : getCoordListFromGame(game, port - 1, true),
-              )
-            ) {
-              if (checks[i].checkFunction(game, port - 1, coords)) {
-                playerFailure.checkNames.push(checkName);
-              }
+            const checkResult = checks[i].checkFunction(game, port - 1, coords);
+            if (checkResult.result) {
+              playerFailure.checkNames.push(checkName);
             }
           }
           if (playerFailure.checkNames.length > 0) {

@@ -50,32 +50,27 @@ import {
   setSelectedTournament,
   startChallongeSet,
 } from './challonge';
+import {
+  connectToHost,
+  disconnectFromHost,
+  getCopyClients,
+  getHost,
+  kickCopyClient,
+  setCopyDir,
+  setMainWindow,
+  startBroadcasting,
+  startHostServer,
+  startListening,
+  stopBroadcasting,
+  stopHostServer,
+  stopListening,
+} from './host';
 
 export default function setupIPCs(mainWindow: BrowserWindow): void {
   const store = new Store();
-  let autoDetectUsb = store.has('autoDetectUsb')
-    ? (store.get('autoDetectUsb') as boolean)
-    : true;
   let replayDirs: string[] = [];
-  const onInsertEjectFallback = (e: any) => {
-    if (replayDirs.length > 0) {
-      const currentDir = replayDirs[replayDirs.length - 1];
-      if (
-        (e.event === 'eject' || e.data.isAccessible) &&
-        (currentDir === e.data.key ||
-          currentDir.startsWith(`${e.data.key}${path.sep}`))
-      ) {
-        mainWindow.webContents.send('usbstorage', currentDir);
-      }
-    }
-  };
   const knownUsbs = new Map<string, boolean>();
   const onInsert = (e: any) => {
-    if (!autoDetectUsb) {
-      onInsertEjectFallback(e);
-      return;
-    }
-
     if (e.data.isAccessible) {
       knownUsbs.set(e.data.key, true);
       replayDirs.push(path.join(e.data.key, 'Slippi'));
@@ -86,11 +81,6 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     }
   };
   const onEject = (e: any) => {
-    if (!autoDetectUsb) {
-      onInsertEjectFallback(e);
-      return;
-    }
-
     knownUsbs.delete(e.data.key);
     replayDirs = replayDirs.filter(
       (dir) =>
@@ -177,12 +167,12 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     return getReplaysInDir(replayDirs[replayDirs.length - 1]);
   });
 
+  let copyDir = '';
   ipcMain.removeHandler('writeReplays');
   ipcMain.handle(
     'writeReplays',
     async (
       event: IpcMainInvokeEvent,
-      dir: string,
       fileNames: string[],
       output: Output,
       replays: Replay[],
@@ -190,9 +180,15 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       subdir: string,
       writeDisplayNames: boolean,
       context: Context | undefined,
-    ) =>
-      writeReplays(
-        dir,
+    ) => {
+      const host = getHost();
+      if (!host.address && !host.name && !copyDir) {
+        throw new Error('copy dir not set');
+      }
+
+      return writeReplays(
+        copyDir,
+        host,
         fileNames,
         output,
         replays,
@@ -200,7 +196,8 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         subdir,
         writeDisplayNames,
         context,
-      ),
+      );
+    },
   );
 
   ipcMain.removeHandler('enforceReplays');
@@ -210,7 +207,6 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       enforceReplays(replays),
   );
 
-  let copyDir = '';
   ipcMain.removeHandler('appendEnforcerResult');
   ipcMain.handle(
     'appendEnforcerResult',
@@ -235,8 +231,48 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       return '';
     }
     [copyDir] = openDialogRes.filePaths;
+    setCopyDir(copyDir);
     return copyDir;
   });
+
+  setMainWindow(mainWindow);
+
+  ipcMain.removeHandler('getCopyHost');
+  ipcMain.handle('getCopyHost', getHost);
+
+  ipcMain.removeHandler('startListeningForHosts');
+  ipcMain.handle('startListeningForHosts', startListening);
+
+  ipcMain.removeHandler('stopListeningForHosts');
+  ipcMain.handle('stopListeningForHosts', stopListening);
+
+  ipcMain.removeHandler('connectToHost');
+  ipcMain.handle('connectToHost', (event, address: string) =>
+    connectToHost(address),
+  );
+
+  ipcMain.removeHandler('disconnectFromHost');
+  ipcMain.handle('disconnectFromHost', disconnectFromHost);
+
+  ipcMain.removeHandler('getCopyClients');
+  ipcMain.handle('getCopyClients', getCopyClients);
+
+  ipcMain.removeHandler('kickCopyClient');
+  ipcMain.handle('kickCopyClient', (event, address: string) =>
+    kickCopyClient(address),
+  );
+
+  ipcMain.removeHandler('startHostServer');
+  ipcMain.handle('startHostServer', startHostServer);
+
+  ipcMain.removeHandler('stopHostServer');
+  ipcMain.handle('stopHostServer', stopHostServer);
+
+  ipcMain.removeHandler('startBroadcastingHost');
+  ipcMain.handle('startBroadcastingHost', startBroadcasting);
+
+  ipcMain.removeHandler('stopBroadcastingHost');
+  ipcMain.handle('stopBroadcastingHost', stopBroadcasting);
 
   let sggApiKey = store.has('sggApiKey')
     ? (store.get('sggApiKey') as string)
@@ -529,34 +565,23 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
-  ipcMain.removeHandler('getAutoDetectUsb');
-  ipcMain.handle('getAutoDetectUsb', () => autoDetectUsb);
-
-  ipcMain.removeHandler('setAutoDetectUsb');
-  ipcMain.handle(
-    'setAutoDetectUsb',
-    (event: IpcMainInvokeEvent, newAutoDetectUsb: boolean) => {
-      store.set('autoDetectUsb', newAutoDetectUsb);
-      autoDetectUsb = newAutoDetectUsb;
-    },
-  );
-
-  ipcMain.removeHandler('getScrollToBottom');
-  ipcMain.handle('getScrollToBottom', () => {
-    if (store.has('scrollToBottom')) {
-      return store.get('scrollToBottom') as boolean;
+  ipcMain.removeHandler('getUseLAN');
+  ipcMain.handle('getUseLAN', () => {
+    if (store.has('useLAN')) {
+      return store.get('useLAN') as boolean;
     }
-    store.set('scrollToBottom', true);
-    return true;
+    store.set('useLAN', false);
+    return false;
   });
-
-  ipcMain.removeHandler('setScrollToBottom');
-  ipcMain.handle(
-    'setScrollToBottom',
-    (event: IpcMainInvokeEvent, newScrollToBottom: boolean) => {
-      store.set('scrollToBottom', newScrollToBottom);
-    },
-  );
+  ipcMain.removeHandler('setUseLAN');
+  ipcMain.handle('setUseLAN', (event, newUseLAN: boolean) => {
+    store.set('useLAN', newUseLAN);
+    if (!newUseLAN) {
+      stopListening();
+      stopBroadcasting();
+      stopHostServer();
+    }
+  });
 
   ipcMain.removeHandler('getUseEnforcer');
   ipcMain.handle('getUseEnforcer', () => {

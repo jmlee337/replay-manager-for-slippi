@@ -305,3 +305,13 @@ export enum GuideState {
   REPLAYS,
   PLAYERS,
 }
+
+export type CopyRemote = {
+  address: string;
+  name: string;
+};
+
+export enum WebSocketServerStatus {
+  STOPPED,
+  STARTED,
+}

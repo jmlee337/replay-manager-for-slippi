@@ -17,6 +17,8 @@ import {
   Set,
   StartggSet,
   Tournament,
+  WebSocketServerStatus,
+  CopyRemote,
 } from '../common/types';
 
 const electronHandler = {
@@ -29,7 +31,6 @@ const electronHandler = {
     invalidReplays: InvalidReplay[];
   }> => ipcRenderer.invoke('getReplaysInDir'),
   writeReplays: (
-    dir: string,
     fileNames: string[],
     output: Output,
     replays: Replay[],
@@ -40,7 +41,6 @@ const electronHandler = {
   ): Promise<void> =>
     ipcRenderer.invoke(
       'writeReplays',
-      dir,
       fileNames,
       output,
       replays,
@@ -55,6 +55,49 @@ const electronHandler = {
     ipcRenderer.invoke('appendEnforcerResult', str),
   getCopyDir: (): Promise<string> => ipcRenderer.invoke('getCopyDir'),
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
+  getCopyHost: (): Promise<CopyRemote> => ipcRenderer.invoke('getCopyHost'),
+  startListeningForHosts: (): Promise<string> =>
+    ipcRenderer.invoke('startListeningForHosts'),
+  stopListeningForHosts: (): Promise<void> =>
+    ipcRenderer.invoke('stopListeningForHosts'),
+  onCopyHosts: (
+    callback: (event: IpcRendererEvent, hosts: CopyRemote[]) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('copyHosts');
+    ipcRenderer.on('copyHosts', callback);
+  },
+  connectToHost: (address: string): Promise<void> =>
+    ipcRenderer.invoke('connectToHost', address),
+  disconnectFromHost: (): Promise<void> =>
+    ipcRenderer.invoke('disconnectFromHost'),
+  onCopyHost: (
+    callback: (event: IpcRendererEvent, host: CopyRemote) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('copyHost');
+    ipcRenderer.on('copyHost', callback);
+  },
+  getCopyClients: (): Promise<CopyRemote[]> =>
+    ipcRenderer.invoke('getCopyClients'),
+  kickCopyClient: (address: string): Promise<void> =>
+    ipcRenderer.invoke('kickCopyClient', address),
+  startHostServer: (): Promise<string> => ipcRenderer.invoke('startHostServer'),
+  stopHostServer: (): Promise<void> => ipcRenderer.invoke('stopHostServer'),
+  startBroadcastingHost: (): Promise<string> =>
+    ipcRenderer.invoke('startBroadcastingHost'),
+  stopBroadcastingHost: (): Promise<void> =>
+    ipcRenderer.invoke('stopBroadcastingHost'),
+  onCopyClients: (
+    callback: (event: IpcRendererEvent, clients: CopyRemote[]) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('copyClients');
+    ipcRenderer.on('copyClients', callback);
+  },
+  onHostServerStatus: (
+    callback: (event: IpcRendererEvent, status: WebSocketServerStatus) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('hostServerStatus');
+    ipcRenderer.on('hostServerStatus', callback);
+  },
   getCurrentTournament: (): Promise<Tournament | undefined> =>
     ipcRenderer.invoke('getCurrentTournament'),
   getSelectedSet: (): Promise<Set | undefined> =>
@@ -114,14 +157,9 @@ const electronHandler = {
   getManualNames: (): Promise<string[]> => ipcRenderer.invoke('getManualNames'),
   setManualNames: (names: string[]): Promise<void> =>
     ipcRenderer.invoke('setManualNames', names),
-  getAutoDetectUsb: (): Promise<boolean> =>
-    ipcRenderer.invoke('getAutoDetectUsb'),
-  setAutoDetectUsb: (autoDetectUsb: boolean): Promise<void> =>
-    ipcRenderer.invoke('setAutoDetectUsb', autoDetectUsb),
-  getScrollToBottom: (): Promise<boolean> =>
-    ipcRenderer.invoke('getScrollToBottom'),
-  setScrollToBottom: (scrollToBottom: boolean): Promise<void> =>
-    ipcRenderer.invoke('setScrollToBottom', scrollToBottom),
+  getUseLAN: (): Promise<boolean> => ipcRenderer.invoke('getUseLAN'),
+  setUseLAN: (useLAN: boolean): Promise<void> =>
+    ipcRenderer.invoke('setUseLAN', useLAN),
   getUseEnforcer: (): Promise<boolean> => ipcRenderer.invoke('getUseEnforcer'),
   setUseEnforcer: (useEnforcer: boolean): Promise<void> =>
     ipcRenderer.invoke('setUseEnforcer', useEnforcer),
