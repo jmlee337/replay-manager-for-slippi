@@ -472,6 +472,14 @@ export function getCopyClients() {
     }),
   );
 }
+export function kickCopyClient(clientAddress: string) {
+  const nameAndWebSocket = clientAddressToNameAndWebSocket.get(clientAddress);
+  if (!nameAndWebSocket) {
+    throw new Error('no such client');
+  }
+
+  nameAndWebSocket.webSocket.close();
+}
 
 let webSocketServer: WebSocketServer | null = null;
 const subdirToWriteDir = new Map<string, string>();

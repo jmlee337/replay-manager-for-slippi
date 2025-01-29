@@ -4,6 +4,7 @@ import {
   Button,
   CircularProgress,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
@@ -61,6 +62,8 @@ function ClientsDialog({
     });
   }, []);
 
+  const [stopOpen, setStopOpen] = useState(false);
+
   return (
     <>
       <Button
@@ -100,7 +103,12 @@ function ClientsDialog({
                 style={{ marginRight: '-16px', width: 'calc(100% + 16px)' }}
                 secondaryAction={
                   <Tooltip title="Disconnect">
-                    <IconButton edge="end">
+                    <IconButton
+                      edge="end"
+                      onClick={async () => {
+                        await window.electron.kickCopyClient(address);
+                      }}
+                    >
                       <Close />
                     </IconButton>
                   </Tooltip>
@@ -113,6 +121,46 @@ function ClientsDialog({
             ))}
           </List>
         </DialogContent>
+        <DialogActions>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              setStopOpen(true);
+            }}
+          >
+            Stop Hosting
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={stopOpen}
+        onClose={() => {
+          setStopOpen(false);
+        }}
+      >
+        <DialogTitle>Stop hosting on LAN?</DialogTitle>
+        <DialogActions>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setStopOpen(false);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={async () => {
+              await window.electron.stopHostServer();
+              setStopOpen(false);
+              setOpen(false);
+            }}
+          >
+            Stop
+          </Button>
+        </DialogActions>
       </Dialog>
     </>
   );
@@ -212,7 +260,12 @@ function HostsDialog({ host }: { host: CopyRemote }) {
                 style={{ marginRight: '-16px', width: 'calc(100% + 16px)' }}
                 secondaryAction={
                   <Tooltip title="Disconnect">
-                    <IconButton edge="end">
+                    <IconButton
+                      edge="end"
+                      onClick={async () => {
+                        await window.electron.disconnectFromHost();
+                      }}
+                    >
                       <Close />
                     </IconButton>
                   </Tooltip>
@@ -459,7 +512,11 @@ export default function CopyControls({
           />
           {success && <Typography variant="caption">{success}</Typography>}
           <Button
-            disabled={isCopying || !dir || !hasSelectedReplays}
+            disabled={
+              isCopying ||
+              (!dir && !host.address && !host.name) ||
+              !hasSelectedReplays
+            }
             onClick={async () => {
               try {
                 await onCopy();

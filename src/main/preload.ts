@@ -78,6 +78,8 @@ const electronHandler = {
   },
   getCopyClients: (): Promise<CopyRemote[]> =>
     ipcRenderer.invoke('getCopyClients'),
+  kickCopyClient: (address: string): Promise<void> =>
+    ipcRenderer.invoke('kickCopyClient', address),
   startHostServer: (): Promise<string> => ipcRenderer.invoke('startHostServer'),
   stopHostServer: (): Promise<void> => ipcRenderer.invoke('stopHostServer'),
   startBroadcastingHost: (): Promise<string> =>

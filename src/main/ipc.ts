@@ -55,6 +55,7 @@ import {
   disconnectFromHost,
   getCopyClients,
   getHost,
+  kickCopyClient,
   setCopyDir,
   setMainWindow,
   startBroadcasting,
@@ -251,10 +252,15 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   );
 
   ipcMain.removeHandler('disconnectFromHost');
-  ipcMain.handle('disconnectFromHost', () => disconnectFromHost);
+  ipcMain.handle('disconnectFromHost', disconnectFromHost);
 
   ipcMain.removeHandler('getCopyClients');
   ipcMain.handle('getCopyClients', getCopyClients);
+
+  ipcMain.removeHandler('kickCopyClient');
+  ipcMain.handle('kickCopyClient', (event, address: string) =>
+    kickCopyClient(address),
+  );
 
   ipcMain.removeHandler('startHostServer');
   ipcMain.handle('startHostServer', startHostServer);
