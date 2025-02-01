@@ -55,6 +55,7 @@ jobs:
 
       - name: Install libudev
         run: |
+          sudo apt update -y
           sudo apt install -y libudev-dev
 
       - name: npm install
@@ -115,4 +116,3 @@ jobs:
           name: windows
           path: |
             release/build/ReplayManagerForSlippi*.exe
-
