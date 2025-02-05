@@ -1163,7 +1163,9 @@ function Hello() {
         subdir = subdir.replace('{roundShort}', roundShort);
         subdir = subdir.replace('{roundLong}', roundLong);
         subdir = subdir.replace('{games}', selectedReplays.length.toString(10));
-        // do last in case event/phase/phase group names contain template strings LOL
+        // do last in case tournament/event/phase/phase group names contain template strings LOL
+        subdir = subdir.replace('{tournamentName}', tournament.name);
+        subdir = subdir.replace('{tournamentSlug}', tournament.slug);
         if (mode === Mode.STARTGG) {
           subdir = subdir.replace(
             '{event}',
