@@ -80,6 +80,8 @@ import GuidedDialog from './GuidedDialog';
 import StartggTournamentForm from './StartggTournamentForm';
 import ChallongeTournamentForm from './ChallongeTournamentForm';
 
+const ENFORCER_VERSION = '1.3.0';
+
 const Bottom = styled(Paper)`
   height: 147px;
 `;
@@ -2145,6 +2147,7 @@ function Hello() {
                   guideBackdropOpen &&
                   guideState === GuideState.PLAYERS
                 }
+                enforcerVersion={ENFORCER_VERSION}
               />
             </Stack>
           </Stack>
@@ -2203,6 +2206,7 @@ function Hello() {
         setFolderNameFormat={setFolderNameFormat}
         setAdminedTournaments={setAdminedTournaments}
         showErrorDialog={showErrorDialog}
+        enforcerVersion={ENFORCER_VERSION}
       />
     </>
   );

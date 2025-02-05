@@ -62,6 +62,7 @@ export default function Settings({
   setFolderNameFormat,
   setAdminedTournaments,
   showErrorDialog,
+  enforcerVersion,
 }: {
   appVersion: string;
   latestAppVersion: string;
@@ -86,6 +87,7 @@ export default function Settings({
   setFolderNameFormat: (folderNameFormat: string) => void;
   setAdminedTournaments: (tournaments: AdminedTournament[]) => void;
   showErrorDialog: (errors: string[]) => void;
+  enforcerVersion: string;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -308,7 +310,7 @@ export default function Settings({
             />
             <LabeledCheckbox
               checked={useEnforcer}
-              label="Use SLP Enforcer (logged to copy folder enforcer.csv)"
+              label={`Use SLP Enforcer ${enforcerVersion} (logged to copy folder enforcer.csv)`}
               labelPlacement="end"
               set={async (checked) => {
                 await window.electron.setUseEnforcer(checked);

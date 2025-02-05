@@ -13,6 +13,7 @@ import {
   IconButton,
   Stack,
   Tooltip,
+  Typography,
 } from '@mui/material';
 import { MouseEventHandler, useState } from 'react';
 import styled from '@emotion/styled';
@@ -199,6 +200,7 @@ export default function SetControls({
   useEnforcer,
   vlerkMode,
   elevate,
+  enforcerVersion,
 }: {
   copyReplays: (set?: Set, violatorDisplayNames?: string[]) => Promise<void>;
   deleteReplays: () => Promise<void>;
@@ -219,6 +221,7 @@ export default function SetControls({
   useEnforcer: boolean;
   vlerkMode: boolean;
   elevate: boolean;
+  enforcerVersion: string;
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -631,7 +634,17 @@ export default function SetControls({
           setEnforcerErrorOpen(false);
         }}
       >
-        <DialogTitle>Controller Ruleset Violation Detected</DialogTitle>
+        <Stack
+          alignItems="center"
+          direction="row"
+          justifyContent="space-between"
+          marginRight="24px"
+        >
+          <DialogTitle>Controller Ruleset Violation Detected</DialogTitle>
+          <Typography variant="caption">
+            SLP Enforcer version {enforcerVersion}
+          </Typography>
+        </Stack>
         <DialogContent sx={{ width: '500px' }}>
           <Stack spacing="8px">
             {enforcerErrors.map((enforcerResult) => (
