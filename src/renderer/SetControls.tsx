@@ -191,7 +191,9 @@ export default function SetControls({
   setReportSettings,
   resetGuide,
   mode,
+  isCopying,
   copyDisabled,
+  isDeleting,
   dqId,
   hasRemainingReplays,
   reportSettings,
@@ -212,7 +214,9 @@ export default function SetControls({
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
   resetGuide: () => void;
   mode: Mode;
+  isCopying: boolean;
   copyDisabled: boolean;
+  isDeleting: boolean;
   dqId: number;
   hasRemainingReplays: boolean;
   reportSettings: ReportSettings;
@@ -329,19 +333,26 @@ export default function SetControls({
 
   const gfDeleteOverride =
     set.fullRoundText === 'Grand Final' && hasRemainingReplays;
-  let reportCopyDelete = '';
+
+  let reportCopyDeleteIntent = 'Report';
+  if (reportSettings.alsoCopy) {
+    reportCopyDeleteIntent += ', Copy';
+  }
+  if (reportSettings.alsoDelete) {
+    reportCopyDeleteIntent += ', Delete';
+  }
+
+  let reportCopyDeleteButton = reportCopyDeleteIntent;
   if (enforcing) {
-    reportCopyDelete = 'Checking with SLP Enforcer';
+    reportCopyDeleteButton = 'Checking with SLP Enforcer';
   } else if (reportSettings.alsoCopy && copyDisabled) {
-    reportCopyDelete = 'Copy folder not set';
-  } else {
-    reportCopyDelete = 'Report';
-    if (reportSettings.alsoCopy) {
-      reportCopyDelete += ', Copy';
-    }
-    if (reportSettings.alsoDelete) {
-      reportCopyDelete += ', Delete';
-    }
+    reportCopyDeleteButton = 'Copy destination not set';
+  } else if (reportSettings.alsoCopy && isCopying) {
+    reportCopyDeleteButton = 'Copying';
+  } else if (reportSettings.alsoDelete && isDeleting) {
+    reportCopyDeleteButton = 'Deleting';
+  } else if (reporting) {
+    reportCopyDeleteButton = 'Reporting';
   }
   return (
     <>
@@ -531,6 +542,7 @@ export default function SetControls({
           <Button
             disabled={
               reporting ||
+              (reportSettings.alsoCopy && isCopying) ||
               (reportSettings.alsoCopy && copyDisabled) ||
               enforcing
             }
@@ -602,7 +614,7 @@ export default function SetControls({
             }}
             variant="contained"
           >
-            {reportCopyDelete}
+            {reportCopyDeleteButton}
           </Button>
         </DialogActions>
       </Dialog>
@@ -613,7 +625,7 @@ export default function SetControls({
           setReportError('');
         }}
       >
-        <DialogTitle>{reportCopyDelete} error!</DialogTitle>
+        <DialogTitle>{reportCopyDeleteIntent} error!</DialogTitle>
         <DialogContent>
           <DialogContentText>{reportError}</DialogContentText>
         </DialogContent>

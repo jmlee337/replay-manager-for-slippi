@@ -318,6 +318,7 @@ export default function CopyControls({
   dir,
   setDir,
   useLAN,
+  host,
   error,
   setError,
   errorDialogOpen,
@@ -333,6 +334,7 @@ export default function CopyControls({
   dir: string;
   setDir: (dir: string) => void;
   useLAN: boolean;
+  host: CopyRemote;
   error: string;
   setError: (error: string) => void;
   errorDialogOpen: boolean;
@@ -346,23 +348,6 @@ export default function CopyControls({
   elevateSettings: boolean;
 }) {
   const [hosting, setHosting] = useState(false);
-  const [host, setHost] = useState<CopyRemote>({
-    name: '',
-    address: '',
-  });
-
-  useEffect(() => {
-    (async () => {
-      const hostPromise = window.electron.getCopyHost();
-      setHost(await hostPromise);
-    })();
-  }, []);
-
-  useEffect(() => {
-    window.electron.onCopyHost((event, newHost) => {
-      setHost(newHost);
-    });
-  }, []);
 
   const chooseDir = async () => {
     const newDir = await window.electron.chooseCopyDir();

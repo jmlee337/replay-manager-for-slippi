@@ -42,6 +42,7 @@ import {
   Context,
   ContextScore,
   ContextSlot,
+  CopyRemote,
   CopySettings,
   GuideState,
   InvalidReplay,
@@ -209,6 +210,10 @@ function Hello() {
   const [dir, setDir] = useState('');
   const [dirInit, setDirInit] = useState(false);
   const [copyDir, setCopyDir] = useState('');
+  const [host, setHost] = useState<CopyRemote>({
+    name: '',
+    address: '',
+  });
   const [useLAN, setUseLAN] = useState(false);
   const [selectedSet, setSelectedSet] = useState<Set>(EMPTY_SET);
   const [selectedSetChain, setSelectedSetChain] = useState(
@@ -233,6 +238,7 @@ function Hello() {
       const modePromise = window.electron.getMode();
       const startggKeyPromise = window.electron.getStartggKey();
       const challongeKeyPromise = window.electron.getChallongeKey();
+      const useLANPromise = window.electron.getUseLAN();
       const useEnforcerPromise = window.electron.getUseEnforcer();
       const vlerkModePromise = window.electron.getVlerkMode();
       const guidedModePromise = window.electron.getGuidedMode();
@@ -244,7 +250,7 @@ function Hello() {
       // initial state
       const replaysDirPromise = window.electron.getReplaysDir();
       const copyDirPromise = window.electron.getCopyDir();
-      const useLANPromise = window.electron.getUseLAN();
+      const hostPromise = window.electron.getCopyHost();
       const tournamentPromise = window.electron.getCurrentTournament();
       const selectedSetPromise = window.electron.getSelectedSet();
       const selectedSetChainPromise = window.electron.getSelectedSetChain();
@@ -276,6 +282,7 @@ function Hello() {
       setDir(replaysDir);
       setDirInit(replaysDir.length > 0);
       setCopyDir(await copyDirPromise);
+      setHost(await hostPromise);
       const currentTournament = await tournamentPromise;
       if (currentTournament) {
         setSlug(currentTournament.slug);
@@ -326,6 +333,12 @@ function Hello() {
       setGotSettings(true);
     };
     inner();
+  }, []);
+
+  useEffect(() => {
+    window.electron.onCopyHost((event, newHost) => {
+      setHost(newHost);
+    });
   }, []);
 
   const [batchActives, setBatchActives] = useState([
@@ -548,9 +561,14 @@ function Hello() {
       return;
     }
 
-    await window.electron.deleteReplaysDir();
-    setWasDeleted(true);
-    await refreshReplays();
+    setDirDeleting(true);
+    try {
+      await window.electron.deleteReplaysDir();
+      setWasDeleted(true);
+      await refreshReplays();
+    } finally {
+      setDirDeleting(false);
+    }
   };
   const onPlayerOverride = () => {
     setReplays(Array.from(replays));
@@ -1472,7 +1490,6 @@ function Hello() {
                             )
                           }
                           onClick={async () => {
-                            setDirDeleting(true);
                             try {
                               await deleteDir();
                               setGuideState(GuideState.NONE);
@@ -1482,7 +1499,6 @@ function Hello() {
                               ]);
                             } finally {
                               setDirDeleteDialogOpen(false);
-                              setDirDeleting(false);
                             }
                           }}
                           variant="contained"
@@ -1784,6 +1800,7 @@ function Hello() {
             dir={copyDir}
             setDir={setCopyDir}
             useLAN={useLAN}
+            host={host}
             error={copyError}
             setError={setCopyError}
             errorDialogOpen={copyErrorDialogOpen}
@@ -2134,9 +2151,12 @@ function Hello() {
                   setGuideState(GuideState.NONE);
                   setGuideBackdropOpen(false);
                 }}
+                isCopying={isCopying}
                 copyDisabled={
-                  isCopying || !copyDir || selectedReplays.length === 0
+                  (!copyDir && !(host.address && host.name)) ||
+                  selectedReplays.length === 0
                 }
+                isDeleting={dirDeleting}
                 dqId={dq.entrantId}
                 hasRemainingReplays={hasRemainingReplays}
                 reportSettings={reportSettings}
