@@ -1113,62 +1113,54 @@ function Hello() {
       ) {
         const combinedNameObjs = nameObjs
           .reduce(
-            (namesObj, game): NamesObj[] => {
+            (namesObj, game, gameI): NamesObj[] => {
               game.forEach((nameObj, i) => {
                 if (nameObj.characterName) {
                   namesObj[i].displayName = nameObj.displayName;
-
-                  const charCount =
-                    namesObj[i].characterNames.get(nameObj.characterName) || 0;
-                  namesObj[i].characterNames.set(
-                    nameObj.characterName,
-                    charCount + 1,
-                  );
-
-                  const nameCount =
-                    namesObj[i].nametags.get(nameObj.nametag) || 0;
-                  namesObj[i].nametags.set(nameObj.nametag, nameCount + 1);
+                  if (!namesObj[i].characterNames.has(nameObj.characterName)) {
+                    namesObj[i].characterNames.set(
+                      nameObj.characterName,
+                      gameI,
+                    );
+                  }
+                  if (!namesObj[i].nametags.has(nameObj.nametag)) {
+                    namesObj[i].nametags.set(nameObj.nametag, gameI);
+                  }
                 }
               });
               return namesObj;
             },
             [
               {
-                characterNames: new Map(),
+                characterNames: new Map<string, number>(),
                 displayName: '',
-                nametags: new Map(),
+                nametags: new Map<string, number>(),
               },
               {
-                characterNames: new Map(),
+                characterNames: new Map<string, number>(),
                 displayName: '',
-                nametags: new Map(),
+                nametags: new Map<string, number>(),
               },
               {
-                characterNames: new Map(),
+                characterNames: new Map<string, number>(),
                 displayName: '',
-                nametags: new Map(),
+                nametags: new Map<string, number>(),
               },
               {
-                characterNames: new Map(),
+                characterNames: new Map<string, number>(),
                 displayName: '',
-                nametags: new Map(),
+                nametags: new Map<string, number>(),
               },
             ],
           )
           .map((namesObj) => ({
             displayName: namesObj.displayName,
             characterName: [...namesObj.characterNames.entries()]
-              .sort(
-                (entryA: [string, number], entryB: [string, number]) =>
-                  entryB[1] - entryA[1],
-              )
+              .sort(([, a], [, b]) => a - b)
               .map((entry) => entry[0])
               .join(', '),
             nametag: [...namesObj.nametags.entries()]
-              .sort(
-                (entryA: [string, number], entryB: [string, number]) =>
-                  entryB[1] - entryA[1],
-              )
+              .sort(([, a], [, b]) => a - b)
               .map((entry) => entry[0])
               .join(', '),
           }))

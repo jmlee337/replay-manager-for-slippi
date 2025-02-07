@@ -625,6 +625,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     'fileNameFormat',
     INITIAL_FILE_NAME_FORMAT,
   ) as string;
+  setOwnFileNameFormat(fileNameFormat);
   ipcMain.removeHandler('getFileNameFormat');
   ipcMain.handle('getFileNameFormat', () => fileNameFormat);
 
@@ -635,17 +636,21 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       if (!newFileNameFormat) {
         throw new Error('File name format cannot be empty.');
       }
-      store.set('fileNameFormat', newFileNameFormat);
-      fileNameFormat = newFileNameFormat;
-      setOwnFileNameFormat(fileNameFormat);
+      if (fileNameFormat !== newFileNameFormat) {
+        store.set('fileNameFormat', newFileNameFormat);
+        fileNameFormat = newFileNameFormat;
+        setOwnFileNameFormat(fileNameFormat);
+      }
     },
   );
 
   ipcMain.removeHandler('resetFileNameFormat');
   ipcMain.handle('resetFileNameFormat', () => {
-    store.set('fileNameFormat', INITIAL_FILE_NAME_FORMAT);
-    fileNameFormat = INITIAL_FILE_NAME_FORMAT;
-    setOwnFileNameFormat(fileNameFormat);
+    if (fileNameFormat !== INITIAL_FILE_NAME_FORMAT) {
+      store.set('fileNameFormat', INITIAL_FILE_NAME_FORMAT);
+      fileNameFormat = INITIAL_FILE_NAME_FORMAT;
+      setOwnFileNameFormat(fileNameFormat);
+    }
     return fileNameFormat;
   });
 
@@ -665,6 +670,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     'folderNameFormat',
     INITIAL_FOLDER_NAME_FORMAT,
   ) as string;
+  setOwnFolderNameFormat(folderNameFormat);
   ipcMain.removeHandler('getFolderNameFormat');
   ipcMain.handle('getFolderNameFormat', () => folderNameFormat);
 
@@ -675,17 +681,21 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       if (!newFolderNameFormat) {
         throw new Error('Folder name format cannot be empty.');
       }
-      store.set('folderNameFormat', newFolderNameFormat);
-      folderNameFormat = newFolderNameFormat;
-      setOwnFolderNameFormat(folderNameFormat);
+      if (folderNameFormat !== newFolderNameFormat) {
+        store.set('folderNameFormat', newFolderNameFormat);
+        folderNameFormat = newFolderNameFormat;
+        setOwnFolderNameFormat(folderNameFormat);
+      }
     },
   );
 
   ipcMain.removeHandler('resetFolderNameFormat');
   ipcMain.handle('resetFolderNameFormat', () => {
-    store.set('folderNameFormat', INITIAL_FOLDER_NAME_FORMAT);
-    folderNameFormat = INITIAL_FOLDER_NAME_FORMAT;
-    setOwnFolderNameFormat(folderNameFormat);
+    if (folderNameFormat !== INITIAL_FOLDER_NAME_FORMAT) {
+      store.set('folderNameFormat', INITIAL_FOLDER_NAME_FORMAT);
+      folderNameFormat = INITIAL_FOLDER_NAME_FORMAT;
+      setOwnFolderNameFormat(folderNameFormat);
+    }
     return folderNameFormat;
   });
 
