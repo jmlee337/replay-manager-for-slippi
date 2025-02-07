@@ -870,7 +870,7 @@ export function startBroadcasting() {
     broadcastSocket.on('error', (e) => {
       reject(e);
     });
-    broadcastSocket.on('connect', () => {
+    broadcastSocket.on('listening', () => {
       if (!broadcastSocket) {
         reject();
         return;
@@ -880,16 +880,21 @@ export function startBroadcasting() {
       const selfName = getComputerName();
       const broadcast = () => {
         if (broadcastSocket) {
-          broadcastSocket.send(selfName);
+          broadcastSocket.send(selfName, PORT, '255.255.255.255');
           timeout = setTimeout(() => {
             broadcast();
           }, 1000);
         }
       };
       broadcast();
-      resolve(broadcastSocket.address().address);
+      const checkSocket = createSocket('udp4');
+      checkSocket.connect(53, '8.8.8.8', () => {
+        const resolveAddress = checkSocket.address().address;
+        checkSocket.close();
+        resolve(resolveAddress);
+      });
     });
-    broadcastSocket.connect(PORT, '255.255.255.255');
+    broadcastSocket.bind();
   });
 }
 
