@@ -26,7 +26,8 @@ const electronHandler = {
   getReplaysDir: (): Promise<string> => ipcRenderer.invoke('getReplaysDir'),
   chooseReplaysDir: (): Promise<string> =>
     ipcRenderer.invoke('chooseReplaysDir'),
-  deleteReplaysDir: (): Promise<void> => ipcRenderer.invoke('deleteReplaysDir'),
+  deleteReplaysDir: (): Promise<boolean> =>
+    ipcRenderer.invoke('deleteReplaysDir'),
   maybeEject: (): Promise<boolean> => ipcRenderer.invoke('maybeEject'),
   getReplaysInDir: (): Promise<{
     replays: Replay[];

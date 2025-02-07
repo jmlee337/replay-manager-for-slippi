@@ -559,18 +559,23 @@ function Hello() {
     },
     [allReplaysSelected, guideActive, mode],
   );
+
+  const [ejecting, setEjecting] = useState(false);
+  const [ejected, setEjected] = useState(false);
   const deleteDir = async () => {
     if (!dir) {
       return;
     }
 
     setDirDeleting(true);
+    setEjecting(true);
     try {
-      await window.electron.deleteReplaysDir();
+      setEjected(await window.electron.deleteReplaysDir());
       setWasDeleted(true);
       await refreshReplays();
     } finally {
       setDirDeleting(false);
+      setEjecting(false);
     }
   };
   const onPlayerOverride = () => {
@@ -649,6 +654,7 @@ function Hello() {
       setDir(newDir);
       setWasDeleted(false);
       refreshReplays(true);
+      setEjected(false);
     });
   }, [refreshReplays]);
 
@@ -1407,7 +1413,7 @@ function Hello() {
 
   return (
     <>
-      <AppBar position="fixed" style={{ backgroundColor: 'white' }}>
+      <AppBar position="fixed" color="inherit">
         <Toolbar disableGutters variant="dense">
           <AppBarSection flexGrow={1} minWidth={600}>
             <Stack alignItems="center" direction="row">
@@ -1451,11 +1457,18 @@ function Hello() {
                 value={dir || 'Set replays folder...'}
                 style={{ flexGrow: 1 }}
               />
+              {ejected && <Typography variant="body2">Ejected!</Typography>}
               {dir && (
                 <Tooltip arrow title="Eject (if USB)">
                   <IconButton
+                    disabled={ejecting}
                     onClick={async () => {
-                      await window.electron.maybeEject();
+                      setEjecting(true);
+                      try {
+                        setEjected(await window.electron.maybeEject());
+                      } finally {
+                        setEjecting(false);
+                      }
                     }}
                   >
                     <Eject />
@@ -1794,7 +1807,7 @@ function Hello() {
             ) : (
               <Alert
                 severity={wasDeleted ? 'warning' : 'error'}
-                sx={{ mb: '8px', pl: '24px' }}
+                sx={{ mb: '8px', mt: '8px', pl: '24px' }}
               >
                 {wasDeleted
                   ? 'Replays folder deleted.'

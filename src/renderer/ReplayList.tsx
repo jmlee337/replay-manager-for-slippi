@@ -444,13 +444,14 @@ export default function ReplayList({
 }) {
   return (
     <List
+      disablePadding
       style={{ backgroundColor: 'white' }}
       sx={{
         zIndex: (theme) => (elevate ? theme.zIndex.drawer + 2 : undefined),
       }}
     >
       {replays.length === 0 ? (
-        <Alert severity="warning" sx={{ mb: '8px', pl: '24px' }}>
+        <Alert severity="warning" sx={{ mb: '8px', mt: '8px', pl: '24px' }}>
           {dirInit ? 'Click refresh replays!' : 'No replays in folder.'}
         </Alert>
       ) : (

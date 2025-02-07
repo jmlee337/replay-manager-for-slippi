@@ -152,12 +152,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     );
     if (key) {
       return new Promise<boolean>((resolve, reject) => {
-        eject(key, (error: Error, stdout: string | Buffer) => {
+        eject(key, (error: Error) => {
           if (error) {
             reject(error);
           } else {
-            console.log(`ejected ${key}`);
-            console.log(stdout);
             resolve(true);
           }
         });
@@ -171,8 +169,9 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     if (replayDirs.length > 0) {
       const currentDir = replayDirs[replayDirs.length - 1];
       await rm(currentDir, { recursive: true });
-      await maybeEject(currentDir);
+      return maybeEject(currentDir);
     }
+    return Promise.resolve(false);
   });
 
   ipcMain.removeHandler('maybeEject');
