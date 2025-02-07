@@ -71,9 +71,17 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   let replayDirs: string[] = [];
   const knownUsbs = new Map<string, boolean>();
   const onInsert = (e: any) => {
+    if (knownUsbs.has(e.data.key)) {
+      return;
+    }
+
     if (e.data.isAccessible) {
       knownUsbs.set(e.data.key, true);
-      replayDirs.push(path.join(e.data.key, 'Slippi'));
+      replayDirs.push(
+        process.platform === 'win32'
+          ? `${e.data.key}Slippi`
+          : path.join(e.data.key, 'Slippi'),
+      );
       mainWindow.webContents.send(
         'usbstorage',
         replayDirs[replayDirs.length - 1],
@@ -81,11 +89,12 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     }
   };
   const onEject = (e: any) => {
+    if (!knownUsbs.has(e.data.key)) {
+      return;
+    }
+
     knownUsbs.delete(e.data.key);
-    replayDirs = replayDirs.filter(
-      (dir) =>
-        !(dir === e.data.key || dir.startsWith(`${e.data.key}${path.sep}`)),
-    );
+    replayDirs = replayDirs.filter((dir) => !dir.startsWith(e.data.key));
     mainWindow.webContents.send(
       'usbstorage',
       replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : '',
