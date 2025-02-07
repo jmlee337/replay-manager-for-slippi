@@ -146,29 +146,39 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     return chosenReplaysDir;
   });
 
+  const maybeEject = (currentDir: string) => {
+    const key = Array.from(knownUsbs.keys()).find((usbKey) =>
+      currentDir.startsWith(usbKey),
+    );
+    if (key) {
+      return new Promise<boolean>((resolve, reject) => {
+        eject(key, (error: Error, stdout: string | Buffer) => {
+          if (error) {
+            reject(error);
+          } else {
+            console.log(`ejected ${key}`);
+            console.log(stdout);
+            resolve(true);
+          }
+        });
+      });
+    }
+    return Promise.resolve(false);
+  };
+
   ipcMain.removeHandler('deleteReplaysDir');
   ipcMain.handle('deleteReplaysDir', async () => {
     if (replayDirs.length > 0) {
       const currentDir = replayDirs[replayDirs.length - 1];
       await rm(currentDir, { recursive: true });
-      const key = Array.from(knownUsbs.keys()).find(
-        (usbKey) =>
-          currentDir === usbKey ||
-          currentDir.startsWith(`${usbKey}${path.sep}`),
-      );
-      if (key) {
-        await new Promise<void>((resolve, reject) => {
-          eject(key, (error: Error) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve();
-            }
-          });
-        });
-      }
+      await maybeEject(currentDir);
     }
   });
+
+  ipcMain.removeHandler('maybeEject');
+  ipcMain.handle('maybeEject', () =>
+    maybeEject(replayDirs[replayDirs.length - 1]),
+  );
 
   ipcMain.removeHandler('getReplaysInDir');
   ipcMain.handle('getReplaysInDir', async () => {

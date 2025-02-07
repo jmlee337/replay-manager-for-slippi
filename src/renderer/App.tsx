@@ -28,6 +28,7 @@ import {
   DeleteForever,
   DeleteForeverOutlined,
   Edit,
+  Eject,
   FolderOpen,
   HourglassTop,
   Refresh,
@@ -1450,6 +1451,17 @@ function Hello() {
                 value={dir || 'Set replays folder...'}
                 style={{ flexGrow: 1 }}
               />
+              {dir && (
+                <Tooltip arrow title="Eject (if USB)">
+                  <IconButton
+                    onClick={async () => {
+                      await window.electron.maybeEject();
+                    }}
+                  >
+                    <Eject />
+                  </IconButton>
+                </Tooltip>
+              )}
               {dir &&
                 dirExists &&
                 !gettingReplays &&
