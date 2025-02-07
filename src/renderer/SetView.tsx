@@ -5,12 +5,12 @@ import { NameWithHighlight } from '../common/types';
 import { highlightColor } from '../common/constants';
 
 const EntrantNames = styled(Stack)`
-  flex-grow: 1;
-  min-width: 0;
+  width: calc(100% - 22px);
 `;
 
 const EntrantSection = styled(Stack)`
   align-items: center;
+  box-sizing: border-box;
   width: 50%;
 `;
 
@@ -18,7 +18,7 @@ const EntrantScore = styled(Box)`
   overflow-x: hidden;
   margin: 0 4px;
   text-overflow: ellipsis;
-  width: 16px;
+  width: 14px;
 `;
 
 const Name = styled.div`
@@ -93,7 +93,7 @@ export default function SetView({
       ) : (
         <Box width="20px" />
       )}
-      <Stack flexGrow={1}>
+      <Stack width="calc(100% - 40px)">
         <Box sx={{ typography: 'caption' }} textAlign="center">
           {fullRoundText}
         </Box>

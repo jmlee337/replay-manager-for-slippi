@@ -130,7 +130,7 @@ export default function ChallongeView({
           )}
         </ListItemButton>
         <Collapse in={open}>
-          <div style={{ paddingLeft: '8px' }}>
+          <div>
             {pendingSetsToShow.map((setWithNames) => (
               <SetView
                 key={setWithNames.set.id}

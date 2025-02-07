@@ -176,7 +176,7 @@ function PhaseGroupView({
           )}
         </ListItemButton>
         <Collapse in={open}>
-          <Block>
+          <div style={{ marginLeft: '-16px' }}>
             {pendingSetsToShow.map((setWithNames) => (
               <SetView
                 key={setWithNames.set.id}
@@ -230,7 +230,7 @@ function PhaseGroupView({
                   selectSet={(set: Set) => selectSet(set)}
                 />
               )}
-          </Block>
+          </div>
         </Collapse>
       </>
     )
