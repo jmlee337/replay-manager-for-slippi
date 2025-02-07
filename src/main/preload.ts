@@ -18,7 +18,8 @@ import {
   StartggSet,
   Tournament,
   WebSocketServerStatus,
-  CopyRemote,
+  CopyClient,
+  CopyHost,
 } from '../common/types';
 
 const electronHandler = {
@@ -55,13 +56,13 @@ const electronHandler = {
     ipcRenderer.invoke('appendEnforcerResult', str),
   getCopyDir: (): Promise<string> => ipcRenderer.invoke('getCopyDir'),
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
-  getCopyHost: (): Promise<CopyRemote> => ipcRenderer.invoke('getCopyHost'),
+  getCopyHost: (): Promise<CopyHost> => ipcRenderer.invoke('getCopyHost'),
   startListeningForHosts: (): Promise<string> =>
     ipcRenderer.invoke('startListeningForHosts'),
   stopListeningForHosts: (): Promise<void> =>
     ipcRenderer.invoke('stopListeningForHosts'),
   onCopyHosts: (
-    callback: (event: IpcRendererEvent, hosts: CopyRemote[]) => void,
+    callback: (event: IpcRendererEvent, hosts: CopyHost[]) => void,
   ) => {
     ipcRenderer.removeAllListeners('copyHosts');
     ipcRenderer.on('copyHosts', callback);
@@ -70,13 +71,11 @@ const electronHandler = {
     ipcRenderer.invoke('connectToHost', address),
   disconnectFromHost: (): Promise<void> =>
     ipcRenderer.invoke('disconnectFromHost'),
-  onCopyHost: (
-    callback: (event: IpcRendererEvent, host: CopyRemote) => void,
-  ) => {
+  onCopyHost: (callback: (event: IpcRendererEvent, host: CopyHost) => void) => {
     ipcRenderer.removeAllListeners('copyHost');
     ipcRenderer.on('copyHost', callback);
   },
-  getCopyClients: (): Promise<CopyRemote[]> =>
+  getCopyClients: (): Promise<CopyClient[]> =>
     ipcRenderer.invoke('getCopyClients'),
   kickCopyClient: (address: string): Promise<void> =>
     ipcRenderer.invoke('kickCopyClient', address),
@@ -87,7 +86,7 @@ const electronHandler = {
   stopBroadcastingHost: (): Promise<void> =>
     ipcRenderer.invoke('stopBroadcastingHost'),
   onCopyClients: (
-    callback: (event: IpcRendererEvent, clients: CopyRemote[]) => void,
+    callback: (event: IpcRendererEvent, clients: CopyClient[]) => void,
   ) => {
     ipcRenderer.removeAllListeners('copyClients');
     ipcRenderer.on('copyClients', callback);

@@ -306,9 +306,14 @@ export enum GuideState {
   PLAYERS,
 }
 
-export type CopyRemote = {
+export type CopyClient = {
   address: string;
   name: string;
+};
+
+export type CopyHost = CopyClient & {
+  fileNameFormat: string;
+  folderNameFormat: string;
 };
 
 export enum WebSocketServerStatus {

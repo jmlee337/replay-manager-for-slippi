@@ -42,7 +42,7 @@ import {
   Context,
   ContextScore,
   ContextSlot,
-  CopyRemote,
+  CopyHost,
   CopySettings,
   GuideState,
   InvalidReplay,
@@ -210,9 +210,11 @@ function Hello() {
   const [dir, setDir] = useState('');
   const [dirInit, setDirInit] = useState(false);
   const [copyDir, setCopyDir] = useState('');
-  const [host, setHost] = useState<CopyRemote>({
+  const [host, setHost] = useState<CopyHost>({
     name: '',
     address: '',
+    fileNameFormat: '',
+    folderNameFormat: '',
   });
   const [useLAN, setUseLAN] = useState(false);
   const [selectedSet, setSelectedSet] = useState<Set>(EMPTY_SET);
@@ -1175,7 +1177,7 @@ function Hello() {
         const playersChars = combinedNameObjs.map(toPlayerChar).join(', ');
         const singlesChars =
           combinedNameObjs.length === 4 ? playersOnly : playersChars;
-        subdir = String(folderNameFormat);
+        subdir = String(host.folderNameFormat || folderNameFormat);
         subdir = subdir.replace('{date}', format(startDate, 'yyyyMMdd'));
         subdir = subdir.replace('{time}', format(startDate, 'HHmm'));
         subdir = subdir.replace('{roundShort}', roundShort);
@@ -1219,7 +1221,7 @@ function Hello() {
           const singlesChars =
             nameObjs.length === 4 ? playersOnly : playersChars;
 
-          let fileName = String(fileNameFormat);
+          let fileName = String(host.fileNameFormat || fileNameFormat);
           fileName = fileName.replace(
             '{date}',
             writeStartDate ? format(writeStartDate, 'yyyyMMdd') : '',

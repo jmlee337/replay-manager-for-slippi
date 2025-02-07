@@ -58,6 +58,8 @@ import {
   kickCopyClient,
   setCopyDir,
   setMainWindow,
+  setOwnFileNameFormat,
+  setOwnFolderNameFormat,
   startBroadcasting,
   startHostServer,
   startListening,
@@ -619,18 +621,12 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   // {stage}
   // {ordinal}
   const INITIAL_FILE_NAME_FORMAT = '{ordinal} - {playersChars} - {stage}';
+  let fileNameFormat = store.get(
+    'fileNameFormat',
+    INITIAL_FILE_NAME_FORMAT,
+  ) as string;
   ipcMain.removeHandler('getFileNameFormat');
-  ipcMain.handle('getFileNameFormat', () => {
-    if (store.has('fileNameFormat')) {
-      const fileNameFormat = store.get('fileNameFormat') as string;
-      if (fileNameFormat) {
-        return fileNameFormat;
-      }
-    }
-
-    store.set('fileNameFormat', INITIAL_FILE_NAME_FORMAT);
-    return INITIAL_FILE_NAME_FORMAT;
-  });
+  ipcMain.handle('getFileNameFormat', () => fileNameFormat);
 
   ipcMain.removeHandler('setFileNameFormat');
   ipcMain.handle(
@@ -640,13 +636,17 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         throw new Error('File name format cannot be empty.');
       }
       store.set('fileNameFormat', newFileNameFormat);
+      fileNameFormat = newFileNameFormat;
+      setOwnFileNameFormat(fileNameFormat);
     },
   );
 
   ipcMain.removeHandler('resetFileNameFormat');
   ipcMain.handle('resetFileNameFormat', () => {
     store.set('fileNameFormat', INITIAL_FILE_NAME_FORMAT);
-    return INITIAL_FILE_NAME_FORMAT;
+    fileNameFormat = INITIAL_FILE_NAME_FORMAT;
+    setOwnFileNameFormat(fileNameFormat);
+    return fileNameFormat;
   });
 
   // {date}
@@ -661,18 +661,12 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   // {phase}
   // {event}
   const INITIAL_FOLDER_NAME_FORMAT = '{time} - {roundShort} - {playersChars}';
+  let folderNameFormat = store.get(
+    'folderNameFormat',
+    INITIAL_FOLDER_NAME_FORMAT,
+  ) as string;
   ipcMain.removeHandler('getFolderNameFormat');
-  ipcMain.handle('getFolderNameFormat', () => {
-    if (store.has('folderNameFormat')) {
-      const folderNameFormat = store.get('folderNameFormat') as string;
-      if (folderNameFormat) {
-        return folderNameFormat;
-      }
-    }
-
-    store.set('folderNameFormat', INITIAL_FOLDER_NAME_FORMAT);
-    return INITIAL_FOLDER_NAME_FORMAT;
-  });
+  ipcMain.handle('getFolderNameFormat', () => folderNameFormat);
 
   ipcMain.removeHandler('setFolderNameFormat');
   ipcMain.handle(
@@ -682,13 +676,17 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         throw new Error('Folder name format cannot be empty.');
       }
       store.set('folderNameFormat', newFolderNameFormat);
+      folderNameFormat = newFolderNameFormat;
+      setOwnFolderNameFormat(folderNameFormat);
     },
   );
 
   ipcMain.removeHandler('resetFolderNameFormat');
   ipcMain.handle('resetFolderNameFormat', () => {
     store.set('folderNameFormat', INITIAL_FOLDER_NAME_FORMAT);
-    return INITIAL_FOLDER_NAME_FORMAT;
+    folderNameFormat = INITIAL_FOLDER_NAME_FORMAT;
+    setOwnFolderNameFormat(folderNameFormat);
+    return folderNameFormat;
   });
 
   ipcMain.removeHandler('getCopySettings');

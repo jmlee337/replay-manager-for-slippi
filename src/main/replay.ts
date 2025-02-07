@@ -23,7 +23,7 @@ import { app } from 'electron';
 import { parse } from 'date-fns';
 import {
   Context,
-  CopyRemote,
+  CopyHost,
   EnforcePlayerFailure,
   EnforceResult,
   InvalidReplay,
@@ -565,7 +565,7 @@ const PLAYED_ON = Buffer.from([
 
 export async function writeReplays(
   dir: string,
-  host: CopyRemote,
+  host: CopyHost,
   fileNames: string[],
   output: Output,
   replays: Replay[],

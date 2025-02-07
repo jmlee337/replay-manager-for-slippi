@@ -10,17 +10,24 @@ import { createWriteStream } from 'fs';
 import { IncomingMessage } from 'http';
 import {
   Context,
-  CopyRemote,
+  CopyHost,
+  CopyClient,
   Output,
   WebSocketServerStatus,
 } from '../common/types';
 
 const PORT = 52455;
 
-type HostMessage = {
-  type: 'name';
-  name: string;
-};
+type HostMessage =
+  | {
+      type: 'name';
+      name: string;
+    }
+  | {
+      type: 'format';
+      fileNameFormat: string;
+      folderNameFormat: string;
+    };
 
 type HostRequest = {
   ordinal: number;
@@ -67,7 +74,7 @@ type HostResponse = {
 function getComputerName() {
   switch (process.platform) {
     case 'win32':
-      return process.env.COMPUTERNAME || os.hostname();
+      return execSync('hostname').toString().trim() || os.hostname();
     case 'darwin':
       return (
         execSync('scutil --get ComputerName').toString().trim() || os.hostname()
@@ -101,9 +108,11 @@ export function startListening(): Promise<string> {
     mainWindow?.webContents.send(
       'copyHosts',
       Array.from(addressToName).map(
-        ([hostAddress, hostName]): CopyRemote => ({
+        ([hostAddress, hostName]): CopyHost => ({
           address: hostAddress,
           name: hostName,
+          fileNameFormat: '',
+          folderNameFormat: '',
         }),
       ),
     );
@@ -145,7 +154,19 @@ export function stopListening() {
 
 let address = '';
 let name = '';
+let hostFileNameFormat = '';
+let hostFolderNameFormat = '';
 let webSocket: WebSocket | null = null;
+function sendCopyHost() {
+  const copyHost: CopyHost = {
+    address,
+    name,
+    fileNameFormat: hostFileNameFormat,
+    folderNameFormat: hostFolderNameFormat,
+  };
+  mainWindow?.webContents.send('copyHost', copyHost);
+}
+
 export function connectToHost(newAddress: string) {
   const newName = addressToName.get(newAddress) ?? '';
 
@@ -154,6 +175,8 @@ export function connectToHost(newAddress: string) {
     webSocket.close();
     address = '';
     name = '';
+    hostFileNameFormat = '';
+    hostFolderNameFormat = '';
   }
 
   webSocket = new WebSocket(`ws://${newAddress}:${PORT}`, {
@@ -167,13 +190,19 @@ export function connectToHost(newAddress: string) {
     const message = JSON.parse(event.data) as HostMessage;
     if (message.type === 'name') {
       name = message.name;
-      mainWindow?.webContents.send('copyHost', { address, name });
+      sendCopyHost();
+    } else if (message.type === 'format') {
+      hostFileNameFormat = message.fileNameFormat;
+      hostFolderNameFormat = message.folderNameFormat;
+      sendCopyHost();
     }
   });
   webSocket.onclose = () => {
     address = '';
     name = '';
-    mainWindow?.webContents.send('copyHost', { address, name });
+    hostFileNameFormat = '';
+    hostFolderNameFormat = '';
+    sendCopyHost();
     webSocket = null;
   };
   return new Promise<void>((resolve, reject) => {
@@ -207,8 +236,13 @@ export function disconnectFromHost() {
   }
 }
 
-export function getHost(): CopyRemote {
-  return { address, name };
+export function getHost(): CopyHost {
+  return {
+    address,
+    name,
+    fileNameFormat: hostFileNameFormat,
+    folderNameFormat: hostFolderNameFormat,
+  };
 }
 
 let nextRequestOrdinal = 1;
@@ -458,7 +492,7 @@ function sendCopyClients() {
   mainWindow?.webContents.send(
     'copyClients',
     Array.from(clientAddressToNameAndWebSocket).map(
-      ([clientAddress, { name: clientName }]): CopyRemote => ({
+      ([clientAddress, { name: clientName }]): CopyClient => ({
         address: clientAddress,
         name: clientName,
       }),
@@ -467,7 +501,7 @@ function sendCopyClients() {
 }
 export function getCopyClients() {
   return Array.from(clientAddressToNameAndWebSocket).map(
-    ([clientAddress, { name: clientName }]): CopyRemote => ({
+    ([clientAddress, { name: clientName }]): CopyClient => ({
       address: clientAddress,
       name: clientName,
     }),
@@ -480,6 +514,33 @@ export function kickCopyClient(clientAddress: string) {
   }
 
   nameAndWebSocket.webSocket.close();
+}
+
+let ownFileNameFormat = '';
+let ownFolderNameFormat = '';
+function sendFormat(socket: WebSocket) {
+  const formatHostMessage: HostMessage = {
+    type: 'format',
+    fileNameFormat: ownFileNameFormat,
+    folderNameFormat: ownFolderNameFormat,
+  };
+  socket.send(JSON.stringify(formatHostMessage));
+}
+export function setOwnFolderNameFormat(folderNameFormat: string) {
+  ownFolderNameFormat = folderNameFormat;
+  Array.from(clientAddressToNameAndWebSocket.values()).forEach(
+    (nameAndWebSocket) => {
+      sendFormat(nameAndWebSocket.webSocket);
+    },
+  );
+}
+export function setOwnFileNameFormat(fileNameFormat: string) {
+  ownFileNameFormat = fileNameFormat;
+  Array.from(clientAddressToNameAndWebSocket.values()).forEach(
+    (nameAndWebSocket) => {
+      sendFormat(nameAndWebSocket.webSocket);
+    },
+  );
 }
 
 let broadcastSocket: Socket | null = null;
@@ -750,6 +811,12 @@ export function startHostServer(): Promise<string> {
         }
       }
     };
+    const nameHostMessage: HostMessage = {
+      type: 'name',
+      name: getComputerName(),
+    };
+    newWebSocket.send(JSON.stringify(nameHostMessage));
+    sendFormat(newWebSocket);
   });
   return new Promise((resolve, reject) => {
     if (!webSocketServer) {

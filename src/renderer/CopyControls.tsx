@@ -26,7 +26,8 @@ import {
   CopySettings,
   Output,
   WebSocketServerStatus,
-  CopyRemote,
+  CopyClient,
+  CopyHost,
 } from '../common/types';
 import ErrorDialog from './ErrorDialog';
 import LabeledCheckbox from './LabeledCheckbox';
@@ -40,7 +41,7 @@ function ClientsDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState(WebSocketServerStatus.STOPPED);
-  const [clients, setClients] = useState<CopyRemote[]>([]);
+  const [clients, setClients] = useState<CopyClient[]>([]);
   const [selfAddress, setSelfAddress] = useState('');
   const [selfName, setSelfName] = useState('');
 
@@ -166,9 +167,9 @@ function ClientsDialog({
   );
 }
 
-function HostsDialog({ host }: { host: CopyRemote }) {
+function HostsDialog({ host }: { host: CopyHost }) {
   const [open, setOpen] = useState(false);
-  const [hosts, setHosts] = useState<CopyRemote[]>([]);
+  const [hosts, setHosts] = useState<CopyHost[]>([]);
   const [selfName, setSelfName] = useState('');
   useEffect(() => {
     window.electron.onCopyHosts((event, newHosts) => {
@@ -334,7 +335,7 @@ export default function CopyControls({
   dir: string;
   setDir: (dir: string) => void;
   useLAN: boolean;
-  host: CopyRemote;
+  host: CopyHost;
   error: string;
   setError: (error: string) => void;
   errorDialogOpen: boolean;
