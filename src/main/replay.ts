@@ -814,7 +814,7 @@ export async function writeReplays(
     }
     const rejections = (await Promise.allSettled(promises)).filter(
       (result) => result.status === 'rejected',
-    );
+    ) as PromiseRejectedResult[];
     if (rejections.length > 0) {
       throw new Error(
         rejections.map((rejection) => rejection.reason).join(', '),
