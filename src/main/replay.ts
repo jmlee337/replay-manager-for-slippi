@@ -4,23 +4,21 @@ import {
   open,
   readFile as fsReadFile,
   readdir,
-  rm,
-  access,
   FileHandle,
+  writeFile,
 } from 'fs/promises';
 import { join } from 'path';
 import iconv from 'iconv-lite';
 import sanitize from 'sanitize-filename';
 import { ZipFile } from 'yazl';
-import { createWriteStream } from 'fs';
 import {
   ListChecks,
   SlippiGame,
   getCoordListFromGame,
   isSlpMinVersion,
 } from 'slp-enforcer';
-import { app } from 'electron';
 import { parse } from 'date-fns';
+import { buffer as bufferConsumer } from 'stream/consumers';
 import {
   Context,
   CopyHost,
@@ -36,14 +34,7 @@ import {
   isValidCharacter,
   legalStages,
 } from '../common/constants';
-import {
-  closeReplay,
-  initSubdir,
-  openReplay,
-  writeContext,
-  writeReplayData,
-  zipSubdir,
-} from './host';
+import { writeZip } from './host';
 
 // https://github.com/project-slippi/slippi-launcher/blob/ae8bb69e235b6e46b24bc966aeaa80f45030c6f9/src/replays/file_system_replay_provider/load_file.ts#L91-L101
 // ty vince
@@ -563,6 +554,11 @@ const PLAYED_ON = Buffer.from([
   0x6e, 0x69, 0x6e, 0x74, 0x65, 0x6e, 0x64, 0x6f, 0x6e, 0x74, 0x7d, 0x7d,
 ]);
 
+type ReplayBuffer = {
+  buffer: Buffer;
+  fileName: string;
+};
+
 export async function writeReplays(
   dir: string,
   host: CopyHost,
@@ -585,65 +581,57 @@ export async function writeReplays(
     );
   }
 
+  const replayBuffers: ReplayBuffer[] = [];
   const isRemote = host.address && host.name;
+  const actualOutput = isRemote ? Output.ZIP : output;
   const sanitizedFileNames = fileNames.map((fileName) => sanitize(fileName));
   const sanitizedSubdir = sanitize(subdir);
 
-  const writeDir =
-    output === Output.ZIP
-      ? join(app.getPath('temp'), sanitizedSubdir)
-      : join(dir, sanitizedSubdir);
-  if (!sanitizedSubdir && (output === Output.FOLDER || output === Output.ZIP)) {
+  const writeDir = join(dir, sanitizedSubdir);
+  if (
+    !sanitizedSubdir &&
+    (actualOutput === Output.FOLDER || actualOutput === Output.ZIP)
+  ) {
     throw new Error('subdir');
   }
-  if (isRemote) {
-    await initSubdir(sanitizedSubdir, output);
-  }
   if (sanitizedSubdir) {
-    if (!isRemote) {
-      if (output === Output.ZIP) {
-        const tempDir = app.getPath('temp');
-        await access(tempDir).catch(() => mkdir(tempDir));
-      }
+    if (output === Output.FOLDER) {
       await mkdir(writeDir);
     }
     if (context) {
-      if (isRemote) {
-        await writeContext(sanitizedSubdir, context);
+      if (actualOutput === Output.ZIP) {
+        replayBuffers.push({
+          buffer: Buffer.from(JSON.stringify(context)),
+          fileName: 'context.json',
+        });
       } else {
-        const contextFilePath = join(writeDir, 'context.json');
-        const contextFile = await open(contextFilePath, 'w');
-        await contextFile.writeFile(JSON.stringify(context));
-        await contextFile.close();
+        await writeFile(
+          join(writeDir, 'context.json'),
+          JSON.stringify(context),
+        );
       }
     }
   }
 
   const replayFilePromises = replays.map(async (replay, i) => {
-    const readFile = await open(replay.filePath);
+    const readReplay = await open(replay.filePath);
 
-    let fd = 0;
-    let writeFile: FileHandle | null = null;
-    if (isRemote) {
-      fd = await openReplay(
-        sanitizedSubdir,
-        sanitizedFileNames[i] ?? replay.fileName,
-      );
-    } else {
-      const writeFileName = sanitizedFileNames[i] ?? replay.fileName;
-      const writeFilePath = join(writeDir, writeFileName);
-      writeFile = await open(writeFilePath, 'w');
-    }
+    let replayBuffer = Buffer.from([]);
+    const fileName = sanitizedFileNames[i] ?? replay.fileName;
+    const replayFile =
+      actualOutput !== Output.ZIP
+        ? await open(join(writeDir, fileName), 'w')
+        : null;
 
     try {
       // raw element
       const rawHeader = Buffer.alloc(15);
-      const rawHeaderRes = await readFile.read(rawHeader, 0, 15, 0);
+      const rawHeaderRes = await readReplay.read(rawHeader, 0, 15, 0);
       if (rawHeaderRes.bytesRead !== 15) {
         throw new Error('raw element header read');
       }
 
-      const fileSize = (await readFile.stat()).size;
+      const fileSize = (await readReplay.stat()).size;
       const rawElementLength = rawHeader.subarray(11, 15).readUInt32BE();
       const rawElementReadLength =
         rawElementLength > 0 ? rawElementLength : fileSize - 15;
@@ -653,15 +641,17 @@ export async function writeReplays(
         actualRawElementLength.copy(rawHeader, 11);
       }
 
-      let bytesWritten = isRemote
-        ? await writeReplayData(fd, rawHeader)
-        : (await writeFile!.write(rawHeader)).bytesWritten;
-      if (bytesWritten !== 15) {
-        throw new Error('raw element header write');
+      if (actualOutput === Output.ZIP) {
+        replayBuffer = Buffer.concat([replayBuffer, rawHeader]);
+      } else {
+        const { bytesWritten } = await replayFile!.write(rawHeader);
+        if (bytesWritten !== 15) {
+          throw new Error('raw element header write');
+        }
       }
 
       const rawElement = Buffer.alloc(rawElementReadLength);
-      const rawElementRes = await readFile.read(
+      const rawElementRes = await readReplay.read(
         rawElement,
         0,
         rawElementReadLength,
@@ -703,11 +693,13 @@ export async function writeReplays(
           Buffer.from(fixedDisplayNameArr).copy(rawElement, offset);
         });
       }
-      bytesWritten = isRemote
-        ? await writeReplayData(fd, rawElement)
-        : (await writeFile!.write(rawElement)).bytesWritten;
-      if (bytesWritten !== rawElementReadLength) {
-        throw new Error('raw element write');
+      if (actualOutput === Output.ZIP) {
+        replayBuffer = Buffer.concat([replayBuffer, rawElement]);
+      } else {
+        const { bytesWritten } = await replayFile!.write(rawElement);
+        if (bytesWritten !== rawElementReadLength) {
+          throw new Error('raw element write');
+        }
       }
 
       // metadata
@@ -715,7 +707,7 @@ export async function writeReplays(
         const metadataOffset = rawElementLength + 15;
         const metadataLength = fileSize - metadataOffset;
         const metadata = Buffer.alloc(metadataLength);
-        const metadataRes = await readFile.read(
+        const metadataRes = await readReplay.read(
           metadata,
           0,
           metadataLength,
@@ -741,16 +733,18 @@ export async function writeReplays(
             startAtLengthOffset + newStartAtLength + 1,
             startAtLengthOffset + startAtLength + 1,
           );
-          bytesWritten = isRemote
-            ? await writeReplayData(fd, newMetadata)
-            : (await writeFile!.write(newMetadata)).bytesWritten;
-          if (bytesWritten !== newMetadata.length) {
-            throw new Error('metadata write (with start time override)');
+          if (actualOutput === Output.ZIP) {
+            replayBuffer = Buffer.concat([replayBuffer, newMetadata]);
+          } else {
+            const { bytesWritten } = await replayFile!.write(newMetadata);
+            if (bytesWritten !== newMetadata.length) {
+              throw new Error('metadata write (with start time override)');
+            }
           }
+        } else if (actualOutput === Output.ZIP) {
+          replayBuffer = Buffer.concat([replayBuffer, metadata]);
         } else {
-          bytesWritten = isRemote
-            ? await writeReplayData(fd, metadata)
-            : (await writeFile!.write(metadata)).bytesWritten;
+          const { bytesWritten } = await replayFile!.write(metadata);
           if (bytesWritten !== metadataLength) {
             throw new Error('metadata write');
           }
@@ -778,47 +772,53 @@ export async function writeReplays(
         bufs.push(PLAYED_ON);
         const bufsLength = bufs.reduce((acc, buf) => acc + buf.length, 0);
         const metadata = Buffer.concat(bufs, bufsLength);
-        bytesWritten = isRemote
-          ? await writeReplayData(fd, metadata)
-          : (await writeFile!.write(metadata)).bytesWritten;
-        if (bytesWritten !== metadata.length) {
-          throw new Error(
-            startTimes.length
-              ? 'metadata creation (with start time override)'
-              : 'metadata creation',
-          );
+        if (actualOutput === Output.ZIP) {
+          replayBuffer = Buffer.concat([replayBuffer, metadata]);
+        } else {
+          const { bytesWritten } = await replayFile!.write(metadata);
+          if (bytesWritten !== metadata.length) {
+            throw new Error(
+              startTimes.length
+                ? 'metadata creation (with start time override)'
+                : 'metadata creation',
+            );
+          }
         }
       }
-    } finally {
-      const promises = [readFile.close()];
-      if (writeFile) {
-        promises.push(writeFile.close());
+      if (actualOutput === Output.ZIP) {
+        replayBuffers.push({ buffer: replayBuffer, fileName });
       }
-      if (fd) {
-        promises.push(closeReplay(fd));
+    } finally {
+      const promises = [readReplay.close()];
+      if (replayFile) {
+        promises.push(replayFile.close());
       }
       await Promise.all(promises);
     }
   });
   await Promise.all(replayFilePromises);
 
-  if (output === Output.ZIP && sanitizedSubdir) {
+  if (actualOutput === Output.ZIP) {
+    const zipFile = new ZipFile();
+    replayBuffers.forEach(({ buffer, fileName }) => {
+      zipFile.addBuffer(buffer, fileName);
+    });
+    zipFile.end();
+    const zipBuffer = await bufferConsumer(zipFile.outputStream);
+    const promises = [];
     if (isRemote) {
-      await zipSubdir(sanitizedSubdir);
-    } else {
-      const tempDirFileNames = await readdir(writeDir);
-      const zipFile = new ZipFile();
-      const zipFilePromise = new Promise((resolve) => {
-        zipFile.outputStream
-          .pipe(createWriteStream(`${join(dir, sanitizedSubdir)}.zip`))
-          .on('close', resolve);
-      });
-      tempDirFileNames.forEach((fileName) => {
-        zipFile.addFile(join(writeDir, fileName), fileName);
-      });
-      zipFile.end();
-      await zipFilePromise;
-      await rm(writeDir, { recursive: true });
+      promises.push(writeZip(sanitizedSubdir, zipBuffer));
+    }
+    if (dir) {
+      promises.push(writeFile(`${writeDir}.zip`, zipBuffer));
+    }
+    const rejections = (await Promise.allSettled(promises)).filter(
+      (result) => result.status === 'rejected',
+    );
+    if (rejections.length > 0) {
+      throw new Error(
+        rejections.map((rejection) => rejection.reason).join(', '),
+      );
     }
   }
 }

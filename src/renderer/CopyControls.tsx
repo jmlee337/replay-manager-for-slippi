@@ -466,6 +466,7 @@ export default function CopyControls({
               </div>
             </Tooltip>
             <TextField
+              disabled={Boolean(host.address && host.name)}
               label="Output"
               onChange={(event) => {
                 const newCopySettings = { ...copySettings };
@@ -474,7 +475,9 @@ export default function CopyControls({
               }}
               select
               size="small"
-              value={copySettings.output}
+              value={
+                host.address && host.name ? Output.ZIP : copySettings.output
+              }
             >
               <MenuItem value={Output.FILES}>Separate Files</MenuItem>
               <MenuItem value={Output.FOLDER}>Make Subfolder</MenuItem>

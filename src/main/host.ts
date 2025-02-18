@@ -1,20 +1,12 @@
-import { app, BrowserWindow } from 'electron';
+import { BrowserWindow } from 'electron';
 import { createSocket, Socket } from 'dgram';
 import os from 'node:os';
 import { execSync } from 'node:child_process';
 import { WebSocketServer, WebSocket, MessageEvent } from 'ws';
-import { FileHandle, mkdir, open, readdir, rm, writeFile } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 import path from 'node:path';
-import { ZipFile } from 'yazl';
-import { createWriteStream } from 'fs';
 import { IncomingMessage } from 'http';
-import {
-  Context,
-  CopyHost,
-  CopyClient,
-  Output,
-  WebSocketServerStatus,
-} from '../common/types';
+import { CopyHost, CopyClient, WebSocketServerStatus } from '../common/types';
 
 const PORT = 52455;
 
@@ -37,31 +29,7 @@ type HostRequest = {
       name: string;
     }
   | {
-      request: 'initSubdir';
-      subdir: string;
-      output: Output;
-    }
-  | {
-      request: 'writeContext';
-      subdir: string;
-      context: Context;
-    }
-  | {
-      request: 'openReplay';
-      subdir: string;
-      fileName: string;
-    }
-  | {
-      request: 'writeReplayData';
-      fd: number;
-      data: number[];
-    }
-  | {
-      request: 'closeReplay';
-      fd: number;
-    }
-  | {
-      request: 'zipSubdir';
+      request: 'writeZip';
       subdir: string;
     }
 );
@@ -246,16 +214,16 @@ export function getHost(): CopyHost {
 }
 
 let nextRequestOrdinal = 1;
-export function initSubdir(subdir: string, output: Output) {
-  return new Promise<void>((resolve, reject) => {
+export async function writeZip(subdir: string, buffer: Buffer) {
+  const requestOrdinal = nextRequestOrdinal;
+  nextRequestOrdinal += 1;
+
+  await new Promise<void>((resolve, reject) => {
     if (!webSocket) {
       reject(new Error('no webSocket'));
       return;
     }
 
-    const requestOrdinal = nextRequestOrdinal;
-    nextRequestOrdinal += 1;
-
     const listener = (event: MessageEvent) => {
       if (typeof event.data !== 'string') {
         return;
@@ -275,23 +243,16 @@ export function initSubdir(subdir: string, output: Output) {
 
     const request: HostRequest = {
       ordinal: requestOrdinal,
-      request: 'initSubdir',
+      request: 'writeZip',
       subdir,
-      output,
     };
     webSocket.send(JSON.stringify(request));
   });
-}
-
-export function writeContext(subdir: string, context: Context) {
-  return new Promise<void>((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     if (!webSocket) {
-      reject();
+      reject(new Error('no webSocket'));
       return;
     }
-
-    const requestOrdinal = nextRequestOrdinal;
-    nextRequestOrdinal += 1;
 
     const listener = (event: MessageEvent) => {
       if (typeof event.data !== 'string') {
@@ -309,164 +270,7 @@ export function writeContext(subdir: string, context: Context) {
       }
     };
     webSocket.addEventListener('message', listener);
-
-    const request: HostRequest = {
-      ordinal: requestOrdinal,
-      request: 'writeContext',
-      subdir,
-      context,
-    };
-    webSocket.send(JSON.stringify(request));
-  });
-}
-
-export function openReplay(subdir: string, fileName: string) {
-  return new Promise<number>((resolve, reject) => {
-    if (!webSocket) {
-      reject();
-      return;
-    }
-
-    const requestOrdinal = nextRequestOrdinal;
-    nextRequestOrdinal += 1;
-
-    const listener = (event: MessageEvent) => {
-      if (typeof event.data !== 'string') {
-        return;
-      }
-
-      const { ordinal, error, fd } = JSON.parse(event.data) as HostResponse & {
-        fd: number;
-      };
-      if (ordinal === requestOrdinal) {
-        webSocket?.removeEventListener('message', listener);
-        if (error) {
-          reject(new Error(error));
-        } else if (Number.isInteger(fd)) {
-          resolve(fd);
-        }
-      }
-    };
-    webSocket.addEventListener('message', listener);
-
-    const request: HostRequest = {
-      ordinal: requestOrdinal,
-      request: 'openReplay',
-      subdir,
-      fileName,
-    };
-    webSocket.send(JSON.stringify(request));
-  });
-}
-
-export function writeReplayData(fd: number, data: Buffer) {
-  return new Promise<number>((resolve, reject) => {
-    if (!webSocket) {
-      reject();
-      return;
-    }
-
-    const requestOrdinal = nextRequestOrdinal;
-    nextRequestOrdinal += 1;
-
-    const listener = (event: MessageEvent) => {
-      if (typeof event.data !== 'string') {
-        return;
-      }
-
-      const { ordinal, error, bytesWritten } = JSON.parse(
-        event.data,
-      ) as HostResponse & { bytesWritten: number };
-      if (ordinal === requestOrdinal) {
-        webSocket?.removeEventListener('message', listener);
-        if (error) {
-          reject(new Error(error));
-        } else if (Number.isInteger(bytesWritten)) {
-          resolve(bytesWritten);
-        }
-      }
-    };
-    webSocket.addEventListener('message', listener);
-
-    const request: HostRequest = {
-      ordinal: requestOrdinal,
-      request: 'writeReplayData',
-      fd,
-      data: data.toJSON().data,
-    };
-    webSocket.send(JSON.stringify(request));
-  });
-}
-
-export function closeReplay(fd: number) {
-  return new Promise<void>((resolve, reject) => {
-    if (!webSocket) {
-      reject();
-      return;
-    }
-
-    const requestOrdinal = nextRequestOrdinal;
-    nextRequestOrdinal += 1;
-
-    const listener = (event: MessageEvent) => {
-      if (typeof event.data !== 'string') {
-        return;
-      }
-
-      const { ordinal, error } = JSON.parse(event.data) as HostResponse;
-      if (ordinal === requestOrdinal) {
-        webSocket?.removeEventListener('message', listener);
-        if (error) {
-          reject(new Error(error));
-        } else {
-          resolve();
-        }
-      }
-    };
-    webSocket.addEventListener('message', listener);
-
-    const request: HostRequest = {
-      ordinal: requestOrdinal,
-      request: 'closeReplay',
-      fd,
-    };
-    webSocket.send(JSON.stringify(request));
-  });
-}
-
-export function zipSubdir(subdir: string) {
-  return new Promise<void>((resolve, reject) => {
-    if (!webSocket) {
-      reject();
-      return;
-    }
-
-    const requestOrdinal = nextRequestOrdinal;
-    nextRequestOrdinal += 1;
-
-    const listener = (event: MessageEvent) => {
-      if (typeof event.data !== 'string') {
-        return;
-      }
-
-      const { ordinal, error } = JSON.parse(event.data) as HostResponse;
-      if (ordinal === requestOrdinal) {
-        webSocket?.removeEventListener('message', listener);
-        if (error) {
-          reject(new Error(error));
-        } else {
-          resolve();
-        }
-      }
-    };
-    webSocket.addEventListener('message', listener);
-
-    const request: HostRequest = {
-      ordinal: requestOrdinal,
-      request: 'zipSubdir',
-      subdir,
-    };
-    webSocket.send(JSON.stringify(request));
+    webSocket.send(buffer);
   });
 }
 
@@ -545,8 +349,10 @@ export function setOwnFileNameFormat(fileNameFormat: string) {
 
 let broadcastSocket: Socket | null = null;
 let webSocketServer: WebSocketServer | null = null;
-const subdirToWriteDir = new Map<string, string>();
-const fdToFileHandle = new Map<number, FileHandle>();
+const clientAddressToExpectedZip = new Map<
+  string,
+  { ordinal: number; subdir: string }
+>();
 export function startHostServer(): Promise<string> {
   if (!copyDir) {
     throw new Error('must set copy dir');
@@ -556,6 +362,7 @@ export function startHostServer(): Promise<string> {
   }
 
   clientAddressToNameAndWebSocket.clear();
+  clientAddressToExpectedZip.clear();
   sendCopyClients();
   webSocketServer = new WebSocketServer({
     port: PORT,
@@ -610,203 +417,39 @@ export function startHostServer(): Promise<string> {
             nameAndWebSocket.name = hostRequest.name;
             sendCopyClients();
           }
-        } else {
-          if (!clientAddressToNameAndWebSocket.get(remoteAddress)?.name) {
+        } else if (hostRequest.request === 'writeZip') {
+          clientAddressToExpectedZip.set(remoteAddress, {
+            ordinal: hostRequest.ordinal,
+            subdir: hostRequest.subdir,
+          });
+          const response: HostResponse = {
+            ordinal: hostRequest.ordinal,
+            error: '',
+          };
+          newWebSocket.send(JSON.stringify(response));
+        }
+      } else if (event.data instanceof Buffer) {
+        const expectedZip = clientAddressToExpectedZip.get(remoteAddress);
+        if (expectedZip) {
+          try {
+            await writeFile(
+              `${path.join(copyDir, expectedZip.subdir)}.zip`,
+              event.data,
+            );
             const response: HostResponse = {
-              ordinal: hostRequest.ordinal,
-              error: 'must first call computerName',
+              ordinal: expectedZip.ordinal,
+              error: '',
             };
             newWebSocket.send(JSON.stringify(response));
-            return;
-          }
-
-          if (hostRequest.request === 'initSubdir') {
-            const writeDir = path.join(
-              hostRequest.output === Output.ZIP ? app.getPath('temp') : copyDir,
-              hostRequest.subdir,
-            );
-            try {
-              await mkdir(writeDir, { recursive: true });
-              subdirToWriteDir.set(hostRequest.subdir, writeDir);
+            clientAddressToExpectedZip.delete(remoteAddress);
+          } catch (e: unknown) {
+            if (e instanceof Error) {
               const response: HostResponse = {
-                ordinal: hostRequest.ordinal,
-                error: '',
+                ordinal: expectedZip.ordinal,
+                error: e.message,
               };
               newWebSocket.send(JSON.stringify(response));
-            } catch (e: unknown) {
-              if (e instanceof Error) {
-                const response: HostResponse = {
-                  ordinal: hostRequest.ordinal,
-                  error: e.message,
-                };
-                newWebSocket.send(JSON.stringify(response));
-              }
             }
-          } else if (hostRequest.request === 'writeContext') {
-            const writeDir = subdirToWriteDir.get(hostRequest.subdir);
-            if (!writeDir) {
-              const response: HostResponse = {
-                ordinal: hostRequest.ordinal,
-                error: 'invalid subdir',
-              };
-              newWebSocket.send(JSON.stringify(response));
-              return;
-            }
-            try {
-              const filePath = path.join(writeDir, 'context.json');
-              await writeFile(filePath, JSON.stringify(hostRequest.context));
-              const response: HostResponse = {
-                ordinal: hostRequest.ordinal,
-                error: '',
-              };
-              newWebSocket.send(JSON.stringify(response));
-            } catch (e: unknown) {
-              if (e instanceof Error) {
-                const response: HostResponse = {
-                  ordinal: hostRequest.ordinal,
-                  error: e.message,
-                };
-                newWebSocket.send(JSON.stringify(response));
-              }
-            }
-          } else if (hostRequest.request === 'openReplay') {
-            const writeDir = subdirToWriteDir.get(hostRequest.subdir);
-            if (!writeDir) {
-              const response: HostResponse = {
-                ordinal: hostRequest.ordinal,
-                error: 'invalid subdir',
-              };
-              newWebSocket.send(JSON.stringify(response));
-              return;
-            }
-            try {
-              const filePath = path.join(writeDir, hostRequest.fileName);
-              const fileHandle = await open(filePath, 'w');
-              fdToFileHandle.set(fileHandle.fd, fileHandle);
-              const response: HostResponse & { fd: number } = {
-                ordinal: hostRequest.ordinal,
-                error: '',
-                fd: fileHandle.fd,
-              };
-              newWebSocket.send(JSON.stringify(response));
-            } catch (e: unknown) {
-              if (e instanceof Error) {
-                const response: HostResponse = {
-                  ordinal: hostRequest.ordinal,
-                  error: e.message,
-                };
-                newWebSocket.send(JSON.stringify(response));
-              }
-            }
-          } else if (hostRequest.request === 'writeReplayData') {
-            const fileHandle = fdToFileHandle.get(hostRequest.fd);
-            if (!fileHandle) {
-              const response: HostResponse = {
-                ordinal: hostRequest.ordinal,
-                error: 'invalid fd',
-              };
-              newWebSocket.send(JSON.stringify(response));
-              return;
-            }
-
-            try {
-              const writeResponse = await fileHandle.write(
-                Buffer.from(hostRequest.data),
-              );
-              const response: HostResponse & { bytesWritten: number } = {
-                ordinal: hostRequest.ordinal,
-                error: '',
-                bytesWritten: writeResponse.bytesWritten,
-              };
-              newWebSocket.send(JSON.stringify(response));
-            } catch (e: unknown) {
-              if (e instanceof Error) {
-                const response: HostResponse = {
-                  ordinal: hostRequest.ordinal,
-                  error: e.message,
-                };
-                newWebSocket.send(JSON.stringify(response));
-              }
-            }
-          } else if (hostRequest.request === 'closeReplay') {
-            const fileHandle = fdToFileHandle.get(hostRequest.fd);
-            if (!fileHandle) {
-              const response: HostResponse = {
-                ordinal: hostRequest.ordinal,
-                error: 'invalid fd',
-              };
-              newWebSocket.send(JSON.stringify(response));
-              return;
-            }
-
-            try {
-              await fileHandle.close();
-              const response: HostResponse = {
-                ordinal: hostRequest.ordinal,
-                error: '',
-              };
-              newWebSocket.send(JSON.stringify(response));
-            } catch (e: unknown) {
-              if (e instanceof Error) {
-                const response: HostResponse = {
-                  ordinal: hostRequest.ordinal,
-                  error: e.message,
-                };
-                newWebSocket.send(JSON.stringify(response));
-              }
-            }
-          } else if (hostRequest.request === 'zipSubdir') {
-            const writeDir = subdirToWriteDir.get(hostRequest.subdir);
-            if (!writeDir || !writeDir.startsWith(app.getPath('temp'))) {
-              const response: HostResponse = {
-                ordinal: hostRequest.ordinal,
-                error: 'invalid subdir',
-              };
-              newWebSocket.send(JSON.stringify(response));
-              return;
-            }
-
-            try {
-              const fileNames = await readdir(writeDir);
-              const zipFile = new ZipFile();
-              const zipFilePromise = new Promise((resolve) => {
-                zipFile.outputStream
-                  .pipe(
-                    createWriteStream(
-                      `${path.join(copyDir, hostRequest.subdir)}.zip`,
-                    ),
-                  )
-                  .on('close', resolve);
-              });
-              fileNames.forEach((fileName) => {
-                zipFile.addFile(path.join(writeDir, fileName), fileName);
-              });
-              zipFile.end();
-              await zipFilePromise;
-              await rm(writeDir, { recursive: true });
-              const response: HostResponse = {
-                ordinal: hostRequest.ordinal,
-                error: '',
-              };
-              newWebSocket.send(JSON.stringify(response));
-            } catch (e: unknown) {
-              if (e instanceof Error) {
-                const response: HostResponse = {
-                  ordinal: hostRequest.ordinal,
-                  error: e.message,
-                };
-                newWebSocket.send(JSON.stringify(response));
-              }
-            }
-          } else {
-            newWebSocket.send(
-              JSON.stringify({
-                ordinal: (hostRequest as HostRequest).ordinal,
-                error: `unknown request: ${
-                  (hostRequest as HostRequest).request
-                }`,
-              }),
-            );
           }
         }
       }
