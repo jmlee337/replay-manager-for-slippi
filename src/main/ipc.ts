@@ -422,18 +422,77 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('reportSet');
   ipcMain.handle(
     'reportSet',
-    async (event: IpcMainInvokeEvent, set: StartggSet): Promise<Set> => {
+    async (
+      event: IpcMainInvokeEvent,
+      set: StartggSet,
+      entrant1Id: number,
+      entrant2Id: number,
+    ): Promise<Set> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      const updatedSets = await reportSet(sggApiKey, set);
-      await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
+      let updatedSet: Set | undefined;
+      try {
+        updatedSet = await reportSet(sggApiKey, set);
+      } catch (e: unknown) {
+        if (e instanceof Error) {
+          if (e.message === 'Cannot report completed set via API.') {
+            if (set.gameData.length > 0) {
+              updatedSet = await updateSet(sggApiKey, set);
+            }
+          } else if (e.message.startsWith('Set not found for id: preview')) {
+            const updatedPhaseGroup = await getPhaseGroup(
+              sggApiKey,
+              getSelectedSetChain().phaseGroup!.id,
+            );
+            const realId = updatedPhaseGroup.sets.pendingSets.find(
+              (realSet) =>
+                realSet.entrant1Id === entrant1Id &&
+                realSet.entrant2Id === entrant2Id,
+            )?.id;
+            if (realId) {
+              set.setId = realId;
+            }
+            try {
+              updatedSet = await reportSet(sggApiKey, set);
+            } catch (e2: unknown) {
+              if (
+                e2 instanceof Error &&
+                e2.message === 'Cannot report completed set via API.'
+              ) {
+                if (set.gameData.length > 0) {
+                  updatedSet = await updateSet(sggApiKey, set);
+                }
+              } else {
+                throw e2;
+              }
+            }
+          } else {
+            throw e;
+          }
+        } else {
+          throw e;
+        }
+      }
+      const updatedPhaseGroup = await getPhaseGroup(
+        sggApiKey,
+        getSelectedSetChain().phaseGroup!.id,
+      );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
       });
-      return updatedSets.get(set.setId)!;
+
+      if (!updatedSet) {
+        updatedSet = updatedPhaseGroup.sets.completedSets.find(
+          (completedSet) => completedSet.id === set.setId,
+        );
+        if (!updatedSet) {
+          throw new Error(`Could not find updated set: ${set.setId}`);
+        }
+      }
+      return updatedSet;
     },
   );
 

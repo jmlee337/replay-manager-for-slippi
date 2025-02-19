@@ -1008,10 +1008,15 @@ function Hello() {
     }
   };
 
-  const reportStartggSet = async (set: StartggSet, update: boolean) => {
+  const reportStartggSet = async (
+    set: StartggSet,
+    entrant1Id: number,
+    entrant2Id: number,
+    update: boolean,
+  ) => {
     const updatedSet = update
       ? await window.electron.updateSet(set)
-      : await window.electron.reportSet(set);
+      : await window.electron.reportSet(set, entrant1Id, entrant2Id);
     resetDq();
     return updatedSet;
   };

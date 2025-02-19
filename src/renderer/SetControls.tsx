@@ -221,7 +221,12 @@ export default function SetControls({
     matchId: number,
     items: ChallongeMatchItem[],
   ) => Promise<Set>;
-  reportStartggSet: (set: StartggSet, update: boolean) => Promise<Set>;
+  reportStartggSet: (
+    set: StartggSet,
+    entrant1Id: number,
+    entrant2Id: number,
+    update: boolean,
+  ) => Promise<Set>;
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
   resetGuide: () => void;
   mode: Mode;
@@ -563,6 +568,8 @@ export default function SetControls({
                 if (mode === Mode.STARTGG) {
                   updatedSet = await reportStartggSet(
                     startggSet,
+                    set.entrant1Id,
+                    set.entrant2Id,
                     set.state === State.COMPLETED,
                   );
                 } else if (mode === Mode.CHALLONGE) {

@@ -122,8 +122,12 @@ const electronHandler = {
     ipcRenderer.invoke('getPhaseGroup', id),
   startSet: (id: number | string): Promise<void> =>
     ipcRenderer.invoke('startSet', id),
-  reportSet: (set: StartggSet): Promise<Set> =>
-    ipcRenderer.invoke('reportSet', set),
+  reportSet: (
+    set: StartggSet,
+    entrant1Id: number,
+    entrant2Id: number,
+  ): Promise<Set> =>
+    ipcRenderer.invoke('reportSet', set, entrant1Id, entrant2Id),
   updateSet: (set: StartggSet): Promise<Set> =>
     ipcRenderer.invoke('updateSet', set),
   getMode: (): Promise<Mode> => ipcRenderer.invoke('getMode'),

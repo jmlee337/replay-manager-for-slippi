@@ -882,7 +882,7 @@ export async function reportSet(key: string, set: StartggSet) {
   )[0];
   reportedSetIds.set(reportedSet.id, true);
   setSelectedSetId(reportedSet.id);
-  return new Map(updatedSets.map((updatedSet) => [updatedSet.id, updatedSet]));
+  return reportedSet;
 }
 
 const UPDATE_BRACKET_SET_MUTATION = `
