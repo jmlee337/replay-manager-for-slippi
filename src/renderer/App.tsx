@@ -82,7 +82,7 @@ import GuidedDialog from './GuidedDialog';
 import StartggTournamentForm from './StartggTournamentForm';
 import ChallongeTournamentForm from './ChallongeTournamentForm';
 
-const ENFORCER_VERSION = '1.3.0';
+const ENFORCER_VERSION = '1.4.1';
 
 const Bottom = styled(Paper)`
   height: 147px;
