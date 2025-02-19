@@ -341,7 +341,7 @@ export default function Settings({
             />
             <LabeledCheckbox
               checked={useLAN}
-              label="Use LAN (feature preview)"
+              label="Use LAN"
               labelPlacement="end"
               set={async (checked) => {
                 await window.electron.setUseLAN(checked);
