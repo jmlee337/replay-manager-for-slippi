@@ -17,6 +17,7 @@ import {
   Radio,
   RadioGroup,
   Stack,
+  Switch,
   TextField,
   Tooltip,
   Typography,
@@ -50,6 +51,8 @@ export default function Settings({
   setChallongeApiKey,
   useEnforcer,
   setUseEnforcer,
+  showEnforcerPopup,
+  setShowEnforcerPopup,
   vlerkMode,
   setVlerkMode,
   guidedMode,
@@ -75,6 +78,8 @@ export default function Settings({
   setChallongeApiKey: (key: string) => void;
   useEnforcer: boolean;
   setUseEnforcer: (useEnforcer: boolean) => void;
+  showEnforcerPopup: boolean;
+  setShowEnforcerPopup: (showEnforcerPopup: boolean) => void;
   vlerkMode: boolean;
   setVlerkMode: (vlerkMode: boolean) => void;
   guidedMode: boolean;
@@ -317,6 +322,25 @@ export default function Settings({
                 setUseEnforcer(checked);
               }}
             />
+            {useEnforcer && (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showEnforcerPopup}
+                    onChange={async (event) => {
+                      const newShowEnforcerPopup = event.target.checked;
+                      await window.electron.setShowEnforcerPopup(
+                        newShowEnforcerPopup,
+                      );
+                      setShowEnforcerPopup(newShowEnforcerPopup);
+                    }}
+                  />
+                }
+                disableTypography
+                label={showEnforcerPopup ? 'Show popup' : 'Log only'}
+                sx={{ marginLeft: '22px', typography: 'caption' }}
+              />
+            )}
             <LabeledCheckbox
               checked={vlerkMode}
               label={

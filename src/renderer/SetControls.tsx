@@ -207,6 +207,7 @@ export default function SetControls({
   vlerkMode,
   elevate,
   enforcerVersion,
+  showEnforcerPopup,
 }: {
   copyReplays: (
     set?: Set,
@@ -241,6 +242,7 @@ export default function SetControls({
   vlerkMode: boolean;
   elevate: boolean;
   enforcerVersion: string;
+  showEnforcerPopup: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -387,7 +389,10 @@ export default function SetControls({
           onClick={() => {
             setStartggSet(getStartggSet());
             setChallongeMatchItems(getChallongeMatchItems());
-            if (selectedReplaysWithEnforceErrors.length > 0) {
+            if (
+              selectedReplaysWithEnforceErrors.length > 0 &&
+              showEnforcerPopup
+            ) {
               setEnforcerErrorOpen(true);
             }
             setOpen(true);

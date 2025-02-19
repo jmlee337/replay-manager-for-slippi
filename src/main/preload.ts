@@ -166,6 +166,10 @@ const electronHandler = {
   getUseEnforcer: (): Promise<boolean> => ipcRenderer.invoke('getUseEnforcer'),
   setUseEnforcer: (useEnforcer: boolean): Promise<void> =>
     ipcRenderer.invoke('setUseEnforcer', useEnforcer),
+  getShowEnforcerPopup: (): Promise<boolean> =>
+    ipcRenderer.invoke('getShowEnforcerPopup'),
+  setShowEnforcerPopup: (showEnforcerPopup: boolean): Promise<void> =>
+    ipcRenderer.invoke('setShowEnforcerPopup', showEnforcerPopup),
   getFileNameFormat: (): Promise<string> =>
     ipcRenderer.invoke('getFileNameFormat'),
   setFileNameFormat: (fileNameFormat: string): Promise<void> =>

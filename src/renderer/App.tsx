@@ -184,6 +184,7 @@ function Hello() {
   const [startggApiKey, setStartggApiKey] = useState('');
   const [challongeApiKey, setChallongeApiKey] = useState('');
   const [useEnforcer, setUseEnforcer] = useState(false);
+  const [showEnforcerPopup, setShowEnforcerPopup] = useState(false);
   const [vlerkMode, setVlerkMode] = useState(false);
   const [guidedMode, setGuidedMode] = useState(false);
   const [fileNameFormat, setFileNameFormat] = useState('');
@@ -243,6 +244,7 @@ function Hello() {
       const challongeKeyPromise = window.electron.getChallongeKey();
       const useLANPromise = window.electron.getUseLAN();
       const useEnforcerPromise = window.electron.getUseEnforcer();
+      const showEnforcerPopupPromise = window.electron.getShowEnforcerPopup();
       const vlerkModePromise = window.electron.getVlerkMode();
       const guidedModePromise = window.electron.getGuidedMode();
       const fileNameFormatPromise = window.electron.getFileNameFormat();
@@ -273,6 +275,7 @@ function Hello() {
       setChallongeApiKey(await challongeKeyPromise);
       setUseLAN(await useLANPromise);
       setUseEnforcer(await useEnforcerPromise);
+      setShowEnforcerPopup(await showEnforcerPopupPromise);
       setFileNameFormat(await fileNameFormatPromise);
       setFolderNameFormat(await folderNameFormatPromise);
       setVlerkMode(await vlerkModePromise);
@@ -2206,6 +2209,7 @@ function Hello() {
                   guideState === GuideState.PLAYERS
                 }
                 enforcerVersion={ENFORCER_VERSION}
+                showEnforcerPopup={showEnforcerPopup}
               />
             </Stack>
           </Stack>
@@ -2254,6 +2258,8 @@ function Hello() {
         setUseLAN={setUseLAN}
         useEnforcer={useEnforcer}
         setUseEnforcer={setUseEnforcer}
+        showEnforcerPopup={showEnforcerPopup}
+        setShowEnforcerPopup={setShowEnforcerPopup}
         vlerkMode={vlerkMode}
         setVlerkMode={setVlerkMode}
         guidedMode={guidedMode}

@@ -695,6 +695,19 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
+  ipcMain.removeHandler('getShowEnforcerPopup');
+  ipcMain.handle('getShowEnforcerPopup', () => {
+    return store.get('showEnforcerPopup', true);
+  });
+
+  ipcMain.removeHandler('setShowEnforcerPopup');
+  ipcMain.handle(
+    'setShowEnforcerPopup',
+    (event: IpcMainInvokeEvent, newShowEnforcerPopup) => {
+      store.set('showEnforcerPopup', newShowEnforcerPopup);
+    },
+  );
+
   // {date}
   // {time}
   // {roundShort}
