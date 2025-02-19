@@ -1045,7 +1045,14 @@ function Hello() {
   const [copyErrorDialogOpen, setCopyErrorDialogOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState('');
 
-  const onCopy = async (set?: Set, violatorDisplayNames?: string[]) => {
+  const onCopy = async (
+    set?: Set,
+    violators?: {
+      checkNames: Map<string, boolean>;
+      displayName: string;
+      entrantId: number;
+    }[],
+  ) => {
     setIsCopying(true);
     const copySet = set ?? selectedSet;
 
@@ -1386,19 +1393,25 @@ function Hello() {
         copySettings.writeDisplayNames,
         context,
       );
-      if (violatorDisplayNames && violatorDisplayNames.length > 0) {
+      if (violators && violators.length > 0) {
         const vsStr = `${copySet.entrant1Participants
           .map((participant) => participant.displayName)
           .join('/')} vs ${copySet.entrant2Participants
           .map((participant) => participant.displayName)
           .join('/')}`;
+        let poolName = '';
+        if (mode === Mode.STARTGG) {
+          poolName = selectedSetChain.phaseGroup?.name ?? '';
+        } else if (mode === Mode.CHALLONGE) {
+          poolName = selectedChallongeTournament.name;
+        }
         await window.electron.appendEnforcerResult(
-          violatorDisplayNames
+          violators
             .map(
-              (displayName) =>
-                `${displayName},${format(startDate, 'HH:mm')},${
-                  copySet.fullRoundText
-                },${vsStr}`,
+              ({ checkNames, displayName, entrantId }) =>
+                `${entrantId},${displayName},${Array.from(checkNames.keys())
+                  .sort()
+                  .join('|')},${poolName},${copySet.fullRoundText},${vsStr}`,
             )
             .join('\n')
             .concat('\n'),
@@ -2181,7 +2194,6 @@ function Hello() {
                 reportSettings={reportSettings}
                 selectedReplays={selectedReplays}
                 set={selectedSet}
-                useEnforcer={useEnforcer}
                 vlerkMode={vlerkMode}
                 elevate={
                   guideActive &&

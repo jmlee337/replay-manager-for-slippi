@@ -15,11 +15,12 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { MouseEventHandler, useState } from 'react';
+import { MouseEventHandler, useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import {
   ChallongeMatchItem,
-  EnforceResult,
+  EnforceState,
+  EnforceStatus,
   Mode,
   Player,
   Replay,
@@ -154,6 +155,10 @@ function getScoresAndWinnerId(selectedReplays: Replay[]) {
   };
 }
 
+function getDisplayNameFromPlayer(player?: Player) {
+  return player?.playerOverrides.displayName || player?.displayName;
+}
+
 function ReportButton({
   disabled,
   elevate,
@@ -199,12 +204,18 @@ export default function SetControls({
   reportSettings,
   selectedReplays,
   set,
-  useEnforcer,
   vlerkMode,
   elevate,
   enforcerVersion,
 }: {
-  copyReplays: (set?: Set, violatorDisplayNames?: string[]) => Promise<void>;
+  copyReplays: (
+    set?: Set,
+    violators?: {
+      checkNames: Map<string, boolean>;
+      displayName: string;
+      entrantId: number;
+    }[],
+  ) => Promise<void>;
   deleteReplays: () => Promise<void>;
   reportChallongeSet: (
     matchId: number,
@@ -222,7 +233,6 @@ export default function SetControls({
   reportSettings: ReportSettings;
   selectedReplays: Replay[];
   set: Set;
-  useEnforcer: boolean;
   vlerkMode: boolean;
   elevate: boolean;
   enforcerVersion: string;
@@ -254,9 +264,19 @@ export default function SetControls({
     },
   ]);
 
-  const [enforcing, setEnforcing] = useState(false);
-  const [enforcerErrors, setEnforcerErrors] = useState<EnforceResult[]>([]);
   const [enforcerErrorOpen, setEnforcerErrorOpen] = useState(false);
+  const [enforceState, setEnforceState] = useState<EnforceState>({
+    status: EnforceStatus.DONE,
+    fileNameToPlayerFailures: new Map(),
+  });
+  useEffect(() => {
+    window.electron.onEnforceState((event, newEnforceState) => {
+      setEnforceState(newEnforceState);
+    });
+  }, []);
+  const selectedReplaysWithEnforceErrors = selectedReplays.filter((replay) =>
+    enforceState.fileNameToPlayerFailures.has(replay.fileName),
+  );
 
   const isDq = dqId === set.entrant1Id || dqId === set.entrant2Id;
   const validSelections = setAndReplaysValid(selectedReplays, set, mode);
@@ -343,7 +363,7 @@ export default function SetControls({
   }
 
   let reportCopyDeleteButton = reportCopyDeleteIntent;
-  if (enforcing) {
+  if (enforceState.status === EnforceStatus.PENDING) {
     reportCopyDeleteButton = 'Checking with SLP Enforcer';
   } else if (reportSettings.alsoCopy && copyDisabled) {
     reportCopyDeleteButton = 'Copy destination not set';
@@ -362,24 +382,8 @@ export default function SetControls({
           onClick={() => {
             setStartggSet(getStartggSet());
             setChallongeMatchItems(getChallongeMatchItems());
-            if (useEnforcer) {
-              setEnforcing(true);
-              window.electron
-                .enforceReplays(selectedReplays)
-                .then((enforceResults) => {
-                  const gameFailures = enforceResults.filter(
-                    (enforceResult) => enforceResult.playerFailures.length > 0,
-                  );
-                  // eslint-disable-next-line promise/always-return
-                  if (gameFailures.length > 0) {
-                    setEnforcerErrors(gameFailures);
-                    setEnforcerErrorOpen(true);
-                  }
-                  setEnforcing(false);
-                })
-                .catch(() => {
-                  setEnforcing(false);
-                });
+            if (selectedReplaysWithEnforceErrors.length > 0) {
+              setEnforcerErrorOpen(true);
             }
             setOpen(true);
           }}
@@ -404,7 +408,6 @@ export default function SetControls({
             isDQ: false,
             gameData: [],
           });
-          setEnforcerErrors([]);
         }}
       >
         <DialogTitle>
@@ -525,7 +528,7 @@ export default function SetControls({
           </Stack>
         </DialogContent>
         <DialogActions>
-          {enforcerErrors.length > 0 && (
+          {selectedReplaysWithEnforceErrors.length > 0 && (
             <Tooltip
               placement="top"
               title="Controller Ruleset Violation Detected"
@@ -544,10 +547,10 @@ export default function SetControls({
               reporting ||
               (reportSettings.alsoCopy && isCopying) ||
               (reportSettings.alsoCopy && copyDisabled) ||
-              enforcing
+              enforceState.status === EnforceStatus.PENDING
             }
             endIcon={
-              reporting || enforcing ? (
+              reporting || enforceState.status === EnforceStatus.PENDING ? (
                 <CircularProgress size="24px" />
               ) : (
                 <Backup />
@@ -569,23 +572,55 @@ export default function SetControls({
                   );
                 }
                 if (reportSettings.alsoCopy) {
-                  const entrantIdToDisplayName = new Map<number, string>();
-                  enforcerErrors.forEach(({ playerFailures }) => {
-                    playerFailures.forEach((playerFailure) => {
-                      if (
-                        playerFailure.displayName &&
-                        playerFailure.entrantId
-                      ) {
-                        entrantIdToDisplayName.set(
-                          playerFailure.entrantId,
-                          playerFailure.displayName,
-                        );
-                      }
-                    });
+                  const entrantIdToDisplayNameAndCheckNames = new Map<
+                    number,
+                    { checkNames: Map<string, boolean>; displayName: string }
+                  >();
+                  selectedReplaysWithEnforceErrors.forEach((replay) => {
+                    enforceState.fileNameToPlayerFailures
+                      .get(replay.fileName)!
+                      .forEach((playerFailure) => {
+                        const failurePlayer = replay.players.find(
+                          (player) => player.port === playerFailure.port,
+                        )!;
+                        const displayName =
+                          failurePlayer.playerOverrides.displayName ||
+                          failurePlayer.displayName;
+                        const { entrantId } = failurePlayer.playerOverrides;
+                        if (entrantId) {
+                          if (
+                            entrantIdToDisplayNameAndCheckNames.has(entrantId)
+                          ) {
+                            const { checkNames } =
+                              entrantIdToDisplayNameAndCheckNames.get(
+                                entrantId,
+                              )!;
+                            playerFailure.checkNames.forEach((checkName) => {
+                              checkNames.set(checkName, true);
+                            });
+                          } else {
+                            entrantIdToDisplayNameAndCheckNames.set(entrantId, {
+                              checkNames: new Map(
+                                playerFailure.checkNames.map((checkName) => [
+                                  checkName,
+                                  true,
+                                ]),
+                              ),
+                              displayName,
+                            });
+                          }
+                        }
+                      });
                   });
                   await copyReplays(
                     updatedSet,
-                    Array.from(entrantIdToDisplayName.values()),
+                    Array.from(entrantIdToDisplayNameAndCheckNames).map(
+                      ([entrantId, { checkNames, displayName }]) => ({
+                        checkNames,
+                        displayName,
+                        entrantId,
+                      }),
+                    ),
                   );
                 }
                 if (
@@ -602,7 +637,6 @@ export default function SetControls({
                   isDQ: false,
                   gameData: [],
                 });
-                setEnforcerErrors([]);
                 resetGuide();
               } catch (e: any) {
                 const message = e instanceof Error ? e.message : e;
@@ -659,18 +693,23 @@ export default function SetControls({
         </Stack>
         <DialogContent sx={{ width: '500px' }}>
           <Stack spacing="8px">
-            {enforcerErrors.map((enforcerResult) => (
-              <Box key={enforcerResult.fileName}>
+            {selectedReplaysWithEnforceErrors.map((selectedReplay) => (
+              <Box key={selectedReplay.fileName}>
                 <Box typography="caption">
-                  ({enforcerResult.gameNum}){' '}
-                  {stageNames.get(enforcerResult.stageId)}
+                  {stageNames.get(selectedReplay.stageId)}
                 </Box>
-                {enforcerResult.playerFailures.map((enforcePlayerFailure) => (
-                  <Box key={enforcePlayerFailure.port} typography="body2">
-                    {enforcePlayerFailure.displayName}:{' '}
-                    {enforcePlayerFailure.checkNames.join(', ')}
-                  </Box>
-                ))}
+                {enforceState.fileNameToPlayerFailures
+                  .get(selectedReplay.fileName)!
+                  .map((enforcePlayerFailure) => (
+                    <Box key={enforcePlayerFailure.port} typography="body2">
+                      {getDisplayNameFromPlayer(
+                        selectedReplay.players.find(
+                          (player) => player.port === enforcePlayerFailure.port,
+                        ),
+                      )}
+                      : {enforcePlayerFailure.checkNames.join(', ')}
+                    </Box>
+                  ))}
               </Box>
             ))}
           </Stack>

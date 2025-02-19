@@ -23,7 +23,6 @@ import {
   Context,
   CopyHost,
   EnforcePlayerFailure,
-  EnforceResult,
   InvalidReplay,
   Output,
   Player,
@@ -825,22 +824,16 @@ export async function writeReplays(
 
 export async function enforceReplays(
   replays: Replay[],
-): Promise<EnforceResult[]> {
+): Promise<Map<string, EnforcePlayerFailure[]>> {
   const checks = ListChecks();
-  return Promise.all(
-    replays.map(async (replay, gameI) => {
+  const ret = await Promise.all(
+    replays.map(async (replay): Promise<[string, EnforcePlayerFailure[]]> => {
       const buffer = await fsReadFile(replay.filePath);
       const game = new SlippiGame(buffer.buffer);
 
       const playerFailures: EnforcePlayerFailure[] = [];
-      const ret = {
-        playerFailures,
-        fileName: replay.fileName,
-        gameNum: gameI + 1,
-        stageId: replay.stageId,
-      };
       if (isSlpMinVersion(game)) {
-        return ret;
+        return [replay.fileName, playerFailures];
       }
 
       const validPorts = new Set(
@@ -851,15 +844,8 @@ export async function enforceReplays(
       );
       for (let port = 1; port < 5; port += 1) {
         if (validPorts.has(port)) {
-          const replayPlayer = replay.players.find(
-            (player) => player.port === port,
-          );
           const playerFailure: EnforcePlayerFailure = {
             checkNames: [],
-            displayName:
-              replayPlayer?.playerOverrides.displayName ||
-              replayPlayer?.displayName,
-            entrantId: replayPlayer?.playerOverrides.entrantId || undefined,
             port,
           };
           for (let i = 0; i < checks.length; i += 1) {
@@ -877,7 +863,8 @@ export async function enforceReplays(
           }
         }
       }
-      return ret;
+      return [replay.fileName, playerFailures];
     }),
   );
+  return new Map(ret.filter(([, playerFailures]) => playerFailures.length > 0));
 }

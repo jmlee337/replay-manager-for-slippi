@@ -5,7 +5,6 @@ import {
   ChallongeTournament,
   Context,
   CopySettings,
-  EnforceResult,
   InvalidReplay,
   Mode,
   Output,
@@ -20,6 +19,7 @@ import {
   WebSocketServerStatus,
   CopyClient,
   CopyHost,
+  EnforceState,
 } from '../common/types';
 
 const electronHandler = {
@@ -52,8 +52,6 @@ const electronHandler = {
       writeDisplayNames,
       context,
     ),
-  enforceReplays: (replays: Replay[]): Promise<EnforceResult[]> =>
-    ipcRenderer.invoke('enforceReplays', replays),
   appendEnforcerResult: (str: String): Promise<void> =>
     ipcRenderer.invoke('appendEnforcerResult', str),
   getCopyDir: (): Promise<string> => ipcRenderer.invoke('getCopyDir'),
@@ -195,6 +193,12 @@ const electronHandler = {
   getVersion: (): Promise<string> => ipcRenderer.invoke('getVersion'),
   getLatestVersion: (): Promise<string> =>
     ipcRenderer.invoke('getLatestVersion'),
+  onEnforceState: (
+    callback: (event: IpcRendererEvent, enforceState: EnforceState) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('enforceState');
+    ipcRenderer.on('enforceState', callback);
+  },
   onTournament: (
     callback: (
       event: IpcRendererEvent,

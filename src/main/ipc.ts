@@ -16,6 +16,8 @@ import {
   ChallongeMatchItem,
   Context,
   CopySettings,
+  EnforceState,
+  EnforceStatus,
   Mode,
   Output,
   Replay,
@@ -179,12 +181,38 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     maybeEject(replayDirs[replayDirs.length - 1]),
   );
 
+  let useEnforcer = store.get('useEnforcer', false);
   ipcMain.removeHandler('getReplaysInDir');
   ipcMain.handle('getReplaysInDir', async () => {
     if (replayDirs.length === 0) {
       throw new Error();
     }
-    return getReplaysInDir(replayDirs[replayDirs.length - 1]);
+    const retReplays = await getReplaysInDir(replayDirs[replayDirs.length - 1]);
+    if (useEnforcer) {
+      const pendingState: EnforceState = {
+        status: EnforceStatus.PENDING,
+        fileNameToPlayerFailures: new Map(),
+      };
+      mainWindow.webContents.send('enforceState', pendingState);
+      enforceReplays(retReplays.replays)
+        // eslint-disable-next-line promise/always-return
+        .then((fileNameToPlayerFailures) => {
+          const doneState: EnforceState = {
+            status: EnforceStatus.DONE,
+            fileNameToPlayerFailures,
+          };
+          mainWindow.webContents.send('enforceState', doneState);
+        })
+        .catch((reason: any) => {
+          const errorState: EnforceState = {
+            status: EnforceStatus.ERROR,
+            fileNameToPlayerFailures: new Map(),
+            reason,
+          };
+          mainWindow.webContents.send('enforceState', errorState);
+        });
+    }
+    return retReplays;
   });
 
   let copyDir = '';
@@ -218,13 +246,6 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         context,
       );
     },
-  );
-
-  ipcMain.removeHandler('enforceReplays');
-  ipcMain.handle(
-    'enforceReplays',
-    async (event: IpcMainInvokeEvent, replays: Replay[]) =>
-      enforceReplays(replays),
   );
 
   ipcMain.removeHandler('appendEnforcerResult');
@@ -604,19 +625,14 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   });
 
   ipcMain.removeHandler('getUseEnforcer');
-  ipcMain.handle('getUseEnforcer', () => {
-    if (store.has('useEnforcer')) {
-      return store.get('useEnforcer') as boolean;
-    }
-    store.set('useEnforcer', false);
-    return false;
-  });
+  ipcMain.handle('getUseEnforcer', () => useEnforcer);
 
   ipcMain.removeHandler('setUseEnforcer');
   ipcMain.handle(
     'setUseEnforcer',
     (event: IpcMainInvokeEvent, newUseEnforcer: boolean) => {
       store.set('useEnforcer', newUseEnforcer);
+      useEnforcer = newUseEnforcer;
     },
   );
 

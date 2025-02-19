@@ -173,16 +173,19 @@ export enum Output {
 
 export type EnforcePlayerFailure = {
   checkNames: string[];
-  displayName: string | undefined;
-  entrantId: number | undefined;
   port: number;
 };
 
-export type EnforceResult = {
-  fileName: string;
-  gameNum: number;
-  playerFailures: EnforcePlayerFailure[];
-  stageId: number;
+export enum EnforceStatus {
+  PENDING,
+  DONE,
+  ERROR,
+}
+
+export type EnforceState = {
+  status: EnforceStatus;
+  fileNameToPlayerFailures: Map<string, EnforcePlayerFailure[]>;
+  reason?: any;
 };
 
 export type SelectedEvent = {
