@@ -867,16 +867,20 @@ const REPORT_BRACKET_SET_MUTATION = `
 export async function reportSet(key: string, set: StartggSet) {
   const updatedAtMs = Date.now();
   const data = await fetchGql(key, REPORT_BRACKET_SET_MUTATION, set);
-  const updatedSets = (data.reportBracketSet as any[])
-    .filter(
-      (bracketSet) =>
-        bracketSet.slots[0].entrant && bracketSet.slots[1].entrant,
-    )
-    .map((bracketSet) => {
-      const updatedSet = gqlSetToSet(bracketSet, updatedAtMs);
-      idToSet.set(updatedSet.id, updatedSet);
-      return updatedSet;
-    });
+  const filteredSets = (data.reportBracketSet as any[]).filter(
+    (bracketSet) => bracketSet.slots[0].entrant && bracketSet.slots[1].entrant,
+  );
+  if (
+    filteredSets.some((filteredSet) => !setIdToOrdinal.has(filteredSet.id)) &&
+    selectedPhaseGroupId
+  ) {
+    await getPhaseGroup(key, selectedPhaseGroupId);
+  }
+  const updatedSets = filteredSets.map((bracketSet) => {
+    const updatedSet = gqlSetToSet(bracketSet, updatedAtMs);
+    idToSet.set(updatedSet.id, updatedSet);
+    return updatedSet;
+  });
   const reportedSet = updatedSets.filter(
     (updatedSet) => updatedSet.state === State.COMPLETED,
   )[0];
