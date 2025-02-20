@@ -3,7 +3,7 @@ import { createSocket, Socket } from 'dgram';
 import os from 'node:os';
 import { execSync } from 'node:child_process';
 import { WebSocketServer, WebSocket, MessageEvent } from 'ws';
-import { writeFile } from 'fs/promises';
+import { appendFile, writeFile } from 'fs/promises';
 import path from 'node:path';
 import { IncomingMessage } from 'http';
 import { CopyHost, CopyClient, WebSocketServerStatus } from '../common/types';
@@ -31,6 +31,10 @@ type HostRequest = {
   | {
       request: 'writeZip';
       subdir: string;
+    }
+  | {
+      request: 'appendEnforcerResult';
+      result: string;
     }
 );
 
@@ -274,6 +278,42 @@ export async function writeZip(subdir: string, buffer: Buffer) {
   });
 }
 
+export async function appendEnforcerResult(result: string) {
+  return new Promise<void>((resolve, reject) => {
+    if (!webSocket) {
+      reject(new Error('no webSocket'));
+      return;
+    }
+
+    const requestOrdinal = nextRequestOrdinal;
+    nextRequestOrdinal += 1;
+
+    const listener = (event: MessageEvent) => {
+      if (typeof event.data !== 'string') {
+        return;
+      }
+
+      const { ordinal, error } = JSON.parse(event.data) as HostResponse;
+      if (ordinal === requestOrdinal) {
+        webSocket?.removeEventListener('message', listener);
+        if (error) {
+          reject(new Error(error));
+        } else {
+          resolve();
+        }
+      }
+    };
+    webSocket.addEventListener('message', listener);
+
+    const request: HostRequest = {
+      ordinal: requestOrdinal,
+      request: 'appendEnforcerResult',
+      result,
+    };
+    webSocket.send(JSON.stringify(request));
+  });
+}
+
 let copyDir = '';
 export function setCopyDir(newCopyDir: string) {
   copyDir = newCopyDir;
@@ -427,6 +467,24 @@ export function startHostServer(): Promise<string> {
             error: '',
           };
           newWebSocket.send(JSON.stringify(response));
+        } else if (hostRequest.request === 'appendEnforcerResult') {
+          try {
+            await appendFile(
+              path.join(copyDir, 'enforcer.csv'),
+              hostRequest.result,
+            );
+            const response: HostResponse = {
+              ordinal: hostRequest.ordinal,
+              error: '',
+            };
+            newWebSocket.send(JSON.stringify(response));
+          } catch (e: unknown) {
+            const response: HostResponse = {
+              ordinal: hostRequest.ordinal,
+              error: e instanceof Error ? e.message : 'unknown',
+            };
+            newWebSocket.send(JSON.stringify(response));
+          }
         }
       } else if (event.data instanceof Buffer) {
         const expectedZip = clientAddressToExpectedZip.get(remoteAddress);
