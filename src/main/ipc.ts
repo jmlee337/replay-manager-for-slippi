@@ -53,6 +53,7 @@ import {
   startChallongeSet,
 } from './challonge';
 import {
+  appendEnforcerResult,
   connectToHost,
   disconnectFromHost,
   getCopyClients,
@@ -259,7 +260,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
 
       const promises = [];
       if (host.address && host.name) {
-        promises.push();
+        promises.push(appendEnforcerResult(str));
       }
       if (copyDir) {
         promises.push(appendFile(path.join(copyDir, 'enforcer.csv'), str));
