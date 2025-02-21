@@ -10,7 +10,7 @@
 - `{playersChars}` - Player 1 (Marth), Player 2 (Fox)
 - `{singlesChars}` - `{playersChars}` if singles, `{playersOnly}` if doubles
 - `{stage}` - Battlefield
-- `{ordinal}` - 1 (game 1, game 2, game 3, etc)
+- `{ordinal}` - 1 (game 1, game 2, game 3, etc) if in a folder/zip, `{time}` if individual file\[s\]
 
 ## Folder
 

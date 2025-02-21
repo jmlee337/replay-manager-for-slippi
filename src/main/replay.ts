@@ -28,25 +28,20 @@ import {
   Player,
   Replay,
 } from '../common/types';
-import {
-  frameMsDivisor,
-  isValidCharacter,
-  legalStages,
-} from '../common/constants';
+import { isValidCharacter, legalStages } from '../common/constants';
 import { writeZip } from './host';
 
 // https://github.com/project-slippi/slippi-launcher/blob/ae8bb69e235b6e46b24bc966aeaa80f45030c6f9/src/replays/file_system_replay_provider/load_file.ts#L91-L101
 // ty vince
-function filenameToDateAndTime(fileName: string) {
+function filenameToDateAndTime(fileName: string, birthtimeMs: number) {
   const timeReg = /\d{8}T\d{6}/g;
   const filenameTime = fileName.match(timeReg);
 
   if (filenameTime == null) {
-    return undefined;
+    return new Date(birthtimeMs);
   }
 
-  const time = parse(filenameTime[0], "yyyyMMdd'T'HHmmss", new Date());
-  return time;
+  return parse(filenameTime[0], "yyyyMMdd'T'HHmmss", new Date());
 }
 
 const RAW_HEADER_START = Buffer.from([
@@ -297,7 +292,8 @@ export async function getReplaysInDir(
           }
         }
 
-        const fileSize = (await fileHandle.stat()).size;
+        const stat = await fileHandle.stat();
+        const fileSize = stat.size;
         if (replayLength > 0) {
           // game end
           const gameEndOffset = metadataOffset - gameEndSize;
@@ -325,7 +321,7 @@ export async function getReplaysInDir(
               players,
               selected: false,
               stageId,
-              startAt: filenameToDateAndTime(fileName),
+              startAt: filenameToDateAndTime(fileName, stat.birthtimeMs),
               timeout: lastFrame === gameTimerSeconds * 60,
             };
           }
@@ -356,7 +352,7 @@ export async function getReplaysInDir(
               players,
               selected: false,
               stageId,
-              startAt: filenameToDateAndTime(fileName),
+              startAt: filenameToDateAndTime(fileName, stat.birthtimeMs),
               timeout: lastFrame === gameTimerSeconds * 60 && gameEnd[1] === 1,
             };
           }
@@ -385,7 +381,7 @@ export async function getReplaysInDir(
               players,
               selected: false,
               stageId,
-              startAt: filenameToDateAndTime(fileName),
+              startAt: filenameToDateAndTime(fileName, stat.birthtimeMs),
               timeout: lastFrame === gameTimerSeconds * 60 && gameEnd[1] === 1,
             };
           }
@@ -408,7 +404,7 @@ export async function getReplaysInDir(
           }
           let startAt: Date | undefined = new Date(obj.metadata.startAt);
           if (!startAt || Number.isNaN(startAt.getTime())) {
-            startAt = filenameToDateAndTime(fileName);
+            startAt = filenameToDateAndTime(fileName, stat.birthtimeMs);
           }
           return {
             fileName,
@@ -442,7 +438,7 @@ export async function getReplaysInDir(
           players,
           selected: false,
           stageId,
-          startAt: filenameToDateAndTime(fileName),
+          startAt: filenameToDateAndTime(fileName, stat.birthtimeMs),
           timeout: lastFrame === gameTimerSeconds * 60,
         };
       } catch (e: any) {
@@ -459,32 +455,12 @@ export async function getReplaysInDir(
         !(<InvalidReplay>replayOrInvalidReplay).invalidReason,
     ) as Replay[]
   ).sort((replayA, replayB) => {
-    if (replayA.startAt && replayB.startAt) {
-      const diff = replayA.startAt.getTime() - replayB.startAt.getTime();
-      if (diff) {
-        return diff;
-      }
-    }
-    if (replayA.startAt) {
-      return -1;
-    }
-    if (replayB.startAt) {
-      return 1;
+    const diff = replayA.startAt.getTime() - replayB.startAt.getTime();
+    if (diff) {
+      return diff;
     }
     return replayA.fileName.localeCompare(replayB.fileName);
   });
-  if (replays.length > 1 && replays[0].startAt) {
-    for (let i = 0; i < replays.length - 1; i += 1) {
-      if (replays[i + 1].startAt === undefined) {
-        const durationMs = Math.ceil(
-          (replays[i].lastFrame + 124) / frameMsDivisor,
-        );
-        replays[i + 1].startAt = new Date(
-          replays[i].startAt!.getTime() + durationMs,
-        );
-      }
-    }
-  }
 
   const invalidReplays = (
     (await Promise.all(objs)).filter(
@@ -751,7 +727,7 @@ export async function writeReplays(
       } else {
         // create the metadata element
         const bufs = [METADATA];
-        let startAt = replay.startAt?.toISOString();
+        let startAt = replay.startAt.toISOString();
         if (startTimes.length && startTimes[i]) {
           startAt = startTimes[i];
         }

@@ -14,6 +14,7 @@ import {
   FormControl,
   FormControlLabel,
   FormLabel,
+  Link,
   Radio,
   RadioGroup,
   Stack,
@@ -222,13 +223,13 @@ export default function Settings({
                 Get your start.gg API key by clicking “Create new token” in the
                 <br />
                 “Personal Access Tokens” tab of{' '}
-                <a
+                <Link
                   href="https://start.gg/admin/profile/developer"
                   target="_blank"
                   rel="noreferrer"
                 >
                   this page
-                </a>
+                </Link>
                 . Keep it private!
               </DialogContentText>
               <Stack alignItems="center" direction="row" gap="8px">
@@ -264,13 +265,13 @@ export default function Settings({
             <>
               <DialogContentText>
                 Get your Challonge v1 API key on{' '}
-                <a
+                <Link
                   href="https://challonge.com/settings/developer"
                   target="_blank"
                   rel="noreferrer"
                 >
                   this page
-                </a>{' '}
+                </Link>{' '}
                 (you may need to click “Generate a new API key”). Keep it
                 private!
               </DialogContentText>
@@ -347,13 +348,13 @@ export default function Settings({
                 <span>
                   Use &quot;Vlerk mode&quot; for post tournament supplemental
                   reporting,{' '}
-                  <a
+                  <Link
                     href={`https://github.com/jmlee337/replay-manager-for-slippi/blob/${appVersion}/src/docs/vlerk.md`}
                     target="_blank"
                     rel="noreferrer"
                   >
                     see more details
-                  </a>
+                  </Link>
                   .
                 </span>
               }
@@ -374,13 +375,13 @@ export default function Settings({
             />
             <DialogContentText>
               File/Folder name format placeholders documented{' '}
-              <a
+              <Link
                 href={`https://github.com/jmlee337/replay-manager-for-slippi/blob/${appVersion}/src/docs/format.md`}
                 target="_blank"
                 rel="noreferrer"
               >
                 here
-              </a>
+              </Link>
               .
             </DialogContentText>
             <Stack alignItems="end" direction="row" gap="8px">
@@ -390,11 +391,11 @@ export default function Settings({
                 onChange={(event) => {
                   const newFileNameFormat = event.target.value;
                   if (newFileNameFormat) {
-                    setFileNameFormat(newFileNameFormat);
+                    setFileNameFormat(newFileNameFormat.slice(9));
                   }
                 }}
                 size="small"
-                value={fileNameFormat}
+                value={`{ordinal}${fileNameFormat}`}
                 variant="standard"
               />
               <DialogContentText paddingBottom="5px">.slp</DialogContentText>

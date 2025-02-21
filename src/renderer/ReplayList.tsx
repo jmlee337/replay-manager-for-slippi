@@ -69,12 +69,8 @@ const getCharacterIcon = (
 };
 
 export function SkewReplay({ replay }: { replay: Replay }) {
-  const time = replay.startAt
-    ? format(replay.startAt, 'h:mmaaa')
-    : 'Time unknown';
-  const dateShort = replay.startAt
-    ? format(replay.startAt, 'yyyy MMM dd')
-    : 'Date unknown';
+  const time = format(replay.startAt, 'h:mmaaa');
+  const dateShort = format(replay.startAt, 'yyyy MMM dd');
   const duration = format(
     new Date((replay.lastFrame + 124) / frameMsDivisor),
     "m'm'ss's'",
@@ -173,12 +169,8 @@ const ReplayListItem = memo(function ReplayListItem({
     onClick(index);
   }, [index, onClick]);
 
-  const dateShort = replay.startAt
-    ? format(replay.startAt, 'yyyy MMM dd')
-    : 'Date unknown';
-  const time = replay.startAt
-    ? format(replay.startAt, 'h:mmaaa')
-    : 'Time unknown';
+  const dateShort = format(replay.startAt, 'yyyy MMM dd');
+  const time = format(replay.startAt, 'h:mmaaa');
   const duration = format(
     new Date((replay.lastFrame + 124) / frameMsDivisor),
     "m'm'ss's'",

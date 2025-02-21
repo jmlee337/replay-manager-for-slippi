@@ -733,11 +733,15 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   // {singlesChars}
   // {stage}
   // {ordinal}
-  const INITIAL_FILE_NAME_FORMAT = '{ordinal} - {playersChars} - {stage}';
+  const INITIAL_FILE_NAME_FORMAT = ' - {playersChars} - {stage}';
   let fileNameFormat = store.get(
     'fileNameFormat',
     INITIAL_FILE_NAME_FORMAT,
   ) as string;
+  if (fileNameFormat.startsWith('{ordinal}')) {
+    fileNameFormat = fileNameFormat.slice(9);
+    store.set('fileNameFormat', fileNameFormat);
+  }
   setOwnFileNameFormat(fileNameFormat);
   ipcMain.removeHandler('getFileNameFormat');
   ipcMain.handle('getFileNameFormat', () => fileNameFormat);

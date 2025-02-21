@@ -157,13 +157,9 @@ function hasTimeSkew(replays: Replay[]) {
   }
 
   for (let i = 0; i < replays.length - 1; i += 1) {
-    const firstMs = replays[i].startAt?.getTime();
-    const secondMs = replays[i + 1].startAt?.getTime();
-    if (
-      firstMs !== undefined &&
-      secondMs !== undefined &&
-      secondMs - firstMs > 3600000
-    ) {
+    const firstMs = replays[i].startAt.getTime();
+    const secondMs = replays[i + 1].startAt.getTime();
+    if (secondMs - firstMs > 3600000) {
       return true;
     }
   }
@@ -1065,17 +1061,15 @@ function Hello() {
     const copySet = set ?? selectedSet;
 
     let offsetMs = 0;
-    const timeableReplays = selectedReplays.filter((replay) => replay.startAt);
-    let startDate =
-      timeableReplays.length > 0 ? timeableReplays[0].startAt! : new Date();
-    if (copySettings.writeStartTimes && timeableReplays.length > 0) {
-      const lastReplay = timeableReplays[timeableReplays.length - 1];
-      const lastStartMs = lastReplay.startAt!.getTime();
+    let startDate = selectedReplays[0].startAt;
+    if (copySettings.writeStartTimes) {
+      const lastReplay = selectedReplays[selectedReplays.length - 1];
+      const lastStartMs = lastReplay.startAt.getTime();
       offsetMs =
         Date.now() -
         lastStartMs -
         Math.round((lastReplay.lastFrame + 124) / frameMsDivisor);
-      startDate = new Date(timeableReplays[0].startAt!.getTime() + offsetMs);
+      startDate = new Date(selectedReplays[0].startAt.getTime() + offsetMs);
     }
 
     let fileNames = selectedReplays.map((replay) => replay.fileName);
@@ -1223,31 +1217,31 @@ function Hello() {
       if (copySettings.writeFileNames) {
         fileNames = nameObjs.map((game, i) => {
           const { stageId, startAt } = selectedReplays[i];
-          let writeStartDate = null;
-          if (startAt) {
-            writeStartDate = copySettings.writeStartTimes
-              ? new Date(startAt.getTime() + offsetMs)
-              : startAt;
-          }
+          const writeStartDate = copySettings.writeStartTimes
+            ? new Date(startAt.getTime() + offsetMs)
+            : startAt;
+          const time = format(writeStartDate, 'HHmmss');
           const names = game.filter((nameObj) => nameObj.characterName);
           const playersOnly = names.map(toPlayerOnly).join(', ');
           const playersChars = names.map(toPlayerChar).join(', ');
           const singlesChars =
             nameObjs.length === 4 ? playersOnly : playersChars;
 
-          let fileName = String(host.fileNameFormat || fileNameFormat);
+          let fileName = `{ordinal}${String(
+            host.fileNameFormat || fileNameFormat,
+          )}`;
           fileName = fileName.replace(
             '{date}',
-            writeStartDate ? format(writeStartDate, 'yyyyMMdd') : '',
+            format(writeStartDate, 'yyyyMMdd'),
           );
-          fileName = fileName.replace(
-            '{time}',
-            writeStartDate ? format(writeStartDate, 'HHmmss') : '',
-          );
+          fileName = fileName.replace('{time}', time);
           fileName = fileName.replace('{roundShort}', roundShort);
           fileName = fileName.replace('{roundLong}', roundLong);
           fileName = fileName.replace('{stage}', stageNames.get(stageId) || '');
-          fileName = fileName.replace('{ordinal}', (i + 1).toString(10));
+          fileName = fileName.replace(
+            '{ordinal}',
+            copySettings.output === Output.FILES ? time : (i + 1).toString(10),
+          );
           // do last in case player names contain template strings LOL
           fileName = fileName.replace('{playersOnly}', playersOnly);
           fileName = fileName.replace('{playersChars}', playersChars);
@@ -1385,9 +1379,7 @@ function Hello() {
     let startTimes: string[] = [];
     if (copySettings.writeStartTimes) {
       startTimes = selectedReplays.map((replay) =>
-        replay.startAt
-          ? new Date(replay.startAt.getTime() + offsetMs).toISOString()
-          : '',
+        new Date(replay.startAt.getTime() + offsetMs).toISOString(),
       );
     }
 
@@ -1792,8 +1784,8 @@ function Hello() {
                       variant="contained"
                       onClick={() => {
                         for (let i = replays.length - 1; i > 0; i -= 1) {
-                          const firstMs = replays[i - 1].startAt!.getTime();
-                          const secondMs = replays[i].startAt!.getTime();
+                          const firstMs = replays[i - 1].startAt.getTime();
+                          const secondMs = replays[i].startAt.getTime();
                           if (
                             firstMs > secondMs ||
                             secondMs - firstMs > 3600000

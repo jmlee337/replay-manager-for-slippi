@@ -27,7 +27,7 @@ export type Replay = {
   players: Player[];
   selected: boolean;
   stageId: number;
-  startAt?: Date;
+  startAt: Date;
   timeout: boolean;
 };
 
