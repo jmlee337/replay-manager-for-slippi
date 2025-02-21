@@ -104,6 +104,7 @@ export function getSelectedSetChain(): {
             bracketType: phaseGroup.bracketType,
             hasSiblings:
               phaseIdToPhaseGroupIds.get(selectedPhaseId)!.length > 1,
+            waveId: phaseGroup.waveId,
           }
         : undefined,
   };
@@ -243,6 +244,7 @@ export async function getPhaseGroup(
     groupTypeId: bracketType,
     displayIdentifier: name,
     state,
+    waveId,
   } = phaseGroup;
   const isBracketTypeValid =
     bracketType === 1 || // SINGLE_ELIMINATION
@@ -265,6 +267,7 @@ export async function getPhaseGroup(
       name,
       state,
       sets: { completedSets: [], pendingSets: [] },
+      waveId,
     };
   }
 
@@ -518,6 +521,7 @@ export async function getPhaseGroup(
     name,
     state,
     sets: { completedSets: [], pendingSets: [] },
+    waveId,
   });
   phaseGroupIdToEntrants.set(id, entrants);
   phaseGroupIdToSets.set(id, { completedSets, pendingSets });
@@ -528,6 +532,7 @@ export async function getPhaseGroup(
     name,
     state,
     sets: { completedSets, pendingSets },
+    waveId,
   };
 }
 
@@ -553,6 +558,7 @@ export async function getPhase(key: string, id: number, recursive: boolean) {
           completedSets: [],
         },
         state: group.state,
+        waveId: group.waveId,
       };
       phaseGroups.push(newPhaseGroup);
       phaseGroupIds.push(group.id);

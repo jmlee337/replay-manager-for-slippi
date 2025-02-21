@@ -321,6 +321,7 @@ function PhaseView({
                   name: phaseGroup.name,
                   bracketType: phaseGroup.bracketType,
                   hasSiblings: phase.phaseGroups.length > 1,
+                  waveId: phaseGroup.waveId,
                 })
               }
             />

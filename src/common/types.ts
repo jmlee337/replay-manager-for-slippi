@@ -98,6 +98,7 @@ export type PhaseGroup = {
   name: string;
   sets: Sets;
   state: State;
+  waveId: number | null;
 };
 
 export type Phase = {
@@ -215,6 +216,7 @@ export type SelectedPhaseGroup = {
    */
   bracketType: number;
   hasSiblings: boolean;
+  waveId: number | null;
 };
 
 export type ContextSlot = {
