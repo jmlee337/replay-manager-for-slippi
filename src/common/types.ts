@@ -135,7 +135,7 @@ export type ChallongeTournament = {
   slug: string;
   sets: Sets;
   state: State;
-  // can be 'swiss' or 'round robin' among others
+  // can be 'swiss' or 'round robin' or 'double elimination' among others
   tournamentType: string;
 };
 

@@ -58,16 +58,19 @@ export default function ManualReport({
   const [entrant2Dq, setEntrant2Dq] = useState(false);
   const [entrant1Win, setEntrant1Win] = useState(false);
   const [entrant2Win, setEntrant2Win] = useState(false);
+
+  // challonge
+  const [entrant1Score, setEntrant1Score] = useState(0);
+  const [entrant2Score, setEntrant2Score] = useState(0);
+
   const resetForm = () => {
     setEntrant1Dq(false);
     setEntrant2Dq(false);
     setEntrant1Win(false);
     setEntrant2Win(false);
+    setEntrant1Score(0);
+    setEntrant2Score(0);
   };
-
-  // challonge
-  const [entrant1Score, setEntrant1Score] = useState(0);
-  const [entrant2Score, setEntrant2Score] = useState(0);
 
   const [reportError, setReportError] = useState('');
   const [reportErrorOpen, setReportErrorOpen] = useState(false);
