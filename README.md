@@ -5,7 +5,7 @@ It enables a workflow where Slippi replays are collected set-by-set, used to rep
 
 Mac users, please see how to [open an app from an unidentified developer](https://support.apple.com/en-gb/guide/mac-help/mh40616/mac).
 
-[![Download](https://gist.githubusercontent.com/cxmeel/0dbc95191f239b631c3874f4ccf114e2/raw/bb4634715f95ebb209b4e0bcdd4d2d98fe64c64c/download.svg)](http://github.com/jmlee337/replay-manager-for-slippi/releases/latest)
+[![Download](https://github.com/user-attachments/assets/0f155c5c-bd25-45fb-99f7-db055a380e12)](http://github.com/jmlee337/replay-manager-for-slippi/releases/latest)
 
 ## Features
 
