@@ -42,15 +42,20 @@ import {
 } from '../common/constants';
 import SetView from './SetView';
 import LabeledCheckbox from './LabeledCheckbox';
+import getCharacterIcon from './getCharacterIcon';
 
-const characterIcons = require.context('./characters', true);
-const getCharacterIcon = (characterId?: number) => {
-  try {
-    return characterIcons(`./${characterId}/0/stock.png`);
-  } catch (e: any) {
-    return characterIcons('./31/0/stock.png');
+function getCharacterIconInner(
+  characterId: number | undefined,
+  costumeIndex?: number,
+) {
+  if (characterId === undefined) {
+    return getCharacterIcon(31, 0);
   }
-};
+  if (costumeIndex === undefined) {
+    return getCharacterIcon(characterId, 0);
+  }
+  return getCharacterIcon(characterId, costumeIndex);
+}
 
 const EntrantSection = styled(Stack)`
   align-items: center;
@@ -208,6 +213,7 @@ export default function SetControls({
   elevate,
   enforcerVersion,
   showEnforcerPopup,
+  smuggleCostumeIndex,
 }: {
   copyReplays: (
     set?: Set,
@@ -243,6 +249,7 @@ export default function SetControls({
   elevate: boolean;
   enforcerVersion: string;
   showEnforcerPopup: boolean;
+  smuggleCostumeIndex: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -303,8 +310,8 @@ export default function SetControls({
     }
   }
 
-  const entrant1Score = scores.get(set.entrant1Id) || 0;
-  const entrant2Score = scores.get(set.entrant2Id) || 0;
+  const entrant1SetScore = scores.get(set.entrant1Id) || 0;
+  const entrant2SetScore = scores.get(set.entrant2Id) || 0;
 
   const getStartggSet = (): StartggSet => {
     if (isDq) {
@@ -319,21 +326,37 @@ export default function SetControls({
         return;
       }
 
-      let selections: StartggGameSelection[] = [];
+      let entrant1Score = set.gameScores[i]?.entrant1Score ?? 0;
+      let entrant2Score = set.gameScores[i]?.entrant2Score ?? 0;
+      const entrant1Stocks = entrant1Score % 100;
+      const entrant2Stocks = entrant2Score % 100;
+      const selections: StartggGameSelection[] = [];
       const validPlayers = replay.players.filter(
         (player) =>
           isValid(player) && isValidCharacter(player.externalCharacterId),
       );
       if (validPlayers.length === 2) {
-        selections = validPlayers.map((player) => ({
-          characterId: characterStartggIds.get(player.externalCharacterId)!,
-          entrantId: player.playerOverrides.entrantId,
-        }));
+        validPlayers.forEach((player) => {
+          const { entrantId } = player.playerOverrides;
+          selections.push({
+            characterId: characterStartggIds.get(player.externalCharacterId)!,
+            entrantId,
+          });
+          if (smuggleCostumeIndex) {
+            if (entrantId === set.entrant1Id) {
+              entrant1Score = (player.costumeIndex + 1) * 100 + entrant1Stocks;
+            } else {
+              entrant2Score = (player.costumeIndex + 1) * 100 + entrant2Stocks;
+            }
+          }
+        });
         if (selections[1].entrantId === set.entrant1Id) {
-          selections = [selections[1], selections[0]];
+          [selections[0], selections[1]] = [selections[1], selections[0]];
         }
       }
       gameData.push({
+        entrant1Score,
+        entrant2Score,
         gameNum: i + 1,
         stageId: stageStartggIds.get(replay.stageId),
         selections,
@@ -346,13 +369,13 @@ export default function SetControls({
   const getChallongeMatchItems = (): ChallongeMatchItem[] => [
     {
       participant_id: set.entrant1Id.toString(10),
-      score_set: entrant1Score.toString(10),
+      score_set: entrant1SetScore.toString(10),
       rank: winnerId === set.entrant1Id ? 1 : 2,
       advancing: winnerId === set.entrant1Id,
     },
     {
       participant_id: set.entrant2Id.toString(10),
-      score_set: entrant2Score.toString(10),
+      score_set: entrant2SetScore.toString(10),
       rank: winnerId === set.entrant2Id ? 1 : 2,
       advancing: winnerId === set.entrant2Id,
     },
@@ -429,12 +452,12 @@ export default function SetControls({
             entrant1Names={set.entrant1Participants.map((participant) => ({
               name: participant.displayName,
             }))}
-            entrant1Score={entrant1Score.toString()}
+            entrant1Score={entrant1SetScore.toString()}
             entrant1Win={set.entrant1Id === winnerId}
             entrant2Names={set.entrant2Participants.map((participant) => ({
               name: participant.displayName,
             }))}
-            entrant2Score={entrant2Score.toString()}
+            entrant2Score={entrant2SetScore.toString()}
             fullRoundText={set.fullRoundText}
             state={set.state}
             showScores
@@ -461,10 +484,13 @@ export default function SetControls({
                             gameData.selections[0].characterId,
                           )!,
                         )}
-                        src={getCharacterIcon(
+                        src={getCharacterIconInner(
                           startggCharacterIds.get(
                             gameData.selections[0].characterId,
                           ),
+                          gameData.entrant1Score >= 100
+                            ? Math.floor(gameData.entrant1Score / 100) - 1
+                            : undefined,
                         )}
                         sx={{ height: 24, width: 24 }}
                         variant="square"
@@ -488,10 +514,13 @@ export default function SetControls({
                             gameData.selections[1].characterId,
                           )!,
                         )}
-                        src={getCharacterIcon(
+                        src={getCharacterIconInner(
                           startggCharacterIds.get(
                             gameData.selections[1].characterId,
                           ),
+                          gameData.entrant2Score >= 100
+                            ? Math.floor(gameData.entrant2Score / 100) - 1
+                            : undefined,
                         )}
                         sx={{ height: 24, width: 24 }}
                         variant="square"

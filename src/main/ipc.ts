@@ -891,6 +891,20 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
+  ipcMain.removeHandler('getSmuggleCostumeIndex');
+  ipcMain.handle(
+    'getSmuggleCostumeIndex',
+    () => store.get('smuggleCostumeIndex', true) as boolean,
+  );
+
+  ipcMain.removeHandler('setSmuggleCostumeIndex');
+  ipcMain.handle(
+    'setSmuggleCostumeIndex',
+    (event: IpcMainInvokeEvent, smuggleCostumeIndex: boolean) => {
+      store.set('smuggleCostumeIndex', smuggleCostumeIndex);
+    },
+  );
+
   ipcMain.removeHandler('copyToClipboard');
   ipcMain.handle(
     'copyToClipboard',

@@ -158,6 +158,7 @@ const toSet = (
       match.attributes.state === 'complete'
         ? (participant2.scores[0] as number).toString(10)
         : null,
+    gameScores: [],
     stream: getStreamFromMatch(match, stationIdToStream),
     ordinal: match.attributes.suggested_play_order,
     wasReported: false,
@@ -353,6 +354,7 @@ export async function startChallongeSet(
       },
     ],
     entrant2Score: null,
+    gameScores: [],
     stream: matchIdToStream.get(match.id) || null,
     ordinal: match.suggested_play_order,
     wasReported: false,

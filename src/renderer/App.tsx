@@ -135,6 +135,7 @@ const EMPTY_SET: Set = {
     },
   ],
   entrant2Score: null,
+  gameScores: [],
   stream: null,
   ordinal: null,
   wasReported: false,
@@ -185,6 +186,7 @@ function Hello() {
   const [guidedMode, setGuidedMode] = useState(false);
   const [fileNameFormat, setFileNameFormat] = useState('');
   const [folderNameFormat, setFolderNameFormat] = useState('');
+  const [smuggleCostumeIndex, setSmuggleCostumeIndex] = useState(false);
   const [appVersion, setAppVersion] = useState('');
   const [latestAppVersion, setLatestAppVersion] = useState('');
   const [copySettings, setCopySettings] = useState<CopySettings>({
@@ -245,6 +247,8 @@ function Hello() {
       const guidedModePromise = window.electron.getGuidedMode();
       const fileNameFormatPromise = window.electron.getFileNameFormat();
       const folderNameFormatPromise = window.electron.getFolderNameFormat();
+      const smuggleCostumeIndexPromise =
+        window.electron.getSmuggleCostumeIndex();
       const copySettingsPromise = window.electron.getCopySettings();
       const reportSettingsPromise = window.electron.getReportSettings();
 
@@ -276,6 +280,7 @@ function Hello() {
       setFolderNameFormat(await folderNameFormatPromise);
       setVlerkMode(await vlerkModePromise);
       setGuidedMode(await guidedModePromise);
+      setSmuggleCostumeIndex(await smuggleCostumeIndexPromise);
       setCopySettings(await copySettingsPromise);
       setReportSettings(await reportSettingsPromise);
 
@@ -2202,6 +2207,7 @@ function Hello() {
                 }
                 enforcerVersion={ENFORCER_VERSION}
                 showEnforcerPopup={showEnforcerPopup}
+                smuggleCostumeIndex={smuggleCostumeIndex}
               />
             </Stack>
           </Stack>
@@ -2256,6 +2262,8 @@ function Hello() {
         setVlerkMode={setVlerkMode}
         guidedMode={guidedMode}
         setGuidedMode={setGuidedMode}
+        smuggleCostumeIndex={smuggleCostumeIndex}
+        setSmuggleCostumeIndex={setSmuggleCostumeIndex}
         fileNameFormat={fileNameFormat}
         setFileNameFormat={setFileNameFormat}
         folderNameFormat={folderNameFormat}

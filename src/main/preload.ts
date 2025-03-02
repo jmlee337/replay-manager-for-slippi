@@ -196,6 +196,10 @@ const electronHandler = {
   getGuidedMode: (): Promise<boolean> => ipcRenderer.invoke('getGuidedMode'),
   setGuidedMode: (guidedMode: boolean): Promise<void> =>
     ipcRenderer.invoke('setGuidedMode', guidedMode),
+  getSmuggleCostumeIndex: (): Promise<boolean> =>
+    ipcRenderer.invoke('getSmuggleCostumeIndex'),
+  setSmuggleCostumeIndex: (smuggleCostumeIndex: boolean) =>
+    ipcRenderer.invoke('setSmuggleCostumeIndex', smuggleCostumeIndex),
   copyToClipboard: (text: string): Promise<void> =>
     ipcRenderer.invoke('copyToClipboard', text),
   getVersion: (): Promise<string> => ipcRenderer.invoke('getVersion'),

@@ -467,6 +467,12 @@ export async function getPhaseGroup(
           entrant2Id,
           entrant2Participants,
           entrant2Score: set.entrant2Score,
+          gameScores: Array.isArray(set.games)
+            ? set.games.map((game: any) => ({
+                entrant1Score: game.entrant1P1Stocks,
+                entrant2Score: game.entrant2P1Stocks,
+              }))
+            : [],
           stream,
           ordinal,
           wasReported: reportedSetIds.has(setId),
@@ -761,6 +767,10 @@ export async function getTournament(
 const GQL_SET_INNER = `
   id
   fullRoundText
+  games {
+    entrant1Score
+    entrant2Score
+  }
   round
   slots {
     entrant {
@@ -833,6 +843,12 @@ function gqlSetToSet(set: any, updatedAtMs: number): Set {
     entrant2Score: slot2.standing
       ? slot2.standing.stats.score.displayValue
       : null,
+    gameScores: Array.isArray(set.games)
+      ? set.games.map((game: any) => ({
+          entrant1Score: game.entrant1Score ?? 0,
+          entrant2Score: game.entrant2Score ?? 0,
+        }))
+      : [],
     stream:
       set.stream && set.stream.streamSource && set.stream.streamName
         ? {

@@ -58,6 +58,8 @@ export default function Settings({
   setVlerkMode,
   guidedMode,
   setGuidedMode,
+  smuggleCostumeIndex,
+  setSmuggleCostumeIndex,
   useLAN,
   setUseLAN,
   fileNameFormat,
@@ -85,6 +87,8 @@ export default function Settings({
   setVlerkMode: (vlerkMode: boolean) => void;
   guidedMode: boolean;
   setGuidedMode: (guidedMode: boolean) => void;
+  smuggleCostumeIndex: boolean;
+  setSmuggleCostumeIndex: (smuggleCostumeIndex: boolean) => void;
   useLAN: boolean;
   setUseLAN: (useLAN: boolean) => void;
   fileNameFormat: string;
@@ -355,7 +359,6 @@ export default function Settings({
                   >
                     see more details
                   </Link>
-                  .
                 </span>
               }
               labelPlacement="end"
@@ -373,6 +376,28 @@ export default function Settings({
                 setUseLAN(checked);
               }}
             />
+            {mode === Mode.STARTGG && (
+              <LabeledCheckbox
+                checked={smuggleCostumeIndex}
+                label={
+                  <span>
+                    Report character color,{' '}
+                    <Link
+                      href={`https://github.com/jmlee337/replay-manager-for-slippi/blob/${appVersion}/src/docs/color.md`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      see more details
+                    </Link>
+                  </span>
+                }
+                labelPlacement="end"
+                set={async (checked) => {
+                  await window.electron.setSmuggleCostumeIndex(checked);
+                  setSmuggleCostumeIndex(checked);
+                }}
+              />
+            )}
             <DialogContentText>
               File/Folder name format placeholders documented{' '}
               <Link
