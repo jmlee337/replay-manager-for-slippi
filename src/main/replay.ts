@@ -148,18 +148,24 @@ export async function getReplaysInDir(
         }
         const payloadSizes = new Map<number, number>();
         let gameStartSize = 0;
+        let postFrameUpdateSize = 0;
+        let frameBookendSize = 0;
         let gameEndSize = 0;
         for (let i = 0; i < payloadsSize; i += 3) {
           const payloadSize = payloads.subarray(i + 1, i + 3).readUInt16BE();
+          if (payloadSize === 0) {
+            return { fileName, invalidReason: 'File corrupted.' };
+          }
           payloadSizes.set(payloads[i], payloadSize);
           if (payloads[i] === 0x36) {
             gameStartSize = payloadSize + 1;
+          } else if (payloads[i] === 0x38) {
+            postFrameUpdateSize = payloadSize + 1;
           } else if (payloads[i] === 0x39) {
             gameEndSize = payloadSize + 1;
+          } else if (payloads[i] === 0x3c) {
+            frameBookendSize = payloadSize + 1;
           }
-        }
-        if (gameStartSize === 0 || gameEndSize === 0) {
-          return { fileName, invalidReason: 'File corrupted.' };
         }
 
         // game start
@@ -212,6 +218,7 @@ export async function getReplaysInDir(
             playerOverrides: { displayName: '', entrantId: 0 },
             playerType: gameStart[offset + 1],
             port: i + 1,
+            stocksRemaining: -1,
             teamId,
           } as Player;
           if (players[i].playerType === 0 || players[i].playerType === 1) {
@@ -295,8 +302,36 @@ export async function getReplaysInDir(
         const stat = await fileHandle.stat();
         const fileSize = stat.size;
         if (replayLength > 0) {
-          // game end
           const gameEndOffset = metadataOffset - gameEndSize;
+          const frameBookendOffset = gameEndOffset - frameBookendSize;
+          const postFrameUpdateOffset =
+            frameBookendOffset - postFrameUpdateSize;
+
+          // last frame stocks
+          await Promise.all(
+            [...Array(numPlayers).keys()].map(async (i) => {
+              const currentOffset =
+                postFrameUpdateOffset - postFrameUpdateSize * i;
+              const postFrameUpdate = Buffer.alloc(postFrameUpdateSize);
+              const postFrameUpdateRes = await fileHandle.read(
+                postFrameUpdate,
+                0,
+                postFrameUpdateSize,
+                currentOffset,
+              );
+              if (
+                postFrameUpdateRes.bytesRead !== postFrameUpdateSize ||
+                postFrameUpdate[0] !== 0x38
+              ) {
+                return;
+              }
+              // eslint-disable-next-line prefer-destructuring
+              players[postFrameUpdate[5]].stocksRemaining =
+                postFrameUpdate[0x21];
+            }),
+          );
+
+          // game end
           const gameEnd = Buffer.alloc(gameEndSize);
           const gameEndRes = await fileHandle.read(
             gameEnd,

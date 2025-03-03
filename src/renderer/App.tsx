@@ -2199,7 +2199,6 @@ function Hello() {
                 reportSettings={reportSettings}
                 selectedReplays={selectedReplays}
                 set={selectedSet}
-                vlerkMode={vlerkMode}
                 elevate={
                   guideActive &&
                   guideBackdropOpen &&

@@ -40,9 +40,10 @@ import {
   startggCharacterIds,
   startggStageIds,
 } from '../common/constants';
-import SetView from './SetView';
 import LabeledCheckbox from './LabeledCheckbox';
 import getCharacterIcon from './getCharacterIcon';
+
+const bgColor = 'rgba(34, 178, 76, 0.2)';
 
 function getCharacterIconInner(
   characterId: number | undefined,
@@ -209,7 +210,6 @@ export default function SetControls({
   reportSettings,
   selectedReplays,
   set,
-  vlerkMode,
   elevate,
   enforcerVersion,
   showEnforcerPopup,
@@ -245,7 +245,6 @@ export default function SetControls({
   reportSettings: ReportSettings;
   selectedReplays: Replay[];
   set: Set;
-  vlerkMode: boolean;
   elevate: boolean;
   enforcerVersion: string;
   showEnforcerPopup: boolean;
@@ -326,10 +325,12 @@ export default function SetControls({
         return;
       }
 
-      let entrant1Score = set.gameScores[i]?.entrant1Score ?? 0;
-      let entrant2Score = set.gameScores[i]?.entrant2Score ?? 0;
-      const entrant1Stocks = entrant1Score % 100;
-      const entrant2Stocks = entrant2Score % 100;
+      const originalEntrant1Score = set.gameScores[i]?.entrant1Score ?? 0;
+      const originalEntrant2Score = set.gameScores[i]?.entrant2Score ?? 0;
+      let entrant1CostumeOffset = Math.floor(originalEntrant1Score / 100);
+      let entrant2CostumeOffset = Math.floor(originalEntrant2Score / 100);
+      let entrant1Stocks = originalEntrant1Score % 100;
+      let entrant2Stocks = originalEntrant2Score % 100;
       const selections: StartggGameSelection[] = [];
       const validPlayers = replay.players.filter(
         (player) =>
@@ -342,11 +343,19 @@ export default function SetControls({
             characterId: characterStartggIds.get(player.externalCharacterId)!,
             entrantId,
           });
-          if (smuggleCostumeIndex) {
-            if (entrantId === set.entrant1Id) {
-              entrant1Score = (player.costumeIndex + 1) * 100 + entrant1Stocks;
-            } else {
-              entrant2Score = (player.costumeIndex + 1) * 100 + entrant2Stocks;
+          if (entrantId === set.entrant1Id) {
+            if (smuggleCostumeIndex) {
+              entrant1CostumeOffset = (player.costumeIndex + 1) * 100;
+            }
+            if (player.stocksRemaining >= 0) {
+              entrant1Stocks = player.stocksRemaining;
+            }
+          } else {
+            if (smuggleCostumeIndex) {
+              entrant2CostumeOffset = (player.costumeIndex + 1) * 100;
+            }
+            if (player.stocksRemaining >= 0) {
+              entrant2Stocks = player.stocksRemaining;
             }
           }
         });
@@ -355,8 +364,8 @@ export default function SetControls({
         }
       }
       gameData.push({
-        entrant1Score,
-        entrant2Score,
+        entrant1Score: entrant1CostumeOffset + entrant1Stocks,
+        entrant2Score: entrant2CostumeOffset + entrant2Stocks,
         gameNum: i + 1,
         stageId: stageStartggIds.get(replay.stageId),
         selections,
@@ -443,27 +452,63 @@ export default function SetControls({
           });
         }}
       >
-        <DialogTitle>
+        <DialogTitle typography="body1">
           Report set on {mode === Mode.STARTGG && 'start.gg'}
           {mode === Mode.CHALLONGE && 'Challonge'}
         </DialogTitle>
         <DialogContent sx={{ width: '500px' }}>
-          <SetView
-            entrant1Names={set.entrant1Participants.map((participant) => ({
-              name: participant.displayName,
-            }))}
-            entrant1Score={entrant1SetScore.toString()}
-            entrant1Win={set.entrant1Id === winnerId}
-            entrant2Names={set.entrant2Participants.map((participant) => ({
-              name: participant.displayName,
-            }))}
-            entrant2Score={entrant2SetScore.toString()}
-            fullRoundText={set.fullRoundText}
-            state={set.state}
-            showScores
-            wasReported={vlerkMode && set.wasReported}
-          />
-          <Divider sx={{ marginTop: '8px' }} />
+          <Stack>
+            <Box sx={{ typography: 'caption' }} textAlign="center">
+              {set.fullRoundText}
+            </Box>
+            <Stack
+              alignItems="center"
+              direction="row"
+              sx={{ typography: 'h5' }}
+            >
+              <EntrantSection
+                borderRight={1}
+                direction="row-reverse"
+                style={{
+                  backgroundColor:
+                    set.entrant1Id === startggSet.winnerId
+                      ? bgColor
+                      : undefined,
+                }}
+              >
+                <Box marginRight="8px" width="24px" textAlign="right">
+                  {entrant1SetScore}
+                </Box>
+                <Stack textAlign="right">
+                  <Name>{set.entrant1Participants[0].displayName}</Name>
+                  {set.entrant1Participants.length > 1 && (
+                    <Name>{set.entrant1Participants[1].displayName}</Name>
+                  )}
+                </Stack>
+              </EntrantSection>
+              <EntrantSection
+                borderLeft={1}
+                direction="row"
+                style={{
+                  backgroundColor:
+                    set.entrant2Id === startggSet.winnerId
+                      ? bgColor
+                      : undefined,
+                }}
+              >
+                <Box marginLeft="8px" width="24px">
+                  {entrant2SetScore}
+                </Box>
+                <Stack>
+                  <Name>{set.entrant2Participants[0].displayName}</Name>
+                  {set.entrant2Participants.length > 1 && (
+                    <Name>{set.entrant2Participants[1].displayName}</Name>
+                  )}
+                </Stack>
+              </EntrantSection>
+            </Stack>
+          </Stack>
+          <Divider sx={{ marginTop: '16px' }} />
           <Stack flexGrow={1}>
             {startggSet.gameData.map((gameData) => (
               <Stack key={gameData.gameNum} marginTop="8px">
@@ -474,64 +519,156 @@ export default function SetControls({
                 )}
                 <Stack direction="row" sx={{ typography: 'body2' }}>
                   <EntrantSection borderRight={1} direction="row-reverse">
-                    <EntrantScore textAlign="right">
-                      {set.entrant1Id === gameData.winnerId ? 'W' : 'L'}
-                    </EntrantScore>
-                    {set.entrant1Participants.length === 1 && (
-                      <Avatar
-                        alt={characterNames.get(
-                          startggCharacterIds.get(
-                            gameData.selections[0].characterId,
-                          )!,
-                        )}
-                        src={getCharacterIconInner(
-                          startggCharacterIds.get(
-                            gameData.selections[0].characterId,
-                          ),
-                          gameData.entrant1Score >= 100
-                            ? Math.floor(gameData.entrant1Score / 100) - 1
+                    <Stack
+                      alignItems="center"
+                      direction="row-reverse"
+                      paddingTop="4px"
+                      paddingBottom="4px"
+                      paddingLeft={
+                        set.entrant1Participants.length === 1
+                          ? '4px'
+                          : undefined
+                      }
+                      style={{
+                        backgroundColor:
+                          set.entrant1Id === gameData.winnerId
+                            ? bgColor
                             : undefined,
-                        )}
-                        sx={{ height: 24, width: 24 }}
-                        variant="square"
-                      />
-                    )}
-                    <EntrantText flexGrow={1} textAlign="right">
-                      <Name>{set.entrant1Participants[0].displayName}</Name>
-                      {set.entrant1Participants.length > 1 && (
-                        <Name>{set.entrant1Participants[1].displayName}</Name>
+                      }}
+                    >
+                      <EntrantScore textAlign="right">
+                        {set.entrant1Id === gameData.winnerId && 'W'}
+                      </EntrantScore>
+                      {set.entrant1Participants.length === 1 && (
+                        <Avatar
+                          alt={characterNames.get(
+                            startggCharacterIds.get(
+                              gameData.selections[0].characterId,
+                            )!,
+                          )}
+                          src={getCharacterIconInner(
+                            startggCharacterIds.get(
+                              gameData.selections[0].characterId,
+                            ),
+                            gameData.entrant1Score >= 100
+                              ? Math.floor(gameData.entrant1Score / 100) - 1
+                              : undefined,
+                          )}
+                          sx={{ height: 24, width: 24 }}
+                          variant="square"
+                        />
                       )}
-                    </EntrantText>
+                    </Stack>
+                    {set.entrant1Participants.length === 1 &&
+                      set.entrant1Id === gameData.winnerId &&
+                      gameData.entrant1Score % 100 && (
+                        <Tooltip
+                          placement="left"
+                          title={`${gameData.entrant1Score % 100} stock`}
+                        >
+                          <Stack
+                            alignItems="end"
+                            direction="row"
+                            gap="1px"
+                            marginRight="8px"
+                            height="100%"
+                          >
+                            {[
+                              ...Array(gameData.entrant1Score % 100).keys(),
+                            ].map(() => (
+                              <Avatar
+                                src={getCharacterIconInner(
+                                  startggCharacterIds.get(
+                                    gameData.selections[0].characterId,
+                                  ),
+                                  gameData.entrant1Score >= 100
+                                    ? Math.floor(gameData.entrant1Score / 100) -
+                                        1
+                                    : undefined,
+                                )}
+                                sx={{ height: 12, width: 12 }}
+                                variant="square"
+                              />
+                            ))}
+                          </Stack>
+                        </Tooltip>
+                      )}
                   </EntrantSection>
                   <EntrantSection borderLeft={1} direction="row">
-                    <EntrantScore>
-                      {set.entrant2Id === gameData.winnerId ? 'W' : 'L'}
-                    </EntrantScore>
-                    {set.entrant2Participants.length === 1 && (
-                      <Avatar
-                        alt={characterNames.get(
-                          startggCharacterIds.get(
-                            gameData.selections[1].characterId,
-                          )!,
-                        )}
-                        src={getCharacterIconInner(
-                          startggCharacterIds.get(
-                            gameData.selections[1].characterId,
-                          ),
-                          gameData.entrant2Score >= 100
-                            ? Math.floor(gameData.entrant2Score / 100) - 1
+                    <Stack
+                      alignItems="center"
+                      direction="row"
+                      paddingTop="4px"
+                      paddingBottom="4px"
+                      paddingRight={
+                        set.entrant2Participants.length === 1
+                          ? '4px'
+                          : undefined
+                      }
+                      style={{
+                        backgroundColor:
+                          set.entrant2Id === gameData.winnerId
+                            ? bgColor
                             : undefined,
-                        )}
-                        sx={{ height: 24, width: 24 }}
-                        variant="square"
-                      />
-                    )}
-                    <EntrantText flexGrow={1}>
-                      <Name>{set.entrant2Participants[0].displayName}</Name>
-                      {set.entrant2Participants.length > 1 && (
-                        <Name>{set.entrant2Participants[1].displayName}</Name>
+                      }}
+                    >
+                      <EntrantScore>
+                        {set.entrant2Id === gameData.winnerId && 'W'}
+                      </EntrantScore>
+                      {set.entrant2Participants.length === 1 && (
+                        <Avatar
+                          alt={characterNames.get(
+                            startggCharacterIds.get(
+                              gameData.selections[1].characterId,
+                            )!,
+                          )}
+                          src={getCharacterIconInner(
+                            startggCharacterIds.get(
+                              gameData.selections[1].characterId,
+                            ),
+                            gameData.entrant2Score >= 100
+                              ? Math.floor(gameData.entrant2Score / 100) - 1
+                              : undefined,
+                          )}
+                          sx={{ height: 24, width: 24 }}
+                          variant="square"
+                        />
                       )}
-                    </EntrantText>
+                    </Stack>
+                    {set.entrant2Participants.length === 1 &&
+                      set.entrant2Id === gameData.winnerId &&
+                      gameData.entrant2Score % 100 && (
+                        <Tooltip
+                          placement="right"
+                          title={`${gameData.entrant2Score % 100} stock`}
+                        >
+                          <Stack
+                            alignItems="end"
+                            direction="row"
+                            gap="1px"
+                            marginLeft="8px"
+                            height="100%"
+                          >
+                            {[
+                              ...Array(gameData.entrant2Score % 100).keys(),
+                            ].map(() => (
+                              <Avatar
+                                src={getCharacterIconInner(
+                                  startggCharacterIds.get(
+                                    gameData.selections[1].characterId,
+                                  ),
+                                  gameData.entrant2Score >= 100
+                                    ? Math.floor(gameData.entrant2Score / 100) -
+                                        1
+                                    : undefined,
+                                )}
+                                sx={{ height: 12, width: 12 }}
+                                variant="square"
+                              />
+                            ))}
+                          </Stack>
+                        </Tooltip>
+                      )}
                   </EntrantSection>
                 </Stack>
               </Stack>
