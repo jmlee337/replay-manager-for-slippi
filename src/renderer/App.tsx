@@ -1041,11 +1041,13 @@ function Hello() {
   type NameObj = {
     characterName: string;
     displayName: string;
+    entrantId: number;
     nametag: string;
   };
   type NamesObj = {
     characterNames: Map<string, number>;
     displayName: string;
+    entrantId: number;
     nametags: Map<string, number>;
   };
 
@@ -1085,20 +1087,28 @@ function Hello() {
       copySettings.output === Output.FOLDER ||
       copySettings.output === Output.ZIP
     ) {
+      let allEntrantIdsSet = true;
       const nameObjs = selectedReplays.map((replay) =>
-        replay.players.map(
-          (player): NameObj =>
-            player.playerType === 0 || player.playerType === 1
-              ? {
-                  characterName: characterNames.get(
-                    player.externalCharacterId,
-                  )!,
-                  displayName:
-                    player.playerOverrides.displayName || player.displayName,
-                  nametag: player.nametag,
-                }
-              : { characterName: '', displayName: '', nametag: '' },
-        ),
+        replay.players.map((player): NameObj => {
+          if (player.playerType === 0 || player.playerType === 1) {
+            if (!player.playerOverrides.entrantId) {
+              allEntrantIdsSet = false;
+            }
+            return {
+              characterName: characterNames.get(player.externalCharacterId)!,
+              displayName:
+                player.playerOverrides.displayName || player.displayName,
+              entrantId: player.playerOverrides.entrantId,
+              nametag: player.nametag,
+            };
+          }
+          return {
+            characterName: '',
+            displayName: '',
+            entrantId: 0,
+            nametag: '',
+          };
+        }),
       );
 
       const toPlayerOnly = (nameObj: NameObj) => {
@@ -1132,62 +1142,75 @@ function Hello() {
         copySettings.output === Output.FOLDER ||
         copySettings.output === Output.ZIP
       ) {
-        const combinedNameObjs = nameObjs
-          .reduce(
-            (namesObj, game, gameI): NamesObj[] => {
-              game.forEach((nameObj, i) => {
-                if (nameObj.characterName) {
-                  namesObj[i].displayName = nameObj.displayName;
-                  if (!namesObj[i].characterNames.has(nameObj.characterName)) {
-                    namesObj[i].characterNames.set(
-                      nameObj.characterName,
-                      gameI,
-                    );
-                  }
-                  if (!namesObj[i].nametags.has(nameObj.nametag)) {
-                    namesObj[i].nametags.set(nameObj.nametag, gameI);
-                  }
+        const namesObjs: NamesObj[] = nameObjs[0].map((nameObj) => ({
+          characterNames: new Map([[nameObj.characterName, 0]]),
+          displayName: nameObj.displayName,
+          entrantId: nameObj.entrantId,
+          nametags: new Map([[nameObj.nametag, 0]]),
+        }));
+        if (allEntrantIdsSet) {
+          for (let i = 1; i < nameObjs.length; i += 1) {
+            for (let j = 0; j < nameObjs[i].length; j += 1) {
+              const nameObj = nameObjs[i][j];
+              const existingNamesObj = namesObjs.find(
+                (namesObj) => namesObj.entrantId === nameObj.entrantId,
+              )!;
+              if (
+                nameObj.characterName &&
+                !existingNamesObj.characterNames.has(nameObj.characterName)
+              ) {
+                existingNamesObj.characterNames.set(nameObj.characterName, i);
+              }
+              if (
+                nameObj.nametag &&
+                !existingNamesObj.nametags.has(nameObj.nametag)
+              ) {
+                existingNamesObj.nametags.set(nameObj.nametag, i);
+              }
+            }
+          }
+        } else {
+          for (let i = 1; i < nameObjs.length; i += 1) {
+            for (let j = 0; j < nameObjs[i].length; j += 1) {
+              const nameObj = nameObjs[i][j];
+              if (nameObj.characterName) {
+                namesObjs[j].displayName = nameObj.displayName;
+                namesObjs[j].entrantId = nameObj.entrantId;
+                if (!namesObjs[j].characterNames.has(nameObj.characterName)) {
+                  namesObjs[j].characterNames.set(nameObj.characterName, i);
                 }
-              });
-              return namesObj;
-            },
-            [
-              {
-                characterNames: new Map<string, number>(),
-                displayName: '',
-                nametags: new Map<string, number>(),
-              },
-              {
-                characterNames: new Map<string, number>(),
-                displayName: '',
-                nametags: new Map<string, number>(),
-              },
-              {
-                characterNames: new Map<string, number>(),
-                displayName: '',
-                nametags: new Map<string, number>(),
-              },
-              {
-                characterNames: new Map<string, number>(),
-                displayName: '',
-                nametags: new Map<string, number>(),
-              },
-            ],
+              }
+              if (
+                nameObj.nametag &&
+                !namesObjs[i].nametags.has(nameObj.nametag)
+              ) {
+                namesObjs[i].nametags.set(nameObj.nametag, j);
+              }
+            }
+          }
+        }
+        const combinedNameObjs = namesObjs
+          .map(
+            (namesObj): NameObj => ({
+              displayName: namesObj.displayName,
+              entrantId: namesObj.entrantId,
+              characterName: [...namesObj.characterNames.entries()]
+                .sort(([, a], [, b]) => a - b)
+                .map((entry) => entry[0])
+                .join(', '),
+              nametag: [...namesObj.nametags.entries()]
+                .sort(([, a], [, b]) => a - b)
+                .map((entry) => entry[0])
+                .join(', '),
+            }),
           )
-          .map((namesObj) => ({
-            displayName: namesObj.displayName,
-            characterName: [...namesObj.characterNames.entries()]
-              .sort(([, a], [, b]) => a - b)
-              .map((entry) => entry[0])
-              .join(', '),
-            nametag: [...namesObj.nametags.entries()]
-              .sort(([, a], [, b]) => a - b)
-              .map((entry) => entry[0])
-              .join(', '),
-          }))
           .filter((nameObj) => nameObj.characterName);
-        const playersOnly = combinedNameObjs.map(toPlayerOnly).join(', ');
-        const playersChars = combinedNameObjs.map(toPlayerChar).join(', ');
+        const playersOnly = combinedNameObjs
+          .map(toPlayerOnly)
+          .join(combinedNameObjs.length === 2 ? ' vs ' : ', ');
+        const playersChars = combinedNameObjs
+          .map(toPlayerChar)
+          .join(combinedNameObjs.length === 2 ? ' vs ' : ', ');
         const singlesChars =
           combinedNameObjs.length === 4 ? playersOnly : playersChars;
         subdir = String(host.folderNameFormat || folderNameFormat);
