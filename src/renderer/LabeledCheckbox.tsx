@@ -1,17 +1,19 @@
 import { Checkbox, FormControlLabel } from '@mui/material';
-import { ChangeEvent, ReactNode } from 'react';
+import { ChangeEvent, CSSProperties, ReactNode } from 'react';
 
 export default function LabeledCheckbox({
   checked,
   disabled,
   label,
   labelPlacement,
+  style,
   set,
 }: {
   checked: boolean;
   disabled?: boolean;
   label: ReactNode;
   labelPlacement?: 'end' | 'start' | 'top' | 'bottom';
+  style?: CSSProperties;
   set: (checked: boolean) => void;
 }) {
   return (
@@ -29,6 +31,7 @@ export default function LabeledCheckbox({
       label={label}
       labelPlacement={labelPlacement}
       sx={{ typography: 'caption' }}
+      style={style}
     />
   );
 }
@@ -36,4 +39,5 @@ export default function LabeledCheckbox({
 LabeledCheckbox.defaultProps = {
   disabled: false,
   labelPlacement: 'end',
+  style: {},
 };

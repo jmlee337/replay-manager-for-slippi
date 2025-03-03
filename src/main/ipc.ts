@@ -8,10 +8,11 @@ import {
   shell,
 } from 'electron';
 import Store from 'electron-store';
-import { appendFile, rm } from 'fs/promises';
+import { appendFile, cp, rm } from 'fs/promises';
 import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
+import { format } from 'date-fns';
 import {
   ChallongeMatchItem,
   Context,
@@ -167,10 +168,38 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     return Promise.resolve(false);
   };
 
+  let trashDir = store.get('trashDir', '') as string;
+  ipcMain.removeHandler('getTrashDir');
+  ipcMain.handle('getTrashDir', () => trashDir);
+
+  ipcMain.removeHandler('chooseTrashDir');
+  ipcMain.handle('chooseTrashDir', async () => {
+    const openDialogRes = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'showHiddenFiles'],
+    });
+    if (openDialogRes.canceled) {
+      return trashDir;
+    }
+    [trashDir] = openDialogRes.filePaths;
+    store.set('trashDir', trashDir);
+    return trashDir;
+  });
+
+  ipcMain.removeHandler('clearTrashDir');
+  ipcMain.handle('clearTrashDir', () => {
+    store.set('trashDir', '');
+    trashDir = '';
+  });
+
   ipcMain.removeHandler('deleteReplaysDir');
   ipcMain.handle('deleteReplaysDir', async () => {
     if (replayDirs.length > 0) {
       const currentDir = replayDirs[replayDirs.length - 1];
+      if (trashDir) {
+        const trashSubdir = format(new Date(), 'yyyy-MM-dd HHmmss');
+        const fullPath = path.join(trashDir, trashSubdir);
+        await cp(currentDir, fullPath, { force: true, recursive: true });
+      }
       await rm(currentDir, { recursive: true });
       return maybeEject(currentDir);
     }

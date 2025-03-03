@@ -6,6 +6,7 @@ import {
 import {
   Alert,
   Button,
+  CircularProgress,
   Dialog,
   DialogContent,
   DialogContentText,
@@ -23,7 +24,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { ChangeEvent, useMemo, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import LabeledCheckbox from './LabeledCheckbox';
 import { AdminedTournament, Mode } from '../common/types';
 
@@ -145,6 +146,16 @@ export default function Settings({
     setOpen(true);
     setHasAutoOpened(true);
   }
+
+  const [trashDir, setTrashDir] = useState('');
+  useEffect(() => {
+    (async () => {
+      const trashDirPromise = window.electron.getTrashDir();
+      setTrashDir(await trashDirPromise);
+    })();
+  }, []);
+
+  const [choosingTrashDir, setChoosingTrashDir] = useState(false);
 
   return (
     <>
@@ -346,6 +357,63 @@ export default function Settings({
                 sx={{ marginLeft: '22px', typography: 'caption' }}
               />
             )}
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <LabeledCheckbox
+                checked={trashDir.length > 0}
+                disabled={!trashDir}
+                label={
+                  trashDir
+                    ? 'Using trash folder:'
+                    : 'Deleting replays permanently'
+                }
+                labelPlacement="end"
+                set={async (checked) => {
+                  if (!checked) {
+                    await window.electron.clearTrashDir();
+                    setTrashDir('');
+                  }
+                }}
+                style={{ flexShrink: 0 }}
+              />
+              {trashDir ? (
+                <Typography
+                  overflow="hidden"
+                  textAlign="left"
+                  textOverflow="ellipsis"
+                  style={{ direction: 'rtl', opacity: '0.5' }}
+                  variant="caption"
+                  whiteSpace="nowrap"
+                >
+                  {trashDir}
+                </Typography>
+              ) : (
+                <Button
+                  disabled={choosingTrashDir}
+                  endIcon={
+                    choosingTrashDir ? (
+                      <CircularProgress size="24px" />
+                    ) : undefined
+                  }
+                  onClick={async () => {
+                    setChoosingTrashDir(true);
+                    try {
+                      setTrashDir(await window.electron.chooseTrashDir());
+                    } catch {
+                      // just catch
+                    } finally {
+                      setChoosingTrashDir(false);
+                    }
+                  }}
+                  variant="contained"
+                >
+                  Set trash folder
+                </Button>
+              )}
+            </Stack>
             <LabeledCheckbox
               checked={vlerkMode}
               label={
