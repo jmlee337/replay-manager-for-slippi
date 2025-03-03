@@ -361,7 +361,32 @@ export async function getReplaysInDir(
             };
           }
           if (gameEnd[1] !== 1 && gameEnd[1] !== 2 && gameEnd[1] !== 3) {
-            invalidReasons.push('No contest.');
+            let winnerI = -1;
+            const realPlayers = players.filter(
+              (player) => player.playerType === 0 || player.playerType === 1,
+            );
+            if (realPlayers.length === 2) {
+              let numPlayersWithOneStock = 0;
+              let moreThanOneStockPlayerI = -1;
+              realPlayers.forEach((player) => {
+                if (player.stocksRemaining === 1) {
+                  numPlayersWithOneStock += 1;
+                } else if (player.stocksRemaining > 1) {
+                  moreThanOneStockPlayerI = player.port - 1;
+                }
+              });
+              if (
+                numPlayersWithOneStock === 1 &&
+                moreThanOneStockPlayerI !== -1
+              ) {
+                winnerI = moreThanOneStockPlayerI;
+              }
+            }
+            if (winnerI !== -1) {
+              players[winnerI].isWinner = true;
+            } else {
+              invalidReasons.push('No contest.');
+            }
           } else {
             for (let i = 0; i < 4; i += 1) {
               players[i].isWinner = gameEnd[i + 3] === 0;
