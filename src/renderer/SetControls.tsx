@@ -327,8 +327,8 @@ export default function SetControls({
 
       const originalEntrant1Score = set.gameScores[i]?.entrant1Score ?? 0;
       const originalEntrant2Score = set.gameScores[i]?.entrant2Score ?? 0;
-      let entrant1CostumeOffset = Math.floor(originalEntrant1Score / 100);
-      let entrant2CostumeOffset = Math.floor(originalEntrant2Score / 100);
+      let entrant1CostumeOffset = Math.floor(originalEntrant1Score / 100) * 100;
+      let entrant2CostumeOffset = Math.floor(originalEntrant2Score / 100) * 100;
       let entrant1Stocks = originalEntrant1Score % 100;
       let entrant2Stocks = originalEntrant2Score % 100;
       const selections: StartggGameSelection[] = [];
