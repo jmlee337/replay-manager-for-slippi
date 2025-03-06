@@ -236,7 +236,7 @@ export async function getPhaseGroup(
   id: number,
 ): Promise<PhaseGroup> {
   const response = await wrappedFetch(
-    `https://api.smash.gg/phase_group/${id}?expand[]=sets&expand[]=entrants`,
+    `https://api.start.gg/phase_group/${id}?expand[]=sets&expand[]=entrants`,
   );
   const json = await response.json();
   const phaseGroup = json.entities.groups;
@@ -544,7 +544,7 @@ export async function getPhaseGroup(
 
 export async function getPhase(key: string, id: number, recursive: boolean) {
   const response = await wrappedFetch(
-    `https://api.smash.gg/phase/${id}?expand[]=groups`,
+    `https://api.start.gg/phase/${id}?expand[]=groups`,
   );
   const json = await response.json();
   const phaseGroups: PhaseGroup[] = [];
@@ -605,7 +605,7 @@ export async function getPhase(key: string, id: number, recursive: boolean) {
 
 export async function getEvent(key: string, id: number, recursive: boolean) {
   const response = await wrappedFetch(
-    `https://api.smash.gg/event/${id}?expand[]=phase`,
+    `https://api.start.gg/event/${id}?expand[]=phase`,
   );
   const json = await response.json();
   const phases: Phase[] = [];
@@ -675,7 +675,7 @@ export async function getTournament(
   recursive: boolean,
 ) {
   const response = await wrappedFetch(
-    `https://api.smash.gg/tournament/${slug}?expand[]=event`,
+    `https://api.start.gg/tournament/${slug}?expand[]=event`,
   );
   const json = await response.json();
   const { id, name, locationDisplayName: location } = json.entities.tournament;
@@ -711,7 +711,7 @@ export async function getTournament(
 
   if (eventIdsWithChildren.length === 0) {
     const streamsPromise = wrappedFetch(
-      `https://api.smash.gg/station_queue/${id}`,
+      `https://api.start.gg/station_queue/${id}`,
     );
     let nextData;
     let page = 1;
