@@ -6,6 +6,7 @@ import {
   readdir,
   FileHandle,
   writeFile,
+  access,
 } from 'fs/promises';
 import { join } from 'path';
 import iconv from 'iconv-lite';
@@ -622,12 +623,27 @@ export async function writeReplays(
   const sanitizedFileNames = fileNames.map((fileName) => sanitize(fileName));
   const sanitizedSubdir = sanitize(subdir);
 
-  const writeDir = join(dir, sanitizedSubdir);
+  let writeDir = join(dir, sanitizedSubdir);
   if (
     !sanitizedSubdir &&
     (actualOutput === Output.FOLDER || actualOutput === Output.ZIP)
   ) {
     throw new Error('subdir');
+  }
+  try {
+    const ext = output === Output.FOLDER ? '' : '.zip';
+    await access(`${writeDir}${ext}`);
+    for (let i = 2; ; i += 1) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await access(`${writeDir} ${i}${ext}`);
+      } catch {
+        writeDir = `${writeDir} ${i}`;
+        break;
+      }
+    }
+  } catch {
+    // folder doesn't already exist, we can carry on
   }
   if (sanitizedSubdir) {
     if (output === Output.FOLDER) {
