@@ -475,7 +475,7 @@ export default function CopyControls({
               }}
               select
               size="small"
-              value={host.address ? Output.ZIP : copySettings.output}
+              value={copySettings.output}
             >
               <MenuItem value={Output.FILES}>Separate Files</MenuItem>
               <MenuItem value={Output.FOLDER}>Make Subfolder</MenuItem>

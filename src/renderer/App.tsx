@@ -343,8 +343,16 @@ function Hello() {
   }, []);
 
   useEffect(() => {
-    window.electron.onCopyHost((event, newHost) => {
+    window.electron.onCopyHost(async (event, newHost) => {
       setHost(newHost);
+      if (newHost.address) {
+        setCopySettings((existingCopySettings) => ({
+          ...existingCopySettings,
+          output: Output.ZIP,
+        }));
+      } else {
+        setCopySettings(await window.electron.getCopySettings());
+      }
     });
   }, []);
 

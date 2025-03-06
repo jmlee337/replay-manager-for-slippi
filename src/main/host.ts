@@ -3,7 +3,7 @@ import { createSocket, Socket } from 'dgram';
 import os from 'node:os';
 import { execSync } from 'node:child_process';
 import { WebSocketServer, WebSocket, MessageEvent } from 'ws';
-import { appendFile, writeFile } from 'fs/promises';
+import { access, appendFile, writeFile } from 'fs/promises';
 import path from 'node:path';
 import { IncomingMessage } from 'http';
 import { CopyHost, CopyClient, WebSocketServerStatus } from '../common/types';
@@ -458,6 +458,14 @@ export function startHostServer(): Promise<string> {
             sendCopyClients();
           }
         } else if (hostRequest.request === 'writeZip') {
+          if (!hostRequest.subdir) {
+            const response: HostResponse = {
+              ordinal: hostRequest.ordinal,
+              error: 'no subdir',
+            };
+            newWebSocket.send(JSON.stringify(response));
+            return;
+          }
           clientAddressToExpectedZip.set(remoteAddress, {
             ordinal: hostRequest.ordinal,
             subdir: hostRequest.subdir,
@@ -490,10 +498,22 @@ export function startHostServer(): Promise<string> {
         const expectedZip = clientAddressToExpectedZip.get(remoteAddress);
         if (expectedZip) {
           try {
-            await writeFile(
-              `${path.join(copyDir, expectedZip.subdir)}.zip`,
-              event.data,
-            );
+            let { subdir } = expectedZip;
+            try {
+              await access(path.join(copyDir, `${subdir}.zip`));
+              for (let i = 2; ; i += 1) {
+                try {
+                  // eslint-disable-next-line no-await-in-loop
+                  await access(path.join(copyDir, `${subdir} ${i}.zip`));
+                } catch {
+                  subdir = `${subdir} ${i}`;
+                  break;
+                }
+              }
+            } catch {
+              // no existing zip
+            }
+            await writeFile(`${path.join(copyDir, subdir)}.zip`, event.data);
             const response: HostResponse = {
               ordinal: expectedZip.ordinal,
               error: '',
