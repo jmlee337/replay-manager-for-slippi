@@ -617,7 +617,7 @@ export async function writeReplays(
   }
 
   const replayBuffers: ReplayBuffer[] = [];
-  const isRemote = host.address && host.name;
+  const isRemote = Boolean(host.address);
   const actualOutput = isRemote ? Output.ZIP : output;
   const sanitizedFileNames = fileNames.map((fileName) => sanitize(fileName));
   const sanitizedSubdir = sanitize(subdir);

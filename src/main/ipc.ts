@@ -260,7 +260,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       context: Context | undefined,
     ) => {
       const host = getHost();
-      if (!(host.address || host.name) && !copyDir) {
+      if (!host.address && !copyDir) {
         throw new Error('copy dir not set');
       }
 
@@ -283,12 +283,12 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     'appendEnforcerResult',
     async (event: IpcMainInvokeEvent, str: string) => {
       const host = getHost();
-      if (!(host.address || host.name) && !copyDir) {
+      if (!host.address && !copyDir) {
         throw new Error('must set copy dir');
       }
 
       const promises = [];
-      if (host.address && host.name) {
+      if (host.address) {
         promises.push(appendEnforcerResult(str));
       }
       if (copyDir) {

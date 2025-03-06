@@ -2213,8 +2213,7 @@ function Hello() {
                 }}
                 isCopying={isCopying}
                 copyDisabled={
-                  (!copyDir && !(host.address && host.name)) ||
-                  selectedReplays.length === 0
+                  (!copyDir && !host.address) || selectedReplays.length === 0
                 }
                 isDeleting={dirDeleting}
                 dqId={dq.entrantId}

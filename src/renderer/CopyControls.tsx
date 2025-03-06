@@ -193,7 +193,7 @@ function HostsDialog({ host }: { host: CopyHost }) {
           }}
           endIcon={<Router />}
         >
-          {host.address && host.name ? 'Connected' : 'Search LAN'}
+          {host.address ? 'Connected' : 'Search LAN'}
         </Button>
       </Tooltip>
       <Dialog
@@ -255,7 +255,7 @@ function HostsDialog({ host }: { host: CopyHost }) {
           {error && <Alert severity="error">{error}</Alert>}
           <DialogContentText>Searching as {selfName}</DialogContentText>
           <List>
-            {host.address && host.name && (
+            {host.address && (
               <ListItem
                 disablePadding
                 style={{ marginRight: '-16px', width: 'calc(100% + 16px)' }}
@@ -366,7 +366,7 @@ export default function CopyControls({
             disabled
             size="small"
             value={
-              host.name && host.address
+              host.address
                 ? `${host.address} - ${host.name}`
                 : dir || 'Set copy folder...'
             }
@@ -374,7 +374,7 @@ export default function CopyControls({
           />
           {useLAN && (
             <>
-              {!(host.address && host.name) && (
+              {!host.address && (
                 <ClientsDialog disabled={!dir} setHosting={setHosting} />
               )}
               {!hosting && <HostsDialog host={host} />}
@@ -466,7 +466,7 @@ export default function CopyControls({
               </div>
             </Tooltip>
             <TextField
-              disabled={Boolean(host.address && host.name)}
+              disabled={Boolean(host.address)}
               label="Output"
               onChange={(event) => {
                 const newCopySettings = { ...copySettings };
@@ -475,9 +475,7 @@ export default function CopyControls({
               }}
               select
               size="small"
-              value={
-                host.address && host.name ? Output.ZIP : copySettings.output
-              }
+              value={host.address ? Output.ZIP : copySettings.output}
             >
               <MenuItem value={Output.FILES}>Separate Files</MenuItem>
               <MenuItem value={Output.FOLDER}>Make Subfolder</MenuItem>
@@ -502,9 +500,7 @@ export default function CopyControls({
           {success && <Typography variant="caption">{success}</Typography>}
           <Button
             disabled={
-              isCopying ||
-              (!dir && !host.address && !host.name) ||
-              !hasSelectedReplays
+              isCopying || (!dir && !host.address) || !hasSelectedReplays
             }
             onClick={async () => {
               try {
