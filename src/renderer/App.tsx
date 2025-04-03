@@ -1732,6 +1732,7 @@ function Hello() {
       >
         <TopColumn flexGrow={1} minWidth="600px">
           {dir &&
+            !gettingReplays &&
             (dirExists ? (
               <>
                 <ReplayList
@@ -1856,13 +1857,23 @@ function Hello() {
             ) : (
               <Alert
                 severity={wasDeleted ? 'warning' : 'error'}
-                sx={{ mb: '8px', mt: '8px', pl: '24px' }}
+                sx={{ mb: '8px', mt: '8px', pl: '10px' }}
               >
                 {wasDeleted
                   ? 'Replays folder deleted.'
                   : 'Replays folder not found.'}
               </Alert>
             ))}
+          {dir && gettingReplays && (
+            <CircularProgress
+              size="24px"
+              style={{
+                marginTop: '8px',
+                marginBottom: '8px',
+                marginLeft: '10px',
+              }}
+            />
+          )}
           <div ref={copyControlsRef} />
           <CopyControls
             dir={copyDir}

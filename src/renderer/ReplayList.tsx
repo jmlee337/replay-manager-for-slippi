@@ -428,7 +428,7 @@ export default function ReplayList({
       }}
     >
       {replays.length === 0 ? (
-        <Alert severity="warning" sx={{ mb: '8px', mt: '8px', pl: '24px' }}>
+        <Alert severity="warning" sx={{ mb: '8px', mt: '8px', pl: '10px' }}>
           {dirInit ? 'Click refresh replays!' : 'No replays in folder.'}
         </Alert>
       ) : (
