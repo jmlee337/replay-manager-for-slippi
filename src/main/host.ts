@@ -6,7 +6,12 @@ import { WebSocketServer, WebSocket, MessageEvent } from 'ws';
 import { access, appendFile, writeFile } from 'fs/promises';
 import path from 'node:path';
 import { IncomingMessage } from 'http';
-import { CopyHost, CopyClient, WebSocketServerStatus } from '../common/types';
+import {
+  CopyHost,
+  CopyClient,
+  WebSocketServerStatus,
+  CopySettings,
+} from '../common/types';
 
 const PORT = 52455;
 
@@ -19,6 +24,7 @@ type HostMessage =
       type: 'format';
       fileNameFormat: string;
       folderNameFormat: string;
+      copySettings: CopySettings | null;
     };
 
 type HostRequest = {
@@ -85,6 +91,7 @@ export function startListening(): Promise<string> {
           name: hostName,
           fileNameFormat: '',
           folderNameFormat: '',
+          copySettings: null,
         }),
       ),
     );
@@ -128,6 +135,7 @@ let address = '';
 let name = '';
 let hostFileNameFormat = '';
 let hostFolderNameFormat = '';
+let hostCopySettings: CopySettings | null = null;
 let webSocket: WebSocket | null = null;
 function sendCopyHost() {
   const copyHost: CopyHost = {
@@ -135,6 +143,7 @@ function sendCopyHost() {
     name,
     fileNameFormat: hostFileNameFormat,
     folderNameFormat: hostFolderNameFormat,
+    copySettings: hostCopySettings,
   };
   mainWindow?.webContents.send('copyHost', copyHost);
 }
@@ -149,6 +158,7 @@ export function connectToHost(newAddress: string) {
     name = '';
     hostFileNameFormat = '';
     hostFolderNameFormat = '';
+    hostCopySettings = null;
   }
 
   webSocket = new WebSocket(`ws://${newAddress}:${PORT}`, {
@@ -166,6 +176,7 @@ export function connectToHost(newAddress: string) {
     } else if (message.type === 'format') {
       hostFileNameFormat = message.fileNameFormat;
       hostFolderNameFormat = message.folderNameFormat;
+      hostCopySettings = message.copySettings;
       sendCopyHost();
     }
   });
@@ -174,6 +185,7 @@ export function connectToHost(newAddress: string) {
     name = '';
     hostFileNameFormat = '';
     hostFolderNameFormat = '';
+    hostCopySettings = null;
     sendCopyHost();
     webSocket = null;
   };
@@ -214,6 +226,7 @@ export function getHost(): CopyHost {
     name,
     fileNameFormat: hostFileNameFormat,
     folderNameFormat: hostFolderNameFormat,
+    copySettings: hostCopySettings,
   };
 }
 
@@ -362,11 +375,13 @@ export function kickCopyClient(clientAddress: string) {
 
 let ownFileNameFormat = '';
 let ownFolderNameFormat = '';
+let ownCopySettings: CopySettings | null = null;
 function sendFormat(socket: WebSocket) {
   const formatHostMessage: HostMessage = {
     type: 'format',
     fileNameFormat: ownFileNameFormat,
     folderNameFormat: ownFolderNameFormat,
+    copySettings: ownCopySettings,
   };
   socket.send(JSON.stringify(formatHostMessage));
 }
@@ -380,6 +395,14 @@ export function setOwnFolderNameFormat(folderNameFormat: string) {
 }
 export function setOwnFileNameFormat(fileNameFormat: string) {
   ownFileNameFormat = fileNameFormat;
+  Array.from(clientAddressToNameAndWebSocket.values()).forEach(
+    (nameAndWebSocket) => {
+      sendFormat(nameAndWebSocket.webSocket);
+    },
+  );
+}
+export function setOwnCopySettings(copySettings: CopySettings) {
+  ownCopySettings = copySettings;
   Array.from(clientAddressToNameAndWebSocket.values()).forEach(
     (nameAndWebSocket) => {
       sendFormat(nameAndWebSocket.webSocket);

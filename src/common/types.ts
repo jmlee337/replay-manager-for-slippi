@@ -328,6 +328,7 @@ export type CopyClient = {
 export type CopyHost = CopyClient & {
   fileNameFormat: string;
   folderNameFormat: string;
+  copySettings: CopySettings | null;
 };
 
 export enum WebSocketServerStatus {

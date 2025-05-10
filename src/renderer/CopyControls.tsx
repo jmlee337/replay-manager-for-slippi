@@ -403,7 +403,10 @@ export default function CopyControls({
               <div>
                 <LabeledCheckbox
                   checked={copySettings.writeContext}
-                  disabled={copySettings.output === Output.FILES}
+                  disabled={
+                    Boolean(host.copySettings) ||
+                    copySettings.output === Output.FILES
+                  }
                   label="Write context.json"
                   set={(checked: boolean) => {
                     const newCopySettings = { ...copySettings };
@@ -422,6 +425,7 @@ export default function CopyControls({
               <div>
                 <LabeledCheckbox
                   checked={copySettings.writeDisplayNames}
+                  disabled={Boolean(host.copySettings)}
                   label="Overwrite Display Names"
                   set={(checked: boolean) => {
                     const newCopySettings = { ...copySettings };
@@ -438,6 +442,7 @@ export default function CopyControls({
               <div>
                 <LabeledCheckbox
                   checked={copySettings.writeFileNames}
+                  disabled={Boolean(host.copySettings)}
                   label="Overwrite File Names"
                   set={(checked: boolean) => {
                     const newCopySettings = { ...copySettings };
@@ -456,6 +461,7 @@ export default function CopyControls({
               <div>
                 <LabeledCheckbox
                   checked={copySettings.writeStartTimes}
+                  disabled={Boolean(host.copySettings)}
                   label="Overwrite Start Times"
                   set={(checked: boolean) => {
                     const newCopySettings = { ...copySettings };
@@ -466,7 +472,7 @@ export default function CopyControls({
               </div>
             </Tooltip>
             <TextField
-              disabled={Boolean(host.address)}
+              disabled={Boolean(host.copySettings)}
               label="Output"
               onChange={(event) => {
                 const newCopySettings = { ...copySettings };

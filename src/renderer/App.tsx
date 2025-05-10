@@ -215,6 +215,7 @@ function Hello() {
     address: '',
     fileNameFormat: '',
     folderNameFormat: '',
+    copySettings: null,
   });
   const [useLAN, setUseLAN] = useState(false);
   const [selectedSet, setSelectedSet] = useState<Set>(EMPTY_SET);
@@ -343,11 +344,8 @@ function Hello() {
   useEffect(() => {
     window.electron.onCopyHost(async (event, newHost) => {
       setHost(newHost);
-      if (newHost.address) {
-        setCopySettings((existingCopySettings) => ({
-          ...existingCopySettings,
-          output: Output.ZIP,
-        }));
+      if (newHost.copySettings) {
+        setCopySettings(newHost.copySettings);
       } else {
         setCopySettings(await window.electron.getCopySettings());
       }
@@ -1906,8 +1904,10 @@ function Hello() {
             success={copySuccess}
             copySettings={copySettings}
             setCopySettings={async (newCopySettings: CopySettings) => {
-              await window.electron.setCopySettings(newCopySettings);
-              setCopySettings(newCopySettings);
+              if (!host.copySettings) {
+                await window.electron.setCopySettings(newCopySettings);
+                setCopySettings(newCopySettings);
+              }
             }}
             elevateSettings={
               guidedMode &&

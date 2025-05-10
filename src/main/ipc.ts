@@ -63,6 +63,7 @@ import {
   kickCopyClient,
   setCopyDir,
   setMainWindow,
+  setOwnCopySettings,
   setOwnFileNameFormat,
   setOwnFolderNameFormat,
   startBroadcasting,
@@ -74,7 +75,7 @@ import {
 } from './host';
 
 export default function setupIPCs(mainWindow: BrowserWindow): void {
-  const store = new Store();
+  const store = new Store<{ copySettings: CopySettings }>();
   let replayDirs: string[] = [];
   const knownUsbs = new Map<string, boolean>();
   const onInsert = (e: any) => {
@@ -853,27 +854,24 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     return folderNameFormat;
   });
 
-  ipcMain.removeHandler('getCopySettings');
-  ipcMain.handle('getCopySettings', () => {
-    if (store.has('copySettings')) {
-      return store.get('copySettings') as CopySettings;
-    }
-    const newCopySettings: CopySettings = {
-      output: Output.ZIP,
-      writeContext: true,
-      writeDisplayNames: true,
-      writeFileNames: true,
-      writeStartTimes: true,
-    };
-    store.set('copySettings', newCopySettings);
-    return newCopySettings;
+  let copySettings = store.get('copySettings', {
+    output: Output.ZIP,
+    writeContext: true,
+    writeDisplayNames: true,
+    writeFileNames: true,
+    writeStartTimes: true,
   });
+  setOwnCopySettings(copySettings);
+  ipcMain.removeHandler('getCopySettings');
+  ipcMain.handle('getCopySettings', () => copySettings);
 
   ipcMain.removeHandler('setCopySettings');
   ipcMain.handle(
     'setCopySettings',
     (event: IpcMainInvokeEvent, newCopySettings: CopySettings) => {
       store.set('copySettings', newCopySettings);
+      copySettings = newCopySettings;
+      setOwnCopySettings(copySettings);
     },
   );
 
