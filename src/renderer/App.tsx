@@ -572,10 +572,11 @@ function Hello() {
     [allReplaysSelected, guideActive, mode],
   );
 
+  const wouldDeleteCopyDir = copyDir.startsWith(dir);
   const [ejecting, setEjecting] = useState(false);
   const [ejected, setEjected] = useState(false);
   const deleteDir = async () => {
-    if (!dir) {
+    if (!dir || wouldDeleteCopyDir) {
       return;
     }
 
@@ -1529,10 +1530,22 @@ function Hello() {
                 !gettingReplays &&
                 (replays.length > 0 || invalidReplays.length > 0) && (
                   <>
-                    <Tooltip arrow title="Delete replays folder and eject">
-                      <IconButton onClick={() => setDirDeleteDialogOpen(true)}>
-                        <DeleteForeverOutlined />
-                      </IconButton>
+                    <Tooltip
+                      arrow
+                      title={
+                        wouldDeleteCopyDir
+                          ? 'Would delete copy folder'
+                          : 'Delete replays folder and eject'
+                      }
+                    >
+                      <div>
+                        <IconButton
+                          disabled={wouldDeleteCopyDir}
+                          onClick={() => setDirDeleteDialogOpen(true)}
+                        >
+                          <DeleteForeverOutlined />
+                        </IconButton>
+                      </div>
                     </Tooltip>
                     <Dialog
                       open={dirDeleteDialogOpen}
@@ -2248,6 +2261,7 @@ function Hello() {
                 enforcerVersion={ENFORCER_VERSION}
                 showEnforcerPopup={showEnforcerPopup}
                 smuggleCostumeIndex={smuggleCostumeIndex}
+                wouldDeleteCopyDir={wouldDeleteCopyDir}
               />
             </Stack>
           </Stack>

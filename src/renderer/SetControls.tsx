@@ -214,6 +214,7 @@ export default function SetControls({
   enforcerVersion,
   showEnforcerPopup,
   smuggleCostumeIndex,
+  wouldDeleteCopyDir,
 }: {
   copyReplays: (
     set?: Set,
@@ -249,6 +250,7 @@ export default function SetControls({
   enforcerVersion: string;
   showEnforcerPopup: boolean;
   smuggleCostumeIndex: boolean;
+  wouldDeleteCopyDir: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -390,8 +392,12 @@ export default function SetControls({
     },
   ];
 
-  const gfDeleteOverride =
-    set.fullRoundText === 'Grand Final' && hasRemainingReplays;
+  let deleteOverrideReason = '';
+  if (set.fullRoundText === 'Grand Final' && hasRemainingReplays) {
+    deleteOverrideReason = 'possible Grand Finals Reset replays detected';
+  } else if (wouldDeleteCopyDir) {
+    deleteOverrideReason = 'would delete copy folder';
+  }
 
   let reportCopyDeleteIntent = 'Report';
   if (reportSettings.alsoCopy) {
@@ -688,10 +694,12 @@ export default function SetControls({
             />
             <LabeledCheckbox
               checked={reportSettings.alsoDelete}
-              disabled={!reportSettings.alsoCopy || gfDeleteOverride}
+              disabled={
+                !reportSettings.alsoCopy || deleteOverrideReason.length > 0
+              }
               label={
-                gfDeleteOverride
-                  ? 'Delete disabled, possible Grand Finals Reset replays detected'
+                deleteOverrideReason.length > 0
+                  ? `Delete disabled, ${deleteOverrideReason}`
                   : '...then delete originals and eject'
               }
               labelPlacement="start"
@@ -804,7 +812,7 @@ export default function SetControls({
                 if (
                   reportSettings.alsoCopy &&
                   reportSettings.alsoDelete &&
-                  !gfDeleteOverride
+                  deleteOverrideReason.length === 0
                 ) {
                   await deleteReplays();
                 }

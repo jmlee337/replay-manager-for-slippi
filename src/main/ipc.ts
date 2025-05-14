@@ -191,19 +191,25 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     trashDir = '';
   });
 
+  let copyDir = '';
   ipcMain.removeHandler('deleteReplaysDir');
   ipcMain.handle('deleteReplaysDir', async () => {
-    if (replayDirs.length > 0) {
-      const currentDir = replayDirs[replayDirs.length - 1];
-      if (trashDir) {
-        const trashSubdir = format(new Date(), 'yyyy-MM-dd HHmmss');
-        const fullPath = path.join(trashDir, trashSubdir);
-        await cp(currentDir, fullPath, { force: true, recursive: true });
-      }
-      await rm(currentDir, { recursive: true });
-      return maybeEject(currentDir);
+    if (replayDirs.length === 0) {
+      return Promise.resolve(false);
     }
-    return Promise.resolve(false);
+
+    const currentDir = replayDirs[replayDirs.length - 1];
+    if (copyDir.startsWith(currentDir)) {
+      return Promise.resolve(false);
+    }
+
+    if (trashDir) {
+      const trashSubdir = format(new Date(), 'yyyy-MM-dd HHmmss');
+      const fullPath = path.join(trashDir, trashSubdir);
+      await cp(currentDir, fullPath, { force: true, recursive: true });
+    }
+    await rm(currentDir, { recursive: true });
+    return maybeEject(currentDir);
   });
 
   ipcMain.removeHandler('maybeEject');
@@ -245,7 +251,6 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     return retReplays;
   });
 
-  let copyDir = '';
   ipcMain.removeHandler('writeReplays');
   ipcMain.handle(
     'writeReplays',
