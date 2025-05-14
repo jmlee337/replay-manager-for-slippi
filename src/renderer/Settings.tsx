@@ -172,12 +172,16 @@ export default function Settings({
         fullWidth
         open={open}
         onClose={async () => {
-          await Promise.all([
-            window.electron.setChallongeKey(challongeApiKey),
-            window.electron.setStartggKey(startggApiKey),
-            window.electron.setFileNameFormat(fileNameFormat),
-            window.electron.setFolderNameFormat(folderNameFormat),
-          ]);
+          try {
+            await Promise.all([
+              window.electron.setChallongeKey(challongeApiKey),
+              window.electron.setStartggKey(startggApiKey),
+              window.electron.setFileNameFormat(fileNameFormat),
+              window.electron.setFolderNameFormat(folderNameFormat),
+            ]);
+          } catch (e: any) {
+            showErrorDialog([e instanceof Error ? e.message : e]);
+          }
           if (shouldGetTournaments) {
             if (
               (mode === Mode.STARTGG && startggApiKey) ||
@@ -187,7 +191,6 @@ export default function Settings({
                 setAdminedTournaments(await window.electron.getTournaments());
               } catch (e: any) {
                 showErrorDialog([e instanceof Error ? e.message : e]);
-                return;
               } finally {
                 setShouldGetTournaments(false);
               }
