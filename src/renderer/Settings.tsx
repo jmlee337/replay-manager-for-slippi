@@ -548,6 +548,11 @@ export default function Settings({
               Update available! Version {latestAppVersion}
             </Alert>
           )}
+          <Stack direction="row" justifyContent="flex-end" mt={2}>
+            <Button variant="outlined" onClick={() => setOpen(false)}>
+              Close
+            </Button>
+          </Stack>
         </DialogContent>
       </Dialog>
     </>
