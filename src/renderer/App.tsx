@@ -572,7 +572,8 @@ function Hello() {
     [allReplaysSelected, guideActive, mode],
   );
 
-  const wouldDeleteCopyDir = copyDir.startsWith(dir);
+  const wouldDeleteCopyDir =
+    dir.length > 0 && copyDir.length > 0 && dir === copyDir;
   const [ejecting, setEjecting] = useState(false);
   const [ejected, setEjected] = useState(false);
   const deleteDir = async () => {
@@ -1556,8 +1557,12 @@ function Hello() {
                       <DialogTitle>Delete Replays Folder?</DialogTitle>
                       <DialogContent>
                         <Alert severity="warning">
-                          {replays.length} replays will be deleted! (And the
-                          drive will be ejected if applicable)
+                          {replays.length} replays{' '}
+                          {invalidReplays.length > 0
+                            ? `(and ${invalidReplays.length} invalid replays) `
+                            : ''}
+                          will be deleted! (And the drive will be ejected if
+                          applicable)
                         </Alert>
                       </DialogContent>
                       <DialogActions>

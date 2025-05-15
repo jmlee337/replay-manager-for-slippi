@@ -92,11 +92,10 @@ async function getLastFrame(
 export async function getReplaysInDir(
   dir: string,
 ): Promise<{ replays: Replay[]; invalidReplays: InvalidReplay[] }> {
-  const filenames = await readdir(dir);
-
-  const objs = filenames
-    .filter((fileName) => fileName.endsWith('.slp'))
-    .map(async (fileName): Promise<Replay | InvalidReplay> => {
+  const objs = (await readdir(dir, { withFileTypes: true }))
+    .filter((dirent) => dirent.isFile() && dirent.name.endsWith('.slp'))
+    .map(async (dirent): Promise<Replay | InvalidReplay> => {
+      const fileName = dirent.name;
       const filePath = join(dir, fileName);
 
       let fileHandle;

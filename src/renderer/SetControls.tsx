@@ -396,7 +396,7 @@ export default function SetControls({
   if (set.fullRoundText === 'Grand Final' && hasRemainingReplays) {
     deleteOverrideReason = 'possible Grand Finals Reset replays detected';
   } else if (wouldDeleteCopyDir) {
-    deleteOverrideReason = 'would delete copy folder';
+    deleteOverrideReason = 'would delete replays in copy folder';
   }
 
   let reportCopyDeleteIntent = 'Report';

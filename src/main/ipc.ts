@@ -8,7 +8,7 @@ import {
   shell,
 } from 'electron';
 import Store from 'electron-store';
-import { appendFile, cp, rm } from 'fs/promises';
+import { appendFile, copyFile, mkdir, readdir, unlink } from 'fs/promises';
 import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
@@ -199,16 +199,31 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     }
 
     const currentDir = replayDirs[replayDirs.length - 1];
-    if (copyDir.startsWith(currentDir)) {
+    if (currentDir && copyDir && currentDir === copyDir) {
       return Promise.resolve(false);
     }
 
+    const slpFilenames = (await readdir(currentDir, { withFileTypes: true }))
+      .filter((dirent) => dirent.isFile() && dirent.name.endsWith('.slp'))
+      .map((dirent) => dirent.name);
     if (trashDir) {
       const trashSubdir = format(new Date(), 'yyyy-MM-dd HHmmss');
       const fullPath = path.join(trashDir, trashSubdir);
-      await cp(currentDir, fullPath, { force: true, recursive: true });
+      await mkdir(fullPath, { recursive: true });
+      await Promise.all(
+        slpFilenames.map(async (filename) => {
+          const srcPath = path.join(currentDir, filename);
+          const dstPath = path.join(fullPath, filename);
+          return copyFile(srcPath, dstPath);
+        }),
+      );
     }
-    await rm(currentDir, { recursive: true });
+    await Promise.all(
+      slpFilenames.map(async (filename) => {
+        const unlinkPath = path.join(currentDir, filename);
+        return unlink(unlinkPath);
+      }),
+    );
     return maybeEject(currentDir);
   });
 
