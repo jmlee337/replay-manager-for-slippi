@@ -19,6 +19,7 @@ import { MouseEventHandler, useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import {
   ChallongeMatchItem,
+  EnforcerSetting,
   EnforceState,
   EnforceStatus,
   Mode,
@@ -212,7 +213,7 @@ export default function SetControls({
   set,
   elevate,
   enforcerVersion,
-  showEnforcerPopup,
+  enforcerSetting,
   smuggleCostumeIndex,
   wouldDeleteCopyDir,
 }: {
@@ -248,7 +249,7 @@ export default function SetControls({
   set: Set;
   elevate: boolean;
   enforcerVersion: string;
-  showEnforcerPopup: boolean;
+  enforcerSetting: EnforcerSetting;
   smuggleCostumeIndex: boolean;
   wouldDeleteCopyDir: boolean;
 }) {
@@ -292,6 +293,18 @@ export default function SetControls({
   const selectedReplaysWithEnforceErrors = selectedReplays.filter((replay) =>
     enforceState.fileNameToPlayerFailures.has(replay.fileName),
   );
+  let showEnforcerPopup = false;
+  if (enforcerSetting === EnforcerSetting.POP_UP_ALL) {
+    showEnforcerPopup = selectedReplaysWithEnforceErrors.length > 0;
+  } else if (enforcerSetting === EnforcerSetting.POP_UP_GOOMWAVE) {
+    showEnforcerPopup = selectedReplaysWithEnforceErrors.some((replay) =>
+      enforceState.fileNameToPlayerFailures
+        .get(replay.fileName)!
+        .some((enforcerPlayerError) =>
+          enforcerPlayerError.checkNames.includes('GoomWave Clamping'),
+        ),
+    );
+  }
 
   const isDq = dqId === set.entrant1Id || dqId === set.entrant2Id;
   const validSelections = setAndReplaysValid(selectedReplays, set, mode);

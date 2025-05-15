@@ -15,18 +15,20 @@ import {
   FormControl,
   FormControlLabel,
   FormLabel,
+  InputLabel,
   Link,
+  MenuItem,
   Radio,
   RadioGroup,
+  Select,
   Stack,
-  Switch,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
 import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import LabeledCheckbox from './LabeledCheckbox';
-import { AdminedTournament, Mode } from '../common/types';
+import { AdminedTournament, EnforcerSetting, Mode } from '../common/types';
 
 function LabeledRadioButton({ label, value }: { label: string; value: Mode }) {
   return (
@@ -51,10 +53,8 @@ export default function Settings({
   setStartggApiKey,
   challongeApiKey,
   setChallongeApiKey,
-  useEnforcer,
-  setUseEnforcer,
-  showEnforcerPopup,
-  setShowEnforcerPopup,
+  enforcerSetting,
+  setEnforcerSetting,
   vlerkMode,
   setVlerkMode,
   guidedMode,
@@ -80,10 +80,8 @@ export default function Settings({
   setStartggApiKey: (key: string) => void;
   challongeApiKey: string;
   setChallongeApiKey: (key: string) => void;
-  useEnforcer: boolean;
-  setUseEnforcer: (useEnforcer: boolean) => void;
-  showEnforcerPopup: boolean;
-  setShowEnforcerPopup: (showEnforcerPopup: boolean) => void;
+  enforcerSetting: EnforcerSetting;
+  setEnforcerSetting: (enforcerSetting: EnforcerSetting) => void;
   vlerkMode: boolean;
   setVlerkMode: (vlerkMode: boolean) => void;
   guidedMode: boolean;
@@ -332,34 +330,6 @@ export default function Settings({
                 setGuidedMode(checked);
               }}
             />
-            <LabeledCheckbox
-              checked={useEnforcer}
-              label={`Use SLP Enforcer ${enforcerVersion} (logged to copy folder enforcer.csv)`}
-              labelPlacement="end"
-              set={async (checked) => {
-                await window.electron.setUseEnforcer(checked);
-                setUseEnforcer(checked);
-              }}
-            />
-            {useEnforcer && (
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={showEnforcerPopup}
-                    onChange={async (event) => {
-                      const newShowEnforcerPopup = event.target.checked;
-                      await window.electron.setShowEnforcerPopup(
-                        newShowEnforcerPopup,
-                      );
-                      setShowEnforcerPopup(newShowEnforcerPopup);
-                    }}
-                  />
-                }
-                disableTypography
-                label={showEnforcerPopup ? 'Show popup' : 'Log only'}
-                sx={{ marginLeft: '22px', typography: 'caption' }}
-              />
-            )}
             <Stack
               direction="row"
               justifyContent="space-between"
@@ -469,6 +439,31 @@ export default function Settings({
                 }}
               />
             )}
+            <FormControl variant="standard" style={{ marginBottom: '8px' }}>
+              <InputLabel id="enforcer-setting-select-label">
+                SLP Enforcer {enforcerVersion} (logged to copy folder
+                enforcer.csv)
+              </InputLabel>
+              <Select
+                labelId="enforcer-setting-select-label"
+                value={enforcerSetting}
+                onChange={async (event) => {
+                  const newEnforcerSetting = event.target
+                    .value as EnforcerSetting;
+                  await window.electron.setEnforcerSetting(newEnforcerSetting);
+                  setEnforcerSetting(newEnforcerSetting);
+                }}
+              >
+                <MenuItem value={EnforcerSetting.NONE}>Off</MenuItem>
+                <MenuItem value={EnforcerSetting.LOG_ONLY}>Log Only</MenuItem>
+                <MenuItem value={EnforcerSetting.POP_UP_GOOMWAVE}>
+                  Alert on Goomwave
+                </MenuItem>
+                <MenuItem value={EnforcerSetting.POP_UP_ALL}>
+                  Alert on All Violations
+                </MenuItem>
+              </Select>
+            </FormControl>
             <DialogContentText>
               File/Folder name format placeholders documented{' '}
               <Link

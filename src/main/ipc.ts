@@ -17,6 +17,7 @@ import {
   ChallongeMatchItem,
   Context,
   CopySettings,
+  EnforcerSetting,
   EnforceState,
   EnforceStatus,
   Mode,
@@ -232,14 +233,14 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     maybeEject(replayDirs[replayDirs.length - 1]),
   );
 
-  let useEnforcer = store.get('useEnforcer', false);
+  let enforcerSetting = store.get('enforcerSetting', EnforcerSetting.NONE);
   ipcMain.removeHandler('getReplaysInDir');
   ipcMain.handle('getReplaysInDir', async () => {
     if (replayDirs.length === 0) {
       throw new Error();
     }
     const retReplays = await getReplaysInDir(replayDirs[replayDirs.length - 1]);
-    if (useEnforcer) {
+    if (enforcerSetting !== EnforcerSetting.NONE) {
       const pendingState: EnforceState = {
         status: EnforceStatus.PENDING,
         fileNameToPlayerFailures: new Map(),
@@ -748,28 +749,15 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     }
   });
 
-  ipcMain.removeHandler('getUseEnforcer');
-  ipcMain.handle('getUseEnforcer', () => useEnforcer);
+  ipcMain.removeHandler('getEnforcerSetting');
+  ipcMain.handle('getEnforcerSetting', () => enforcerSetting);
 
-  ipcMain.removeHandler('setUseEnforcer');
+  ipcMain.removeHandler('setEnforcerSetting');
   ipcMain.handle(
-    'setUseEnforcer',
-    (event: IpcMainInvokeEvent, newUseEnforcer: boolean) => {
-      store.set('useEnforcer', newUseEnforcer);
-      useEnforcer = newUseEnforcer;
-    },
-  );
-
-  ipcMain.removeHandler('getShowEnforcerPopup');
-  ipcMain.handle('getShowEnforcerPopup', () => {
-    return store.get('showEnforcerPopup', true);
-  });
-
-  ipcMain.removeHandler('setShowEnforcerPopup');
-  ipcMain.handle(
-    'setShowEnforcerPopup',
-    (event: IpcMainInvokeEvent, newShowEnforcerPopup) => {
-      store.set('showEnforcerPopup', newShowEnforcerPopup);
+    'setEnforcerSetting',
+    (event, newEnforcerSetting: EnforcerSetting) => {
+      store.set('enforcerSetting', newEnforcerSetting);
+      enforcerSetting = newEnforcerSetting;
     },
   );
 

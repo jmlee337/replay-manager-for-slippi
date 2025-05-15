@@ -20,6 +20,7 @@ import {
   CopyClient,
   CopyHost,
   EnforceState,
+  EnforcerSetting,
 } from '../common/types';
 
 const electronHandler = {
@@ -166,13 +167,10 @@ const electronHandler = {
   getUseLAN: (): Promise<boolean> => ipcRenderer.invoke('getUseLAN'),
   setUseLAN: (useLAN: boolean): Promise<void> =>
     ipcRenderer.invoke('setUseLAN', useLAN),
-  getUseEnforcer: (): Promise<boolean> => ipcRenderer.invoke('getUseEnforcer'),
-  setUseEnforcer: (useEnforcer: boolean): Promise<void> =>
-    ipcRenderer.invoke('setUseEnforcer', useEnforcer),
-  getShowEnforcerPopup: (): Promise<boolean> =>
-    ipcRenderer.invoke('getShowEnforcerPopup'),
-  setShowEnforcerPopup: (showEnforcerPopup: boolean): Promise<void> =>
-    ipcRenderer.invoke('setShowEnforcerPopup', showEnforcerPopup),
+  getEnforcerSetting: (): Promise<EnforcerSetting> =>
+    ipcRenderer.invoke('getEnforcerSetting'),
+  setEnforcerSetting: (enforcerSetting: EnforcerSetting): Promise<void> =>
+    ipcRenderer.invoke('setEnforcerSetting', enforcerSetting),
   getFileNameFormat: (): Promise<string> =>
     ipcRenderer.invoke('getFileNameFormat'),
   setFileNameFormat: (fileNameFormat: string): Promise<void> =>

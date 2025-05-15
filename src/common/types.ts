@@ -334,3 +334,10 @@ export enum WebSocketServerStatus {
   STOPPED,
   STARTED,
 }
+
+export enum EnforcerSetting {
+  NONE,
+  LOG_ONLY,
+  POP_UP_GOOMWAVE,
+  POP_UP_ALL,
+}
