@@ -61,11 +61,14 @@ import {
   getCopyClients,
   getHost,
   kickCopyClient,
+  onMainCopyHost,
   setCopyDir,
   setMainWindow,
   setOwnCopySettings,
+  setOwnEnforcerSetting,
   setOwnFileNameFormat,
   setOwnFolderNameFormat,
+  setOwnSmuggleCostumeIndex,
   startBroadcasting,
   startHostServer,
   startListening,
@@ -235,6 +238,15 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   );
 
   let enforcerSetting = store.get('enforcerSetting', EnforcerSetting.NONE);
+  setOwnEnforcerSetting(enforcerSetting);
+  onMainCopyHost((newCopyHost) => {
+    if (newCopyHost.enforcerSetting !== undefined) {
+      enforcerSetting = newCopyHost.enforcerSetting;
+    } else {
+      enforcerSetting = store.get('enforcerSetting', EnforcerSetting.NONE);
+    }
+    console.log(`new enforcerSetting: ${enforcerSetting}`);
+  });
   ipcMain.removeHandler('getReplaysInDir');
   ipcMain.handle('getReplaysInDir', async () => {
     if (replayDirs.length === 0) {
@@ -759,6 +771,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     (event, newEnforcerSetting: EnforcerSetting) => {
       store.set('enforcerSetting', newEnforcerSetting);
       enforcerSetting = newEnforcerSetting;
+      setOwnEnforcerSetting(enforcerSetting);
     },
   );
 
@@ -926,17 +939,18 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     },
   );
 
+  let smuggleCostumeIndex = store.get('smuggleCostumeIndex', true);
+  setOwnSmuggleCostumeIndex(smuggleCostumeIndex);
   ipcMain.removeHandler('getSmuggleCostumeIndex');
-  ipcMain.handle(
-    'getSmuggleCostumeIndex',
-    () => store.get('smuggleCostumeIndex', true) as boolean,
-  );
+  ipcMain.handle('getSmuggleCostumeIndex', () => smuggleCostumeIndex);
 
   ipcMain.removeHandler('setSmuggleCostumeIndex');
   ipcMain.handle(
     'setSmuggleCostumeIndex',
-    (event: IpcMainInvokeEvent, smuggleCostumeIndex: boolean) => {
-      store.set('smuggleCostumeIndex', smuggleCostumeIndex);
+    (event: IpcMainInvokeEvent, newSmuggleCostumeIndex: boolean) => {
+      store.set('smuggleCostumeIndex', newSmuggleCostumeIndex);
+      smuggleCostumeIndex = newSmuggleCostumeIndex;
+      setOwnSmuggleCostumeIndex(smuggleCostumeIndex);
     },
   );
 

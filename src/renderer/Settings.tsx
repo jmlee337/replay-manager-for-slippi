@@ -426,6 +426,7 @@ export default function Settings({
             />
             {mode === Mode.STARTGG && (
               <LabeledCheckbox
+                disabled={host.smuggleCostumeIndex !== undefined}
                 checked={smuggleCostumeIndex}
                 label={
                   <span>
@@ -453,6 +454,7 @@ export default function Settings({
               </InputLabel>
               <Select
                 labelId="enforcer-setting-select-label"
+                disabled={host.enforcerSetting !== undefined}
                 value={enforcerSetting}
                 onChange={async (event) => {
                   const newEnforcerSetting = event.target

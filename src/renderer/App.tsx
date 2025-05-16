@@ -215,7 +215,6 @@ function Hello() {
     address: '',
     fileNameFormat: '',
     folderNameFormat: '',
-    copySettings: null,
   });
   const [useLAN, setUseLAN] = useState(false);
   const [selectedSet, setSelectedSet] = useState<Set>(EMPTY_SET);
@@ -354,10 +353,20 @@ function Hello() {
       } else {
         setFolderNameFormat(await window.electron.getFolderNameFormat());
       }
-      if (newHost.copySettings) {
+      if (newHost.copySettings !== undefined) {
         setCopySettings(newHost.copySettings);
       } else {
         setCopySettings(await window.electron.getCopySettings());
+      }
+      if (newHost.enforcerSetting !== undefined) {
+        setEnforcerSetting(newHost.enforcerSetting);
+      } else {
+        setEnforcerSetting(await window.electron.getEnforcerSetting());
+      }
+      if (newHost.smuggleCostumeIndex !== undefined) {
+        setSmuggleCostumeIndex(newHost.smuggleCostumeIndex);
+      } else {
+        setSmuggleCostumeIndex(await window.electron.getSmuggleCostumeIndex());
       }
     });
   }, []);

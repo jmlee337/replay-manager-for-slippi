@@ -325,20 +325,22 @@ export type CopyClient = {
   name: string;
 };
 
-export type CopyHost = CopyClient & {
-  fileNameFormat: string;
-  folderNameFormat: string;
-  copySettings: CopySettings | null;
-};
-
-export enum WebSocketServerStatus {
-  STOPPED,
-  STARTED,
-}
-
 export enum EnforcerSetting {
   NONE,
   LOG_ONLY,
   POP_UP_GOOMWAVE,
   POP_UP_ALL,
+}
+
+export type CopyHost = CopyClient & {
+  fileNameFormat: string;
+  folderNameFormat: string;
+  copySettings?: CopySettings;
+  enforcerSetting?: EnforcerSetting;
+  smuggleCostumeIndex?: boolean;
+};
+
+export enum WebSocketServerStatus {
+  STOPPED,
+  STARTED,
 }

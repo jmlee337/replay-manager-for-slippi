@@ -6,14 +6,17 @@ import { WebSocketServer, WebSocket, MessageEvent } from 'ws';
 import { access, appendFile, writeFile } from 'fs/promises';
 import path from 'node:path';
 import { IncomingMessage } from 'http';
+import EventEmitter from 'events';
 import {
   CopyHost,
   CopyClient,
   WebSocketServerStatus,
   CopySettings,
+  EnforcerSetting,
 } from '../common/types';
 
 const PORT = 52455;
+const MAIN_COPY_HOST_EVENT_NAME = 'main-copy-host';
 
 type HostMessage =
   | {
@@ -24,7 +27,9 @@ type HostMessage =
       type: 'format';
       fileNameFormat: string;
       folderNameFormat: string;
-      copySettings: CopySettings | null;
+      copySettings?: CopySettings;
+      enforcerSetting?: EnforcerSetting;
+      smuggleCostumeIndex?: boolean;
     };
 
 type HostRequest = {
@@ -91,7 +96,6 @@ export function startListening(): Promise<string> {
           name: hostName,
           fileNameFormat: '',
           folderNameFormat: '',
-          copySettings: null,
         }),
       ),
     );
@@ -135,7 +139,10 @@ let address = '';
 let name = '';
 let hostFileNameFormat = '';
 let hostFolderNameFormat = '';
-let hostCopySettings: CopySettings | null = null;
+let hostCopySettings: CopySettings | undefined;
+let hostEnforcerSetting: EnforcerSetting | undefined;
+let hostSmuggleCostumeIndex: boolean | undefined;
+const copyHostEventEmitter = new EventEmitter();
 let webSocket: WebSocket | null = null;
 function sendCopyHost() {
   const copyHost: CopyHost = {
@@ -144,8 +151,16 @@ function sendCopyHost() {
     fileNameFormat: hostFileNameFormat,
     folderNameFormat: hostFolderNameFormat,
     copySettings: hostCopySettings,
+    enforcerSetting: hostEnforcerSetting,
+    smuggleCostumeIndex: hostSmuggleCostumeIndex,
   };
+  copyHostEventEmitter.emit(MAIN_COPY_HOST_EVENT_NAME, copyHost);
   mainWindow?.webContents.send('copyHost', copyHost);
+}
+
+export function onMainCopyHost(callback: (copyHost: CopyHost) => void) {
+  copyHostEventEmitter.removeAllListeners();
+  copyHostEventEmitter.on(MAIN_COPY_HOST_EVENT_NAME, callback);
 }
 
 export function connectToHost(newAddress: string) {
@@ -158,7 +173,9 @@ export function connectToHost(newAddress: string) {
     name = '';
     hostFileNameFormat = '';
     hostFolderNameFormat = '';
-    hostCopySettings = null;
+    hostCopySettings = undefined;
+    hostEnforcerSetting = undefined;
+    hostSmuggleCostumeIndex = undefined;
   }
 
   webSocket = new WebSocket(`ws://${newAddress}:${PORT}`, {
@@ -177,6 +194,8 @@ export function connectToHost(newAddress: string) {
       hostFileNameFormat = message.fileNameFormat;
       hostFolderNameFormat = message.folderNameFormat;
       hostCopySettings = message.copySettings;
+      hostEnforcerSetting = message.enforcerSetting;
+      hostSmuggleCostumeIndex = message.smuggleCostumeIndex;
       sendCopyHost();
     }
   });
@@ -185,7 +204,9 @@ export function connectToHost(newAddress: string) {
     name = '';
     hostFileNameFormat = '';
     hostFolderNameFormat = '';
-    hostCopySettings = null;
+    hostCopySettings = undefined;
+    hostEnforcerSetting = undefined;
+    hostSmuggleCostumeIndex = undefined;
     sendCopyHost();
     webSocket = null;
   };
@@ -227,6 +248,8 @@ export function getHost(): CopyHost {
     fileNameFormat: hostFileNameFormat,
     folderNameFormat: hostFolderNameFormat,
     copySettings: hostCopySettings,
+    enforcerSetting: hostEnforcerSetting,
+    smuggleCostumeIndex: hostSmuggleCostumeIndex,
   };
 }
 
@@ -375,39 +398,46 @@ export function kickCopyClient(clientAddress: string) {
 
 let ownFileNameFormat = '';
 let ownFolderNameFormat = '';
-let ownCopySettings: CopySettings | null = null;
+let ownCopySettings: CopySettings | undefined;
+let ownEnforcerSetting: EnforcerSetting | undefined;
+let ownSmuggleCostumeIndex: boolean | undefined;
 function sendFormat(socket: WebSocket) {
   const formatHostMessage: HostMessage = {
     type: 'format',
     fileNameFormat: ownFileNameFormat,
     folderNameFormat: ownFolderNameFormat,
     copySettings: ownCopySettings,
+    enforcerSetting: ownEnforcerSetting,
+    smuggleCostumeIndex: ownSmuggleCostumeIndex,
   };
   socket.send(JSON.stringify(formatHostMessage));
 }
-export function setOwnFolderNameFormat(folderNameFormat: string) {
-  ownFolderNameFormat = folderNameFormat;
+function updateAllClients() {
   Array.from(clientAddressToNameAndWebSocket.values()).forEach(
     (nameAndWebSocket) => {
       sendFormat(nameAndWebSocket.webSocket);
     },
   );
+}
+export function setOwnFolderNameFormat(folderNameFormat: string) {
+  ownFolderNameFormat = folderNameFormat;
+  updateAllClients();
 }
 export function setOwnFileNameFormat(fileNameFormat: string) {
   ownFileNameFormat = fileNameFormat;
-  Array.from(clientAddressToNameAndWebSocket.values()).forEach(
-    (nameAndWebSocket) => {
-      sendFormat(nameAndWebSocket.webSocket);
-    },
-  );
+  updateAllClients();
 }
 export function setOwnCopySettings(copySettings: CopySettings) {
   ownCopySettings = copySettings;
-  Array.from(clientAddressToNameAndWebSocket.values()).forEach(
-    (nameAndWebSocket) => {
-      sendFormat(nameAndWebSocket.webSocket);
-    },
-  );
+  updateAllClients();
+}
+export function setOwnEnforcerSetting(enforcerSetting: EnforcerSetting) {
+  ownEnforcerSetting = enforcerSetting;
+  updateAllClients();
+}
+export function setOwnSmuggleCostumeIndex(smuggleCostumeIndex: boolean) {
+  ownSmuggleCostumeIndex = smuggleCostumeIndex;
+  updateAllClients();
 }
 
 let broadcastSocket: Socket | null = null;
