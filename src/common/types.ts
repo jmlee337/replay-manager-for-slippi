@@ -320,7 +320,7 @@ export enum GuideState {
   PLAYERS,
 }
 
-export type CopyClient = {
+export type CopyHostOrClient = {
   address: string;
   name: string;
 };
@@ -332,7 +332,7 @@ export enum EnforcerSetting {
   POP_UP_ALL,
 }
 
-export type CopyHost = CopyClient & {
+export type CopyHostFormat = {
   fileNameFormat: string;
   folderNameFormat: string;
   copySettings?: CopySettings;

@@ -60,8 +60,8 @@ import {
   disconnectFromHost,
   getCopyClients,
   getHost,
+  getHostEnforcerSetting,
   kickCopyClient,
-  onMainCopyHost,
   setCopyDir,
   setMainWindow,
   setOwnCopySettings,
@@ -239,21 +239,13 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
 
   let enforcerSetting = store.get('enforcerSetting', EnforcerSetting.NONE);
   setOwnEnforcerSetting(enforcerSetting);
-  onMainCopyHost((newCopyHost) => {
-    if (newCopyHost.enforcerSetting !== undefined) {
-      enforcerSetting = newCopyHost.enforcerSetting;
-    } else {
-      enforcerSetting = store.get('enforcerSetting', EnforcerSetting.NONE);
-    }
-    console.log(`new enforcerSetting: ${enforcerSetting}`);
-  });
   ipcMain.removeHandler('getReplaysInDir');
   ipcMain.handle('getReplaysInDir', async () => {
     if (replayDirs.length === 0) {
       throw new Error();
     }
     const retReplays = await getReplaysInDir(replayDirs[replayDirs.length - 1]);
-    if (enforcerSetting !== EnforcerSetting.NONE) {
+    if (getHostEnforcerSetting() ?? enforcerSetting !== EnforcerSetting.NONE) {
       const pendingState: EnforceState = {
         status: EnforceStatus.PENDING,
         fileNameToPlayerFailures: new Map(),

@@ -30,7 +30,7 @@ import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import LabeledCheckbox from './LabeledCheckbox';
 import {
   AdminedTournament,
-  CopyHost,
+  CopyHostFormat,
   EnforcerSetting,
   Mode,
 } from '../common/types';
@@ -75,7 +75,7 @@ export default function Settings({
   setAdminedTournaments,
   showErrorDialog,
   enforcerVersion,
-  host,
+  hostFormat,
 }: {
   appVersion: string;
   latestAppVersion: string;
@@ -103,7 +103,7 @@ export default function Settings({
   setAdminedTournaments: (tournaments: AdminedTournament[]) => void;
   showErrorDialog: (errors: string[]) => void;
   enforcerVersion: string;
-  host: CopyHost;
+  hostFormat: CopyHostFormat;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -426,7 +426,7 @@ export default function Settings({
             />
             {mode === Mode.STARTGG && (
               <LabeledCheckbox
-                disabled={host.smuggleCostumeIndex !== undefined}
+                disabled={hostFormat.smuggleCostumeIndex !== undefined}
                 checked={smuggleCostumeIndex}
                 label={
                   <span>
@@ -454,7 +454,7 @@ export default function Settings({
               </InputLabel>
               <Select
                 labelId="enforcer-setting-select-label"
-                disabled={host.enforcerSetting !== undefined}
+                disabled={hostFormat.enforcerSetting !== undefined}
                 value={enforcerSetting}
                 onChange={async (event) => {
                   const newEnforcerSetting = event.target
@@ -487,7 +487,7 @@ export default function Settings({
             <Stack alignItems="end" direction="row" gap="8px">
               <TextField
                 fullWidth
-                disabled={Boolean(host.fileNameFormat)}
+                disabled={Boolean(hostFormat.fileNameFormat)}
                 label="File name format"
                 onChange={(event) => {
                   const newFileNameFormat = event.target.value;
@@ -501,7 +501,7 @@ export default function Settings({
               />
               <DialogContentText paddingBottom="5px">.slp</DialogContentText>
               <Button
-                disabled={Boolean(host.fileNameFormat)}
+                disabled={Boolean(hostFormat.fileNameFormat)}
                 onClick={async () => {
                   setFileNameFormat(
                     await window.electron.resetFileNameFormat(),
@@ -515,7 +515,7 @@ export default function Settings({
             <Stack alignItems="end" direction="row" gap="8px">
               <TextField
                 fullWidth
-                disabled={Boolean(host.folderNameFormat)}
+                disabled={Boolean(hostFormat.folderNameFormat)}
                 label="Folder name format"
                 onChange={(event) => {
                   const newFolderNameFormat = event.target.value;
@@ -528,7 +528,7 @@ export default function Settings({
                 variant="standard"
               />
               <Button
-                disabled={Boolean(host.folderNameFormat)}
+                disabled={Boolean(hostFormat.folderNameFormat)}
                 onClick={async () => {
                   setFolderNameFormat(
                     await window.electron.resetFolderNameFormat(),

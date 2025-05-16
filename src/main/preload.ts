@@ -17,10 +17,10 @@ import {
   StartggSet,
   Tournament,
   WebSocketServerStatus,
-  CopyClient,
-  CopyHost,
+  CopyHostOrClient,
   EnforceState,
   EnforcerSetting,
+  CopyHostFormat,
 } from '../common/types';
 
 const electronHandler = {
@@ -60,13 +60,14 @@ const electronHandler = {
     ipcRenderer.invoke('appendEnforcerResult', str),
   getCopyDir: (): Promise<string> => ipcRenderer.invoke('getCopyDir'),
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
-  getCopyHost: (): Promise<CopyHost> => ipcRenderer.invoke('getCopyHost'),
+  getCopyHost: (): Promise<CopyHostOrClient> =>
+    ipcRenderer.invoke('getCopyHost'),
   startListeningForHosts: (): Promise<string> =>
     ipcRenderer.invoke('startListeningForHosts'),
   stopListeningForHosts: (): Promise<void> =>
     ipcRenderer.invoke('stopListeningForHosts'),
   onCopyHosts: (
-    callback: (event: IpcRendererEvent, hosts: CopyHost[]) => void,
+    callback: (event: IpcRendererEvent, hosts: CopyHostOrClient[]) => void,
   ) => {
     ipcRenderer.removeAllListeners('copyHosts');
     ipcRenderer.on('copyHosts', callback);
@@ -75,11 +76,19 @@ const electronHandler = {
     ipcRenderer.invoke('connectToHost', address),
   disconnectFromHost: (): Promise<void> =>
     ipcRenderer.invoke('disconnectFromHost'),
-  onCopyHost: (callback: (event: IpcRendererEvent, host: CopyHost) => void) => {
+  onCopyHost: (
+    callback: (event: IpcRendererEvent, host: CopyHostOrClient) => void,
+  ) => {
     ipcRenderer.removeAllListeners('copyHost');
     ipcRenderer.on('copyHost', callback);
   },
-  getCopyClients: (): Promise<CopyClient[]> =>
+  onCopyHostFormat: (
+    callback: (event: IpcRendererEvent, hostFormat: CopyHostFormat) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('copyHostFormat');
+    ipcRenderer.on('copyHostFormat', callback);
+  },
+  getCopyClients: (): Promise<CopyHostOrClient[]> =>
     ipcRenderer.invoke('getCopyClients'),
   kickCopyClient: (address: string): Promise<void> =>
     ipcRenderer.invoke('kickCopyClient', address),
@@ -90,7 +99,7 @@ const electronHandler = {
   stopBroadcastingHost: (): Promise<void> =>
     ipcRenderer.invoke('stopBroadcastingHost'),
   onCopyClients: (
-    callback: (event: IpcRendererEvent, clients: CopyClient[]) => void,
+    callback: (event: IpcRendererEvent, clients: CopyHostOrClient[]) => void,
   ) => {
     ipcRenderer.removeAllListeners('copyClients');
     ipcRenderer.on('copyClients', callback);

@@ -22,7 +22,7 @@ import { parse } from 'date-fns';
 import { buffer as bufferConsumer } from 'stream/consumers';
 import {
   Context,
-  CopyHost,
+  CopyHostOrClient,
   EnforcePlayerFailure,
   InvalidReplay,
   Output,
@@ -596,7 +596,7 @@ type ReplayBuffer = {
 
 export async function writeReplays(
   dir: string,
-  host: CopyHost,
+  host: CopyHostOrClient,
   fileNames: string[],
   output: Output,
   replays: Replay[],

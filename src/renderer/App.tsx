@@ -43,7 +43,8 @@ import {
   Context,
   ContextScore,
   ContextSlot,
-  CopyHost,
+  CopyHostFormat,
+  CopyHostOrClient,
   CopySettings,
   EnforcerSetting,
   GuideState,
@@ -210,9 +211,11 @@ function Hello() {
   const [dir, setDir] = useState('');
   const [dirInit, setDirInit] = useState(false);
   const [copyDir, setCopyDir] = useState('');
-  const [host, setHost] = useState<CopyHost>({
+  const [host, setHost] = useState<CopyHostOrClient>({
     name: '',
     address: '',
+  });
+  const [hostFormat, setHostFormat] = useState<CopyHostFormat>({
     fileNameFormat: '',
     folderNameFormat: '',
   });
@@ -342,32 +345,39 @@ function Hello() {
 
   useEffect(() => {
     window.electron.onCopyHost(async (event, newHost) => {
+      if (!newHost.address) {
+        const fileNameFormatPromise = window.electron.getFileNameFormat();
+        const folderNameFormatPromise = window.electron.getFolderNameFormat();
+        const copySettingsPromise = window.electron.getCopySettings();
+        const enforcerSettingPromise = window.electron.getEnforcerSetting();
+        const smuggleCostumeIndexPromise =
+          window.electron.getSmuggleCostumeIndex();
+        setFileNameFormat(await fileNameFormatPromise);
+        setFolderNameFormat(await folderNameFormatPromise);
+        setCopySettings(await copySettingsPromise);
+        setEnforcerSetting(await enforcerSettingPromise);
+        setSmuggleCostumeIndex(await smuggleCostumeIndexPromise);
+        setHostFormat({ fileNameFormat: '', folderNameFormat: '' });
+      }
       setHost(newHost);
-      if (newHost.fileNameFormat) {
-        setFileNameFormat(newHost.fileNameFormat);
-      } else {
-        setFileNameFormat(await window.electron.getFileNameFormat());
+    });
+    window.electron.onCopyHostFormat((event, newHostFormat) => {
+      if (newHostFormat.fileNameFormat) {
+        setFileNameFormat(newHostFormat.fileNameFormat);
       }
-      if (newHost.folderNameFormat) {
-        setFolderNameFormat(newHost.folderNameFormat);
-      } else {
-        setFolderNameFormat(await window.electron.getFolderNameFormat());
+      if (newHostFormat.folderNameFormat) {
+        setFolderNameFormat(newHostFormat.folderNameFormat);
       }
-      if (newHost.copySettings !== undefined) {
-        setCopySettings(newHost.copySettings);
-      } else {
-        setCopySettings(await window.electron.getCopySettings());
+      if (newHostFormat.copySettings !== undefined) {
+        setCopySettings(newHostFormat.copySettings);
       }
-      if (newHost.enforcerSetting !== undefined) {
-        setEnforcerSetting(newHost.enforcerSetting);
-      } else {
-        setEnforcerSetting(await window.electron.getEnforcerSetting());
+      if (newHostFormat.enforcerSetting !== undefined) {
+        setEnforcerSetting(newHostFormat.enforcerSetting);
       }
-      if (newHost.smuggleCostumeIndex !== undefined) {
-        setSmuggleCostumeIndex(newHost.smuggleCostumeIndex);
-      } else {
-        setSmuggleCostumeIndex(await window.electron.getSmuggleCostumeIndex());
+      if (newHostFormat.smuggleCostumeIndex !== undefined) {
+        setSmuggleCostumeIndex(newHostFormat.smuggleCostumeIndex);
       }
+      setHostFormat(newHostFormat);
     });
   }, []);
 
@@ -1911,6 +1921,7 @@ function Hello() {
             setDir={setCopyDir}
             useLAN={useLAN}
             host={host}
+            hostFormat={hostFormat}
             error={copyError}
             setError={setCopyError}
             errorDialogOpen={copyErrorDialogOpen}
@@ -1921,7 +1932,7 @@ function Hello() {
             success={copySuccess}
             copySettings={copySettings}
             setCopySettings={async (newCopySettings: CopySettings) => {
-              if (!host.copySettings) {
+              if (!hostFormat.copySettings) {
                 await window.electron.setCopySettings(newCopySettings);
                 setCopySettings(newCopySettings);
               }
@@ -2343,7 +2354,7 @@ function Hello() {
         setAdminedTournaments={setAdminedTournaments}
         showErrorDialog={showErrorDialog}
         enforcerVersion={ENFORCER_VERSION}
-        host={host}
+        hostFormat={hostFormat}
       />
     </>
   );

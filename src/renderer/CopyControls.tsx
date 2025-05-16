@@ -26,8 +26,8 @@ import {
   CopySettings,
   Output,
   WebSocketServerStatus,
-  CopyClient,
-  CopyHost,
+  CopyHostOrClient,
+  CopyHostFormat,
 } from '../common/types';
 import ErrorDialog from './ErrorDialog';
 import LabeledCheckbox from './LabeledCheckbox';
@@ -41,7 +41,7 @@ function ClientsDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState(WebSocketServerStatus.STOPPED);
-  const [clients, setClients] = useState<CopyClient[]>([]);
+  const [clients, setClients] = useState<CopyHostOrClient[]>([]);
   const [selfAddress, setSelfAddress] = useState('');
   const [selfName, setSelfName] = useState('');
 
@@ -167,9 +167,9 @@ function ClientsDialog({
   );
 }
 
-function HostsDialog({ host }: { host: CopyHost }) {
+function HostsDialog({ host }: { host: CopyHostOrClient }) {
   const [open, setOpen] = useState(false);
-  const [hosts, setHosts] = useState<CopyHost[]>([]);
+  const [hosts, setHosts] = useState<CopyHostOrClient[]>([]);
   const [selfName, setSelfName] = useState('');
   useEffect(() => {
     window.electron.onCopyHosts((event, newHosts) => {
@@ -320,6 +320,7 @@ export default function CopyControls({
   setDir,
   useLAN,
   host,
+  hostFormat,
   error,
   setError,
   errorDialogOpen,
@@ -335,7 +336,8 @@ export default function CopyControls({
   dir: string;
   setDir: (dir: string) => void;
   useLAN: boolean;
-  host: CopyHost;
+  host: CopyHostOrClient;
+  hostFormat: CopyHostFormat;
   error: string;
   setError: (error: string) => void;
   errorDialogOpen: boolean;
@@ -404,7 +406,7 @@ export default function CopyControls({
                 <LabeledCheckbox
                   checked={copySettings.writeContext}
                   disabled={
-                    Boolean(host.copySettings) ||
+                    hostFormat.copySettings !== undefined ||
                     copySettings.output === Output.FILES
                   }
                   label="Write context.json"
@@ -425,7 +427,7 @@ export default function CopyControls({
               <div>
                 <LabeledCheckbox
                   checked={copySettings.writeDisplayNames}
-                  disabled={Boolean(host.copySettings)}
+                  disabled={hostFormat.copySettings !== undefined}
                   label="Overwrite Display Names"
                   set={(checked: boolean) => {
                     const newCopySettings = { ...copySettings };
@@ -442,7 +444,7 @@ export default function CopyControls({
               <div>
                 <LabeledCheckbox
                   checked={copySettings.writeFileNames}
-                  disabled={Boolean(host.copySettings)}
+                  disabled={hostFormat.copySettings !== undefined}
                   label="Overwrite File Names"
                   set={(checked: boolean) => {
                     const newCopySettings = { ...copySettings };
@@ -461,7 +463,7 @@ export default function CopyControls({
               <div>
                 <LabeledCheckbox
                   checked={copySettings.writeStartTimes}
-                  disabled={Boolean(host.copySettings)}
+                  disabled={hostFormat.copySettings !== undefined}
                   label="Overwrite Start Times"
                   set={(checked: boolean) => {
                     const newCopySettings = { ...copySettings };
@@ -472,7 +474,7 @@ export default function CopyControls({
               </div>
             </Tooltip>
             <TextField
-              disabled={Boolean(host.copySettings)}
+              disabled={hostFormat.copySettings !== undefined}
               label="Output"
               onChange={(event) => {
                 const newCopySettings = { ...copySettings };
