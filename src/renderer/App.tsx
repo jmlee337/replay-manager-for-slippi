@@ -344,6 +344,16 @@ function Hello() {
   useEffect(() => {
     window.electron.onCopyHost(async (event, newHost) => {
       setHost(newHost);
+      if (newHost.fileNameFormat) {
+        setFileNameFormat(newHost.fileNameFormat);
+      } else {
+        setFileNameFormat(await window.electron.getFileNameFormat());
+      }
+      if (newHost.folderNameFormat) {
+        setFolderNameFormat(newHost.folderNameFormat);
+      } else {
+        setFolderNameFormat(await window.electron.getFolderNameFormat());
+      }
       if (newHost.copySettings) {
         setCopySettings(newHost.copySettings);
       } else {
@@ -1219,7 +1229,7 @@ function Hello() {
           .join(combinedNameObjs.length === 2 ? ' vs ' : ', ');
         const singlesChars =
           combinedNameObjs.length === 4 ? playersOnly : playersChars;
-        subdir = String(host.folderNameFormat || folderNameFormat);
+        subdir = String(folderNameFormat);
         subdir = subdir.replace('{date}', format(startDate, 'yyyyMMdd'));
         subdir = subdir.replace('{time}', format(startDate, 'HHmm'));
         subdir = subdir.replace('{roundShort}', roundShort);
@@ -1261,9 +1271,7 @@ function Hello() {
           const singlesChars =
             nameObjs.length === 4 ? playersOnly : playersChars;
 
-          let fileName = `{ordinal}${String(
-            host.fileNameFormat || fileNameFormat,
-          )}`;
+          let fileName = `{ordinal}${fileNameFormat}`;
           fileName = fileName.replace(
             '{date}',
             format(writeStartDate, 'yyyyMMdd'),
@@ -2326,6 +2334,7 @@ function Hello() {
         setAdminedTournaments={setAdminedTournaments}
         showErrorDialog={showErrorDialog}
         enforcerVersion={ENFORCER_VERSION}
+        host={host}
       />
     </>
   );

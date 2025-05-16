@@ -28,7 +28,12 @@ import {
 } from '@mui/material';
 import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import LabeledCheckbox from './LabeledCheckbox';
-import { AdminedTournament, EnforcerSetting, Mode } from '../common/types';
+import {
+  AdminedTournament,
+  CopyHost,
+  EnforcerSetting,
+  Mode,
+} from '../common/types';
 
 function LabeledRadioButton({ label, value }: { label: string; value: Mode }) {
   return (
@@ -70,6 +75,7 @@ export default function Settings({
   setAdminedTournaments,
   showErrorDialog,
   enforcerVersion,
+  host,
 }: {
   appVersion: string;
   latestAppVersion: string;
@@ -97,6 +103,7 @@ export default function Settings({
   setAdminedTournaments: (tournaments: AdminedTournament[]) => void;
   showErrorDialog: (errors: string[]) => void;
   enforcerVersion: string;
+  host: CopyHost;
 }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -478,6 +485,7 @@ export default function Settings({
             <Stack alignItems="end" direction="row" gap="8px">
               <TextField
                 fullWidth
+                disabled={Boolean(host.fileNameFormat)}
                 label="File name format"
                 onChange={(event) => {
                   const newFileNameFormat = event.target.value;
@@ -491,6 +499,7 @@ export default function Settings({
               />
               <DialogContentText paddingBottom="5px">.slp</DialogContentText>
               <Button
+                disabled={Boolean(host.fileNameFormat)}
                 onClick={async () => {
                   setFileNameFormat(
                     await window.electron.resetFileNameFormat(),
@@ -504,6 +513,7 @@ export default function Settings({
             <Stack alignItems="end" direction="row" gap="8px">
               <TextField
                 fullWidth
+                disabled={Boolean(host.folderNameFormat)}
                 label="Folder name format"
                 onChange={(event) => {
                   const newFolderNameFormat = event.target.value;
@@ -516,6 +526,7 @@ export default function Settings({
                 variant="standard"
               />
               <Button
+                disabled={Boolean(host.folderNameFormat)}
                 onClick={async () => {
                   setFolderNameFormat(
                     await window.electron.resetFolderNameFormat(),
