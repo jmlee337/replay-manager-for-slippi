@@ -242,8 +242,14 @@ export function getHost(): CopyHostOrClient {
   };
 }
 
-export function getHostEnforcerSetting(): EnforcerSetting | undefined {
-  return hostEnforcerSetting;
+export function getHostFormat(): CopyHostFormat {
+  return {
+    fileNameFormat: hostFileNameFormat,
+    folderNameFormat: hostFolderNameFormat,
+    copySettings: hostCopySettings,
+    enforcerSetting: hostEnforcerSetting,
+    smuggleCostumeIndex: hostSmuggleCostumeIndex,
+  };
 }
 
 let nextRequestOrdinal = 1;

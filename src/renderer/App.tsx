@@ -258,6 +258,7 @@ function Hello() {
       const replaysDirPromise = window.electron.getReplaysDir();
       const copyDirPromise = window.electron.getCopyDir();
       const hostPromise = window.electron.getCopyHost();
+      const hostFormatPromise = window.electron.getCopyHostFormat();
       const tournamentPromise = window.electron.getCurrentTournament();
       const selectedSetPromise = window.electron.getSelectedSet();
       const selectedSetChainPromise = window.electron.getSelectedSetChain();
@@ -291,6 +292,7 @@ function Hello() {
       setDirInit(replaysDir.length > 0);
       setCopyDir(await copyDirPromise);
       setHost(await hostPromise);
+      setHostFormat(await hostFormatPromise);
       const currentTournament = await tournamentPromise;
       if (currentTournament) {
         setSlug(currentTournament.slug);
@@ -369,7 +371,7 @@ function Hello() {
         setFolderNameFormat(newHostFormat.folderNameFormat);
       }
       if (newHostFormat.copySettings !== undefined) {
-        setCopySettings(newHostFormat.copySettings);
+        setCopySettings({ ...newHostFormat.copySettings, output: Output.ZIP });
       }
       if (newHostFormat.enforcerSetting !== undefined) {
         setEnforcerSetting(newHostFormat.enforcerSetting);
@@ -1931,12 +1933,7 @@ function Hello() {
             onCopy={onCopy}
             success={copySuccess}
             copySettings={copySettings}
-            setCopySettings={async (newCopySettings: CopySettings) => {
-              if (!hostFormat.copySettings) {
-                await window.electron.setCopySettings(newCopySettings);
-                setCopySettings(newCopySettings);
-              }
-            }}
+            setCopySettings={setCopySettings}
             elevateSettings={
               guidedMode &&
               guideBackdropOpen &&

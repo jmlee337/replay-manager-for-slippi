@@ -62,6 +62,8 @@ const electronHandler = {
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
   getCopyHost: (): Promise<CopyHostOrClient> =>
     ipcRenderer.invoke('getCopyHost'),
+  getCopyHostFormat: (): Promise<CopyHostFormat> =>
+    ipcRenderer.invoke('getCopyHostFormat'),
   startListeningForHosts: (): Promise<string> =>
     ipcRenderer.invoke('startListeningForHosts'),
   stopListeningForHosts: (): Promise<void> =>

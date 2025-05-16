@@ -60,7 +60,7 @@ import {
   disconnectFromHost,
   getCopyClients,
   getHost,
-  getHostEnforcerSetting,
+  getHostFormat,
   kickCopyClient,
   setCopyDir,
   setMainWindow,
@@ -245,7 +245,10 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       throw new Error();
     }
     const retReplays = await getReplaysInDir(replayDirs[replayDirs.length - 1]);
-    if (getHostEnforcerSetting() ?? enforcerSetting !== EnforcerSetting.NONE) {
+    if (
+      (getHostFormat().enforcerSetting ?? enforcerSetting) !==
+      EnforcerSetting.NONE
+    ) {
       const pendingState: EnforceState = {
         status: EnforceStatus.PENDING,
         fileNameToPlayerFailures: new Map(),
@@ -351,6 +354,9 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
 
   ipcMain.removeHandler('getCopyHost');
   ipcMain.handle('getCopyHost', getHost);
+
+  ipcMain.removeHandler('getCopyHostFormat');
+  ipcMain.handle('getCopyHostFormat', getHostFormat);
 
   ipcMain.removeHandler('startListeningForHosts');
   ipcMain.handle('startListeningForHosts', startListening);

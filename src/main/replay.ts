@@ -618,15 +618,11 @@ export async function writeReplays(
 
   const replayBuffers: ReplayBuffer[] = [];
   const isRemote = Boolean(host.address);
-  const actualOutput = isRemote ? Output.ZIP : output;
   const sanitizedFileNames = fileNames.map((fileName) => sanitize(fileName));
   const sanitizedSubdir = sanitize(subdir);
 
   let writeDir = join(dir, sanitizedSubdir);
-  if (
-    !sanitizedSubdir &&
-    (actualOutput === Output.FOLDER || actualOutput === Output.ZIP)
-  ) {
+  if (!sanitizedSubdir && (output === Output.FOLDER || output === Output.ZIP)) {
     throw new Error('subdir');
   }
   try {
@@ -649,7 +645,7 @@ export async function writeReplays(
       await mkdir(writeDir);
     }
     if (context) {
-      if (actualOutput === Output.ZIP) {
+      if (output === Output.ZIP) {
         replayBuffers.push({
           buffer: Buffer.from(JSON.stringify(context)),
           fileName: 'context.json',
@@ -669,9 +665,7 @@ export async function writeReplays(
     let replayBuffer = Buffer.from([]);
     const fileName = sanitizedFileNames[i] ?? replay.fileName;
     const replayFile =
-      actualOutput !== Output.ZIP
-        ? await open(join(writeDir, fileName), 'w')
-        : null;
+      output !== Output.ZIP ? await open(join(writeDir, fileName), 'w') : null;
 
     try {
       // raw element
@@ -691,7 +685,7 @@ export async function writeReplays(
         actualRawElementLength.copy(rawHeader, 11);
       }
 
-      if (actualOutput === Output.ZIP) {
+      if (output === Output.ZIP) {
         replayBuffer = Buffer.concat([replayBuffer, rawHeader]);
       } else {
         const { bytesWritten } = await replayFile!.write(rawHeader);
@@ -743,7 +737,7 @@ export async function writeReplays(
           Buffer.from(fixedDisplayNameArr).copy(rawElement, offset);
         });
       }
-      if (actualOutput === Output.ZIP) {
+      if (output === Output.ZIP) {
         replayBuffer = Buffer.concat([replayBuffer, rawElement]);
       } else {
         const { bytesWritten } = await replayFile!.write(rawElement);
@@ -783,7 +777,7 @@ export async function writeReplays(
             startAtLengthOffset + newStartAtLength + 1,
             startAtLengthOffset + startAtLength + 1,
           );
-          if (actualOutput === Output.ZIP) {
+          if (output === Output.ZIP) {
             replayBuffer = Buffer.concat([replayBuffer, newMetadata]);
           } else {
             const { bytesWritten } = await replayFile!.write(newMetadata);
@@ -791,7 +785,7 @@ export async function writeReplays(
               throw new Error('metadata write (with start time override)');
             }
           }
-        } else if (actualOutput === Output.ZIP) {
+        } else if (output === Output.ZIP) {
           replayBuffer = Buffer.concat([replayBuffer, metadata]);
         } else {
           const { bytesWritten } = await replayFile!.write(metadata);
@@ -822,7 +816,7 @@ export async function writeReplays(
         bufs.push(PLAYED_ON);
         const bufsLength = bufs.reduce((acc, buf) => acc + buf.length, 0);
         const metadata = Buffer.concat(bufs, bufsLength);
-        if (actualOutput === Output.ZIP) {
+        if (output === Output.ZIP) {
           replayBuffer = Buffer.concat([replayBuffer, metadata]);
         } else {
           const { bytesWritten } = await replayFile!.write(metadata);
@@ -835,7 +829,7 @@ export async function writeReplays(
           }
         }
       }
-      if (actualOutput === Output.ZIP) {
+      if (output === Output.ZIP) {
         replayBuffers.push({ buffer: replayBuffer, fileName });
       }
     } finally {
@@ -848,7 +842,7 @@ export async function writeReplays(
   });
   await Promise.all(replayFilePromises);
 
-  if (actualOutput === Output.ZIP) {
+  if (output === Output.ZIP) {
     const zipFile = new ZipFile();
     replayBuffers.forEach(({ buffer, fileName }) => {
       zipFile.addBuffer(buffer, fileName);

@@ -347,7 +347,7 @@ export default function CopyControls({
   onCopy: () => Promise<void>;
   success: string;
   copySettings: CopySettings;
-  setCopySettings: (newCopySettings: CopySettings) => Promise<void>;
+  setCopySettings: (newCopySettings: CopySettings) => void;
   elevateSettings: boolean;
 }) {
   const [hosting, setHosting] = useState(false);
@@ -377,7 +377,17 @@ export default function CopyControls({
           {useLAN && (
             <>
               {!host.address && (
-                <ClientsDialog disabled={!dir} setHosting={setHosting} />
+                <ClientsDialog
+                  disabled={!dir}
+                  setHosting={async (newHosting: boolean) => {
+                    if (newHosting) {
+                      setCopySettings({ ...copySettings, output: Output.ZIP });
+                    } else {
+                      setCopySettings(await window.electron.getCopySettings());
+                    }
+                    setHosting(newHosting);
+                  }}
+                />
               )}
               {!hosting && <HostsDialog host={host} />}
             </>
@@ -410,9 +420,10 @@ export default function CopyControls({
                     copySettings.output === Output.FILES
                   }
                   label="Write context.json"
-                  set={(checked: boolean) => {
+                  set={async (checked: boolean) => {
                     const newCopySettings = { ...copySettings };
                     newCopySettings.writeContext = checked;
+                    await window.electron.setCopySettings(newCopySettings);
                     setCopySettings(newCopySettings);
                   }}
                 />
@@ -429,9 +440,10 @@ export default function CopyControls({
                   checked={copySettings.writeDisplayNames}
                   disabled={hostFormat.copySettings !== undefined}
                   label="Overwrite Display Names"
-                  set={(checked: boolean) => {
+                  set={async (checked: boolean) => {
                     const newCopySettings = { ...copySettings };
                     newCopySettings.writeDisplayNames = checked;
+                    await window.electron.setCopySettings(newCopySettings);
                     setCopySettings(newCopySettings);
                   }}
                 />
@@ -446,9 +458,10 @@ export default function CopyControls({
                   checked={copySettings.writeFileNames}
                   disabled={hostFormat.copySettings !== undefined}
                   label="Overwrite File Names"
-                  set={(checked: boolean) => {
+                  set={async (checked: boolean) => {
                     const newCopySettings = { ...copySettings };
                     newCopySettings.writeFileNames = checked;
+                    await window.electron.setCopySettings(newCopySettings);
                     setCopySettings(newCopySettings);
                   }}
                 />
@@ -465,20 +478,22 @@ export default function CopyControls({
                   checked={copySettings.writeStartTimes}
                   disabled={hostFormat.copySettings !== undefined}
                   label="Overwrite Start Times"
-                  set={(checked: boolean) => {
+                  set={async (checked: boolean) => {
                     const newCopySettings = { ...copySettings };
                     newCopySettings.writeStartTimes = checked;
+                    await window.electron.setCopySettings(newCopySettings);
                     setCopySettings(newCopySettings);
                   }}
                 />
               </div>
             </Tooltip>
             <TextField
-              disabled={hostFormat.copySettings !== undefined}
+              disabled={hostFormat.copySettings !== undefined || hosting}
               label="Output"
-              onChange={(event) => {
+              onChange={async (event) => {
                 const newCopySettings = { ...copySettings };
                 newCopySettings.output = parseInt(event.target.value, 10);
+                await window.electron.setCopySettings(newCopySettings);
                 setCopySettings(newCopySettings);
               }}
               select
