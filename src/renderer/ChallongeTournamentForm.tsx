@@ -10,6 +10,7 @@ import {
   Stack,
   TextField,
   Tooltip,
+  Typography,
 } from '@mui/material';
 import { FormEvent } from 'react';
 import { Refresh } from '@mui/icons-material';
@@ -106,7 +107,14 @@ export default function ChallongeTournamentForm({
                 close();
               }}
             >
-              <ListItemText>{adminedTournament.name}</ListItemText>
+              <ListItemText
+                style={{ overflowX: 'hidden', whiteSpace: 'nowrap' }}
+              >
+                {adminedTournament.name}{' '}
+                <Typography variant="caption">
+                  ({adminedTournament.slug})
+                </Typography>
+              </ListItemText>
             </ListItemButton>
           ))
         )}
