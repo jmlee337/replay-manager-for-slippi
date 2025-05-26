@@ -262,10 +262,11 @@ const ReplayListItem = memo(function ReplayListItem({
     const onClickOrDrop = (
       displayName: string,
       entrantId: number,
+      participantId: number,
       prefix: string,
       pronouns: string,
     ) => {
-      player.playerOverrides = { displayName, entrantId, prefix, pronouns };
+      player.playerOverrides = { displayName, entrantId, participantId, prefix, pronouns };
       const validPlayers = replay.players.filter(
         (otherPlayer) =>
           otherPlayer.playerType === 0 || otherPlayer.playerType === 1,
@@ -304,6 +305,7 @@ const ReplayListItem = memo(function ReplayListItem({
             overrideSet.set(
               playerToCheck.playerOverrides.displayName +
                 playerToCheck.playerOverrides.entrantId +
+                playerToCheck.playerOverrides.participantId +
                 playerToCheck.playerOverrides.prefix +
                 playerToCheck.playerOverrides.pronouns,
               true,
@@ -316,6 +318,7 @@ const ReplayListItem = memo(function ReplayListItem({
           const unusedPlayer = findUnusedPlayer(
             displayName,
             entrantId,
+            participantId,
             prefix,
             pronouns,
             overrideSet,

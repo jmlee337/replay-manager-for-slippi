@@ -1,6 +1,7 @@
 export type PlayerOverrides = {
   displayName: string;
   entrantId: number;
+  participantId: number;
   prefix: string;
   pronouns: string;
 };
@@ -48,10 +49,11 @@ export type Participant = {
   displayName: string;
   prefix: string;
   pronouns: string;
+  id: number; // This value always reperesents the player's ID
 };
 
 export type Entrant = {
-  id: number;
+  id: number; // In doubles, this represents the team's ID
   participants: Participant[];
 };
 

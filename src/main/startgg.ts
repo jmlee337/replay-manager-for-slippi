@@ -297,6 +297,7 @@ export async function getPhaseGroup(
           displayName,
           prefix,
           pronouns,
+          participantId,
         };
         participants.push(newParticipant);
         if (!playerIdToPronouns.has(playerId)) {
@@ -815,6 +816,7 @@ function gqlParticipantToParticipant(participant: ApiParticipant): Participant {
     displayName: participant.gamerTag,
     pronouns: participant.player.user?.genderPronoun || '',
     prefix: participant.prefix || '',
+    id: participant.id || '',
   };
 }
 function gqlSetToSet(set: any, updatedAtMs: number): Set {

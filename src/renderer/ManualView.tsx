@@ -34,6 +34,7 @@ export default function ManualView({
         <DraggableChip
           key={nameWithHighlight.name}
           entrantId={i + 1}
+          participantId={i + 1}
           nameWithHighlight={nameWithHighlight}
           prefix=""
           pronouns=""
