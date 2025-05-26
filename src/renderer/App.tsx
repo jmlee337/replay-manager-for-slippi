@@ -1203,21 +1203,19 @@ function Hello() {
         const namesByParticipantId = new Map<number, Map<string, string[]>>();
         nameObjs.forEach((gameObjs: NameObj[]) => {
           gameObjs.forEach((nameObj: NameObj) => {
-            if (!namesByParticipantId.has()) {
-              const id: number = nameObj.participantId;
-              const objs: NameObj[] = namesByParticipantId.get(id) || {
-                displayName: nameObj.displayName,
-                characterNames: [],
-                nametags: [],
-              };
-              if (!objs.characterNames.includes(nameObj.characterName)) {
-                objs.characterNames.push(nameObj.characterName);
-              }
-              if (!objs.nametags.includes(nameObj.nametag)) {
-                objs.nametags.push(nameObj.nametag);
-              }
-              namesByParticipantId.set(id, objs);
+            const id: number = nameObj.participantId;
+            const objs: NameObj[] = namesByParticipantId.get(id) || {
+              displayName: nameObj.displayName,
+              characterNames: [],
+              nametags: [],
+            };
+            if (!objs.characterNames.includes(nameObj.characterName)) {
+              objs.characterNames.push(nameObj.characterName);
             }
+            if (!objs.nametags.includes(nameObj.nametag)) {
+              objs.nametags.push(nameObj.nametag);
+            }
+            namesByParticipantId.set(id, objs);
           })
         });
 
