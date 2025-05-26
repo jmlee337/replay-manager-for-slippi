@@ -140,6 +140,7 @@ const toSet = (
         displayName: participantIdToName.get(participant1.participant_id)!,
         prefix: '',
         pronouns: '',
+        id: paraticipant1.participant_id,
       },
     ],
     entrant1Score:
@@ -152,6 +153,7 @@ const toSet = (
         displayName: participantIdToName.get(participant2.participant_id)!,
         prefix: '',
         pronouns: '',
+        id: paraticipant2.participant_id,
       },
     ],
     entrant2Score:
@@ -228,6 +230,7 @@ export async function getChallongeTournament(
               displayName: participant.attributes.name,
               prefix: '',
               pronouns: '',
+              id: participant.id,
             },
           ],
         });
@@ -342,6 +345,7 @@ export async function startChallongeSet(
         displayName: participantIdToName.get(match.player1_id)!,
         prefix: '',
         pronouns: '',
+        id: match.player1_id,
       },
     ],
     entrant1Score: null,
@@ -351,6 +355,7 @@ export async function startChallongeSet(
         displayName: participantIdToName.get(match.player2_id)!,
         prefix: '',
         pronouns: '',
+        id: match.player2_id,
       },
     ],
     entrant2Score: null,
