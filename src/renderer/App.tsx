@@ -1231,8 +1231,6 @@ function Hello() {
             }
           })
         });
-        console.log("namesByParticipantId");
-        console.log(namesByParticipantId);
 
         // TODO: allEntrantIdsSet?
 
@@ -1245,8 +1243,6 @@ function Hello() {
             }),
           )
           .filter((nameObj) => nameObj.characterName);
-        console.log("combinedNameObjs");
-        console.log(combinedNameObjs);
         const playersOnly = combinedNameObjs
           .map(toPlayerOnly)
           .join(combinedNameObjs.length === 2 ? ' vs ' : ', ');
