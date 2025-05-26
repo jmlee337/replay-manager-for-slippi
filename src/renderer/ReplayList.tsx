@@ -266,6 +266,7 @@ const ReplayListItem = memo(function ReplayListItem({
       prefix: string,
       pronouns: string,
     ) => {
+      console.log("participantId: " + participantId);
       player.playerOverrides = { displayName, entrantId, participantId, prefix, pronouns };
       const validPlayers = replay.players.filter(
         (otherPlayer) =>

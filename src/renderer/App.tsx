@@ -702,6 +702,8 @@ function Hello() {
   }, [refreshReplays]);
 
   const availablePlayers: PlayerOverrides[] = [];
+  console.log("selectedSet");
+  console.log(selectedSet);
   selectedSet.entrant1Participants.forEach((participant) => {
     availablePlayers.push({
       displayName: participant.displayName,
@@ -720,6 +722,8 @@ function Hello() {
       pronouns: participant.pronouns,
     });
   });
+  console.log("availablePlayers");
+  console.log(availablePlayers);
 
   const [slugDialogOpen, setSlugDialogOpen] = useState(false);
   const [gettingTournament, setGettingTournament] = useState(false);
@@ -846,6 +850,7 @@ function Hello() {
     pronouns: string,
     index: number,
   ) => {
+    console.log("participantId: " + participantId);
     const newOverrides = Array.from(overrides);
     newOverrides[index] = { displayName, entrantId, participantId, prefix, pronouns };
     newOverrides.forEach((override, i) => {
@@ -1123,6 +1128,10 @@ function Hello() {
     setIsCopying(true);
     const copySet = set ?? selectedSet;
 
+    // Entrant id comes from selectedReplays[game].players[port].entrantId
+    console.log("selectedReplays:");
+    console.log(selectedReplays);
+
     let offsetMs = 0;
     let startDate = selectedReplays[0].startAt;
     if (copySettings.writeStartTimes) {
@@ -1168,6 +1177,8 @@ function Hello() {
           };
         }),
       );
+      console.log("nameObjs");
+      console.log(nameObjs);
 
       const toPlayerOnly = (nameObj: NameObj) => {
         if (nameObj.displayName) {
@@ -1207,6 +1218,8 @@ function Hello() {
           participantId: nameObj.participantId,
           nametags: new Map([[nameObj.nametag, 0]]),
         }));
+        console.log("namesObjs");
+        console.log(namesObjs);
         if (allEntrantIdsSet) {
           for (let i = 1; i < nameObjs.length; i += 1) {
             for (let j = 0; j < nameObjs[i].length; j += 1) {
