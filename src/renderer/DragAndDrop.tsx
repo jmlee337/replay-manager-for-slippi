@@ -229,8 +229,6 @@ export function DroppableChip({
       onClick={
         active && selectedChip
           ? (event) => {
-              console.log("selectedChipData");
-              console.log(selectedChipData);
               onClickOrDrop(
                 selectedChipData.displayName,
                 selectedChipData.entrantId,
