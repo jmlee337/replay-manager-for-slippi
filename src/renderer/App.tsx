@@ -1211,70 +1211,35 @@ function Hello() {
         copySettings.output === Output.FOLDER ||
         copySettings.output === Output.ZIP
       ) {
-        const namesObjs: NamesObj[] = nameObjs[0].map((nameObj) => ({
-          characterNames: new Map([[nameObj.characterName, 0]]),
-          displayName: nameObj.displayName,
-          entrantId: nameObj.entrantId,
-          participantId: nameObj.participantId,
-          nametags: new Map([[nameObj.nametag, 0]]),
-        }));
-        console.log("namesObjs");
-        console.log(namesObjs);
-        if (allEntrantIdsSet) {
-          for (let i = 1; i < nameObjs.length; i += 1) {
-            for (let j = 0; j < nameObjs[i].length; j += 1) {
-              const nameObj = nameObjs[i][j];
-              const existingNamesObj = namesObjs.find(
-                (namesObj) => namesObj.entrantId === nameObj.entrantId,
-              )!;
-              if (
-                nameObj.characterName &&
-                !existingNamesObj.characterNames.has(nameObj.characterName)
-              ) {
-                existingNamesObj.characterNames.set(nameObj.characterName, i);
+        const namesByParticipantId = new Map<number, Map<string, string[]>>();
+        nameObjs.forEach((gameObjs: NameObj[]) => {
+          gameObjs.forEach((nameObj: NameObj) => {
+            if (!namesByParticipantId.has()) {
+              const id: number = nameObj.participantId;
+              const objs: NameObj[] = namesByParticipantId.get(id) || {
+                displayName: nameObj.displayName,
+                characterNames: [],
+                nametags: [],
+              };
+              if (!objs.characterNames.includes(nameObj.characterName)) {
+                objs.characterNames.push(nameObj.characterName);
               }
-              if (
-                nameObj.nametag &&
-                !existingNamesObj.nametags.has(nameObj.nametag)
-              ) {
-                existingNamesObj.nametags.set(nameObj.nametag, i);
+              if (!objs.nametags.includes(nameObj.nametag)) {
+                objs.nametags.push(nameObj.nametag);
               }
+              namesByParticipantId.set(id, objs);
             }
-          }
-        } else {
-          for (let i = 1; i < nameObjs.length; i += 1) {
-            for (let j = 0; j < nameObjs[i].length; j += 1) {
-              const nameObj = nameObjs[i][j];
-              if (nameObj.characterName) {
-                namesObjs[j].displayName = nameObj.displayName;
-                namesObjs[j].entrantId = nameObj.entrantId;
-                if (!namesObjs[j].characterNames.has(nameObj.characterName)) {
-                  namesObjs[j].characterNames.set(nameObj.characterName, i);
-                }
-              }
-              if (
-                nameObj.nametag &&
-                !namesObjs[i].nametags.has(nameObj.nametag)
-              ) {
-                namesObjs[i].nametags.set(nameObj.nametag, j);
-              }
-            }
-          }
-        }
-        const combinedNameObjs = namesObjs
+          })
+        });
+
+        // TODO: allEntrantIdsSet?
+
+        const combinedNameObjs = [...namesByParticipantId]
           .map(
-            (namesObj): NameObj => ({
+            ([_participantId, namesObj]): NameObj => ({
               displayName: namesObj.displayName,
-              entrantId: namesObj.entrantId,
-              participantId: namesObj.participantId,
-              characterName: [...namesObj.characterNames.entries()]
-                .sort(([, a], [, b]) => a - b)
-                .map((entry) => entry[0])
-                .join(', '),
-              nametag: [...namesObj.nametags.entries()]
-                .sort(([, a], [, b]) => a - b)
-                .map((entry) => entry[0])
-                .join(', '),
+              characterName: namesObj.characterNames.join(', '),
+              nametag: namesObj.nametags.join(', '),
             }),
           )
           .filter((nameObj) => nameObj.characterName);
