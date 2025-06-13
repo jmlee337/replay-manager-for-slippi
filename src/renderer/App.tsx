@@ -2010,6 +2010,7 @@ function Hello() {
               copyDirSet &&
               !confirmedCopySettings
             }
+            vlerkMode={vlerkMode}
           />
         </TopColumn>
         <TopColumn

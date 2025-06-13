@@ -16,12 +16,14 @@ import {
   ListItemButton,
   ListItemText,
   MenuItem,
+  Snackbar,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { GlobalHotKeys } from 'react-hotkeys';
 import {
   CopySettings,
   Output,
@@ -332,6 +334,7 @@ export default function CopyControls({
   copySettings,
   setCopySettings,
   elevateSettings,
+  vlerkMode,
 }: {
   dir: string;
   setDir: (dir: string) => void;
@@ -349,8 +352,10 @@ export default function CopyControls({
   copySettings: CopySettings;
   setCopySettings: (newCopySettings: CopySettings) => void;
   elevateSettings: boolean;
+  vlerkMode: boolean;
 }) {
   const [hosting, setHosting] = useState(false);
+  const [copyToastOpen, setCopyToastOpen] = useState(false);
 
   const chooseDir = async () => {
     const newDir = await window.electron.chooseCopyDir();
@@ -540,6 +545,44 @@ export default function CopyControls({
           </Button>
         </Stack>
       </Stack>
+      <GlobalHotKeys
+        keyMap={{
+          COPY: window.electron.isMac ? 'command+s' : 'ctrl+s',
+        }}
+        handlers={{
+          COPY: async () => {
+            if (
+              vlerkMode &&
+              !isCopying &&
+              (dir || host.address) &&
+              hasSelectedReplays
+            ) {
+              try {
+                await onCopy();
+                setCopyToastOpen(true);
+              } catch (e: any) {
+                const message = e instanceof Error ? e.message : e;
+                setError(message);
+                setErrorDialogOpen(true);
+              }
+            }
+          },
+        }}
+        allowChanges
+      />
+      {vlerkMode && (
+        <Snackbar
+          open={copyToastOpen}
+          autoHideDuration={5000}
+          onClose={(ev, reason) => {
+            if (reason === 'clickaway') {
+              return;
+            }
+            setCopyToastOpen(false);
+          }}
+          message="Copied!"
+        />
+      )}
     </>
   );
 }
