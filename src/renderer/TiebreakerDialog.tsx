@@ -78,6 +78,7 @@ export default function TiebreakerDialog({
                       stream: null,
                       winnerId: null,
                       updatedAtMs: 0,
+                      completedAtMs: 0,
                     });
                     setSelectedEntrant({ id: 0, participants: [] });
                     setOpen(false);
