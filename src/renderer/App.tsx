@@ -1273,7 +1273,9 @@ function Hello() {
               .sort(([, a], [, b]) => a - b)
               .map((entry) => entry[0]),
           }))
-          .filter((nameObj) => nameObj.characterNames.length > 0);
+          .filter((nameObj) =>
+            nameObj.characterNames.some((characterName) => characterName),
+          );
 
         const playersOnly = combinedNameObjs
           .map(combinedNameObjToPlayerOnly)
