@@ -41,6 +41,7 @@ import {
   ChallongeMatchItem,
   ChallongeTournament,
   Context,
+  ContextPlayers,
   ContextScore,
   ContextSlot,
   CopyHostFormat,
@@ -1087,6 +1088,12 @@ function Hello() {
     entrantId: number;
     nametags: Map<string, number>;
   };
+  type CombinedNameObj = {
+    characterNames: string[];
+    displayName: string;
+    entrantId: number;
+    nametags: string[];
+  };
 
   const [isCopying, setIsCopying] = useState(false);
   const [copyError, setCopyError] = useState('');
@@ -1148,7 +1155,7 @@ function Hello() {
         }),
       );
 
-      const toPlayerOnly = (nameObj: NameObj) => {
+      const nameObjToPlayerOnly = (nameObj: NameObj) => {
         if (nameObj.displayName) {
           return nameObj.displayName;
         }
@@ -1157,7 +1164,18 @@ function Hello() {
         }
         return nameObj.characterName;
       };
-      const toPlayerChar = (nameObj: NameObj) => {
+      const combinedNameObjToPlayerOnly = (
+        combinedNameObj: CombinedNameObj,
+      ) => {
+        if (combinedNameObj.displayName) {
+          return combinedNameObj.displayName;
+        }
+        if (combinedNameObj.nametags.length > 0) {
+          return combinedNameObj.nametags.join(', ');
+        }
+        return combinedNameObj.characterNames.join(', ');
+      };
+      const nameObjToPlayerChar = (nameObj: NameObj) => {
         if (nameObj.displayName) {
           return `${nameObj.displayName} (${nameObj.characterName})`;
         }
@@ -1166,6 +1184,22 @@ function Hello() {
         }
         return nameObj.characterName;
       };
+      const combinedNameObjtoPlayerChar = (
+        combinedNameObj: CombinedNameObj,
+      ) => {
+        if (combinedNameObj.displayName) {
+          return `${
+            combinedNameObj.displayName
+          } (${combinedNameObj.characterNames.join(', ')})`;
+        }
+        if (combinedNameObj.nametags.length > 0) {
+          return `${combinedNameObj.characterNames.join(
+            ', ',
+          )} (${combinedNameObj.nametags.join(', ')})`;
+        }
+        return combinedNameObj.characterNames.join(', ');
+      };
+      let combinedNameObjs: CombinedNameObj[] = [];
 
       let roundShort = '';
       const regex = /([A-Z]|[0-9])/g;
@@ -1190,7 +1224,9 @@ function Hello() {
             for (let j = 0; j < nameObjs[i].length; j += 1) {
               const nameObj = nameObjs[i][j];
               const existingNamesObj = namesObjs.find(
-                (namesObj) => namesObj.entrantId === nameObj.entrantId,
+                (namesObj) =>
+                  namesObj.entrantId === nameObj.entrantId &&
+                  namesObj.displayName === nameObj.displayName,
               )!;
               if (
                 nameObj.characterName &&
@@ -1226,27 +1262,24 @@ function Hello() {
             }
           }
         }
-        const combinedNameObjs = namesObjs
-          .map(
-            (namesObj): NameObj => ({
-              displayName: namesObj.displayName,
-              entrantId: namesObj.entrantId,
-              characterName: [...namesObj.characterNames.entries()]
-                .sort(([, a], [, b]) => a - b)
-                .map((entry) => entry[0])
-                .join(', '),
-              nametag: [...namesObj.nametags.entries()]
-                .sort(([, a], [, b]) => a - b)
-                .map((entry) => entry[0])
-                .join(', '),
-            }),
-          )
-          .filter((nameObj) => nameObj.characterName);
+        combinedNameObjs = namesObjs
+          .map((namesObj) => ({
+            displayName: namesObj.displayName,
+            entrantId: namesObj.entrantId,
+            characterNames: [...namesObj.characterNames.entries()]
+              .sort(([, a], [, b]) => a - b)
+              .map((entry) => entry[0]),
+            nametags: [...namesObj.nametags.entries()]
+              .sort(([, a], [, b]) => a - b)
+              .map((entry) => entry[0]),
+          }))
+          .filter((nameObj) => nameObj.characterNames.length > 0);
+
         const playersOnly = combinedNameObjs
-          .map(toPlayerOnly)
+          .map(combinedNameObjToPlayerOnly)
           .join(combinedNameObjs.length === 2 ? ' vs ' : ', ');
         const playersChars = combinedNameObjs
-          .map(toPlayerChar)
+          .map(combinedNameObjtoPlayerChar)
           .join(combinedNameObjs.length === 2 ? ' vs ' : ', ');
         const singlesChars =
           combinedNameObjs.length === 4 ? playersOnly : playersChars;
@@ -1287,8 +1320,8 @@ function Hello() {
             : startAt;
           const time = format(writeStartDate, 'HHmmss');
           const names = game.filter((nameObj) => nameObj.characterName);
-          const playersOnly = names.map(toPlayerOnly).join(', ');
-          const playersChars = names.map(toPlayerChar).join(', ');
+          const playersOnly = names.map(nameObjToPlayerOnly).join(', ');
+          const playersChars = names.map(nameObjToPlayerChar).join(', ');
           const singlesChars =
             nameObjs.length === 4 ? playersOnly : playersChars;
 
@@ -1381,6 +1414,30 @@ function Hello() {
           ],
         };
         if (canWriteContext) {
+          const contextPlayers: ContextPlayers = {
+            entrant1: copySet.entrant1Participants.map((participant) => {
+              const combinedNameObj = combinedNameObjs.find(
+                (cbn) =>
+                  cbn.entrantId === copySet.entrant1Id &&
+                  cbn.displayName === participant.displayName,
+              )!;
+              return {
+                name: combinedNameObj.displayName,
+                characters: combinedNameObj.characterNames,
+              };
+            }),
+            entrant2: copySet.entrant2Participants.map((participant) => {
+              const combinedNameObj = combinedNameObjs.find(
+                (cbn) =>
+                  cbn.entrantId === copySet.entrant2Id &&
+                  cbn.displayName === participant.displayName,
+              )!;
+              return {
+                name: combinedNameObj.displayName,
+                characters: combinedNameObj.characterNames,
+              };
+            }),
+          };
           context = {
             bestOf: Math.max(gameScores[0], gameScores[1]) * 2 - 1,
             durationMs: selectedReplays
@@ -1390,6 +1447,7 @@ function Hello() {
               .reduce((prev, curr) => prev + curr, 0),
             scores,
             finalScore,
+            players: contextPlayers,
             startMs: startDate.getTime(),
           };
 

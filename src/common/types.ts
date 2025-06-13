@@ -236,9 +236,21 @@ export type ContextSlot = {
   score: number;
 };
 
+// in game 1 port order
 export type ContextScore = {
   // slots.length === 2
   slots: [ContextSlot, ContextSlot];
+};
+
+export type ContextPlayer = {
+  name: string;
+  characters: string[];
+};
+
+// in bracket schema order
+export type ContextPlayers = {
+  entrant1: ContextPlayer[];
+  entrant2: ContextPlayer[];
 };
 
 export type Context = {
@@ -246,6 +258,7 @@ export type Context = {
   durationMs: number;
   scores: ContextScore[];
   finalScore: ContextScore;
+  players: ContextPlayers;
   startgg?: {
     tournament: {
       name: string;
