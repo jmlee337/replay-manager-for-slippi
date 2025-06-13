@@ -26,4 +26,5 @@
 - `{tournamentSlug}` - midlane-melee-160
 - `{event}` - Melee Singles (start.gg only)
 - `{phase}` - Top 64 (start.gg only)
+- `{phaseOrEvent}` - `{phase}` if event has multiple phases, else `{event}`
 - `{phaseGroup}` - 1 (name or number of the pool, start.gg only)

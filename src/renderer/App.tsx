@@ -1305,6 +1305,13 @@ function Hello() {
             '{phaseGroup}',
             selectedSetChain.phaseGroup?.name ?? '',
           );
+          let phaseOrEvent = '';
+          if (selectedSetChain.phase?.hasSiblings) {
+            phaseOrEvent = selectedSetChain.phase.name;
+          } else if (selectedSetChain.event) {
+            phaseOrEvent = selectedSetChain.event.name;
+          }
+          subdir = subdir.replace('{phaseOrEvent}', phaseOrEvent);
         }
         // do last in case player names contain template strings LOL
         subdir = subdir.replace('{playersOnly}', playersOnly);

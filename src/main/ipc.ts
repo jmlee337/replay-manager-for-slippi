@@ -831,7 +831,9 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   // {phaseGroup}
   // {phase}
   // {event}
-  const INITIAL_FOLDER_NAME_FORMAT = '{time} - {roundShort} - {playersChars}';
+  // {phaseOrEvent}
+  const INITIAL_FOLDER_NAME_FORMAT =
+    '{phaseOrEvent} {roundShort} - {playersChars}';
   let folderNameFormat = store.get(
     'folderNameFormat',
     INITIAL_FOLDER_NAME_FORMAT,
