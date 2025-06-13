@@ -163,6 +163,7 @@ const toSet = (
     ordinal: match.attributes.suggested_play_order,
     wasReported: false,
     updatedAtMs: new Date(match.attributes.timestamps.updated_at).getTime(),
+    completedAtMs: 0,
   };
 };
 
@@ -172,7 +173,7 @@ function apiStateToState(apiState: string) {
   if (apiState === 'pending') {
     return State.PENDING;
   }
-  if (apiState === 'underway') {
+  if (apiState === 'underway' || apiState === 'awaiting_review') {
     return State.STARTED;
   }
   if (apiState === 'complete') {
@@ -359,6 +360,7 @@ export async function startChallongeSet(
     ordinal: match.suggested_play_order,
     wasReported: false,
     updatedAtMs: new Date(match.updated_at).getTime(),
+    completedAtMs: 0,
   });
 }
 

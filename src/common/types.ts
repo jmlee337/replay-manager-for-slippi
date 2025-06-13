@@ -82,6 +82,7 @@ export type Set = {
   ordinal: number | null; // can be null for start.gg non-DE and challonge swiss
   wasReported: boolean;
   updatedAtMs: number;
+  completedAtMs: number;
 };
 
 export type Sets = {

@@ -143,6 +143,7 @@ const EMPTY_SET: Set = {
   ordinal: null,
   wasReported: false,
   updatedAtMs: 0,
+  completedAtMs: 0,
 };
 
 const EMPTY_SELECTED_SET_CHAIN: {
@@ -1116,8 +1117,9 @@ function Hello() {
     if (copySettings.writeStartTimes) {
       const lastReplay = selectedReplays[selectedReplays.length - 1];
       const lastStartMs = lastReplay.startAt.getTime();
+      const completedMs = copySet.completedAtMs || Date.now();
       offsetMs =
-        Date.now() -
+        completedMs -
         lastStartMs -
         Math.round((lastReplay.lastFrame + 124) / frameMsDivisor);
       startDate = new Date(selectedReplays[0].startAt.getTime() + offsetMs);

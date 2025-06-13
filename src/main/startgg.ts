@@ -477,6 +477,7 @@ export async function getPhaseGroup(
           ordinal,
           wasReported: reportedSetIds.has(setId),
           updatedAtMs,
+          completedAtMs: set.completedAt ? set.completedAt * 1000 : 0,
         };
         idToSet.set(setId, newSet);
         if (Number.isInteger(streamId) && !idToStream.has(streamId)) {
@@ -765,6 +766,7 @@ export async function getTournament(
 }
 
 const GQL_SET_INNER = `
+  completedAt
   id
   fullRoundText
   games {
@@ -859,6 +861,7 @@ function gqlSetToSet(set: any, updatedAtMs: number): Set {
     ordinal: setIdToOrdinal.get(set.id) ?? null,
     wasReported: reportedSetIds.has(set.id),
     updatedAtMs,
+    completedAtMs: set.completedAt ? set.completedAt * 1000 : 0,
   };
 }
 
