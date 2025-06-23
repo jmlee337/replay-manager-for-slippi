@@ -800,6 +800,7 @@ const GQL_SET_INNER = `
     streamName
     streamSource
   }
+  updatedAt
   winnerId
 `;
 type ApiParticipant = {
@@ -819,7 +820,7 @@ function gqlParticipantToParticipant(participant: ApiParticipant): Participant {
     prefix: participant.prefix || '',
   };
 }
-function gqlSetToSet(set: any, updatedAtMs: number): Set {
+function gqlSetToSet(set: any): Set {
   const slot1 = set.slots[0];
   const slot2 = set.slots[1];
   const entrant1Participants: Participant[] = slot1.entrant.participants.map(
@@ -860,7 +861,7 @@ function gqlSetToSet(set: any, updatedAtMs: number): Set {
         : null,
     ordinal: setIdToOrdinal.get(set.id) ?? null,
     wasReported: reportedSetIds.has(set.id),
-    updatedAtMs,
+    updatedAtMs: set.updatedAt ? set.updatedAt * 1000 : 0,
     completedAtMs: set.completedAt ? set.completedAt * 1000 : 0,
   };
 }
@@ -871,10 +872,9 @@ const MARK_SET_IN_PROGRESS_MUTATION = `
   }
 `;
 export async function startSet(key: string, setId: number | string) {
-  const updatedAtMs = Date.now();
   try {
     const data = await fetchGql(key, MARK_SET_IN_PROGRESS_MUTATION, { setId });
-    const updatedSet = gqlSetToSet(data.markSetInProgress, updatedAtMs);
+    const updatedSet = gqlSetToSet(data.markSetInProgress);
     idToSet.set(updatedSet.id, updatedSet);
     setSelectedSetId(updatedSet.id);
   } catch (e: any) {
@@ -890,7 +890,6 @@ const REPORT_BRACKET_SET_MUTATION = `
   }
 `;
 export async function reportSet(key: string, set: StartggSet) {
-  const updatedAtMs = Date.now();
   const data = await fetchGql(key, REPORT_BRACKET_SET_MUTATION, set);
   const filteredSets = (data.reportBracketSet as any[]).filter(
     (bracketSet) => bracketSet.slots[0].entrant && bracketSet.slots[1].entrant,
@@ -902,7 +901,7 @@ export async function reportSet(key: string, set: StartggSet) {
     await getPhaseGroup(key, selectedPhaseGroupId);
   }
   const updatedSets = filteredSets.map((bracketSet) => {
-    const updatedSet = gqlSetToSet(bracketSet, updatedAtMs);
+    const updatedSet = gqlSetToSet(bracketSet);
     idToSet.set(updatedSet.id, updatedSet);
     return updatedSet;
   });
@@ -920,9 +919,8 @@ const UPDATE_BRACKET_SET_MUTATION = `
   }
 `;
 export async function updateSet(key: string, set: StartggSet) {
-  const updatedAtMs = Date.now();
   const data = await fetchGql(key, UPDATE_BRACKET_SET_MUTATION, set);
-  const updatedSet = gqlSetToSet(data.updateBracketSet, updatedAtMs);
+  const updatedSet = gqlSetToSet(data.updateBracketSet);
   reportedSetIds.set(updatedSet.id, true);
   idToSet.set(updatedSet.id, updatedSet);
   setSelectedSetId(updatedSet.id);

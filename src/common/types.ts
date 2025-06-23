@@ -239,7 +239,6 @@ export type ContextSlot = {
 
 // in game 1 port order
 export type ContextScore = {
-  // slots.length === 2
   slots: [ContextSlot, ContextSlot];
 };
 
