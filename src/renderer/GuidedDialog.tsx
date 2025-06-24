@@ -49,7 +49,7 @@ export default function GuidedDialog({
   getStartggTournament: (
     maybeSlug: string,
     initial?: boolean,
-  ) => Promise<boolean>;
+  ) => Promise<string>;
   getChallongeTournament: (maybeSlug: string) => Promise<void>;
   manualNames: string[];
   setManualNames: (manualNames: string[]) => Promise<void>;

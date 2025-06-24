@@ -127,8 +127,8 @@ const electronHandler = {
     phaseGroupId: number,
   ): Promise<void> =>
     ipcRenderer.invoke('setSelectedSetChain', eventId, phaseId, phaseGroupId),
-  getTournament: (slug: string, recursive: boolean): Promise<void> =>
-    ipcRenderer.invoke('getTournament', slug, recursive),
+  getTournament: (slugOrShort: string, recursive: boolean): Promise<string> =>
+    ipcRenderer.invoke('getTournament', slugOrShort, recursive),
   getEvent: (id: number, recursive: boolean): Promise<void> =>
     ipcRenderer.invoke('getEvent', id, recursive),
   getPhase: (id: number, recursive: boolean): Promise<void> =>

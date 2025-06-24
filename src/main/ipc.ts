@@ -418,16 +418,21 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
   ipcMain.removeHandler('getTournament');
   ipcMain.handle(
     'getTournament',
-    async (event: IpcMainInvokeEvent, slug: string, recursive: boolean) => {
+    async (
+      event: IpcMainInvokeEvent,
+      slugOrShort: string,
+      recursive: boolean,
+    ) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      await getTournament(sggApiKey, slug, recursive);
+      const slug = await getTournament(sggApiKey, slugOrShort, recursive);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
       });
+      return slug;
     },
   );
 

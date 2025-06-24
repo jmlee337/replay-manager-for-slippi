@@ -961,21 +961,24 @@ function Hello() {
 
   const getTournament = async (maybeSlug: string, initial: boolean = false) => {
     if (!maybeSlug) {
-      return false;
+      return '';
     }
 
     setGettingTournament(true);
     try {
-      await window.electron.getTournament(maybeSlug, initial && vlerkMode);
+      const actualSlug = await window.electron.getTournament(
+        maybeSlug,
+        initial && vlerkMode,
+      );
       if (slug !== maybeSlug) {
         setSelectedSet(EMPTY_SET);
         setSelectedSetChain(EMPTY_SELECTED_SET_CHAIN);
         await window.electron.setSelectedSetChain(0, 0, 0);
       }
-      return true;
+      return actualSlug;
     } catch (e: any) {
       showErrorDialog([e.toString()]);
-      return false;
+      return '';
     } finally {
       setGettingTournament(false);
     }

@@ -279,7 +279,7 @@ export async function getPhaseGroup(
   }[] = [];
   apiEntrants.forEach((entrant) => {
     const { id: entrantId } = entrant;
-    if (!Number.isInteger(id)) {
+    if (!Number.isInteger(entrantId)) {
       return;
     }
 
@@ -672,14 +672,15 @@ const TOURNAMENT_PARTICIPANTS_QUERY = `
 `;
 export async function getTournament(
   key: string,
-  slug: string,
+  slugOrShort: string,
   recursive: boolean,
 ) {
   const response = await wrappedFetch(
-    `https://api.start.gg/tournament/${slug}?expand[]=event`,
+    `https://api.start.gg/tournament/${slugOrShort}?expand[]=event`,
   );
   const json = await response.json();
   const { id, name, locationDisplayName: location } = json.entities.tournament;
+  const slug = json.entities.tournament.slug.slice(11);
   const events: Event[] = [];
   const eventIds: number[] = [];
   (json.entities.event as any[])
@@ -763,6 +764,8 @@ export async function getTournament(
   } else if (eventIds.length === 1) {
     await getEvent(key, eventIds[0], recursive);
   }
+
+  return slug;
 }
 
 const GQL_SET_INNER = `

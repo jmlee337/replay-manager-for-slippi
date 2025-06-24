@@ -29,7 +29,7 @@ export default function StartggTournamentForm({
   adminedTournaments: AdminedTournament[];
   gettingTournament: boolean;
   getAdminedTournaments: () => Promise<void>;
-  getTournament: (maybeSlug: string, initial?: boolean) => Promise<boolean>;
+  getTournament: (maybeSlug: string, initial?: boolean) => Promise<string>;
   setSlug: (slug: string) => void;
   close: () => void;
 }) {
@@ -37,12 +37,13 @@ export default function StartggTournamentForm({
     const target = event.target as typeof event.target & {
       slug: { value: string };
     };
-    const newSlug = target.slug.value;
+    const slugOrShort = target.slug.value;
     event.preventDefault();
     event.stopPropagation();
-    if (newSlug) {
-      if (await getTournament(newSlug, true)) {
-        setSlug(newSlug);
+    if (slugOrShort) {
+      const slugActual = await getTournament(slugOrShort, true);
+      if (slugActual) {
+        setSlug(slugActual);
         close();
       }
     }
