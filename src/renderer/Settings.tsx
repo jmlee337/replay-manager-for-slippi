@@ -330,7 +330,7 @@ export default function Settings({
           <Stack>
             <LabeledCheckbox
               checked={guidedMode}
-              label="Use guided mode"
+              label="Use walkthrough mode"
               labelPlacement="end"
               set={async (checked) => {
                 await window.electron.setGuidedMode(checked);

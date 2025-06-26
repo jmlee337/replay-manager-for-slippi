@@ -77,7 +77,7 @@ export default function GuidedDialog({
       >
         {(!tournamentSet || !copyDirSet) && (
           <>
-            <Alert severity="error">Guided mode not ready</Alert>
+            <Alert severity="error">Walkthrough mode not ready</Alert>
             <Button
               onClick={() => {
                 setOpen(true);
@@ -116,7 +116,7 @@ export default function GuidedDialog({
           confirmedCopySettings &&
           state === GuideState.NONE && (
             <Alert severity="success">
-              Guided mode ready, insert USB drive...
+              Walkthrough mode ready, insert USB drive...
             </Alert>
           )}
         {tournamentSet &&
@@ -128,9 +128,9 @@ export default function GuidedDialog({
                 {state === GuideState.SET && 'Select set'}
                 {state === GuideState.REPLAYS && (
                   <>
-                    Select replays
+                    Deselect handwarmers
                     <br />
-                    (deselect handwarmers)
+                    (and select real games)
                   </>
                 )}
                 {state === GuideState.PLAYERS && 'Assign players and report'}
