@@ -21,6 +21,7 @@ import {
   EnforceState,
   EnforcerSetting,
   CopyHostFormat,
+  Stream,
 } from '../common/types';
 
 const electronHandler = {
@@ -137,6 +138,9 @@ const electronHandler = {
     ipcRenderer.invoke('getPhase', id, recursive),
   getPhaseGroup: (id: number): Promise<void> =>
     ipcRenderer.invoke('getPhaseGroup', id),
+  getStreams: (): Promise<Stream[]> => ipcRenderer.invoke('getStreams'),
+  assignStream: (setId: string | number, streamId: number): Promise<void> =>
+    ipcRenderer.invoke('assignStream', setId, streamId),
   resetSet: (id: number): Promise<void> => ipcRenderer.invoke('resetSet', id),
   startSet: (id: number | string): Promise<void> =>
     ipcRenderer.invoke('startSet', id),

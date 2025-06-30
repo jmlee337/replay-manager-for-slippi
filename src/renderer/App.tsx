@@ -85,6 +85,7 @@ import GuidedDialog from './GuidedDialog';
 import StartggTournamentForm from './StartggTournamentForm';
 import ChallongeTournamentForm from './ChallongeTournamentForm';
 import ResetSet from './ResetSet';
+import AssignStream from './AssignStream';
 
 const ENFORCER_VERSION = '1.4.2';
 
@@ -2340,6 +2341,7 @@ function Hello() {
               paddingTop="8px"
               spacing="8px"
             >
+              <AssignStream mode={mode} selectedSet={selectedSet} />
               <ResetSet mode={mode} selectedSet={selectedSet} />
               <Tooltip title="Mark set started">
                 <div>

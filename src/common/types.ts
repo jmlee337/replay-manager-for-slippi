@@ -56,6 +56,7 @@ export type Entrant = {
 };
 
 export type Stream = {
+  id: number;
   domain: string;
   path: string;
 };

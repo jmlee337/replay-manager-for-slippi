@@ -104,7 +104,7 @@ export default function ResetSet({
           setError('');
         }}
       >
-        <DialogTitle>Report error!</DialogTitle>
+        <DialogTitle>Reset error!</DialogTitle>
         <DialogContent>
           <DialogContentText>{error}</DialogContentText>
         </DialogContent>

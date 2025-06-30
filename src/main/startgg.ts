@@ -507,12 +507,18 @@ export async function getPhaseGroup(
         const data = await fetchGql(key, query, {});
         queryStreamSets.forEach(({ setId, streamId }) => {
           const gqlStream = data[`streamId${streamId}`];
-          const stream: Stream = {
-            domain: gqlStream.streamSource.toLowerCase(),
-            path: gqlStream.streamName,
-          };
-          setsToUpdate.get(setId)!.stream = stream;
-          idToStream.set(streamId, stream);
+          if (
+            typeof gqlStream.streamSource === 'string' &&
+            typeof gqlStream.streamName === 'string'
+          ) {
+            const stream: Stream = {
+              id: streamId,
+              domain: gqlStream.streamSource.toLowerCase(),
+              path: gqlStream.streamName,
+            };
+            setsToUpdate.get(setId)!.stream = stream;
+            idToStream.set(streamId, stream);
+          }
         });
         missingStreamSets.splice(0, 500);
       } while (missingStreamSets.length > 0);
@@ -712,6 +718,7 @@ export async function getTournament(
   });
 
   if (eventIdsWithChildren.length === 0) {
+    // 522939
     const streamsPromise = wrappedFetch(
       `https://api.start.gg/station_queue/${id}`,
     );
@@ -742,6 +749,7 @@ export async function getTournament(
     if (Array.isArray(streams)) {
       streams.forEach((stream) => {
         idToStream.set(stream.id, {
+          id: stream.id,
           domain: getDomain(stream.streamSource),
           path: stream.streamName,
         });
@@ -766,6 +774,12 @@ export async function getTournament(
   }
 
   return slug;
+}
+
+export function getStreams() {
+  return Array.from(idToStream.values()).sort((a, b) =>
+    a.path.localeCompare(b.path),
+  );
 }
 
 const GQL_SET_INNER = `
@@ -800,6 +814,7 @@ const GQL_SET_INNER = `
   }
   state
   stream {
+    id
     streamName
     streamSource
   }
@@ -856,8 +871,12 @@ function gqlSetToSet(set: any): Set {
         }))
       : [],
     stream:
-      set.stream && set.stream.streamSource && set.stream.streamName
+      set.stream &&
+      set.stream.id &&
+      set.stream.streamSource &&
+      set.stream.streamName
         ? {
+            id: set.stream.id,
             domain: set.stream.streamSource.toLowerCase(),
             path: set.stream.streamName,
           }
@@ -867,6 +886,22 @@ function gqlSetToSet(set: any): Set {
     updatedAtMs: set.updatedAt ? set.updatedAt * 1000 : 0,
     completedAtMs: set.completedAt ? set.completedAt * 1000 : 0,
   };
+}
+
+const ASSIGN_STREAM_MUTATION = `
+  mutation AssignStream($setId: ID!, $streamId: ID!) {
+    assignStream(setId: $setId, streamId: $streamId) {${GQL_SET_INNER}}
+  }
+`;
+export async function assignStream(
+  key: string,
+  setId: number | string,
+  streamId: number,
+) {
+  const data = await fetchGql(key, ASSIGN_STREAM_MUTATION, { setId, streamId });
+  const updatedSet = gqlSetToSet(data.assignStream);
+  idToSet.set(updatedSet.id, updatedSet);
+  setSelectedSetId(updatedSet.id);
 }
 
 const RESET_SET_MUTATION = `

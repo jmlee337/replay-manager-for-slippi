@@ -267,7 +267,7 @@ export async function getChallongeTournament(
         if (path[path.length - 1] === '/') {
           path = path.slice(0, -1);
         }
-        stationIdToStream.set(station.id, { domain, path });
+        stationIdToStream.set(station.id, { id: station.id, domain, path });
       });
     slugToStationsMap.set(slug, stationIdToStream);
     const data = json.data as any[];

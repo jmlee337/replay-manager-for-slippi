@@ -117,9 +117,10 @@ export default function ManualReport({
           <IconButton
             color="primary"
             disabled={
-              (Number.isInteger(selectedSet.id) &&
-                (selectedSet.id as number) <= 0) ||
-              selectedSet.state === State.COMPLETED
+              !(
+                typeof selectedSet.id === 'string' ||
+                (Number.isInteger(selectedSet.id) && selectedSet.id > 0)
+              ) || selectedSet.state === State.COMPLETED
             }
             size="small"
             onClick={() => {
