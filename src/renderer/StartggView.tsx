@@ -70,8 +70,9 @@ function SetView({
         entrant2Names={entrant2Names}
         entrant2Score={set.entrant2Score}
         fullRoundText={set.fullRoundText}
-        state={set.state}
         showScores={set.state === State.COMPLETED}
+        state={set.state}
+        stream={set.stream}
         wasReported={vlerkMode && set.wasReported}
       />
     </ListItemButton>

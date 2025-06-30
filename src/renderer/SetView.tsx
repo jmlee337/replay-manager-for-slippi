@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
-import { Backup, CheckBox, HourglassTop } from '@mui/icons-material';
+import { Backup, CheckBox, HourglassTop, Tv } from '@mui/icons-material';
 import { Box, Stack, Tooltip } from '@mui/material';
-import { NameWithHighlight } from '../common/types';
+import { NameWithHighlight, Stream } from '../common/types';
 import { highlightColor } from '../common/constants';
 
 const EntrantNames = styled(Stack)`
@@ -53,8 +53,9 @@ export default function SetView({
   entrant2Names,
   entrant2Score,
   fullRoundText,
-  state,
   showScores,
+  state,
+  stream,
   wasReported,
 }: {
   entrant1Names: NameWithHighlight[];
@@ -63,8 +64,9 @@ export default function SetView({
   entrant2Names: NameWithHighlight[];
   entrant2Score: string | null;
   fullRoundText: string;
-  state: number;
   showScores: boolean;
+  state: number;
+  stream: Stream | null;
   wasReported: boolean;
 }) {
   let leftScore = '\u00A0';
@@ -82,17 +84,27 @@ export default function SetView({
     }
   }
 
+  let streamVerb = 'Queued';
+  if (state === 2) {
+    streamVerb = 'Streaming';
+  } else if (state === 3) {
+    streamVerb = 'Streamed';
+  }
+
   return (
     <Stack direction="row" width="100%">
-      {wasReported ? (
-        <Stack alignItems="center" direction="row" width="20px">
+      <Stack alignItems="center" direction="row" width="20px">
+        {wasReported && (
           <Tooltip title="Reported">
             <CheckBox />
           </Tooltip>
-        </Stack>
-      ) : (
-        <Box width="20px" />
-      )}
+        )}
+        {!wasReported && stream && (
+          <Tooltip title={`${streamVerb} on ${stream.path}`}>
+            <Tv fontSize="small" />
+          </Tooltip>
+        )}
+      </Stack>
       <Stack width="calc(100% - 40px)">
         <Box sx={{ typography: 'caption' }} textAlign="center">
           {fullRoundText}

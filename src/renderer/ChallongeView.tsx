@@ -42,8 +42,9 @@ function SetView({
         entrant2Names={setWithNames.entrant2Names}
         entrant2Score={setWithNames.set.entrant2Score}
         fullRoundText={setWithNames.set.fullRoundText}
-        state={setWithNames.set.state}
         showScores={setWithNames.set.state === State.COMPLETED}
+        state={setWithNames.set.state}
+        stream={setWithNames.set.stream}
         wasReported={false}
       />
     </ListItemButton>
