@@ -232,6 +232,25 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     return maybeEject(currentDir);
   });
 
+  ipcMain.removeHandler('deleteSelectedReplays');
+  ipcMain.handle(
+    'deleteSelectedReplays',
+    async (event: IpcMainInvokeEvent, replayPaths: string[]) => {
+      if (trashDir) {
+        const trashSubdir = format(new Date(), 'yyyy-MM-dd HHmmss');
+        const fullPath = path.join(trashDir, trashSubdir);
+        await mkdir(fullPath, { recursive: true });
+        await Promise.all(
+          replayPaths.map(async (replayPath) => {
+            const dstPath = path.join(fullPath, path.basename(replayPath));
+            return copyFile(replayPath, dstPath);
+          }),
+        );
+      }
+      await Promise.all(replayPaths.map(unlink));
+    },
+  );
+
   ipcMain.removeHandler('maybeEject');
   ipcMain.handle('maybeEject', () =>
     maybeEject(replayDirs[replayDirs.length - 1]),

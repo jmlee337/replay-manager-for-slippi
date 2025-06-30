@@ -212,6 +212,7 @@ function Hello() {
   // initial state
   const [dir, setDir] = useState('');
   const [dirInit, setDirInit] = useState(false);
+  const [isUsb, setIsUsb] = useState(false);
   const [copyDir, setCopyDir] = useState('');
   const [host, setHost] = useState<CopyHostOrClient>({
     name: '',
@@ -510,6 +511,7 @@ function Hello() {
         getNewBatchActives(newReplays.filter((replay) => replay.selected)),
       );
       setDir(newDir);
+      setIsUsb(false);
       setDirExists(true);
       setDirInit(false);
       resetOverrides();
@@ -621,6 +623,21 @@ function Hello() {
       setEjecting(false);
     }
   };
+  const deleteSelected = async () => {
+    if (!dir || wouldDeleteCopyDir) {
+      return;
+    }
+
+    setDirDeleting(true);
+    try {
+      await window.electron.deleteSelectedReplays(
+        selectedReplays.map((selectedReplay) => selectedReplay.filePath),
+      );
+      await refreshReplays();
+    } finally {
+      setDirDeleting(false);
+    }
+  };
   const onPlayerOverride = () => {
     setReplays(Array.from(replays));
   };
@@ -695,6 +712,7 @@ function Hello() {
   useEffect(() => {
     window.electron.onUsb((e, newDir) => {
       setDir(newDir);
+      setIsUsb(true);
       setWasDeleted(false);
       refreshReplays(true);
       setEjected(false);
@@ -1626,7 +1644,8 @@ function Hello() {
               {dir &&
                 dirExists &&
                 !gettingReplays &&
-                (replays.length > 0 || invalidReplays.length > 0) && (
+                (replays.length > 0 || invalidReplays.length > 0) &&
+                (isUsb ? (
                   <>
                     <Tooltip
                       arrow
@@ -1691,7 +1710,29 @@ function Hello() {
                       </DialogActions>
                     </Dialog>
                   </>
-                )}
+                ) : (
+                  <Tooltip
+                    arrow
+                    title={
+                      wouldDeleteCopyDir
+                        ? 'Would delete copy folder'
+                        : 'Delete selected replays'
+                    }
+                  >
+                    <div>
+                      <IconButton
+                        disabled={
+                          selectedReplays.length === 0 ||
+                          wouldDeleteCopyDir ||
+                          dirDeleting
+                        }
+                        onClick={() => deleteSelected()}
+                      >
+                        <DeleteForeverOutlined />
+                      </IconButton>
+                    </div>
+                  </Tooltip>
+                ))}
               {dir && !gettingReplays && (
                 <Tooltip arrow title="Refresh replays">
                   <IconButton onClick={() => refreshReplays()}>
@@ -2331,7 +2372,7 @@ function Hello() {
               <SetControls
                 mode={mode}
                 copyReplays={onCopy}
-                deleteReplays={deleteDir}
+                deleteReplays={isUsb ? deleteDir : deleteSelected}
                 reportChallongeSet={reportChallongeSet}
                 reportStartggSet={reportStartggSet}
                 setReportSettings={async (
