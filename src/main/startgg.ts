@@ -748,11 +748,18 @@ export async function getTournament(
     const streams = streamsJson.data?.entities?.stream;
     if (Array.isArray(streams)) {
       streams.forEach((stream) => {
-        idToStream.set(stream.id, {
-          id: stream.id,
-          domain: getDomain(stream.streamSource),
-          path: stream.streamName,
-        });
+        if (
+          Number.isInteger(stream.id) &&
+          stream.id > 0 &&
+          typeof stream.streamSource === 'string' &&
+          typeof stream.streamName === 'string'
+        ) {
+          idToStream.set(stream.id, {
+            id: stream.id,
+            domain: getDomain(stream.streamSource),
+            path: stream.streamName,
+          });
+        }
       });
     }
   }
@@ -871,10 +878,7 @@ function gqlSetToSet(set: any): Set {
         }))
       : [],
     stream:
-      set.stream &&
-      set.stream.id &&
-      set.stream.streamSource &&
-      set.stream.streamName
+      set.stream?.id && set.stream?.streamSource && set.stream?.streamName
         ? {
             id: set.stream.id,
             domain: set.stream.streamSource.toLowerCase(),
