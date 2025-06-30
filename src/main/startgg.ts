@@ -869,6 +869,18 @@ function gqlSetToSet(set: any): Set {
   };
 }
 
+const RESET_SET_MUTATION = `
+  mutation ResetSet($setId: ID!) {
+    resetSet(setId: $setId) {${GQL_SET_INNER}}
+  }
+`;
+export async function resetSet(key: string, setId: number) {
+  const data = await fetchGql(key, RESET_SET_MUTATION, { setId });
+  const updatedSet = gqlSetToSet(data.resetSet);
+  idToSet.set(updatedSet.id, updatedSet);
+  setSelectedSetId(updatedSet.id);
+}
+
 const MARK_SET_IN_PROGRESS_MUTATION = `
   mutation MarkSetInProgress($setId: ID!) {
     markSetInProgress(setId: $setId) {${GQL_SET_INNER}}
