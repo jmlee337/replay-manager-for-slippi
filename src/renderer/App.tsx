@@ -1579,6 +1579,8 @@ function Hello() {
     }
   };
 
+  const superKey = window.electron.isMac ? 'CMD' : 'CTRL';
+
   return (
     <>
       <AppBar position="fixed" color="inherit">
@@ -2197,19 +2199,16 @@ function Hello() {
                 spacing="1em"
               >
                 <Stack>
-                  <Typography variant="body2">
-                    1. Set replay folder and tournament slug
-                  </Typography>
-                  <Typography variant="body2">
-                    3. Drag and drop (or select and assign) players
-                  </Typography>
-                </Stack>
-                <Stack>
-                  <Typography variant="body2">
-                    2. Select replays and set
-                  </Typography>
-                  <Typography variant="body2">
-                    4. Copy replays / Report set
+                  <Typography variant="caption">
+                    {superKey} + F: Search players
+                    {vlerkMode && (
+                      <>
+                        <br />
+                        {superKey} + S: Copy replays
+                      </>
+                    )}
+                    <br />
+                    {superKey} + T: Re-order replays
                   </Typography>
                 </Stack>
               </Stack>
