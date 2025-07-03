@@ -216,7 +216,7 @@ function getDomain(streamSource: number) {
     case 5:
       return 'youtube';
     default:
-      return 'unknown';
+      return '';
   }
 }
 
@@ -745,22 +745,38 @@ export async function getTournament(
 
     const streamsResponse = await streamsPromise;
     const streamsJson = await streamsResponse.json();
-    const streams = streamsJson.data?.entities?.stream;
-    if (Array.isArray(streams)) {
-      streams.forEach((stream) => {
+    idToStream.clear();
+    const streamOrStreams = streamsJson.data?.entities?.stream;
+    if (Array.isArray(streamOrStreams)) {
+      streamOrStreams.forEach((stream) => {
+        const domain = getDomain(stream.streamSource);
         if (
           Number.isInteger(stream.id) &&
           stream.id > 0 &&
-          typeof stream.streamSource === 'string' &&
+          domain &&
           typeof stream.streamName === 'string'
         ) {
           idToStream.set(stream.id, {
             id: stream.id,
-            domain: getDomain(stream.streamSource),
+            domain,
             path: stream.streamName,
           });
         }
       });
+    } else {
+      const domain = getDomain(streamOrStreams.streamSource);
+      if (
+        Number.isInteger(streamOrStreams.id) &&
+        streamOrStreams.id > 0 &&
+        domain &&
+        typeof streamOrStreams.streamName === 'string'
+      ) {
+        idToStream.set(streamOrStreams.id, {
+          id: streamOrStreams.id,
+          domain,
+          path: streamOrStreams.streamName,
+        });
+      }
     }
   }
 
