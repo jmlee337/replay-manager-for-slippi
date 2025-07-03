@@ -1,9 +1,18 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  createRef,
+  RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   Alert,
   AppBar,
+  Avatar,
   Backdrop,
+  Box,
   Button,
   Checkbox,
   CircularProgress,
@@ -12,10 +21,14 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
+  FormControl,
   IconButton,
   InputBase,
+  InputLabel,
   ListItem,
+  MenuItem,
   Paper,
+  Select,
   Stack,
   Toolbar,
   Tooltip,
@@ -73,6 +86,7 @@ import ErrorDialog from './ErrorDialog';
 import Settings from './Settings';
 import ManualReport from './ManualReport';
 import {
+  characterColorIndexLength,
   characterNames,
   frameMsDivisor,
   stageNames,
@@ -86,6 +100,7 @@ import StartggTournamentForm from './StartggTournamentForm';
 import ChallongeTournamentForm from './ChallongeTournamentForm';
 import ResetSet from './ResetSet';
 import AssignStream from './AssignStream';
+import getCharacterIcon from './getCharacterIcon';
 
 const ENFORCER_VERSION = '1.4.2';
 
@@ -109,6 +124,7 @@ const TopColumn = styled(Stack)`
   flex-shrink: 1;
   overflow-y: scroll;
   padding: 64px 0 8px;
+  scroll-padding-top: 64px;
 `;
 
 const AppBarSection = styled(Stack)`
@@ -188,6 +204,10 @@ function Hello() {
   const [challongeApiKey, setChallongeApiKey] = useState('');
   const [enforcerSetting, setEnforcerSetting] = useState(EnforcerSetting.NONE);
   const [vlerkMode, setVlerkMode] = useState(false);
+  const [vlerkModeExternalId, setVlerkModeExternalId] = useState(-1);
+  const [vlerkModeColorIndex, setVlerkModeColorIndex] = useState(-1);
+  const [vlerkModeFilterLastIndex, setVlerkModeFilterLastIndex] = useState(0);
+  const [vlerkModeFilterNotFound, setVlerkModeFilterNotFound] = useState(false);
   const [guidedMode, setGuidedMode] = useState(false);
   const [fileNameFormat, setFileNameFormat] = useState('');
   const [folderNameFormat, setFolderNameFormat] = useState('');
@@ -422,6 +442,7 @@ function Hello() {
   const [dirDeleting, setDirDeleting] = useState(false);
   const [dirExists, setDirExists] = useState(true);
   const [replays, setReplays] = useState<Replay[]>([]);
+  const [replayRefs, setReplayRefs] = useState<RefObject<HTMLDivElement>[]>([]);
   const [invalidReplays, setInvalidReplays] = useState<InvalidReplay[]>([]);
   const [gettingReplays, setGettingReplays] = useState(false);
   let hasRemainingReplays = false;
@@ -519,7 +540,7 @@ function Hello() {
       resetOverrides();
       const skew = hasTimeSkew(newReplays);
       setSkewDetected(skew);
-      if (skew) {
+      if (skew && !vlerkMode) {
         setSkewDialogOpen(true);
       }
       setReplays(newReplays);
@@ -533,6 +554,7 @@ function Hello() {
           ),
         );
       }
+      setReplayRefs(newReplays.map(() => createRef()));
       setWasDeleted(false);
     }
     setGettingReplays(false);
@@ -586,7 +608,7 @@ function Hello() {
       resetOverrides();
       const skew = hasTimeSkew(newReplays);
       setSkewDetected(skew);
-      if (skew) {
+      if (skew && !vlerkMode) {
         setSkewDialogOpen(true);
       }
       setReplays(newReplays);
@@ -600,9 +622,10 @@ function Hello() {
           ),
         );
       }
+      setReplayRefs(newReplays.map(() => createRef()));
       setGettingReplays(false);
     },
-    [allReplaysSelected, guideActive, mode],
+    [allReplaysSelected, guideActive, mode, vlerkMode],
   );
 
   const wouldDeleteCopyDir =
@@ -1899,6 +1922,7 @@ function Hello() {
                   dirInit={dirInit}
                   numAvailablePlayers={availablePlayers.length}
                   replays={replays}
+                  replayRefs={replayRefs}
                   selectedChipData={selectedChipData}
                   findUnusedPlayer={findUnusedPlayer}
                   onClick={onReplayClick}
@@ -2198,6 +2222,162 @@ function Hello() {
                 marginTop="8px"
                 spacing="1em"
               >
+                {vlerkMode && (
+                  <>
+                    <Box>
+                      <FormControl>
+                        <InputLabel id="vlerk-mode-character-select-label">
+                          Character
+                        </InputLabel>
+                        <Select
+                          labelId="vlerk-mode-character-select-label"
+                          id="vlerk-mode-character-select"
+                          value={vlerkModeExternalId}
+                          label="Character"
+                          onChange={(event) => {
+                            if (Number.isInteger(event.target.value)) {
+                              setVlerkModeExternalId(
+                                event.target.value as number,
+                              );
+                              setVlerkModeColorIndex(-1);
+                            }
+                          }}
+                        >
+                          <MenuItem value={-1}>Any Character</MenuItem>
+                          {Array.from(characterNames.entries())
+                            .sort((a, b) => a[1].localeCompare(b[1]))
+                            .map(([externalId, characterName]) => (
+                              <MenuItem key={externalId} value={externalId}>
+                                {characterName}
+                              </MenuItem>
+                            ))}
+                        </Select>
+                      </FormControl>
+                    </Box>
+                    <Box>
+                      <FormControl>
+                        <InputLabel id="vlerk-mode-color-select-label">
+                          Color
+                        </InputLabel>
+                        <Select
+                          labelId="vlerk-mode-color-select-label"
+                          id="vlerk-mode-color-select"
+                          value={vlerkModeColorIndex}
+                          label="Color"
+                          onChange={(event) => {
+                            if (Number.isInteger(event.target.value)) {
+                              setVlerkModeColorIndex(
+                                event.target.value as number,
+                              );
+                            }
+                          }}
+                        >
+                          <MenuItem value={-1}>Any Color</MenuItem>
+                          {vlerkModeExternalId !== -1 &&
+                            Array(
+                              characterColorIndexLength.get(
+                                vlerkModeExternalId,
+                              )!,
+                            )
+                              .fill(0)
+                              .map((_, i) => i)
+                              .map((i) => (
+                                <MenuItem key={i} value={i}>
+                                  <Avatar
+                                    src={getCharacterIcon(
+                                      vlerkModeExternalId,
+                                      i,
+                                    )}
+                                    style={{ height: '24px', width: '24px' }}
+                                    variant="square"
+                                  />
+                                </MenuItem>
+                              ))}
+                        </Select>
+                      </FormControl>
+                    </Box>
+                    <Stack alignItems="center">
+                      <Button
+                        disabled={
+                          replays.length === 0 ||
+                          (vlerkModeExternalId === -1 &&
+                            vlerkModeColorIndex === -1)
+                        }
+                        onClick={() => {
+                          for (
+                            let i = vlerkModeFilterLastIndex + 1;
+                            i < replays.length;
+                            i += 1
+                          ) {
+                            const replay = replays[i];
+                            if (
+                              replay.players.some(
+                                (player) =>
+                                  player.playerType === 0 &&
+                                  (vlerkModeExternalId === -1 ||
+                                    vlerkModeExternalId ===
+                                      player.externalCharacterId) &&
+                                  (vlerkModeColorIndex === -1 ||
+                                    vlerkModeColorIndex ===
+                                      player.costumeIndex),
+                              )
+                            ) {
+                              replayRefs[i].current!.scrollIntoView({
+                                behavior: 'smooth',
+                              });
+                              setVlerkModeFilterLastIndex(i);
+                              setVlerkModeFilterNotFound(false);
+                              return;
+                            }
+                          }
+                          if (vlerkModeFilterLastIndex === 0) {
+                            setVlerkModeFilterNotFound(true);
+                            return;
+                          }
+                          // return to top and continue
+                          for (
+                            let i = 0;
+                            i < vlerkModeFilterLastIndex;
+                            i += 1
+                          ) {
+                            const replay = replays[i];
+                            if (
+                              replay.players.some(
+                                (player) =>
+                                  player.playerType === 0 &&
+                                  (vlerkModeExternalId === -1 ||
+                                    vlerkModeExternalId ===
+                                      player.externalCharacterId) &&
+                                  (vlerkModeColorIndex === -1 ||
+                                    vlerkModeColorIndex ===
+                                      player.costumeIndex),
+                              )
+                            ) {
+                              replayRefs[i].current!.scrollIntoView({
+                                behavior: 'smooth',
+                              });
+                              setVlerkModeFilterLastIndex(i);
+                              setVlerkModeFilterNotFound(false);
+                              return;
+                            }
+                          }
+                          setVlerkModeFilterLastIndex(0);
+                          setVlerkModeFilterNotFound(true);
+                        }}
+                        variant="contained"
+                      >
+                        Next
+                      </Button>
+                      {vlerkModeFilterNotFound ? (
+                        <Typography lineHeight="20px" variant="caption">
+                          Not found
+                        </Typography>
+                      ) : (
+                        <Box height="20px" />
+                      )}
+                    </Stack>
+                  </>
+                )}
                 <Stack>
                   <Typography variant="caption">
                     {superKey} + F: Search players
