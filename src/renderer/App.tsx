@@ -78,7 +78,6 @@ import {
 } from '../common/types';
 import { DraggableChip, DroppableChip } from './DragAndDrop';
 import ReplayList, { SkewReplay } from './ReplayList';
-import StartggView from './StartggView';
 import './App.css';
 import CopyControls from './CopyControls';
 import SetControls from './SetControls';
@@ -91,16 +90,14 @@ import {
   frameMsDivisor,
   stageNames,
 } from '../common/constants';
-import ManualView from './ManualView';
 import ManualBar from './ManualBar';
-import ChallongeView from './ChallongeView';
-import SearchBox from './SearchBox';
 import GuidedDialog from './GuidedDialog';
 import StartggTournamentForm from './StartggTournamentForm';
 import ChallongeTournamentForm from './ChallongeTournamentForm';
 import ResetSet from './ResetSet';
 import AssignStream from './AssignStream';
 import getCharacterIcon from './getCharacterIcon';
+import RightColumn from './RightColumn';
 
 const ENFORCER_VERSION = '1.4.2';
 
@@ -764,7 +761,6 @@ function Hello() {
 
   const [slugDialogOpen, setSlugDialogOpen] = useState(false);
   const [gettingTournament, setGettingTournament] = useState(false);
-  const [searchSubstr, setSearchSubstr] = useState('');
 
   // Challonge tournament view
   const getChallongeTournament = async (maybeSlug: string) => {
@@ -779,15 +775,6 @@ function Hello() {
       showErrorDialog([e.toString()]);
     } finally {
       setGettingTournament(false);
-    }
-  };
-
-  // start.gg tournament view
-  const getPhaseGroup = async (id: number) => {
-    try {
-      await window.electron.getPhaseGroup(id);
-    } catch (e: any) {
-      showErrorDialog([e.toString()]);
     }
   };
 
@@ -986,22 +973,6 @@ function Hello() {
     );
   };
 
-  const getPhase = async (id: number, recursive: boolean = false) => {
-    try {
-      await window.electron.getPhase(id, recursive);
-    } catch (e: any) {
-      showErrorDialog([e.toString()]);
-    }
-  };
-
-  const getEvent = async (id: number, recursive: boolean = false) => {
-    try {
-      await window.electron.getEvent(id, recursive);
-    } catch (e: any) {
-      showErrorDialog([e.toString()]);
-    }
-  };
-
   const getTournament = async (maybeSlug: string, initial: boolean = false) => {
     if (!maybeSlug) {
       return '';
@@ -1044,38 +1015,6 @@ function Hello() {
     setSelectedSet(set);
     setOverrides(newOverrides);
     setReplays(newReplays);
-  };
-  const selectStartggSet = async (
-    set: Set,
-    phaseGroup: SelectedPhaseGroup,
-    phase: SelectedPhase,
-    event: SelectedEvent,
-  ) => {
-    selectSet(set);
-    setSelectedSetChain({
-      event,
-      phase,
-      phaseGroup,
-    });
-    await window.electron.setSelectedSetChain(
-      event.id,
-      phase.id,
-      phaseGroup.id,
-    );
-  };
-  const selectChallongeSet = async (
-    set: Set,
-    selectedTournament: ChallongeTournament,
-  ) => {
-    selectSet(set);
-    setSelectedChallongeTournament({
-      name: selectedTournament.name,
-      slug: selectedTournament.slug,
-      tournamentType: selectedTournament.tournamentType,
-    });
-    await window.electron.setSelectedChallongeTournament(
-      selectedTournament.slug,
-    );
   };
 
   const [startingSet, setStartingSet] = useState(false);
@@ -2097,63 +2036,22 @@ function Hello() {
                 : undefined,
           }}
         >
-          <SearchBox
+          <RightColumn
             mode={mode}
-            searchSubstr={searchSubstr}
-            setSearchSubstr={setSearchSubstr}
+            guideState={guideState}
+            selectSet={selectSet}
+            setGuideState={setGuideState}
             vlerkMode={vlerkMode}
+            selectedSetChain={selectedSetChain}
+            setSelectedSetChain={setSelectedSetChain}
+            startggTournament={tournament}
+            challongeTournaments={challongeTournaments}
+            getChallongeTournament={getChallongeTournament}
+            setSelectedChallongeTournament={setSelectedChallongeTournament}
+            manualNames={manualNames}
+            selectedChipData={selectedChipData}
+            setSelectedChipData={setSelectedChipData}
           />
-          {mode === Mode.STARTGG && (
-            <StartggView
-              searchSubstr={searchSubstr}
-              tournament={tournament}
-              vlerkMode={vlerkMode}
-              selectedEventId={selectedSetChain.event?.id}
-              selectedPhaseId={selectedSetChain.phase?.id}
-              selectedPhaseGroupId={selectedSetChain.phaseGroup?.id}
-              getEvent={(id: number) => getEvent(id)}
-              getPhase={(id: number) => getPhase(id)}
-              getPhaseGroup={getPhaseGroup}
-              selectSet={async (
-                set: Set,
-                phaseGroup: SelectedPhaseGroup,
-                phase: SelectedPhase,
-                event: SelectedEvent,
-              ) => {
-                await selectStartggSet(set, phaseGroup, phase, event);
-                if (guideState !== GuideState.NONE) {
-                  setGuideState(GuideState.REPLAYS);
-                }
-              }}
-            />
-          )}
-          {mode === Mode.CHALLONGE &&
-            Array.from(challongeTournaments.values()).map(
-              (challongeTournament) => (
-                <ChallongeView
-                  key={challongeTournament.slug}
-                  searchSubstr={searchSubstr}
-                  tournament={challongeTournament}
-                  getChallongeTournament={() =>
-                    getChallongeTournament(challongeTournament.slug)
-                  }
-                  selectSet={(set: Set) => {
-                    selectChallongeSet(set, challongeTournament);
-                    if (guideState !== GuideState.NONE) {
-                      setGuideState(GuideState.REPLAYS);
-                    }
-                  }}
-                />
-              ),
-            )}
-          {mode === Mode.MANUAL && (
-            <ManualView
-              manualNames={manualNames}
-              searchSubstr={searchSubstr}
-              selectedChipData={selectedChipData}
-              setSelectedChipData={setSelectedChipData}
-            />
-          )}
         </TopColumn>
       </TopColumns>
       <Bottom elevation={3}>
