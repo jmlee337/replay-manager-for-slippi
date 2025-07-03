@@ -763,7 +763,7 @@ export async function getTournament(
           });
         }
       });
-    } else {
+    } else if (typeof streamOrStreams === 'object') {
       const domain = getDomain(streamOrStreams.streamSource);
       if (
         Number.isInteger(streamOrStreams.id) &&
