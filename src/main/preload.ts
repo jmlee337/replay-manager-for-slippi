@@ -245,7 +245,13 @@ const electronHandler = {
     ipcRenderer.on('tournament', callback);
     ipcRenderer.invoke('setSelectedSetId', selectedSetId);
   },
-  onUsb: (callback: (event: IpcRendererEvent, newDir: string) => void) => {
+  onUsb: (
+    callback: (
+      event: IpcRendererEvent,
+      newDir: string,
+      newIsUsb: boolean,
+    ) => void,
+  ) => {
     ipcRenderer.removeAllListeners('usbstorage');
     ipcRenderer.on('usbstorage', callback);
   },

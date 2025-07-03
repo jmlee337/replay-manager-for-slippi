@@ -735,9 +735,9 @@ function Hello() {
     );
   }, [confirmedCopySettings, copyDirSet, selectedSet, tournamentSet]);
   useEffect(() => {
-    window.electron.onUsb((e, newDir) => {
+    window.electron.onUsb((e, newDir, newIsUsb) => {
       setDir(newDir);
-      setIsUsb(true);
+      setIsUsb(newIsUsb);
       setWasDeleted(false);
       refreshReplays(true);
       setEjected(false);

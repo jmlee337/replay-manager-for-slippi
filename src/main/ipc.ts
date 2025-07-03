@@ -80,9 +80,14 @@ import {
   stopListening,
 } from './host';
 
+type ReplayDir = {
+  dir: string;
+  usbKey: string;
+};
+
 export default function setupIPCs(mainWindow: BrowserWindow): void {
   const store = new Store<{ copySettings: CopySettings }>();
-  let replayDirs: string[] = [];
+  let replayDirs: ReplayDir[] = [];
   const knownUsbs = new Map<string, boolean>();
   const onInsert = (e: any) => {
     if (knownUsbs.has(e.data.key)) {
@@ -91,14 +96,17 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
 
     if (e.data.isAccessible) {
       knownUsbs.set(e.data.key, true);
-      replayDirs.push(
-        process.platform === 'win32'
-          ? `${e.data.key}Slippi`
-          : path.join(e.data.key, 'Slippi'),
-      );
+      replayDirs.push({
+        dir:
+          process.platform === 'win32'
+            ? `${e.data.key}Slippi`
+            : path.join(e.data.key, 'Slippi'),
+        usbKey: e.data.key,
+      });
       mainWindow.webContents.send(
         'usbstorage',
-        replayDirs[replayDirs.length - 1],
+        replayDirs[replayDirs.length - 1].dir,
+        true,
       );
     }
   };
@@ -108,10 +116,13 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     }
 
     knownUsbs.delete(e.data.key);
-    replayDirs = replayDirs.filter((dir) => !dir.startsWith(e.data.key));
+    replayDirs = replayDirs.filter((dir) => !dir.dir.startsWith(e.data.key));
+    const newDir =
+      replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : null;
     mainWindow.webContents.send(
       'usbstorage',
-      replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : '',
+      newDir ? newDir.dir : '',
+      Boolean(newDir?.usbKey),
     );
   };
   detectUsb.removeAllListeners('insert');
@@ -148,23 +159,22 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : '';
     }
     if (chosenReplaysDir) {
-      const spliceI = replayDirs.indexOf(chosenReplaysDir);
+      const spliceI = replayDirs.findIndex(
+        ({ dir }) => dir === chosenReplaysDir,
+      );
       if (spliceI >= 0) {
         replayDirs.splice(spliceI, 1);
       }
     }
     [chosenReplaysDir] = openDialogRes.filePaths;
-    replayDirs.push(chosenReplaysDir);
+    replayDirs.push({ dir: chosenReplaysDir, usbKey: '' });
     return chosenReplaysDir;
   });
 
-  const maybeEject = (currentDir: string) => {
-    const key = Array.from(knownUsbs.keys()).find((usbKey) =>
-      currentDir.startsWith(usbKey),
-    );
-    if (key) {
+  const maybeEject = (currentDir: ReplayDir) => {
+    if (currentDir.usbKey) {
       return new Promise<boolean>((resolve, reject) => {
-        eject(key, (error: Error) => {
+        eject(currentDir.usbKey, (error: Error) => {
           if (error) {
             reject(error);
           } else {
@@ -207,11 +217,13 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     }
 
     const currentDir = replayDirs[replayDirs.length - 1];
-    if (currentDir && copyDir && currentDir === copyDir) {
+    if (currentDir && copyDir && currentDir.dir === copyDir) {
       return Promise.resolve(false);
     }
 
-    const slpFilenames = (await readdir(currentDir, { withFileTypes: true }))
+    const slpFilenames = (
+      await readdir(currentDir.dir, { withFileTypes: true })
+    )
       .filter((dirent) => dirent.isFile() && dirent.name.endsWith('.slp'))
       .map((dirent) => dirent.name);
     if (trashDir) {
@@ -220,7 +232,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       await mkdir(fullPath, { recursive: true });
       await Promise.all(
         slpFilenames.map(async (filename) => {
-          const srcPath = path.join(currentDir, filename);
+          const srcPath = path.join(currentDir.dir, filename);
           const dstPath = path.join(fullPath, filename);
           return copyFile(srcPath, dstPath);
         }),
@@ -228,7 +240,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     }
     await Promise.all(
       slpFilenames.map(async (filename) => {
-        const unlinkPath = path.join(currentDir, filename);
+        const unlinkPath = path.join(currentDir.dir, filename);
         return unlink(unlinkPath);
       }),
     );
@@ -266,7 +278,9 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     if (replayDirs.length === 0) {
       throw new Error();
     }
-    const retReplays = await getReplaysInDir(replayDirs[replayDirs.length - 1]);
+    const retReplays = await getReplaysInDir(
+      replayDirs[replayDirs.length - 1].dir,
+    );
     if (
       (getHostFormat().enforcerSetting ?? enforcerSetting) !==
       EnforcerSetting.NONE
