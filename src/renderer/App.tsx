@@ -195,10 +195,7 @@ function Hello() {
   };
 
   // settings
-  const [gotSettings, setGotSettings] = useState(false);
   const [mode, setMode] = useState<Mode>(Mode.STARTGG);
-  const [startggApiKey, setStartggApiKey] = useState('');
-  const [challongeApiKey, setChallongeApiKey] = useState('');
   const [enforcerSetting, setEnforcerSetting] = useState(EnforcerSetting.NONE);
   const [vlerkMode, setVlerkMode] = useState(false);
   const [vlerkModeExternalId, setVlerkModeExternalId] = useState(-1);
@@ -263,8 +260,6 @@ function Hello() {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
       const modePromise = window.electron.getMode();
-      const startggKeyPromise = window.electron.getStartggKey();
-      const challongeKeyPromise = window.electron.getChallongeKey();
       const useLANPromise = window.electron.getUseLAN();
       const enforcerSettingPromise = window.electron.getEnforcerSetting();
       const vlerkModePromise = window.electron.getVlerkMode();
@@ -296,8 +291,6 @@ function Hello() {
 
       setAppVersion(await appVersionPromise);
       setMode(await modePromise);
-      setStartggApiKey(await startggKeyPromise);
-      setChallongeApiKey(await challongeKeyPromise);
       setUseLAN(await useLANPromise);
       setEnforcerSetting(await enforcerSettingPromise);
       setFileNameFormat(await fileNameFormatPromise);
@@ -361,8 +354,6 @@ function Hello() {
       if (errorMessages.length > 0) {
         showErrorDialog(errorMessages);
       }
-
-      setGotSettings(true);
     };
     inner();
   }, []);
@@ -2511,7 +2502,6 @@ function Hello() {
       <Settings
         appVersion={appVersion}
         latestAppVersion={latestAppVersion}
-        gotSettings={gotSettings}
         mode={mode}
         setMode={async (newMode: Mode) => {
           setMode(newMode);
@@ -2525,10 +2515,6 @@ function Hello() {
           await window.electron.setSelectedSetChain(0, 0, 0);
           await window.electron.setSelectedChallongeTournament('');
         }}
-        startggApiKey={startggApiKey}
-        setStartggApiKey={setStartggApiKey}
-        challongeApiKey={challongeApiKey}
-        setChallongeApiKey={setChallongeApiKey}
         useLAN={useLAN}
         setUseLAN={setUseLAN}
         enforcerSetting={enforcerSetting}

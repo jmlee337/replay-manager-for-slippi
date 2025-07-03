@@ -51,13 +51,8 @@ function LabeledRadioButton({ label, value }: { label: string; value: Mode }) {
 export default function Settings({
   appVersion,
   latestAppVersion,
-  gotSettings,
   mode,
   setMode,
-  startggApiKey,
-  setStartggApiKey,
-  challongeApiKey,
-  setChallongeApiKey,
   enforcerSetting,
   setEnforcerSetting,
   vlerkMode,
@@ -79,13 +74,8 @@ export default function Settings({
 }: {
   appVersion: string;
   latestAppVersion: string;
-  gotSettings: boolean;
   mode: Mode;
   setMode: (mode: Mode) => void;
-  startggApiKey: string;
-  setStartggApiKey: (key: string) => void;
-  challongeApiKey: string;
-  setChallongeApiKey: (key: string) => void;
   enforcerSetting: EnforcerSetting;
   setEnforcerSetting: (enforcerSetting: EnforcerSetting) => void;
   vlerkMode: boolean;
@@ -105,6 +95,19 @@ export default function Settings({
   enforcerVersion: string;
   hostFormat: CopyHostFormat;
 }) {
+  const [gotSettings, setGotSettings] = useState(false);
+  const [startggApiKey, setStartggApiKey] = useState('');
+  const [challongeApiKey, setChallongeApiKey] = useState('');
+  useEffect(() => {
+    (async () => {
+      const startggKeyPromise = window.electron.getStartggKey();
+      const challongeKeyPromise = window.electron.getChallongeKey();
+      setStartggApiKey(await startggKeyPromise);
+      setChallongeApiKey(await challongeKeyPromise);
+      setGotSettings(true);
+    })();
+  }, []);
+
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
