@@ -146,7 +146,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
 
   ipcMain.removeHandler('getReplaysDir');
   ipcMain.handle('getReplaysDir', () =>
-    replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : '',
+    replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '',
   );
 
   let chosenReplaysDir = '';
@@ -156,7 +156,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       properties: ['openDirectory', 'showHiddenFiles'],
     });
     if (openDialogRes.canceled) {
-      return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : '';
+      return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
     }
     if (chosenReplaysDir) {
       const spliceI = replayDirs.findIndex(
