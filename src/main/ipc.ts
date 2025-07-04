@@ -8,18 +8,13 @@ import {
   shell,
 } from 'electron';
 import Store from 'electron-store';
-import {
-  appendFile,
-  copyFile,
-  mkdir,
-  readdir,
-  readFile,
-  unlink,
-} from 'fs/promises';
+import { appendFile, copyFile, mkdir, readdir, unlink } from 'fs/promises';
 import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
 import { format } from 'date-fns';
+import { ModuleThread, spawn, Thread, Worker } from 'threads';
+import { Enforcer } from './workers/enforcer';
 import {
   ChallongeMatchItem,
   Context,
@@ -93,10 +88,15 @@ type ReplayDir = {
   usbKey: string;
 };
 
-export default function setupIPCs(
-  mainWindow: BrowserWindow,
-  enforcerWindow: BrowserWindow,
-): void {
+let enforcer: ModuleThread<Enforcer> | undefined;
+async function spawnEnforcer() {
+  if (enforcer) {
+    await Thread.terminate(enforcer);
+  }
+  enforcer = await spawn<Enforcer>(new Worker('./workers/enforcer'));
+}
+
+export default function setupIPCs(mainWindow: BrowserWindow): void {
   const store = new Store<{ copySettings: CopySettings }>();
   let replayDirs: ReplayDir[] = [];
   const knownUsbs = new Map<string, boolean>();
@@ -284,6 +284,7 @@ export default function setupIPCs(
 
   let enforcerSetting = store.get('enforcerSetting', EnforcerSetting.NONE);
   setOwnEnforcerSetting(enforcerSetting);
+  const enforcerSpawnPromise = spawnEnforcer();
   ipcMain.removeHandler('getReplaysInDir');
   ipcMain.handle('getReplaysInDir', async () => {
     if (replayDirs.length === 0) {
@@ -301,15 +302,43 @@ export default function setupIPCs(
         fileNameToPlayerFailures: new Map(),
       };
       mainWindow.webContents.send('enforceState', pendingState);
-      enforcerWindow.webContents.send(
-        'enforcer',
-        await Promise.all(
-          retReplays.replays.map(async (replay) => ({
+      await enforcerSpawnPromise;
+      enforcer!
+        .enforce(
+          retReplays.replays.map((replay) => ({
             fileName: replay.fileName,
-            buffer: (await readFile(replay.filePath)).buffer,
+            filePath: replay.filePath,
           })),
-        ),
-      );
+        )
+        .then(
+          // eslint-disable-next-line promise/always-return
+          (
+            results: {
+              fileName: string;
+              playerFailures: EnforcePlayerFailure[];
+            }[],
+          ) => {
+            const fileNameToPlayerFailures = new Map(
+              results.map(({ fileName, playerFailures }) => [
+                fileName,
+                playerFailures,
+              ]),
+            );
+            const doneState: EnforceState = {
+              status: EnforceStatus.DONE,
+              fileNameToPlayerFailures,
+            };
+            mainWindow.webContents.send('enforceState', doneState);
+          },
+        )
+        .catch((reason: any) => {
+          const errorState: EnforceState = {
+            status: EnforceStatus.ERROR,
+            fileNameToPlayerFailures: new Map(),
+            reason,
+          };
+          mainWindow.webContents.send('enforceState', errorState);
+        });
     }
     return retReplays;
   });
@@ -1070,33 +1099,5 @@ export default function setupIPCs(
       'https://github.com/jmlee337/replay-manager-for-slippi/releases/latest',
     );
     app.quit();
-  });
-
-  ipcMain.on(
-    'sendEnforcerResults',
-    (
-      event,
-      results: { fileName: string; playerFailures: EnforcePlayerFailure[] }[],
-    ) => {
-      const fileNameToPlayerFailures = new Map(
-        results.map(({ fileName, playerFailures }) => [
-          fileName,
-          playerFailures,
-        ]),
-      );
-      const doneState: EnforceState = {
-        status: EnforceStatus.DONE,
-        fileNameToPlayerFailures,
-      };
-      mainWindow.webContents.send('enforceState', doneState);
-    },
-  );
-  ipcMain.on('sendEnforcerError', (event, reason: any) => {
-    const errorState: EnforceState = {
-      status: EnforceStatus.ERROR,
-      fileNameToPlayerFailures: new Map(),
-      reason,
-    };
-    mainWindow.webContents.send('enforceState', errorState);
   });
 }

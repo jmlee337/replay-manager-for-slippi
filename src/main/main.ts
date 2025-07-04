@@ -15,7 +15,6 @@ import { resolveHtmlPath } from './util';
 import setupIPCs from './ipc';
 
 let mainWindow: BrowserWindow | null = null;
-let enforcerWindow: BrowserWindow | null = null;
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -95,20 +94,7 @@ const createWindow = async () => {
     return { action: 'deny' };
   });
 
-  if (enforcerWindow === null) {
-    enforcerWindow = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        nodeIntegration: true,
-        preload: app.isPackaged
-          ? path.join(__dirname, 'preload.js')
-          : path.join(__dirname, '../../.erb/dll/preload.js'),
-      },
-    });
-    enforcerWindow.loadURL(resolveHtmlPath('enforcer.html'));
-  }
-
-  setupIPCs(mainWindow, enforcerWindow);
+  setupIPCs(mainWindow);
 };
 
 /**
