@@ -515,8 +515,11 @@ function Hello() {
     setGettingReplays(true);
     const newDir = await window.electron.chooseReplaysDir();
     if (newDir && newDir !== dir) {
-      const { replays: newReplays, invalidReplays: newInvalidReplays } =
-        await window.electron.getReplaysInDir();
+      const {
+        replays: newReplays,
+        invalidReplays: newInvalidReplays,
+        replayLoadCount: newReplayLoadCount,
+      } = await window.electron.getReplaysInDir();
       applyAllReplaysSelected(newReplays, allReplaysSelected);
       setBatchActives(
         getNewBatchActives(newReplays.filter((replay) => replay.selected)),
@@ -532,7 +535,7 @@ function Hello() {
         setSkewDialogOpen(true);
       }
       setReplays(newReplays);
-      setReplayLoadCount((r) => r + 1);
+      setReplayLoadCount(newReplayLoadCount);
       setInvalidReplays(newInvalidReplays);
       if (newInvalidReplays.length > 0) {
         showErrorDialog(
@@ -574,6 +577,7 @@ function Hello() {
         const res = await window.electron.getReplaysInDir();
         newReplays = res.replays;
         newInvalidReplays = res.invalidReplays;
+        setReplayLoadCount(res.replayLoadCount);
         setDirExists(true);
         if (triggerGuide && newReplays.length > 0) {
           setGuideState(
@@ -600,7 +604,6 @@ function Hello() {
         setSkewDialogOpen(true);
       }
       setReplays(newReplays);
-      setReplayLoadCount((r) => r + 1);
       setInvalidReplays(newInvalidReplays);
       if (newInvalidReplays.length > 0) {
         showErrorDialog(
@@ -2476,6 +2479,7 @@ function Hello() {
                 enforcerSetting={enforcerSetting}
                 smuggleCostumeIndex={smuggleCostumeIndex}
                 wouldDeleteCopyDir={wouldDeleteCopyDir}
+                replayLoadCount={replayLoadCount}
               />
             </Stack>
           </Stack>

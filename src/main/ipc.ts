@@ -282,6 +282,7 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     maybeEject(replayDirs[replayDirs.length - 1]),
   );
 
+  let replayLoadCount = 0;
   let enforcerSetting = store.get('enforcerSetting', EnforcerSetting.NONE);
   setOwnEnforcerSetting(enforcerSetting);
   const enforcerSpawnPromise = spawnEnforcer();
@@ -293,6 +294,8 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
     const retReplays = await getReplaysInDir(
       replayDirs[replayDirs.length - 1].dir,
     );
+    replayLoadCount += 1;
+    const currentReplayLoadCount = replayLoadCount;
     if (
       (getHostFormat().enforcerSetting ?? enforcerSetting) !==
       EnforcerSetting.NONE
@@ -301,7 +304,11 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         status: EnforceStatus.PENDING,
         fileNameToPlayerFailures: new Map(),
       };
-      mainWindow.webContents.send('enforceState', pendingState);
+      mainWindow.webContents.send(
+        'enforceState',
+        pendingState,
+        currentReplayLoadCount,
+      );
       await enforcerSpawnPromise;
       enforcer!
         .enforce(
@@ -328,7 +335,11 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
               status: EnforceStatus.DONE,
               fileNameToPlayerFailures,
             };
-            mainWindow.webContents.send('enforceState', doneState);
+            mainWindow.webContents.send(
+              'enforceState',
+              doneState,
+              currentReplayLoadCount,
+            );
           },
         )
         .catch((reason: any) => {
@@ -337,10 +348,14 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
             fileNameToPlayerFailures: new Map(),
             reason,
           };
-          mainWindow.webContents.send('enforceState', errorState);
+          mainWindow.webContents.send(
+            'enforceState',
+            errorState,
+            currentReplayLoadCount,
+          );
         });
     }
-    return retReplays;
+    return { ...retReplays, replayLoadCount: currentReplayLoadCount };
   });
 
   ipcMain.removeHandler('writeReplays');

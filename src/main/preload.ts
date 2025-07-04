@@ -39,6 +39,7 @@ const electronHandler = {
   getReplaysInDir: (): Promise<{
     replays: Replay[];
     invalidReplays: InvalidReplay[];
+    replayLoadCount: number;
   }> => ipcRenderer.invoke('getReplaysInDir'),
   writeReplays: (
     fileNames: string[],
@@ -225,7 +226,11 @@ const electronHandler = {
   getLatestVersion: (): Promise<string> =>
     ipcRenderer.invoke('getLatestVersion'),
   onEnforceState: (
-    callback: (event: IpcRendererEvent, enforceState: EnforceState) => void,
+    callback: (
+      event: IpcRendererEvent,
+      enforceState: EnforceState,
+      replayLoadCount: number,
+    ) => void,
   ) => {
     ipcRenderer.removeAllListeners('enforceState');
     ipcRenderer.on('enforceState', callback);
