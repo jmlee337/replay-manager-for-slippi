@@ -49,6 +49,7 @@ const configuration: webpack.Configuration = {
     `webpack-dev-server/client?http://localhost:${port}/dist`,
     'webpack/hot/only-dev-server',
     path.join(webpackPaths.srcRendererPath, 'index.tsx'),
+    path.join(webpackPaths.srcRendererPath, 'enforcer.tsx'),
   ],
 
   output: {
@@ -152,6 +153,20 @@ const configuration: webpack.Configuration = {
     new HtmlWebpackPlugin({
       filename: path.join('index.html'),
       template: path.join(webpackPaths.srcRendererPath, 'index.ejs'),
+      minify: {
+        collapseWhitespace: true,
+        removeAttributeQuotes: true,
+        removeComments: true,
+      },
+      isBrowser: false,
+      env: process.env.NODE_ENV,
+      isDevelopment: process.env.NODE_ENV !== 'production',
+      nodeModules: webpackPaths.appNodeModulesPath,
+    }),
+
+    new HtmlWebpackPlugin({
+      filename: path.join('enforcer.html'),
+      template: path.join(webpackPaths.srcRendererPath, 'enforcer.ejs'),
       minify: {
         collapseWhitespace: true,
         removeAttributeQuotes: true,

@@ -8,7 +8,14 @@ import {
   shell,
 } from 'electron';
 import Store from 'electron-store';
-import { appendFile, copyFile, mkdir, readdir, unlink } from 'fs/promises';
+import {
+  appendFile,
+  copyFile,
+  mkdir,
+  readdir,
+  readFile,
+  unlink,
+} from 'fs/promises';
 import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
@@ -17,6 +24,7 @@ import {
   ChallongeMatchItem,
   Context,
   CopySettings,
+  EnforcePlayerFailure,
   EnforcerSetting,
   EnforceState,
   EnforceStatus,
@@ -45,7 +53,7 @@ import {
   getStreams,
   assignStream,
 } from './startgg';
-import { enforceReplays, getReplaysInDir, writeReplays } from './replay';
+import { getReplaysInDir, writeReplays } from './replay';
 import {
   getChallongeTournament,
   getChallongeTournaments,
@@ -85,7 +93,10 @@ type ReplayDir = {
   usbKey: string;
 };
 
-export default function setupIPCs(mainWindow: BrowserWindow): void {
+export default function setupIPCs(
+  mainWindow: BrowserWindow,
+  enforcerWindow: BrowserWindow,
+): void {
   const store = new Store<{ copySettings: CopySettings }>();
   let replayDirs: ReplayDir[] = [];
   const knownUsbs = new Map<string, boolean>();
@@ -290,23 +301,15 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
         fileNameToPlayerFailures: new Map(),
       };
       mainWindow.webContents.send('enforceState', pendingState);
-      enforceReplays(retReplays.replays)
-        // eslint-disable-next-line promise/always-return
-        .then((fileNameToPlayerFailures) => {
-          const doneState: EnforceState = {
-            status: EnforceStatus.DONE,
-            fileNameToPlayerFailures,
-          };
-          mainWindow.webContents.send('enforceState', doneState);
-        })
-        .catch((reason: any) => {
-          const errorState: EnforceState = {
-            status: EnforceStatus.ERROR,
-            fileNameToPlayerFailures: new Map(),
-            reason,
-          };
-          mainWindow.webContents.send('enforceState', errorState);
-        });
+      enforcerWindow.webContents.send(
+        'enforcer',
+        await Promise.all(
+          retReplays.replays.map(async (replay) => ({
+            fileName: replay.fileName,
+            buffer: (await readFile(replay.filePath)).buffer,
+          })),
+        ),
+      );
     }
     return retReplays;
   });
@@ -1067,5 +1070,33 @@ export default function setupIPCs(mainWindow: BrowserWindow): void {
       'https://github.com/jmlee337/replay-manager-for-slippi/releases/latest',
     );
     app.quit();
+  });
+
+  ipcMain.on(
+    'sendEnforcerResults',
+    (
+      event,
+      results: { fileName: string; playerFailures: EnforcePlayerFailure[] }[],
+    ) => {
+      const fileNameToPlayerFailures = new Map(
+        results.map(({ fileName, playerFailures }) => [
+          fileName,
+          playerFailures,
+        ]),
+      );
+      const doneState: EnforceState = {
+        status: EnforceStatus.DONE,
+        fileNameToPlayerFailures,
+      };
+      mainWindow.webContents.send('enforceState', doneState);
+    },
+  );
+  ipcMain.on('sendEnforcerError', (event, reason: any) => {
+    const errorState: EnforceState = {
+      status: EnforceStatus.ERROR,
+      fileNameToPlayerFailures: new Map(),
+      reason,
+    };
+    mainWindow.webContents.send('enforceState', errorState);
   });
 }

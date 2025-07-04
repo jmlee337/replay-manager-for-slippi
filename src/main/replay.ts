@@ -2,7 +2,6 @@ import { decode } from '@shelacek/ubjson';
 import {
   mkdir,
   open,
-  readFile as fsReadFile,
   readdir,
   FileHandle,
   writeFile,
@@ -12,18 +11,11 @@ import { join } from 'path';
 import iconv from 'iconv-lite';
 import sanitize from 'sanitize-filename';
 import { ZipFile } from 'yazl';
-import {
-  ListChecks,
-  SlippiGame,
-  getCoordListFromGame,
-  isSlpMinVersion,
-} from 'slp-enforcer';
 import { parse } from 'date-fns';
 import { buffer as bufferConsumer } from 'stream/consumers';
 import {
   Context,
   CopyHostOrClient,
-  EnforcePlayerFailure,
   InvalidReplay,
   Output,
   Player,
@@ -865,51 +857,4 @@ export async function writeReplays(
       );
     }
   }
-}
-
-export async function enforceReplays(
-  replays: Replay[],
-): Promise<Map<string, EnforcePlayerFailure[]>> {
-  const checks = ListChecks();
-  const ret = await Promise.all(
-    replays.map(async (replay): Promise<[string, EnforcePlayerFailure[]]> => {
-      const buffer = await fsReadFile(replay.filePath);
-      const game = new SlippiGame(buffer.buffer);
-
-      const playerFailures: EnforcePlayerFailure[] = [];
-      if (isSlpMinVersion(game)) {
-        return [replay.fileName, playerFailures];
-      }
-
-      const validPorts = new Set(
-        game
-          .getSettings()
-          ?.players.filter((player) => player.type === 0)
-          .map((player) => player.port),
-      );
-      for (let port = 1; port < 5; port += 1) {
-        if (validPorts.has(port)) {
-          const playerFailure: EnforcePlayerFailure = {
-            checkNames: [],
-            port,
-          };
-          for (let i = 0; i < checks.length; i += 1) {
-            const checkName = checks[i].name;
-            const isMainStick =
-              checkName !== 'Disallowed Analog C-Stick Values';
-            const coords = getCoordListFromGame(game, port - 1, isMainStick);
-            const checkResult = checks[i].checkFunction(game, port - 1, coords);
-            if (checkResult.result) {
-              playerFailure.checkNames.push(checkName);
-            }
-          }
-          if (playerFailure.checkNames.length > 0) {
-            playerFailures.push(playerFailure);
-          }
-        }
-      }
-      return [replay.fileName, playerFailures];
-    }),
-  );
-  return new Map(ret.filter(([, playerFailures]) => playerFailures.length > 0));
 }

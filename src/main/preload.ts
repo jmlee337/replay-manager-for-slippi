@@ -22,6 +22,7 @@ import {
   EnforcerSetting,
   CopyHostFormat,
   Stream,
+  EnforcePlayerFailure,
 } from '../common/types';
 
 const electronHandler = {
@@ -257,6 +258,21 @@ const electronHandler = {
   },
   update: (): Promise<void> => ipcRenderer.invoke('update'),
   isMac: process.platform === 'darwin',
+
+  // enforcer
+  sendEnforcerResults: (
+    results: { fileName: string; playerFailures: EnforcePlayerFailure[] }[],
+  ): void => ipcRenderer.send('sendEnforcerResults', results),
+  sendEnforcerError: (e: any): void => ipcRenderer.send('sendEnforcerError', e),
+  onEnforcer: (
+    callback: (
+      event: IpcRendererEvent,
+      replays: { fileName: string; buffer: ArrayBuffer }[],
+    ) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('enforcer');
+    ipcRenderer.on('enforcer', callback);
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);
