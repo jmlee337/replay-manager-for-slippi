@@ -545,7 +545,7 @@ function Hello() {
           ),
         );
       }
-      setReplayRefs(newReplays.map(() => createRef()));
+      setReplayRefs(vlerkMode ? newReplays.map(() => createRef()) : []);
       setWasDeleted(false);
     }
     setGettingReplays(false);
@@ -613,7 +613,7 @@ function Hello() {
           ),
         );
       }
-      setReplayRefs(newReplays.map(() => createRef()));
+      setReplayRefs(vlerkMode ? newReplays.map(() => createRef()) : []);
       setGettingReplays(false);
     },
     [allReplaysSelected, guideActive, mode, vlerkMode],

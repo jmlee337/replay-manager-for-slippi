@@ -152,7 +152,7 @@ const ReplayListItem = forwardRef(
       elevateChips: boolean;
       elevateNames: boolean;
     },
-    ref: ForwardedRef<HTMLDivElement>,
+    ref: ForwardedRef<HTMLDivElement> | undefined,
   ) => {
     const onClickCallback = useCallback(() => {
       onClick(index);
