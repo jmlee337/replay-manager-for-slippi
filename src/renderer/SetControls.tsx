@@ -216,6 +216,7 @@ export default function SetControls({
   enforcerSetting,
   smuggleCostumeIndex,
   wouldDeleteCopyDir,
+  replayLoadCount,
 }: {
   copyReplays: (
     set?: Set,
@@ -252,6 +253,7 @@ export default function SetControls({
   enforcerSetting: EnforcerSetting;
   smuggleCostumeIndex: boolean;
   wouldDeleteCopyDir: boolean;
+  replayLoadCount: number;
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -286,10 +288,14 @@ export default function SetControls({
     fileNameToPlayerFailures: new Map(),
   });
   useEffect(() => {
-    window.electron.onEnforceState((event, newEnforceState) => {
-      setEnforceState(newEnforceState);
-    });
-  }, []);
+    window.electron.onEnforceState(
+      (event, newEnforceState, newReplayLoadCount) => {
+        if (newReplayLoadCount >= replayLoadCount) {
+          setEnforceState(newEnforceState);
+        }
+      },
+    );
+  }, [replayLoadCount]);
   const selectedReplaysWithEnforceErrors = selectedReplays.filter((replay) =>
     enforceState.fileNameToPlayerFailures.has(replay.fileName),
   );

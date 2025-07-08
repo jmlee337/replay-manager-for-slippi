@@ -282,6 +282,7 @@ export default function setupIPCs(
     maybeEject(replayDirs[replayDirs.length - 1]),
   );
 
+  let replayLoadCount = 0;
   let enforcerSetting = store.get('enforcerSetting', EnforcerSetting.NONE);
   setOwnEnforcerSetting(enforcerSetting);
   ipcMain.removeHandler('getReplaysInDir');
@@ -292,6 +293,8 @@ export default function setupIPCs(
     const retReplays = await getReplaysInDir(
       replayDirs[replayDirs.length - 1].dir,
     );
+    replayLoadCount += 1;
+    const currentReplayLoadCount = replayLoadCount;
     if (
       (getHostFormat().enforcerSetting ?? enforcerSetting) !==
       EnforcerSetting.NONE
@@ -300,7 +303,11 @@ export default function setupIPCs(
         status: EnforceStatus.PENDING,
         fileNameToPlayerFailures: new Map(),
       };
-      mainWindow.webContents.send('enforceState', pendingState);
+      mainWindow.webContents.send(
+        'enforceState',
+        pendingState,
+        currentReplayLoadCount,
+      );
       enforcerWindow.webContents.send(
         'enforcer',
         await Promise.all(
@@ -309,9 +316,10 @@ export default function setupIPCs(
             buffer: (await readFile(replay.filePath)).buffer,
           })),
         ),
+        currentReplayLoadCount,
       );
     }
-    return retReplays;
+    return { ...retReplays, replayLoadCount: currentReplayLoadCount };
   });
 
   ipcMain.removeHandler('writeReplays');
@@ -1077,6 +1085,7 @@ export default function setupIPCs(
     (
       event,
       results: { fileName: string; playerFailures: EnforcePlayerFailure[] }[],
+      enforcerReplayLoadCount: number,
     ) => {
       const fileNameToPlayerFailures = new Map(
         results.map(({ fileName, playerFailures }) => [
@@ -1088,15 +1097,26 @@ export default function setupIPCs(
         status: EnforceStatus.DONE,
         fileNameToPlayerFailures,
       };
-      mainWindow.webContents.send('enforceState', doneState);
+      mainWindow.webContents.send(
+        'enforceState',
+        doneState,
+        enforcerReplayLoadCount,
+      );
     },
   );
-  ipcMain.on('sendEnforcerError', (event, reason: any) => {
-    const errorState: EnforceState = {
-      status: EnforceStatus.ERROR,
-      fileNameToPlayerFailures: new Map(),
-      reason,
-    };
-    mainWindow.webContents.send('enforceState', errorState);
-  });
+  ipcMain.on(
+    'sendEnforcerError',
+    (event, reason: any, enforcerReplayLoadCount: number) => {
+      const errorState: EnforceState = {
+        status: EnforceStatus.ERROR,
+        fileNameToPlayerFailures: new Map(),
+        reason,
+      };
+      mainWindow.webContents.send(
+        'enforceState',
+        errorState,
+        enforcerReplayLoadCount,
+      );
+    },
+  );
 }

@@ -7,7 +7,7 @@ import {
 import { EnforcePlayerFailure } from '../common/types';
 
 window.onload = () => {
-  window.electron.onEnforcer(async (event, replays) => {
+  window.electron.onEnforcer(async (event, replays, replayLoadCount) => {
     const checks = ListChecks();
     try {
       window.electron.sendEnforcerResults(
@@ -65,9 +65,10 @@ window.onload = () => {
             return { fileName: replay.fileName, playerFailures };
           }),
         ),
+        replayLoadCount,
       );
     } catch (e: any) {
-      window.electron.sendEnforcerError(e);
+      window.electron.sendEnforcerError(e, replayLoadCount);
     }
   });
 };

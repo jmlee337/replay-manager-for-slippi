@@ -40,6 +40,7 @@ const electronHandler = {
   getReplaysInDir: (): Promise<{
     replays: Replay[];
     invalidReplays: InvalidReplay[];
+    replayLoadCount: number;
   }> => ipcRenderer.invoke('getReplaysInDir'),
   writeReplays: (
     fileNames: string[],
@@ -226,7 +227,11 @@ const electronHandler = {
   getLatestVersion: (): Promise<string> =>
     ipcRenderer.invoke('getLatestVersion'),
   onEnforceState: (
-    callback: (event: IpcRendererEvent, enforceState: EnforceState) => void,
+    callback: (
+      event: IpcRendererEvent,
+      enforceState: EnforceState,
+      replayLoadCount: number,
+    ) => void,
   ) => {
     ipcRenderer.removeAllListeners('enforceState');
     ipcRenderer.on('enforceState', callback);
@@ -261,13 +266,20 @@ const electronHandler = {
 
   // enforcer
   sendEnforcerResults: (
-    results: { fileName: string; playerFailures: EnforcePlayerFailure[] }[],
-  ): void => ipcRenderer.send('sendEnforcerResults', results),
-  sendEnforcerError: (e: any): void => ipcRenderer.send('sendEnforcerError', e),
+    results: {
+      fileName: string;
+      playerFailures: EnforcePlayerFailure[];
+    }[],
+    enforcerReplayLoadCount: number,
+  ): void =>
+    ipcRenderer.send('sendEnforcerResults', results, enforcerReplayLoadCount),
+  sendEnforcerError: (e: any, enforcerReplayLoadCount: number): void =>
+    ipcRenderer.send('sendEnforcerError', e, enforcerReplayLoadCount),
   onEnforcer: (
     callback: (
       event: IpcRendererEvent,
       replays: { fileName: string; buffer: ArrayBuffer }[],
+      replayLoadCount: number,
     ) => void,
   ) => {
     ipcRenderer.removeAllListeners('enforcer');
