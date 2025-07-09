@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 import { Backup, CheckBox, HourglassTop, Tv } from '@mui/icons-material';
-import { Box, Stack, Tooltip } from '@mui/material';
-import { NameWithHighlight, Stream } from '../common/types';
+import { Box, Stack, Tooltip, Typography } from '@mui/material';
+import { NameWithHighlight, Station, Stream } from '../common/types';
 import { highlightColor } from '../common/constants';
 
 const EntrantNames = styled(Stack)`
@@ -56,6 +56,7 @@ export default function SetView({
   showScores,
   state,
   stream,
+  station,
   wasReported,
 }: {
   entrant1Names: NameWithHighlight[];
@@ -67,6 +68,7 @@ export default function SetView({
   showScores: boolean;
   state: number;
   stream: Stream | null;
+  station: Station | null;
   wasReported: boolean;
 }) {
   let leftScore = '\u00A0';
@@ -91,6 +93,13 @@ export default function SetView({
     streamVerb = 'Streamed';
   }
 
+  let stationVerb = 'Queued';
+  if (state === 2) {
+    stationVerb = 'Playing';
+  } else if (state === 3) {
+    stationVerb = 'Played';
+  }
+
   return (
     <Stack direction="row" width="100%">
       <Stack alignItems="center" direction="row" width="20px">
@@ -102,6 +111,13 @@ export default function SetView({
         {!wasReported && stream && (
           <Tooltip title={`${streamVerb} on ${stream.path}`}>
             <Tv fontSize="small" />
+          </Tooltip>
+        )}
+        {!wasReported && !stream && station && (
+          <Tooltip title={`${stationVerb} at station ${station.number}`}>
+            <Typography variant="body1" textAlign="center" width="20px">
+              {station.number}
+            </Typography>
           </Tooltip>
         )}
       </Stack>

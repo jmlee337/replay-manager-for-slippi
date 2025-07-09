@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from '@mui/material';
 import { Tv } from '@mui/icons-material';
-import { Mode, Set, Stream } from '../common/types';
+import { Mode, Set, Station, Stream } from '../common/types';
 
 export default function AssignStream({
   mode,
@@ -25,13 +25,15 @@ export default function AssignStream({
 }) {
   const [chooseOpen, setChooseOpen] = useState(false);
   const [streams, setStreams] = useState<Stream[]>([]);
-  const [gettingStreams, setGettingStreams] = useState(false);
+  const [stations, setStations] = useState<Station[]>([]);
+  const [gettingStreamsAndStations, setGettingStreamsAndStations] =
+    useState(false);
 
   const [errorOpen, setErrorOpen] = useState(false);
   const [error, setError] = useState('');
 
   const [assigning, setAssigning] = useState(false);
-  const assign = async (streamId: number) => {
+  const assignStream = async (streamId: number) => {
     setAssigning(true);
     try {
       if (mode === Mode.STARTGG) {
@@ -45,10 +47,24 @@ export default function AssignStream({
       setAssigning(false);
     }
   };
+  const assignStation = async (stationId: number) => {
+    setAssigning(true);
+    try {
+      if (mode === Mode.STARTGG) {
+        await window.electron.assignStation(selectedSet.id, stationId);
+      }
+      setChooseOpen(false);
+    } catch (e: any) {
+      setError(e.toString());
+      setErrorOpen(true);
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   return (
     <>
-      <Tooltip title="Assign set to stream">
+      <Tooltip title="Assign set to stream or station">
         <div>
           <IconButton
             color="primary"
@@ -56,46 +72,91 @@ export default function AssignStream({
               !(
                 typeof selectedSet.id === 'string' ||
                 (Number.isInteger(selectedSet.id) && selectedSet.id > 0)
-              ) || assigning
+              ) || mode !== Mode.STARTGG
             }
             size="small"
             onClick={async () => {
               setChooseOpen(true);
-              setGettingStreams(true);
-              setStreams(await window.electron.getStreams());
-              setGettingStreams(false);
+              setGettingStreamsAndStations(true);
+              const streamsAndStations =
+                await window.electron.getStreamsAndStations();
+              setStreams(streamsAndStations.streams);
+              setStations(streamsAndStations.stations);
+              setGettingStreamsAndStations(false);
             }}
           >
-            {assigning ? <CircularProgress size="24px" /> : <Tv />}
+            <Tv />
           </IconButton>
         </div>
       </Tooltip>
       <Dialog open={chooseOpen} onClose={() => setChooseOpen(false)}>
-        <DialogTitle>Assign Set to Stream</DialogTitle>
+        <DialogTitle>Assign Set to Stream or Station</DialogTitle>
         <DialogContent>
-          {gettingStreams ? (
+          {gettingStreamsAndStations ? (
             <CircularProgress size="24px" />
           ) : (
-            <List>
-              {selectedSet.stream && (
-                <ListItemButton disableGutters onClick={() => assign(0)}>
-                  <ListItemText>
-                    Remove from {selectedSet.stream.path}
-                  </ListItemText>
-                </ListItemButton>
+            <>
+              {streams.length > 0 && (
+                <>
+                  {selectedSet.stream && (
+                    <ListItemButton
+                      disabled={assigning}
+                      disableGutters
+                      onClick={() => assignStream(0)}
+                    >
+                      <ListItemText>
+                        Remove from {selectedSet.stream.path}
+                      </ListItemText>
+                    </ListItemButton>
+                  )}
+                  <List>
+                    {streams
+                      .filter((stream) => stream.id !== selectedSet.stream?.id)
+                      .map((stream) => (
+                        <ListItemButton
+                          disabled={assigning}
+                          key={stream.id}
+                          disableGutters
+                          onClick={() => assignStream(stream.id)}
+                        >
+                          <ListItemText>{stream.path}</ListItemText>
+                        </ListItemButton>
+                      ))}
+                  </List>
+                </>
               )}
-              {streams
-                .filter((stream) => stream.id !== selectedSet.stream?.id)
-                .map((stream) => (
-                  <ListItemButton
-                    key={stream.id}
-                    disableGutters
-                    onClick={() => assign(stream.id)}
+              {stations.length > 0 && (
+                <>
+                  {selectedSet.station && (
+                    <ListItemText>
+                      Assigned to station {selectedSet.station.number}
+                    </ListItemText>
+                  )}
+                  <List
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                    }}
                   >
-                    <ListItemText>{stream.path}</ListItemText>
-                  </ListItemButton>
-                ))}
-            </List>
+                    {stations
+                      .filter(
+                        (station) => station.id !== selectedSet.station?.id,
+                      )
+                      .map((station) => (
+                        <ListItemButton
+                          disabled={assigning}
+                          key={station.id}
+                          style={{ flexGrow: 0 }}
+                          onClick={() => assignStation(station.id)}
+                        >
+                          <ListItemText>{station.number}</ListItemText>
+                        </ListItemButton>
+                      ))}
+                  </List>
+                </>
+              )}
+            </>
           )}
         </DialogContent>
       </Dialog>

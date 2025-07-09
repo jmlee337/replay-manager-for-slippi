@@ -36,7 +36,8 @@ export default function ResetSet({
               !Number.isInteger(selectedSet.id) ||
               (selectedSet.id as number) <= 0 ||
               selectedSet.state === State.PENDING ||
-              resetting
+              resetting ||
+              mode !== Mode.STARTGG
             }
             size="small"
             onClick={() => setConfirmOpen(true)}
@@ -62,6 +63,7 @@ export default function ResetSet({
             showScores={selectedSet.state === State.COMPLETED}
             state={selectedSet.state}
             stream={selectedSet.stream}
+            station={selectedSet.station}
             wasReported={false}
           />
         </DialogContent>

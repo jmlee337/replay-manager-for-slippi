@@ -73,6 +73,7 @@ function SetView({
         showScores={set.state === State.COMPLETED}
         state={set.state}
         stream={set.stream}
+        station={set.station}
         wasReported={vlerkMode && set.wasReported}
       />
     </ListItemButton>

@@ -61,6 +61,11 @@ export type Stream = {
   path: string;
 };
 
+export type Station = {
+  id: number;
+  number: number;
+};
+
 export type GameScore = {
   entrant1Score: number;
   entrant2Score: number;
@@ -80,6 +85,7 @@ export type Set = {
   entrant2Score: string | null;
   gameScores: GameScore[];
   stream: Stream | null;
+  station: Station | null;
   ordinal: number | null; // can be null for start.gg non-DE and challonge swiss
   wasReported: boolean;
   updatedAtMs: number;

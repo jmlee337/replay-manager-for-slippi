@@ -23,6 +23,7 @@ import {
   CopyHostFormat,
   Stream,
   EnforcePlayerFailure,
+  Station,
 } from '../common/types';
 
 const electronHandler = {
@@ -140,9 +141,14 @@ const electronHandler = {
     ipcRenderer.invoke('getPhase', id, recursive),
   getPhaseGroup: (id: number): Promise<void> =>
     ipcRenderer.invoke('getPhaseGroup', id),
-  getStreams: (): Promise<Stream[]> => ipcRenderer.invoke('getStreams'),
+  getStreamsAndStations: (): Promise<{
+    streams: Stream[];
+    stations: Station[];
+  }> => ipcRenderer.invoke('getStreamsAndStations'),
   assignStream: (setId: string | number, streamId: number): Promise<void> =>
     ipcRenderer.invoke('assignStream', setId, streamId),
+  assignStation: (setId: string | number, stationId: number): Promise<void> =>
+    ipcRenderer.invoke('assignStation', setId, stationId),
   resetSet: (id: number): Promise<void> => ipcRenderer.invoke('resetSet', id),
   startSet: (id: number | string): Promise<void> =>
     ipcRenderer.invoke('startSet', id),

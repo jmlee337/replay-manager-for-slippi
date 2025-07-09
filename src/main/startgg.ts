@@ -12,6 +12,7 @@ import {
   Sets,
   StartggSet,
   State,
+  Station,
   Stream,
   Tournament,
 } from '../common/types';
@@ -222,6 +223,7 @@ function getDomain(streamSource: number) {
 
 const playerIdToPronouns = new Map<number, string>();
 const idToStream = new Map<number, Stream>();
+const idToStation = new Map<number, Station>();
 const reportedSetIds = new Map<number | string, boolean>();
 const setIdToOrdinal = new Map<number | string, number | null>();
 
@@ -419,6 +421,8 @@ export async function getPhaseGroup(
     const setsToUpdate = new Map<number | string, Set>();
     const missingStreamSets: { setId: number | string; streamId: number }[] =
       [];
+    const missingStationSets: { setId: number | string; stationId: number }[] =
+      [];
     reachableSets.forEach((set) => {
       const { id: setId } = set as { id: number | string };
       let newSet: Set | undefined;
@@ -445,7 +449,7 @@ export async function getPhaseGroup(
         setIdToOrdinal.set(setId, ordinal);
 
         // skip this set if not fully populated
-        const { entrant1Id, entrant2Id, streamId } = set;
+        const { entrant1Id, entrant2Id, streamId, stationId } = set;
         if (!Number.isInteger(entrant1Id) || !Number.isInteger(entrant2Id)) {
           idToSet.delete(setId);
           return;
@@ -455,6 +459,8 @@ export async function getPhaseGroup(
         const entrant2Participants = entrantIdToParticipants.get(entrant2Id)!;
         const stream =
           streamId === null ? null : idToStream.get(streamId) || null;
+        const station =
+          stationId === null ? null : idToStation.get(stationId) || null;
         newSet = {
           id: setId,
           state: set.state,
@@ -474,6 +480,7 @@ export async function getPhaseGroup(
               }))
             : [],
           stream,
+          station,
           ordinal,
           wasReported: reportedSetIds.has(setId),
           updatedAtMs,
@@ -482,6 +489,10 @@ export async function getPhaseGroup(
         idToSet.set(setId, newSet);
         if (Number.isInteger(streamId) && !idToStream.has(streamId)) {
           missingStreamSets.push({ setId, streamId });
+          setsToUpdate.set(setId, newSet);
+        }
+        if (Number.isInteger(stationId) && !idToStation.has(stationId)) {
+          missingStationSets.push({ setId, stationId });
           setsToUpdate.set(setId, newSet);
         }
       }
@@ -522,6 +533,25 @@ export async function getPhaseGroup(
         });
         missingStreamSets.splice(0, 500);
       } while (missingStreamSets.length > 0);
+    }
+    if (missingStationSets.length > 0) {
+      await Promise.all(
+        missingStationSets.map(async ({ setId, stationId }) => {
+          const stationResponse = await wrappedFetch(
+            `https://api.start.gg/station/${stationId}`,
+          );
+          const stationJson = await stationResponse.json();
+          const { number } = stationJson;
+          if (Number.isInteger(number) && number > 0) {
+            const station: Station = {
+              id: stationId,
+              number,
+            };
+            setsToUpdate.get(setId)!.station = station;
+            idToStation.set(stationId, station);
+          }
+        }),
+      );
     }
   }
   pendingSets.sort((a, b) => (a.ordinal ?? a.round) - (b.ordinal ?? b.round));
@@ -676,6 +706,24 @@ const TOURNAMENT_PARTICIPANTS_QUERY = `
     }
   }
 `;
+const TOURNAMENT_STREAMS_AND_STATIONS_QUERY = `
+  query TournamentStreamsAndStationsQuery($slug: String) {
+    tournament(slug: $slug) {
+      stations(page: 1, perPage: 500) {
+        nodes {
+          id
+          identifier
+          number
+        }
+      }
+      streams {
+        id
+        streamSource
+        streamName
+      }
+    }
+  }
+`;
 export async function getTournament(
   key: string,
   slugOrShort: string,
@@ -685,7 +733,7 @@ export async function getTournament(
     `https://api.start.gg/tournament/${slugOrShort}?expand[]=event`,
   );
   const json = await response.json();
-  const { id, name, locationDisplayName: location } = json.entities.tournament;
+  const { name, locationDisplayName: location } = json.entities.tournament;
   const slug = json.entities.tournament.slug.slice(11);
   const events: Event[] = [];
   const eventIds: number[] = [];
@@ -717,11 +765,13 @@ export async function getTournament(
     return maybePhaseIds && maybePhaseIds.length > 0;
   });
 
+  const streamsAndStationsPromise = fetchGql(
+    key,
+    TOURNAMENT_STREAMS_AND_STATIONS_QUERY,
+    { slug },
+  );
+
   if (eventIdsWithChildren.length === 0) {
-    // 522939
-    const streamsPromise = wrappedFetch(
-      `https://api.start.gg/station_queue/${id}`,
-    );
     let nextData;
     let page = 1;
     do {
@@ -742,42 +792,42 @@ export async function getTournament(
       }
       page += 1;
     } while (page <= nextData.tournament.participants.pageInfo.totalPages);
+  }
 
-    const streamsResponse = await streamsPromise;
-    const streamsJson = await streamsResponse.json();
-    idToStream.clear();
-    const streamOrStreams = streamsJson.data?.entities?.stream;
-    if (Array.isArray(streamOrStreams)) {
-      streamOrStreams.forEach((stream) => {
-        const domain = getDomain(stream.streamSource);
-        if (
-          Number.isInteger(stream.id) &&
-          stream.id > 0 &&
-          domain &&
-          typeof stream.streamName === 'string'
-        ) {
-          idToStream.set(stream.id, {
-            id: stream.id,
-            domain,
-            path: stream.streamName,
-          });
-        }
-      });
-    } else if (typeof streamOrStreams === 'object') {
-      const domain = getDomain(streamOrStreams.streamSource);
+  const streamsAndStationsData = await streamsAndStationsPromise;
+  const { streams } = streamsAndStationsData.tournament;
+  idToStream.clear();
+  if (Array.isArray(streams)) {
+    streams.forEach((stream) => {
+      const domain = getDomain(stream.streamSource);
       if (
-        Number.isInteger(streamOrStreams.id) &&
-        streamOrStreams.id > 0 &&
+        Number.isInteger(stream.id) &&
+        stream.id > 0 &&
         domain &&
-        typeof streamOrStreams.streamName === 'string'
+        typeof stream.streamName === 'string'
       ) {
-        idToStream.set(streamOrStreams.id, {
-          id: streamOrStreams.id,
+        idToStream.set(stream.id, {
+          id: stream.id,
           domain,
-          path: streamOrStreams.streamName,
+          path: stream.streamName,
         });
       }
-    }
+    });
+  }
+  const stations = streamsAndStationsData.tournament.stations.nodes;
+  idToStation.clear();
+  if (Array.isArray(stations)) {
+    stations.forEach((station) => {
+      const { id, number } = station;
+      if (
+        Number.isInteger(id) &&
+        id > 0 &&
+        Number.isInteger(number) &&
+        number > 0
+      ) {
+        idToStation.set(id, { id, number });
+      }
+    });
   }
 
   currentTournament = { name, slug, location, events: [] };
@@ -799,10 +849,15 @@ export async function getTournament(
   return slug;
 }
 
-export function getStreams() {
-  return Array.from(idToStream.values()).sort((a, b) =>
-    a.path.localeCompare(b.path),
-  );
+export function getStreamsAndStations() {
+  return {
+    streams: Array.from(idToStream.values()).sort((a, b) =>
+      a.path.localeCompare(b.path),
+    ),
+    stations: Array.from(idToStation.values()).sort(
+      (a, b) => a.number - b.number,
+    ),
+  };
 }
 
 const GQL_SET_INNER = `
@@ -840,6 +895,10 @@ const GQL_SET_INNER = `
     id
     streamName
     streamSource
+  }
+  station {
+    id
+    number
   }
   updatedAt
   winnerId
@@ -901,6 +960,10 @@ function gqlSetToSet(set: any): Set {
             path: set.stream.streamName,
           }
         : null,
+    station:
+      set.station?.id && set.station?.number
+        ? { id: set.station.id, number: set.station.number }
+        : null,
     ordinal: setIdToOrdinal.get(set.id) ?? null,
     wasReported: reportedSetIds.has(set.id),
     updatedAtMs: set.updatedAt ? set.updatedAt * 1000 : 0,
@@ -920,6 +983,25 @@ export async function assignStream(
 ) {
   const data = await fetchGql(key, ASSIGN_STREAM_MUTATION, { setId, streamId });
   const updatedSet = gqlSetToSet(data.assignStream);
+  idToSet.set(updatedSet.id, updatedSet);
+  setSelectedSetId(updatedSet.id);
+}
+
+const ASSIGN_STATION_MUTATION = `
+  mutation AssignStation($setId: ID!, $stationId: ID!) {
+    assignStation(setId: $setId, stationId: $stationId) {${GQL_SET_INNER}}
+  }
+`;
+export async function assignStation(
+  key: string,
+  setId: number | string,
+  stationId: number,
+) {
+  const data = await fetchGql(key, ASSIGN_STATION_MUTATION, {
+    setId,
+    stationId,
+  });
+  const updatedSet = gqlSetToSet(data.assignStation);
   idToSet.set(updatedSet.id, updatedSet);
   setSelectedSetId(updatedSet.id);
 }

@@ -45,6 +45,7 @@ function SetView({
         showScores={setWithNames.set.state === State.COMPLETED}
         state={setWithNames.set.state}
         stream={setWithNames.set.stream}
+        station={setWithNames.set.station}
         wasReported={false}
       />
     </ListItemButton>

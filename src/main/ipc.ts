@@ -50,8 +50,9 @@ import {
   getSelectedSetChain,
   setSelectedSetChain,
   resetSet,
-  getStreams,
   assignStream,
+  getStreamsAndStations,
+  assignStation,
 } from './startgg';
 import { getReplaysInDir, writeReplays } from './replay';
 import {
@@ -531,8 +532,8 @@ export default function setupIPCs(
     },
   );
 
-  ipcMain.removeHandler('getStreams');
-  ipcMain.handle('getStreams', getStreams);
+  ipcMain.removeHandler('getStreamsAndStations');
+  ipcMain.handle('getStreamsAndStations', getStreamsAndStations);
 
   ipcMain.removeHandler('assignStream');
   ipcMain.handle(
@@ -547,6 +548,23 @@ export default function setupIPCs(
       }
 
       await assignStream(sggApiKey, setId, streamId);
+      await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('assignStation');
+  ipcMain.handle(
+    'assignStation',
+    async (event, setId: string | number, stationId: number) => {
+      if (!sggApiKey) {
+        throw new Error('Please set start.gg API key');
+      }
+
+      await assignStation(sggApiKey, setId, stationId);
       await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),

@@ -155,6 +155,7 @@ const EMPTY_SET: Set = {
   entrant2Score: null,
   gameScores: [],
   stream: null,
+  station: null,
   ordinal: null,
   wasReported: false,
   updatedAtMs: 0,
