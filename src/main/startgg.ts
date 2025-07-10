@@ -204,23 +204,6 @@ export async function getTournaments(
   }));
 }
 
-function getDomain(streamSource: number) {
-  switch (streamSource) {
-    case 1:
-      return 'twitch';
-    case 2:
-      return 'hitbox';
-    case 3:
-      return 'streamme';
-    case 4:
-      return 'mixer';
-    case 5:
-      return 'youtube';
-    default:
-      return '';
-  }
-}
-
 const playerIdToPronouns = new Map<number, string>();
 const idToStream = new Map<number, Stream>();
 const idToStation = new Map<number, Station>();
@@ -799,16 +782,15 @@ export async function getTournament(
   idToStream.clear();
   if (Array.isArray(streams)) {
     streams.forEach((stream) => {
-      const domain = getDomain(stream.streamSource);
       if (
         Number.isInteger(stream.id) &&
         stream.id > 0 &&
-        domain &&
+        typeof stream.streamSource === 'string' &&
         typeof stream.streamName === 'string'
       ) {
         idToStream.set(stream.id, {
           id: stream.id,
-          domain,
+          domain: stream.streamSource.toLowerCase(),
           path: stream.streamName,
         });
       }
