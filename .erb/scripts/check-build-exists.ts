@@ -5,7 +5,14 @@ import fs from 'fs';
 import webpackPaths from '../configs/webpack.paths';
 
 const mainPath = path.join(webpackPaths.distMainPath, 'main.js');
-const rendererPath = path.join(webpackPaths.distRendererPath, 'renderer.js');
+const rendererIndexPath = path.join(
+  webpackPaths.distRendererPath,
+  'renderer-index.js',
+);
+const rendererEnforcerPath = path.join(
+  webpackPaths.distRendererPath,
+  'renderer-enforcer.js',
+);
 
 if (!fs.existsSync(mainPath)) {
   throw new Error(
@@ -15,7 +22,7 @@ if (!fs.existsSync(mainPath)) {
   );
 }
 
-if (!fs.existsSync(rendererPath)) {
+if (!fs.existsSync(rendererIndexPath) || !fs.existsSync(rendererEnforcerPath)) {
   throw new Error(
     chalk.whiteBright.bgRed.bold(
       'The renderer process is not built yet. Build it by running "npm run build:renderer"',

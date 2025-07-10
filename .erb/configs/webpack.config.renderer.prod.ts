@@ -25,15 +25,15 @@ const configuration: webpack.Configuration = {
 
   target: ['web', 'electron-renderer'],
 
-  entry: [
-    path.join(webpackPaths.srcRendererPath, 'index.tsx'),
-    path.join(webpackPaths.srcRendererPath, 'enforcer.tsx'),
-  ],
+  entry: {
+    index: path.join(webpackPaths.srcRendererPath, 'index.tsx'),
+    enforcer: path.join(webpackPaths.srcRendererPath, 'enforcer.tsx'),
+  },
 
   output: {
     path: webpackPaths.distRendererPath,
     publicPath: './',
-    filename: 'renderer.js',
+    filename: 'renderer-[name].js',
     library: {
       type: 'umd',
     },
@@ -96,7 +96,10 @@ const configuration: webpack.Configuration = {
 
   optimization: {
     minimize: true,
-    minimizer: [new TerserPlugin(), new CssMinimizerPlugin()],
+    minimizer: [
+      new TerserPlugin({ terserOptions: { output: { ascii_only: true } } }),
+      new CssMinimizerPlugin(),
+    ],
   },
 
   plugins: [
@@ -133,6 +136,7 @@ const configuration: webpack.Configuration = {
       },
       isBrowser: false,
       isDevelopment: false,
+      chunks: ['index'],
     }),
 
     new HtmlWebpackPlugin({
@@ -145,6 +149,7 @@ const configuration: webpack.Configuration = {
       },
       isBrowser: false,
       isDevelopment: false,
+      chunks: ['enforcer'],
     }),
 
     new webpack.DefinePlugin({
