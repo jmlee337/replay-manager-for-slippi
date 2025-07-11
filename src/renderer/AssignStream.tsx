@@ -14,7 +14,8 @@ import {
   Tooltip,
 } from '@mui/material';
 import { Tv } from '@mui/icons-material';
-import { Mode, Set, Station, Stream } from '../common/types';
+import { Mode, Set, State, Station, Stream } from '../common/types';
+import SetView from './SetView';
 
 export default function AssignStream({
   mode,
@@ -91,7 +92,24 @@ export default function AssignStream({
       </Tooltip>
       <Dialog open={chooseOpen} onClose={() => setChooseOpen(false)}>
         <DialogTitle>Assign Set to Stream or Station</DialogTitle>
-        <DialogContent>
+        <DialogContent style={{ maxWidth: '500px' }}>
+          <SetView
+            entrant1Names={selectedSet.entrant1Participants.map(
+              (participant) => ({ name: participant.displayName }),
+            )}
+            entrant1Score={selectedSet.entrant1Score}
+            entrant1Win={selectedSet.winnerId === selectedSet.entrant1Id}
+            entrant2Names={selectedSet.entrant2Participants.map(
+              (participant) => ({ name: participant.displayName }),
+            )}
+            entrant2Score={selectedSet.entrant2Score}
+            fullRoundText={selectedSet.fullRoundText}
+            showScores={selectedSet.state === State.COMPLETED}
+            state={selectedSet.state}
+            stream={selectedSet.stream}
+            station={selectedSet.station}
+            wasReported={false}
+          />
           {gettingStreamsAndStations ? (
             <CircularProgress size="24px" />
           ) : (
@@ -102,6 +120,7 @@ export default function AssignStream({
                     <ListItemButton
                       disabled={assigning}
                       disableGutters
+                      style={{ marginTop: '8px' }}
                       onClick={() => assignStream(0)}
                     >
                       <ListItemText>
@@ -109,7 +128,7 @@ export default function AssignStream({
                       </ListItemText>
                     </ListItemButton>
                   )}
-                  <List>
+                  <List disablePadding>
                     {streams
                       .filter((stream) => stream.id !== selectedSet.stream?.id)
                       .map((stream) => (
@@ -128,11 +147,14 @@ export default function AssignStream({
               {stations.length > 0 && (
                 <>
                   {selectedSet.station && (
-                    <ListItemText>
+                    <ListItemText
+                      style={{ padding: '12px 0', margin: '8px 0 0' }}
+                    >
                       Assigned to station {selectedSet.station.number}
                     </ListItemText>
                   )}
                   <List
+                    disablePadding
                     style={{
                       display: 'flex',
                       flexDirection: 'row',
