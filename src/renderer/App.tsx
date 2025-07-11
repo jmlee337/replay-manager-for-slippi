@@ -98,6 +98,7 @@ import ResetSet from './ResetSet';
 import AssignStream from './AssignStream';
 import getCharacterIcon from './getCharacterIcon';
 import RightColumn from './RightColumn';
+import { WindowEvent } from './setWindowEventListener';
 
 const ENFORCER_VERSION = '1.4.4';
 
@@ -2272,15 +2273,33 @@ function Hello() {
                   </>
                 )}
                 <Stack>
-                  <Typography variant="caption">
+                  <Typography
+                    variant="caption"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      window.dispatchEvent(new Event(WindowEvent.CTRLF));
+                    }}
+                  >
                     {superKey} + F: Search players
-                    {vlerkMode && (
-                      <>
-                        <br />
-                        {superKey} + S: Copy replays
-                      </>
-                    )}
-                    <br />
+                  </Typography>
+                  {vlerkMode && (
+                    <Typography
+                      variant="caption"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => {
+                        window.dispatchEvent(new Event(WindowEvent.CTRLS));
+                      }}
+                    >
+                      {superKey} + S: Copy replays
+                    </Typography>
+                  )}
+                  <Typography
+                    variant="caption"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      setSkewDialogOpen(true);
+                    }}
+                  >
                     {superKey} + T: Re-order replays
                   </Typography>
                 </Stack>

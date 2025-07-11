@@ -6,9 +6,10 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material';
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { GlobalHotKeys } from 'react-hotkeys';
 import { Mode } from '../common/types';
+import { setWindowEventListener, WindowEvent } from './setWindowEventListener';
 
 export default function SearchBox({
   mode,
@@ -27,6 +28,16 @@ export default function SearchBox({
     setSearchSubstr('');
     setShowSearch(false);
   };
+
+  const ctrlF = useCallback(() => {
+    setShowSearch(true);
+    searchInputRef.current?.select();
+  }, []);
+
+  useEffect(() => {
+    setWindowEventListener(WindowEvent.CTRLF, ctrlF);
+  }, [ctrlF]);
+
   return (
     <>
       {(showSearch || (vlerkMode && mode === Mode.STARTGG)) && (
@@ -79,10 +90,7 @@ export default function SearchBox({
           ESC: () => {
             clearSearch();
           },
-          FIND: () => {
-            setShowSearch(true);
-            searchInputRef.current?.select();
-          },
+          FIND: ctrlF,
         }}
       />
     </>

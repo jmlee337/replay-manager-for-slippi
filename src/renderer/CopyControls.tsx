@@ -22,7 +22,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { GlobalHotKeys } from 'react-hotkeys';
 import {
   CopySettings,
@@ -33,6 +33,7 @@ import {
 } from '../common/types';
 import ErrorDialog from './ErrorDialog';
 import LabeledCheckbox from './LabeledCheckbox';
+import { setWindowEventListener, WindowEvent } from './setWindowEventListener';
 
 function ClientsDialog({
   disabled,
@@ -364,6 +365,37 @@ export default function CopyControls({
     }
   };
 
+  const ctrlS = useCallback(async () => {
+    if (
+      vlerkMode &&
+      !isCopying &&
+      (dir || host.address) &&
+      hasSelectedReplays
+    ) {
+      try {
+        await onCopy();
+        setCopyToastOpen(true);
+      } catch (e: any) {
+        const message = e instanceof Error ? e.message : e;
+        setError(message);
+        setErrorDialogOpen(true);
+      }
+    }
+  }, [
+    dir,
+    hasSelectedReplays,
+    host.address,
+    isCopying,
+    onCopy,
+    setError,
+    setErrorDialogOpen,
+    vlerkMode,
+  ]);
+
+  useEffect(() => {
+    setWindowEventListener(WindowEvent.CTRLS, ctrlS);
+  }, [ctrlS]);
+
   return (
     <>
       <Divider />
@@ -550,23 +582,7 @@ export default function CopyControls({
           COPY: window.electron.isMac ? 'command+s' : 'ctrl+s',
         }}
         handlers={{
-          COPY: async () => {
-            if (
-              vlerkMode &&
-              !isCopying &&
-              (dir || host.address) &&
-              hasSelectedReplays
-            ) {
-              try {
-                await onCopy();
-                setCopyToastOpen(true);
-              } catch (e: any) {
-                const message = e instanceof Error ? e.message : e;
-                setError(message);
-                setErrorDialogOpen(true);
-              }
-            }
-          },
+          COPY: ctrlS,
         }}
         allowChanges
       />
