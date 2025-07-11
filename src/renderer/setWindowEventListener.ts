@@ -12,4 +12,5 @@ export function setWindowEventListener(type: string, callback: () => void) {
 export enum WindowEvent {
   CTRLF = 'ctrl+f',
   CTRLS = 'ctrl+s',
+  ESCAPE = 'escape',
 }

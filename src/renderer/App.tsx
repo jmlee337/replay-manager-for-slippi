@@ -1962,16 +1962,6 @@ function Hello() {
                     </Button>
                   </DialogActions>
                 </Dialog>
-                <GlobalHotKeys
-                  keyMap={{
-                    SKEW: window.electron.isMac ? 'command+t' : 'ctrl+t',
-                  }}
-                  handlers={{
-                    SKEW: () => {
-                      setSkewDialogOpen(true);
-                    },
-                  }}
-                />
               </>
             ) : (
               <Alert
@@ -2557,6 +2547,28 @@ function Hello() {
         showErrorDialog={showErrorDialog}
         enforcerVersion={ENFORCER_VERSION}
         hostFormat={hostFormat}
+      />
+      <GlobalHotKeys
+        keyMap={{
+          COPY: window.electron.isMac ? 'command+s' : 'ctrl+s',
+          ESC: 'escape',
+          FIND: window.electron.isMac ? 'command+f' : 'ctrl+f',
+          SKEW: window.electron.isMac ? 'command+t' : 'ctrl+t',
+        }}
+        handlers={{
+          COPY: () => {
+            window.dispatchEvent(new Event(WindowEvent.CTRLS));
+          },
+          ESC: () => {
+            window.dispatchEvent(new Event(WindowEvent.ESCAPE));
+          },
+          FIND: () => {
+            window.dispatchEvent(new Event(WindowEvent.CTRLF));
+          },
+          SKEW: () => {
+            setSkewDialogOpen(true);
+          },
+        }}
       />
     </>
   );

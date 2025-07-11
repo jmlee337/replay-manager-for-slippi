@@ -23,7 +23,6 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import { GlobalHotKeys } from 'react-hotkeys';
 import {
   CopySettings,
   Output,
@@ -577,15 +576,6 @@ export default function CopyControls({
           </Button>
         </Stack>
       </Stack>
-      <GlobalHotKeys
-        keyMap={{
-          COPY: window.electron.isMac ? 'command+s' : 'ctrl+s',
-        }}
-        handlers={{
-          COPY: ctrlS,
-        }}
-        allowChanges
-      />
       {vlerkMode && (
         <Snackbar
           open={copyToastOpen}

@@ -7,7 +7,6 @@ import {
   Tooltip,
 } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GlobalHotKeys } from 'react-hotkeys';
 import { Mode } from '../common/types';
 import { setWindowEventListener, WindowEvent } from './setWindowEventListener';
 
@@ -24,10 +23,11 @@ export default function SearchBox({
 }) {
   const searchInputRef = useRef<HTMLInputElement>();
   const [showSearch, setShowSearch] = useState(false);
-  const clearSearch = () => {
+
+  const clearSearch = useCallback(() => {
     setSearchSubstr('');
     setShowSearch(false);
-  };
+  }, [setSearchSubstr]);
 
   const ctrlF = useCallback(() => {
     setShowSearch(true);
@@ -35,64 +35,54 @@ export default function SearchBox({
   }, []);
 
   useEffect(() => {
+    setWindowEventListener(WindowEvent.ESCAPE, clearSearch);
+  }, [clearSearch]);
+
+  useEffect(() => {
     setWindowEventListener(WindowEvent.CTRLF, ctrlF);
   }, [ctrlF]);
 
   return (
-    <>
-      {(showSearch || (vlerkMode && mode === Mode.STARTGG)) && (
-        <Box style={{ background: 'white', padding: '8px 0' }}>
-          <TextField
-            autoFocus
-            fullWidth
-            label="Search"
-            onChange={(event) => {
-              setSearchSubstr(event.target.value);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') {
-                clearSearch();
-              } else if (
-                ((window.electron.isMac && event.metaKey) ||
-                  (!window.electron.isMac && event.ctrlKey)) &&
-                event.key === 'f'
-              ) {
-                searchInputRef.current?.select();
-              }
-            }}
-            inputRef={searchInputRef}
-            size="small"
-            value={searchSubstr}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Tooltip title="Clear search">
-                    <IconButton
-                      onClick={() => {
-                        clearSearch();
-                      }}
-                    >
-                      <Clear />
-                    </IconButton>
-                  </Tooltip>
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Box>
-      )}
-      <GlobalHotKeys
-        keyMap={{
-          ESC: 'escape',
-          FIND: window.electron.isMac ? 'command+f' : 'ctrl+f',
-        }}
-        handlers={{
-          ESC: () => {
-            clearSearch();
-          },
-          FIND: ctrlF,
-        }}
-      />
-    </>
+    (showSearch || (vlerkMode && mode === Mode.STARTGG)) && (
+      <Box style={{ background: 'white', padding: '8px 0' }}>
+        <TextField
+          autoFocus
+          fullWidth
+          label="Search"
+          onChange={(event) => {
+            setSearchSubstr(event.target.value);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              clearSearch();
+            } else if (
+              ((window.electron.isMac && event.metaKey) ||
+                (!window.electron.isMac && event.ctrlKey)) &&
+              event.key === 'f'
+            ) {
+              searchInputRef.current?.select();
+            }
+          }}
+          inputRef={searchInputRef}
+          size="small"
+          value={searchSubstr}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <Tooltip title="Clear search">
+                  <IconButton
+                    onClick={() => {
+                      clearSearch();
+                    }}
+                  >
+                    <Clear />
+                  </IconButton>
+                </Tooltip>
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+    )
   );
 }
