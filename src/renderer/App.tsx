@@ -99,7 +99,7 @@ import AssignStream from './AssignStream';
 import getCharacterIcon from './getCharacterIcon';
 import RightColumn from './RightColumn';
 
-const ENFORCER_VERSION = '1.4.2';
+const ENFORCER_VERSION = '1.4.4';
 
 const Bottom = styled(Paper)`
   height: 147px;

@@ -1,4 +1,4 @@
-import { Backup, VideogameAssetOff } from '@mui/icons-material';
+import { Backup, Report, VideogameAssetOff } from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -282,7 +282,7 @@ export default function SetControls({
     },
   ]);
 
-  const [enforcerErrorOpen, setEnforcerErrorOpen] = useState(false);
+  const [enforcerResultOpen, setEnforcerResultOpen] = useState(false);
   const [enforceState, setEnforceState] = useState<EnforceState>({
     status: EnforceStatus.DONE,
     fileNameToPlayerFailures: new Map(),
@@ -296,9 +296,12 @@ export default function SetControls({
       },
     );
   }, [replayLoadCount]);
-  const selectedReplaysWithEnforceErrors = selectedReplays.filter((replay) =>
-    enforceState.fileNameToPlayerFailures.has(replay.fileName),
-  );
+  const selectedReplaysWithEnforceErrors =
+    enforceState.status === EnforceStatus.DONE
+      ? selectedReplays.filter((replay) =>
+          enforceState.fileNameToPlayerFailures.has(replay.fileName),
+        )
+      : [];
   let showEnforcerPopup = false;
   if (enforcerSetting === EnforcerSetting.POP_UP_ALL) {
     showEnforcerPopup = selectedReplaysWithEnforceErrors.length > 0;
@@ -447,10 +450,11 @@ export default function SetControls({
             setStartggSet(getStartggSet());
             setChallongeMatchItems(getChallongeMatchItems());
             if (
-              selectedReplaysWithEnforceErrors.length > 0 &&
-              showEnforcerPopup
+              (selectedReplaysWithEnforceErrors.length > 0 &&
+                showEnforcerPopup) ||
+              enforceState.status === EnforceStatus.ERROR
             ) {
-              setEnforcerErrorOpen(true);
+              setEnforcerResultOpen(true);
             }
             setOpen(true);
           }}
@@ -731,6 +735,17 @@ export default function SetControls({
           </Stack>
         </DialogContent>
         <DialogActions>
+          {enforceState.status === EnforceStatus.ERROR && (
+            <Tooltip placement="top" title="SLP Enforcer Failure">
+              <IconButton
+                onClick={() => {
+                  setEnforcerResultOpen(true);
+                }}
+              >
+                <Report />
+              </IconButton>
+            </Tooltip>
+          )}
           {selectedReplaysWithEnforceErrors.length > 0 && (
             <Tooltip
               placement="top"
@@ -738,7 +753,7 @@ export default function SetControls({
             >
               <IconButton
                 onClick={() => {
-                  setEnforcerErrorOpen(true);
+                  setEnforcerResultOpen(true);
                 }}
               >
                 <VideogameAssetOff />
@@ -880,9 +895,9 @@ export default function SetControls({
         </DialogActions>
       </Dialog>
       <Dialog
-        open={enforcerErrorOpen}
+        open={enforcerResultOpen}
         onClose={() => {
-          setEnforcerErrorOpen(false);
+          setEnforcerResultOpen(false);
         }}
       >
         <Stack
@@ -891,33 +906,48 @@ export default function SetControls({
           justifyContent="space-between"
           marginRight="24px"
         >
-          <DialogTitle>Controller Ruleset Violation Detected</DialogTitle>
+          <DialogTitle>
+            {enforceState.status === EnforceStatus.DONE &&
+              'Controller Ruleset Violation Detected'}
+            {enforceState.status === EnforceStatus.ERROR &&
+              'SLP Enforcer Failure'}
+          </DialogTitle>
           <Typography variant="caption">
             SLP Enforcer version {enforcerVersion}
           </Typography>
         </Stack>
         <DialogContent sx={{ width: '500px' }}>
-          <Stack spacing="8px">
-            {selectedReplaysWithEnforceErrors.map((selectedReplay) => (
-              <Box key={selectedReplay.fileName}>
-                <Box typography="caption">
-                  {stageNames.get(selectedReplay.stageId)}
+          {enforceState.status === EnforceStatus.DONE && (
+            <Stack spacing="8px">
+              {selectedReplaysWithEnforceErrors.map((selectedReplay) => (
+                <Box key={selectedReplay.fileName}>
+                  <Box typography="caption">
+                    {stageNames.get(selectedReplay.stageId)}
+                  </Box>
+                  {enforceState.fileNameToPlayerFailures
+                    .get(selectedReplay.fileName)!
+                    .map((enforcePlayerFailure) => (
+                      <Box key={enforcePlayerFailure.port} typography="body2">
+                        {getDisplayNameFromPlayer(
+                          selectedReplay.players.find(
+                            (player) =>
+                              player.port === enforcePlayerFailure.port,
+                          ),
+                        )}
+                        : {enforcePlayerFailure.checkNames.join(', ')}
+                      </Box>
+                    ))}
                 </Box>
-                {enforceState.fileNameToPlayerFailures
-                  .get(selectedReplay.fileName)!
-                  .map((enforcePlayerFailure) => (
-                    <Box key={enforcePlayerFailure.port} typography="body2">
-                      {getDisplayNameFromPlayer(
-                        selectedReplay.players.find(
-                          (player) => player.port === enforcePlayerFailure.port,
-                        ),
-                      )}
-                      : {enforcePlayerFailure.checkNames.join(', ')}
-                    </Box>
-                  ))}
-              </Box>
-            ))}
-          </Stack>
+              ))}
+            </Stack>
+          )}
+          {enforceState.status === EnforceStatus.ERROR && (
+            <DialogContentText>
+              {enforceState.reason instanceof Error
+                ? enforceState.reason.message
+                : enforceState.reason.toString()}
+            </DialogContentText>
+          )}
         </DialogContent>
       </Dialog>
     </>

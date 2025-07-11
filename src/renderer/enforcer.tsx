@@ -7,8 +7,8 @@ import {
 import { EnforcePlayerFailure } from '../common/types';
 
 window.onload = () => {
+  const checks = ListChecks();
   window.electron.onEnforcer(async (event, replays, replayLoadCount) => {
-    const checks = ListChecks();
     try {
       window.electron.sendEnforcerResults(
         await Promise.all(
