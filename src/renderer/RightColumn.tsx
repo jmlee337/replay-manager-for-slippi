@@ -72,18 +72,18 @@ export default function RightColumn({
       setErrorOpen(true);
     }
   };
-  const getPhase = async (id: number, recursive: boolean = false) => {
+  const getPhase = async (id: number) => {
     try {
-      await window.electron.getPhase(id, recursive);
+      await window.electron.getPhase(id);
     } catch (e: any) {
       setError(e.toString());
       setErrorOpen(true);
     }
   };
 
-  const getEvent = async (id: number, recursive: boolean = false) => {
+  const getEvent = async (id: number) => {
     try {
-      await window.electron.getEvent(id, recursive);
+      await window.electron.getEvent(id);
     } catch (e: any) {
       setError(e.toString());
       setErrorOpen(true);

@@ -15,6 +15,8 @@ import {
   Station,
   Stream,
   Tournament,
+  RendererWave,
+  RendererPool,
 } from '../common/types';
 
 let currentTournament: Tournament | undefined;
@@ -221,7 +223,7 @@ export async function getPhaseGroup(
   id: number,
 ): Promise<PhaseGroup> {
   const response = await wrappedFetch(
-    `https://api.start.gg/phase_group/${id}?expand[]=sets&expand[]=entrants`,
+    `https://api.start.gg/phase_group/${id}?expand[]=sets&expand[]=entrants&expand[]=seeds`,
   );
   const json = await response.json();
   const phaseGroup = json.entities.groups;
@@ -238,13 +240,9 @@ export async function getPhaseGroup(
     bracketType === 4 || // SWISS
     bracketType === 6; // CUSTOM_SCHEDULE
 
-  const { entrants: apiEntrants } = json.entities;
+  const { seeds } = json.entities;
   const entrants: Entrant[] = [];
-  if (
-    !isBracketTypeValid ||
-    !Array.isArray(apiEntrants) ||
-    apiEntrants.length === 0
-  ) {
+  if (!isBracketTypeValid || !Array.isArray(seeds) || seeds.length === 0) {
     return {
       id,
       bracketType,
@@ -262,40 +260,45 @@ export async function getPhaseGroup(
     participantId: number;
     playerId: number;
   }[] = [];
-  apiEntrants.forEach((entrant) => {
-    const { id: entrantId } = entrant;
-    if (!Number.isInteger(entrantId)) {
-      return;
-    }
+  seeds
+    .sort((a, b) => a.groupSeedNum - b.groupSeedNum)
+    .forEach((seed) => {
+      const { entrantId } = seed;
+      if (!Number.isInteger(entrantId)) {
+        return;
+      }
 
-    const participants: Participant[] = [];
-    Array.from(Object.values(entrant.mutations.participants)).forEach(
-      (participant: any) => {
-        const {
-          id: participantId,
-          gamerTag: displayName,
-          playerId,
-          prefix,
-        } = participant;
-        const pronouns = playerIdToPronouns.get(playerId) || '';
-        const newParticipant: Participant = {
-          displayName,
-          prefix,
-          pronouns,
-        };
-        participants.push(newParticipant);
-        if (!playerIdToPronouns.has(playerId)) {
-          participantsToUpdate.set(participantId, newParticipant);
-          missingPlayerParticipants.push({ participantId, playerId });
+      const participants: Participant[] = [];
+      const actualApiEntrant = Object.values<any>(seed.mutations.entrants).find(
+        (entrant) => entrant.id === entrantId,
+      );
+      if (actualApiEntrant) {
+        const { participantIds } = actualApiEntrant;
+        if (Array.isArray(participantIds) && participantIds.length > 0) {
+          participantIds.forEach((participantId) => {
+            const participant =
+              seed.mutations.participants[participantId.toString()];
+            const { gamerTag: displayName, playerId, prefix } = participant;
+            const pronouns = playerIdToPronouns.get(playerId) || '';
+            const newParticipant: Participant = {
+              displayName,
+              prefix,
+              pronouns,
+            };
+            participants.push(newParticipant);
+            if (!playerIdToPronouns.has(playerId)) {
+              participantsToUpdate.set(participantId, newParticipant);
+              missingPlayerParticipants.push({ participantId, playerId });
+            }
+          });
+          entrants.push({
+            id: entrantId,
+            participants,
+          });
+          entrantIdToParticipants.set(entrantId, participants);
         }
-      },
-    );
-    entrants.push({
-      id: entrantId,
-      participants,
+      }
     });
-    entrantIdToParticipants.set(entrantId, participants);
-  });
 
   if (missingPlayerParticipants.length > 0) {
     do {
@@ -543,7 +546,7 @@ export async function getPhaseGroup(
   idToPhaseGroup.set(id, {
     id,
     bracketType,
-    entrants: [],
+    entrants,
     name,
     state,
     sets: { completedSets: [], pendingSets: [] },
@@ -840,6 +843,81 @@ export function getStreamsAndStations() {
       (a, b) => a.number - b.number,
     ),
   };
+}
+
+export async function getPoolsByWave(key: string) {
+  if (!currentTournament) {
+    return [];
+  }
+
+  await getTournament(key, currentTournament.slug, true);
+  const waveIdToPools = new Map<number, RendererPool[]>();
+  const noWavePools: RendererPool[] = [];
+  // eslint-disable-next-line no-restricted-syntax
+  for (const eventId of tournamentSlugToEventIds
+    .get(currentTournament.slug)
+    ?.sort((a, b) => a - b) ?? []) {
+    const event = idToEvent.get(eventId);
+    if (event) {
+      const phaseIds =
+        eventIdToPhaseIds.get(eventId)?.sort((a, b) => a - b) ?? [];
+      // eslint-disable-next-line no-restricted-syntax
+      for (const phaseId of phaseIds) {
+        const phase = idToPhase.get(phaseId);
+        if (phase) {
+          const parentName = phaseIds.length > 1 ? phase.name : event.name;
+          const phasePools: RendererPool[] = [];
+          const phaseGroupIds = phaseIdToPhaseGroupIds.get(phaseId) ?? [];
+          // eslint-disable-next-line no-restricted-syntax
+          for (const phaseGroupId of phaseGroupIds) {
+            const phaseGroup = idToPhaseGroup.get(phaseGroupId);
+            if (phaseGroup) {
+              if (phaseGroup.waveId) {
+                const wavePools = waveIdToPools.get(phaseGroup.waveId) ?? [];
+                wavePools.push(phaseGroup);
+                waveIdToPools.set(phaseGroup.waveId, wavePools);
+              } else {
+                phasePools.push({
+                  id: phaseGroup.id,
+                  entrants: phaseGroup.entrants,
+                  name: phaseGroupIds.length > 1 ? phaseGroup.name : parentName,
+                });
+              }
+            }
+          }
+          phasePools.sort((a, b) =>
+            a.name.length === b.name.length
+              ? a.name.localeCompare(b.name)
+              : a.name.length - b.name.length,
+          );
+          noWavePools.push(...phasePools);
+        }
+      }
+    }
+  }
+
+  Array.from(waveIdToPools.values()).forEach((phaseGroups) =>
+    phaseGroups.sort((a, b) =>
+      a.name.length === b.name.length
+        ? a.name.localeCompare(b.name)
+        : a.name.length - b.name.length,
+    ),
+  );
+
+  return [
+    ...Array.from(waveIdToPools.keys())
+      .sort((a, b) => a - b)
+      .map(
+        (waveId): RendererWave => ({
+          id: waveId,
+          pools: waveIdToPools.get(waveId)!,
+        }),
+      ),
+    {
+      id: 0,
+      pools: noWavePools,
+    },
+  ];
 }
 
 const GQL_SET_INNER = `

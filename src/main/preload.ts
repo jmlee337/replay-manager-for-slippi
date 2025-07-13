@@ -24,6 +24,7 @@ import {
   Stream,
   EnforcePlayerFailure,
   Station,
+  RendererWave,
 } from '../common/types';
 
 const electronHandler = {
@@ -135,10 +136,8 @@ const electronHandler = {
     ipcRenderer.invoke('setSelectedSetChain', eventId, phaseId, phaseGroupId),
   getTournament: (slugOrShort: string, recursive: boolean): Promise<string> =>
     ipcRenderer.invoke('getTournament', slugOrShort, recursive),
-  getEvent: (id: number, recursive: boolean): Promise<void> =>
-    ipcRenderer.invoke('getEvent', id, recursive),
-  getPhase: (id: number, recursive: boolean): Promise<void> =>
-    ipcRenderer.invoke('getPhase', id, recursive),
+  getEvent: (id: number): Promise<void> => ipcRenderer.invoke('getEvent', id),
+  getPhase: (id: number): Promise<void> => ipcRenderer.invoke('getPhase', id),
   getPhaseGroup: (id: number): Promise<void> =>
     ipcRenderer.invoke('getPhaseGroup', id),
   getStreamsAndStations: (): Promise<{
@@ -291,6 +290,11 @@ const electronHandler = {
     ipcRenderer.removeAllListeners('enforcer');
     ipcRenderer.on('enforcer', callback);
   },
+
+  // entrants
+  openEntrantsWindow: (): void => ipcRenderer.send('openEntrantsWindow'),
+  getPoolsByWave: (): Promise<RendererWave[]> =>
+    ipcRenderer.invoke('getPoolsByWave'),
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

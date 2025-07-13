@@ -139,6 +139,17 @@ export type Tournament = {
   events: Event[];
 };
 
+export type RendererPool = {
+  id: number;
+  name: string;
+  entrants: Entrant[];
+};
+
+export type RendererWave = {
+  id: number;
+  pools: RendererPool[];
+};
+
 export type AdminedTournament = {
   slug: string;
   name: string;

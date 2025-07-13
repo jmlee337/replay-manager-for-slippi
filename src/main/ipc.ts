@@ -53,6 +53,7 @@ import {
   assignStream,
   getStreamsAndStations,
   assignStation,
+  getPoolsByWave,
 } from './startgg';
 import { getReplaysInDir, writeReplays } from './replay';
 import {
@@ -88,11 +89,14 @@ import {
   stopHostServer,
   stopListening,
 } from './host';
+import { resolveHtmlPath } from './util';
 
 type ReplayDir = {
   dir: string;
   usbKey: string;
 };
+
+let entrantsWindow: BrowserWindow | null = null;
 
 export default function setupIPCs(
   mainWindow: BrowserWindow,
@@ -463,6 +467,15 @@ export default function setupIPCs(
     },
   );
 
+  ipcMain.removeHandler('getPoolsByWave');
+  ipcMain.handle('getPoolsByWave', () => {
+    if (!sggApiKey) {
+      throw new Error('Please set start.gg API key');
+    }
+
+    return getPoolsByWave(sggApiKey);
+  });
+
   ipcMain.removeHandler('getTournament');
   ipcMain.handle(
     'getTournament',
@@ -485,36 +498,30 @@ export default function setupIPCs(
   );
 
   ipcMain.removeHandler('getEvent');
-  ipcMain.handle(
-    'getEvent',
-    async (e: IpcMainInvokeEvent, id: number, recursive: boolean) => {
-      if (!sggApiKey) {
-        throw new Error('Please set start.gg API key');
-      }
+  ipcMain.handle('getEvent', async (e: IpcMainInvokeEvent, id: number) => {
+    if (!sggApiKey) {
+      throw new Error('Please set start.gg API key');
+    }
 
-      await getEvent(sggApiKey, id, recursive);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedSet(),
-        startggTournament: getCurrentTournament(),
-      });
-    },
-  );
+    await getEvent(sggApiKey, id, false);
+    mainWindow.webContents.send('tournament', {
+      selectedSet: getSelectedSet(),
+      startggTournament: getCurrentTournament(),
+    });
+  });
 
   ipcMain.removeHandler('getPhase');
-  ipcMain.handle(
-    'getPhase',
-    async (event: IpcMainInvokeEvent, id: number, recursive: boolean) => {
-      if (!sggApiKey) {
-        throw new Error('Please set start.gg API key');
-      }
+  ipcMain.handle('getPhase', async (event: IpcMainInvokeEvent, id: number) => {
+    if (!sggApiKey) {
+      throw new Error('Please set start.gg API key');
+    }
 
-      await getPhase(sggApiKey, id, recursive);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedSet(),
-        startggTournament: getCurrentTournament(),
-      });
-    },
-  );
+    await getPhase(sggApiKey, id, false);
+    mainWindow.webContents.send('tournament', {
+      selectedSet: getSelectedSet(),
+      startggTournament: getCurrentTournament(),
+    });
+  });
 
   ipcMain.removeHandler('getPhaseGroup');
   ipcMain.handle(
@@ -1137,4 +1144,25 @@ export default function setupIPCs(
       );
     },
   );
+
+  ipcMain.on('openEntrantsWindow', () => {
+    if (entrantsWindow) {
+      entrantsWindow.moveTop();
+      entrantsWindow.focus();
+      return;
+    }
+
+    entrantsWindow = new BrowserWindow({
+      width: 870,
+      webPreferences: {
+        preload: app.isPackaged
+          ? path.join(__dirname, 'preload.js')
+          : path.join(__dirname, '../../.erb/dll/preload.js'),
+      },
+    });
+    entrantsWindow.loadURL(resolveHtmlPath('entrants.html'));
+    entrantsWindow.on('close', () => {
+      entrantsWindow = null;
+    });
+  });
 }

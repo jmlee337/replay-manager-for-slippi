@@ -2267,6 +2267,15 @@ function Hello() {
                     variant="caption"
                     style={{ cursor: 'pointer' }}
                     onClick={() => {
+                      window.electron.openEntrantsWindow();
+                    }}
+                  >
+                    {superKey} + E: View Wave/Pool Entrants
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
                       window.dispatchEvent(new Event(WindowEvent.CTRLF));
                     }}
                   >
@@ -2551,6 +2560,7 @@ function Hello() {
       <GlobalHotKeys
         keyMap={{
           COPY: window.electron.isMac ? 'command+s' : 'ctrl+s',
+          ENTRANTS: window.electron.isMac ? 'command+e' : 'ctrl+e',
           ESC: 'escape',
           FIND: window.electron.isMac ? 'command+f' : 'ctrl+f',
           SKEW: window.electron.isMac ? 'command+t' : 'ctrl+t',
@@ -2558,6 +2568,9 @@ function Hello() {
         handlers={{
           COPY: () => {
             window.dispatchEvent(new Event(WindowEvent.CTRLS));
+          },
+          ENTRANTS: () => {
+            window.electron.openEntrantsWindow();
           },
           ESC: () => {
             window.dispatchEvent(new Event(WindowEvent.ESCAPE));

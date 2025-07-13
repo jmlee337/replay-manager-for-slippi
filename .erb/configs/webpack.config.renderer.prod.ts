@@ -28,6 +28,7 @@ const configuration: webpack.Configuration = {
   entry: {
     index: path.join(webpackPaths.srcRendererPath, 'index.tsx'),
     enforcer: path.join(webpackPaths.srcRendererPath, 'enforcer.tsx'),
+    entrants: path.join(webpackPaths.srcRendererPath, 'entrants.tsx'),
   },
 
   output: {
@@ -150,6 +151,19 @@ const configuration: webpack.Configuration = {
       isBrowser: false,
       isDevelopment: false,
       chunks: ['enforcer'],
+    }),
+
+    new HtmlWebpackPlugin({
+      filename: 'entrants.html',
+      template: path.join(webpackPaths.srcRendererPath, 'entrants.ejs'),
+      minify: {
+        collapseWhitespace: true,
+        removeAttributeQuotes: true,
+        removeComments: true,
+      },
+      isBrowser: false,
+      isDevelopment: false,
+      chunks: ['entrants'],
     }),
 
     new webpack.DefinePlugin({
