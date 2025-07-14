@@ -177,8 +177,12 @@ async function fetchGql(key: string, query: string, variables: any) {
     body: JSON.stringify({ query, variables }),
   });
   const json = await response.json();
-  if (json.errors) {
-    throw new Error(json.errors[0].message);
+  if (Array.isArray(json.errors) && json.errors.length > 0) {
+    const message = json.errors[0].message as string;
+    const retryMsg = message.startsWith('Set not found for id: preview')
+      ? ' Refresh the pool and try again.'
+      : '';
+    throw new Error(`${message}.${retryMsg}`);
   }
 
   return json.data;
