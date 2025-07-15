@@ -176,7 +176,7 @@ export type StartggGame = {
   // 1-indexed
   gameNum: number;
   selections: StartggGameSelection[];
-  stageId: number | undefined;
+  stageId?: number;
   winnerId: number;
 };
 

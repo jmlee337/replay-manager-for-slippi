@@ -17,6 +17,7 @@ import {
   ChallongeMatchItem,
   Mode,
   Set,
+  StartggGame,
   StartggSet,
   State,
 } from '../common/types';
@@ -29,6 +30,9 @@ const Name = styled.div`
   overflow-x: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+`;
+const ThinButton = styled(Button)`
+  min-width: 54px;
 `;
 
 export default function ManualReport({
@@ -89,11 +93,35 @@ export default function ManualReport({
       winnerId = selectedSet.entrant2Id;
     }
   }
+  const gameData: StartggGame[] = [];
+  if (entrant1Score > entrant2Score) {
+    for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
+      gameData.push({
+        gameNum: n,
+        winnerId:
+          n <= entrant1Score ? selectedSet.entrant1Id : selectedSet.entrant2Id,
+        entrant1Score: 0,
+        entrant2Score: 0,
+        selections: [],
+      });
+    }
+  } else if (entrant1Score < entrant2Score) {
+    for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
+      gameData.push({
+        gameNum: n,
+        winnerId:
+          n <= entrant2Score ? selectedSet.entrant2Id : selectedSet.entrant1Id,
+        entrant1Score: 0,
+        entrant2Score: 0,
+        selections: [],
+      });
+    }
+  }
   const startggSet: StartggSet = {
     setId: selectedSet.id,
     winnerId,
     isDQ: entrant1Dq || entrant2Dq,
-    gameData: [],
+    gameData,
   };
   const challongeMatchItems: ChallongeMatchItem[] = [
     {
@@ -134,9 +162,7 @@ export default function ManualReport({
       </Tooltip>
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Report set manually</DialogTitle>
-        <DialogContent
-          sx={{ width: mode === Mode.STARTGG ? '300px' : '500px' }}
-        >
+        <DialogContent sx={{ width: '500px' }}>
           <Stack
             direction="row"
             alignItems="center"
@@ -174,7 +200,7 @@ export default function ManualReport({
               <Stack direction="row" spacing="8px">
                 {mode === Mode.STARTGG && (
                   <>
-                    <Button
+                    <ThinButton
                       color="secondary"
                       variant={entrant1Dq ? 'contained' : 'outlined'}
                       onClick={() => {
@@ -183,8 +209,78 @@ export default function ManualReport({
                       }}
                     >
                       DQ
-                    </Button>
-                    <Button
+                    </ThinButton>
+                    <ThinButton
+                      color="secondary"
+                      variant={entrant1Score === 0 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant1Score(0);
+                        if (entrant2Score > 0) {
+                          setEntrant1Win(false);
+                          setEntrant2Win(true);
+                        } else if (entrant2Score === 0) {
+                          setEntrant1Win(false);
+                          setEntrant2Win(false);
+                        }
+                      }}
+                    >
+                      0
+                    </ThinButton>
+                    <ThinButton
+                      color="secondary"
+                      variant={entrant1Score === 1 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant1Score(1);
+                        if (entrant2Score < 1) {
+                          setEntrant1Win(true);
+                          setEntrant2Win(false);
+                        } else if (entrant2Score > 1) {
+                          setEntrant1Win(false);
+                          setEntrant2Win(true);
+                        } else {
+                          setEntrant1Win(false);
+                          setEntrant2Win(false);
+                        }
+                      }}
+                    >
+                      1
+                    </ThinButton>
+                    <ThinButton
+                      color="secondary"
+                      variant={entrant1Score === 2 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant1Score(2);
+                        if (entrant2Score < 2) {
+                          setEntrant1Win(true);
+                          setEntrant2Win(false);
+                        } else if (entrant2Score > 2) {
+                          setEntrant1Win(false);
+                          setEntrant2Win(true);
+                        } else {
+                          setEntrant1Win(false);
+                          setEntrant2Win(false);
+                        }
+                      }}
+                    >
+                      2
+                    </ThinButton>
+                    <ThinButton
+                      color="secondary"
+                      variant={entrant1Score === 3 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant1Score(3);
+                        if (entrant2Score < 3) {
+                          setEntrant1Win(true);
+                          setEntrant2Win(false);
+                        } else if (entrant2Score === 3) {
+                          setEntrant1Win(false);
+                          setEntrant2Win(false);
+                        }
+                      }}
+                    >
+                      3
+                    </ThinButton>
+                    <ThinButton
                       color="secondary"
                       variant={entrant1Win ? 'contained' : 'outlined'}
                       onClick={() => {
@@ -193,7 +289,7 @@ export default function ManualReport({
                       }}
                     >
                       W
-                    </Button>
+                    </ThinButton>
                   </>
                 )}
                 {mode === Mode.CHALLONGE && (
@@ -262,7 +358,7 @@ export default function ManualReport({
               <Stack direction="row" spacing="8px">
                 {mode === Mode.STARTGG && (
                   <>
-                    <Button
+                    <ThinButton
                       color="secondary"
                       variant={entrant2Dq ? 'contained' : 'outlined'}
                       onClick={() => {
@@ -271,8 +367,78 @@ export default function ManualReport({
                       }}
                     >
                       DQ
-                    </Button>
-                    <Button
+                    </ThinButton>
+                    <ThinButton
+                      color="secondary"
+                      variant={entrant2Score === 0 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant2Score(0);
+                        if (entrant1Score > 0) {
+                          setEntrant1Win(true);
+                          setEntrant2Win(false);
+                        } else if (entrant1Score === 0) {
+                          setEntrant1Win(false);
+                          setEntrant2Win(false);
+                        }
+                      }}
+                    >
+                      0
+                    </ThinButton>
+                    <ThinButton
+                      color="secondary"
+                      variant={entrant2Score === 1 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant2Score(1);
+                        if (entrant1Score < 1) {
+                          setEntrant1Win(false);
+                          setEntrant2Win(true);
+                        } else if (entrant1Score > 1) {
+                          setEntrant1Win(true);
+                          setEntrant2Win(false);
+                        } else {
+                          setEntrant1Win(false);
+                          setEntrant2Win(false);
+                        }
+                      }}
+                    >
+                      1
+                    </ThinButton>
+                    <ThinButton
+                      color="secondary"
+                      variant={entrant2Score === 2 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant2Score(2);
+                        if (entrant1Score < 2) {
+                          setEntrant1Win(false);
+                          setEntrant2Win(true);
+                        } else if (entrant1Score > 2) {
+                          setEntrant1Win(true);
+                          setEntrant2Win(false);
+                        } else {
+                          setEntrant1Win(false);
+                          setEntrant2Win(false);
+                        }
+                      }}
+                    >
+                      2
+                    </ThinButton>
+                    <ThinButton
+                      color="secondary"
+                      variant={entrant2Score === 3 ? 'contained' : 'outlined'}
+                      onClick={() => {
+                        setEntrant2Score(3);
+                        if (entrant1Score < 3) {
+                          setEntrant1Win(false);
+                          setEntrant2Win(true);
+                        } else if (entrant1Score === 3) {
+                          setEntrant1Win(false);
+                          setEntrant2Win(false);
+                        }
+                      }}
+                    >
+                      3
+                    </ThinButton>
+                    <ThinButton
                       color="secondary"
                       variant={entrant2Win ? 'contained' : 'outlined'}
                       onClick={() => {
@@ -281,7 +447,7 @@ export default function ManualReport({
                       }}
                     >
                       W
-                    </Button>
+                    </ThinButton>
                   </>
                 )}
                 {mode === Mode.CHALLONGE && (
