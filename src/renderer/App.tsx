@@ -78,7 +78,6 @@ import {
 } from '../common/types';
 import { DraggableChip, DroppableChip } from './DragAndDrop';
 import ReplayList, { SkewReplay } from './ReplayList';
-import './App.css';
 import CopyControls from './CopyControls';
 import SetControls from './SetControls';
 import ErrorDialog from './ErrorDialog';
