@@ -324,6 +324,7 @@ function PhaseView({
                   bracketType: phaseGroup.bracketType,
                   hasSiblings: phase.phaseGroups.length > 1,
                   waveId: phaseGroup.waveId,
+                  winnersTargetPhaseId: phaseGroup.winnersTargetPhaseId,
                 })
               }
             />

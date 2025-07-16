@@ -108,6 +108,7 @@ export function getSelectedSetChain(): {
             hasSiblings:
               phaseIdToPhaseGroupIds.get(selectedPhaseId)!.length > 1,
             waveId: phaseGroup.waveId,
+            winnersTargetPhaseId: phaseGroup.winnersTargetPhaseId,
           }
         : undefined,
   };
@@ -236,6 +237,7 @@ export async function getPhaseGroup(
     displayIdentifier: name,
     state,
     waveId,
+    winnersTargetPhaseId,
   } = phaseGroup;
   const isBracketTypeValid =
     bracketType === 1 || // SINGLE_ELIMINATION
@@ -255,6 +257,7 @@ export async function getPhaseGroup(
       state,
       sets: { completedSets: [], pendingSets: [] },
       waveId,
+      winnersTargetPhaseId,
     };
   }
 
@@ -555,6 +558,7 @@ export async function getPhaseGroup(
     state,
     sets: { completedSets: [], pendingSets: [] },
     waveId,
+    winnersTargetPhaseId,
   });
   phaseGroupIdToEntrants.set(id, entrants);
   phaseGroupIdToSets.set(id, { completedSets, pendingSets });
@@ -566,6 +570,7 @@ export async function getPhaseGroup(
     state,
     sets: { completedSets, pendingSets },
     waveId,
+    winnersTargetPhaseId,
   };
 }
 
@@ -592,6 +597,7 @@ export async function getPhase(key: string, id: number, recursive: boolean) {
         },
         state: group.state,
         waveId: group.waveId,
+        winnersTargetPhaseId: group.winnersTargetPhaseId,
       };
       phaseGroups.push(newPhaseGroup);
       phaseGroupIds.push(group.id);
@@ -856,21 +862,22 @@ export async function getPoolsByWave(key: string) {
 
   await getTournament(key, currentTournament.slug, true);
   const waveIdToPools = new Map<number, RendererPool[]>();
-  const noWavePools: RendererPool[] = [];
+  const noWavePools: (RendererPool & {
+    eventId: number;
+    phaseId: number;
+    winnersTargetPhaseId: number | null;
+  })[] = [];
   // eslint-disable-next-line no-restricted-syntax
-  for (const eventId of tournamentSlugToEventIds
-    .get(currentTournament.slug)
-    ?.sort((a, b) => a - b) ?? []) {
+  for (const eventId of tournamentSlugToEventIds.get(currentTournament.slug) ??
+    []) {
     const event = idToEvent.get(eventId);
     if (event) {
-      const phaseIds =
-        eventIdToPhaseIds.get(eventId)?.sort((a, b) => a - b) ?? [];
+      const phaseIds = eventIdToPhaseIds.get(eventId) ?? [];
       // eslint-disable-next-line no-restricted-syntax
       for (const phaseId of phaseIds) {
         const phase = idToPhase.get(phaseId);
         if (phase) {
           const parentName = phaseIds.length > 1 ? phase.name : event.name;
-          const phasePools: RendererPool[] = [];
           const phaseGroupIds = phaseIdToPhaseGroupIds.get(phaseId) ?? [];
           // eslint-disable-next-line no-restricted-syntax
           for (const phaseGroupId of phaseGroupIds) {
@@ -881,27 +888,58 @@ export async function getPoolsByWave(key: string) {
                 wavePools.push(phaseGroup);
                 waveIdToPools.set(phaseGroup.waveId, wavePools);
               } else {
-                phasePools.push({
+                noWavePools.push({
                   id: phaseGroup.id,
                   entrants: phaseGroup.entrants,
                   name:
                     phaseGroupIds.length > 1
                       ? `${parentName}, ${phaseGroup.name}`
                       : parentName,
+                  winnersTargetPhaseId: phaseGroup.winnersTargetPhaseId,
+                  eventId,
+                  phaseId,
                 });
               }
             }
           }
-          phasePools.sort((a, b) =>
-            a.name.length === b.name.length
-              ? a.name.localeCompare(b.name)
-              : a.name.length - b.name.length,
-          );
-          noWavePools.push(...phasePools);
         }
       }
     }
   }
+
+  noWavePools.sort((a, b) => {
+    if (a.eventId !== b.eventId) {
+      return a.eventId - b.eventId;
+    }
+
+    if (a.winnersTargetPhaseId !== null && b.winnersTargetPhaseId === null) {
+      return -1;
+    }
+    if (a.winnersTargetPhaseId === null && b.winnersTargetPhaseId !== null) {
+      return 1;
+    }
+    if (
+      a.winnersTargetPhaseId !== null &&
+      b.winnersTargetPhaseId !== null &&
+      a.winnersTargetPhaseId !== b.winnersTargetPhaseId
+    ) {
+      if (a.winnersTargetPhaseId === b.phaseId) {
+        return -1;
+      }
+      if (a.phaseId === b.winnersTargetPhaseId) {
+        return 1;
+      }
+      return a.winnersTargetPhaseId - b.winnersTargetPhaseId;
+    }
+
+    if (a.phaseId !== b.phaseId) {
+      return a.phaseId - b.phaseId;
+    }
+
+    return a.name.length === b.name.length
+      ? a.name.localeCompare(b.name)
+      : a.name.length - b.name.length;
+  });
 
   Array.from(waveIdToPools.values()).forEach((phaseGroups) =>
     phaseGroups.sort((a, b) =>

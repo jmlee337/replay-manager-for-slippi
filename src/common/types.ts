@@ -114,6 +114,7 @@ export type PhaseGroup = {
   sets: Sets;
   state: State;
   waveId: number | null;
+  winnersTargetPhaseId: number | null;
 };
 
 export type Phase = {
@@ -245,6 +246,7 @@ export type SelectedPhaseGroup = {
   bracketType: number;
   hasSiblings: boolean;
   waveId: number | null;
+  winnersTargetPhaseId: number | null;
 };
 
 export type ContextSlot = {
