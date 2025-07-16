@@ -21,7 +21,16 @@ function Pool({ pool }: { pool: RendererPool }) {
       <Typography variant="caption">{pool.name}</Typography>
       <List>
         {pool.entrants.map((entrant) => (
-          <ListItemText key={entrant.id}>
+          <ListItemText
+            key={entrant.id}
+            primaryTypographyProps={{
+              style: {
+                overflowX: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              },
+            }}
+          >
             {entrant.participants
               .map((participant) => participant.displayName)
               .join(' + ')}

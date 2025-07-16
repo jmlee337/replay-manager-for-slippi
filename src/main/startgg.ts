@@ -884,7 +884,10 @@ export async function getPoolsByWave(key: string) {
                 phasePools.push({
                   id: phaseGroup.id,
                   entrants: phaseGroup.entrants,
-                  name: phaseGroupIds.length > 1 ? phaseGroup.name : parentName,
+                  name:
+                    phaseGroupIds.length > 1
+                      ? `${parentName}, ${phaseGroup.name}`
+                      : parentName,
                 });
               }
             }
