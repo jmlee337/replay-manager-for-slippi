@@ -1337,7 +1337,11 @@ function Hello() {
         });
       }
 
-      if (copySettings.writeContext) {
+      if (
+        copySettings.writeContext &&
+        (copySettings.output === Output.FOLDER ||
+          copySettings.output === Output.ZIP)
+      ) {
         let canWriteContext = true;
         const scores: ContextScore[] = [];
         const gameScores = [0, 0];
