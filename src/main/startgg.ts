@@ -180,9 +180,11 @@ async function fetchGql(key: string, query: string, variables: any) {
   const json = await response.json();
   if (Array.isArray(json.errors) && json.errors.length > 0) {
     const message = json.errors[0].message as string;
-    const retryMsg = message.startsWith('Set not found for id: preview')
-      ? '. Refresh the pool and try again.'
-      : '';
+    const retryMsg =
+      message.startsWith('Set not found for id: preview') ||
+      message.startsWith('An unknown error has occurred')
+        ? '. Refresh the pool and try again.'
+        : '';
     throw new Error(`${message}${retryMsg}`);
   }
 

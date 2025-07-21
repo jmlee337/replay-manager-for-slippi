@@ -98,6 +98,23 @@ type ReplayDir = {
 
 let entrantsWindow: BrowserWindow | null = null;
 
+async function getRealSetId(sggApiKey: string, originalSet: Set) {
+  const updatedPhaseGroup = await getPhaseGroup(
+    sggApiKey,
+    getSelectedSetChain().phaseGroup!.id,
+  );
+  const candidateRealSets = updatedPhaseGroup.sets.pendingSets.filter(
+    (realSet) =>
+      realSet.entrant1Id === originalSet.entrant1Id &&
+      realSet.entrant2Id === originalSet.entrant2Id &&
+      realSet.round === originalSet.round,
+  );
+  if (candidateRealSets.length === 1) {
+    return candidateRealSets[0].id;
+  }
+  return null;
+}
+
 export default function setupIPCs(
   mainWindow: BrowserWindow,
   enforcerWindow: BrowserWindow,
@@ -545,16 +562,28 @@ export default function setupIPCs(
   ipcMain.removeHandler('assignStream');
   ipcMain.handle(
     'assignStream',
-    async (
-      event: IpcMainInvokeEvent,
-      setId: string | number,
-      streamId: number,
-    ) => {
+    async (event: IpcMainInvokeEvent, originalSet: Set, streamId: number) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      await assignStream(sggApiKey, setId, streamId);
+      try {
+        await assignStream(sggApiKey, originalSet.id, streamId);
+      } catch (e: unknown) {
+        if (
+          e instanceof Error &&
+          e.message.startsWith('An unknown error has occurred')
+        ) {
+          const realSetId = await getRealSetId(sggApiKey, originalSet);
+          if (realSetId) {
+            await assignStream(sggApiKey, realSetId, streamId);
+          } else {
+            throw e;
+          }
+        } else {
+          throw e;
+        }
+      }
       await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
@@ -566,12 +595,28 @@ export default function setupIPCs(
   ipcMain.removeHandler('assignStation');
   ipcMain.handle(
     'assignStation',
-    async (event, setId: string | number, stationId: number) => {
+    async (event, originalSet: Set, stationId: number) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      await assignStation(sggApiKey, setId, stationId);
+      try {
+        await assignStation(sggApiKey, originalSet.id, stationId);
+      } catch (e: unknown) {
+        if (
+          e instanceof Error &&
+          e.message.startsWith('An unknown error has occurred')
+        ) {
+          const realSetId = await getRealSetId(sggApiKey, originalSet);
+          if (realSetId) {
+            await assignStation(sggApiKey, realSetId, stationId);
+          } else {
+            throw e;
+          }
+        } else {
+          throw e;
+        }
+      }
       await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
@@ -600,12 +645,28 @@ export default function setupIPCs(
   ipcMain.removeHandler('startSet');
   ipcMain.handle(
     'startSet',
-    async (event: IpcMainInvokeEvent, setId: number | string) => {
+    async (event: IpcMainInvokeEvent, originalSet: Set) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
 
-      await startSet(sggApiKey, setId);
+      try {
+        await startSet(sggApiKey, originalSet.id);
+      } catch (e: unknown) {
+        if (
+          e instanceof Error &&
+          e.message.startsWith('Set not found for id: preview')
+        ) {
+          const realSetId = await getRealSetId(sggApiKey, originalSet);
+          if (realSetId) {
+            await startSet(sggApiKey, realSetId);
+          } else {
+            throw e;
+          }
+        } else {
+          throw e;
+        }
+      }
       await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
@@ -636,18 +697,9 @@ export default function setupIPCs(
               updatedSet = await updateSet(sggApiKey, set);
             }
           } else if (e.message.startsWith('Set not found for id: preview')) {
-            const updatedPhaseGroup = await getPhaseGroup(
-              sggApiKey,
-              getSelectedSetChain().phaseGroup!.id,
-            );
-            const candidateRealIds = updatedPhaseGroup.sets.pendingSets.filter(
-              (realSet) =>
-                realSet.entrant1Id === originalSet.entrant1Id &&
-                realSet.entrant2Id === originalSet.entrant2Id &&
-                realSet.round === originalSet.round,
-            );
-            if (candidateRealIds.length === 1) {
-              set.setId = candidateRealIds[0].id;
+            const realSetId = await getRealSetId(sggApiKey, originalSet);
+            if (realSetId) {
+              set.setId = realSetId;
               try {
                 updatedSet = await reportSet(sggApiKey, set);
               } catch (e2: unknown) {

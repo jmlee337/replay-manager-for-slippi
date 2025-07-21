@@ -1014,15 +1014,15 @@ function Hello() {
   };
 
   const [startingSet, setStartingSet] = useState(false);
-  const startSet = async (setId: number | string) => {
+  const startSet = async (originalSet: Set) => {
     setStartingSet(true);
     try {
       if (mode === Mode.STARTGG) {
-        await window.electron.startSet(setId);
+        await window.electron.startSet(originalSet);
       } else if (mode === Mode.CHALLONGE) {
         await window.electron.startChallongeSet(
           selectedChallongeTournament.slug,
-          setId as number,
+          originalSet.id as number,
         );
       }
     } catch (e: any) {
@@ -2459,7 +2459,7 @@ function Hello() {
                       ) || startingSet
                     }
                     size="small"
-                    onClick={() => startSet(selectedSet.id)}
+                    onClick={() => startSet(selectedSet)}
                   >
                     {startingSet ? (
                       <CircularProgress size="24px" />

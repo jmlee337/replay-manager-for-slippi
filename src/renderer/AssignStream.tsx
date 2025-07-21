@@ -38,7 +38,7 @@ export default function AssignStream({
     setAssigning(true);
     try {
       if (mode === Mode.STARTGG) {
-        await window.electron.assignStream(selectedSet.id, streamId);
+        await window.electron.assignStream(selectedSet, streamId);
       }
       setChooseOpen(false);
     } catch (e: any) {
@@ -52,7 +52,7 @@ export default function AssignStream({
     setAssigning(true);
     try {
       if (mode === Mode.STARTGG) {
-        await window.electron.assignStation(selectedSet.id, stationId);
+        await window.electron.assignStation(selectedSet, stationId);
       }
       setChooseOpen(false);
     } catch (e: any) {

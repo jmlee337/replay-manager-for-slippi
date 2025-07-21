@@ -144,13 +144,13 @@ const electronHandler = {
     streams: Stream[];
     stations: Station[];
   }> => ipcRenderer.invoke('getStreamsAndStations'),
-  assignStream: (setId: string | number, streamId: number): Promise<void> =>
-    ipcRenderer.invoke('assignStream', setId, streamId),
-  assignStation: (setId: string | number, stationId: number): Promise<void> =>
-    ipcRenderer.invoke('assignStation', setId, stationId),
+  assignStream: (originalSet: Set, streamId: number): Promise<void> =>
+    ipcRenderer.invoke('assignStream', originalSet, streamId),
+  assignStation: (originalSet: Set, stationId: number): Promise<void> =>
+    ipcRenderer.invoke('assignStation', originalSet, stationId),
   resetSet: (id: number): Promise<void> => ipcRenderer.invoke('resetSet', id),
-  startSet: (id: number | string): Promise<void> =>
-    ipcRenderer.invoke('startSet', id),
+  startSet: (originalSet: Set): Promise<void> =>
+    ipcRenderer.invoke('startSet', originalSet),
   reportSet: (set: StartggSet, originalSet: Set): Promise<Set> =>
     ipcRenderer.invoke('reportSet', set, originalSet),
   updateSet: (set: StartggSet): Promise<Set> =>
