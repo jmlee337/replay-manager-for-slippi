@@ -181,9 +181,9 @@ async function fetchGql(key: string, query: string, variables: any) {
   if (Array.isArray(json.errors) && json.errors.length > 0) {
     const message = json.errors[0].message as string;
     const retryMsg = message.startsWith('Set not found for id: preview')
-      ? ' Refresh the pool and try again.'
+      ? '. Refresh the pool and try again.'
       : '';
-    throw new Error(`${message}.${retryMsg}`);
+    throw new Error(`${message}${retryMsg}`);
   }
 
   return json.data;
@@ -289,8 +289,8 @@ export async function getPhaseGroup(
             const pronouns = playerIdToPronouns.get(playerId) || '';
             const newParticipant: Participant = {
               displayName,
-              prefix,
-              pronouns,
+              prefix: prefix ?? '',
+              pronouns: pronouns ?? '',
             };
             participants.push(newParticipant);
             if (!playerIdToPronouns.has(playerId)) {
@@ -1021,8 +1021,8 @@ type ApiParticipant = {
 function gqlParticipantToParticipant(participant: ApiParticipant): Participant {
   return {
     displayName: participant.gamerTag,
-    pronouns: participant.player.user?.genderPronoun || '',
     prefix: participant.prefix || '',
+    pronouns: participant.player.user?.genderPronoun || '',
   };
 }
 function gqlSetToSet(set: any): Set {
@@ -1162,11 +1162,26 @@ export async function reportSet(key: string, set: StartggSet) {
     idToSet.set(updatedSet.id, updatedSet);
     return updatedSet;
   });
-  const reportedSet = updatedSets.filter(
-    (updatedSet) => updatedSet.state === State.COMPLETED,
-  )[0];
-  reportedSetIds.set(reportedSet.id, true);
-  setSelectedSetId(reportedSet.id);
+  let reportedSet = updatedSets.find(
+    (updatedSet) => updatedSet.id === set.setId,
+  );
+  if (!reportedSet && typeof set.setId === 'string') {
+    const originalSet = idToSet.get(set.setId);
+    if (originalSet) {
+      const candidateReportedSets = updatedSets.filter(
+        (updatedSet) =>
+          updatedSet.state === State.COMPLETED &&
+          updatedSet.entrant1Id === originalSet.entrant1Id &&
+          updatedSet.entrant2Id === originalSet.entrant2Id &&
+          updatedSet.round === originalSet.round,
+      );
+      if (candidateReportedSets.length === 1) {
+        [reportedSet] = candidateReportedSets;
+      }
+    }
+  }
+  reportedSetIds.set(reportedSet ? reportedSet.id : set.setId, true);
+  setSelectedSetId(reportedSet ? reportedSet.id : set.setId);
   return reportedSet;
 }
 

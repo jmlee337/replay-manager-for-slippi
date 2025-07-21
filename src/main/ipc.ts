@@ -620,8 +620,7 @@ export default function setupIPCs(
     async (
       event: IpcMainInvokeEvent,
       set: StartggSet,
-      entrant1Id: number,
-      entrant2Id: number,
+      originalSet: Set,
     ): Promise<Set> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
@@ -641,27 +640,30 @@ export default function setupIPCs(
               sggApiKey,
               getSelectedSetChain().phaseGroup!.id,
             );
-            const realId = updatedPhaseGroup.sets.pendingSets.find(
+            const candidateRealIds = updatedPhaseGroup.sets.pendingSets.filter(
               (realSet) =>
-                realSet.entrant1Id === entrant1Id &&
-                realSet.entrant2Id === entrant2Id,
-            )?.id;
-            if (realId) {
-              set.setId = realId;
-            }
-            try {
-              updatedSet = await reportSet(sggApiKey, set);
-            } catch (e2: unknown) {
-              if (
-                e2 instanceof Error &&
-                e2.message === 'Cannot report completed set via API.'
-              ) {
-                if (set.gameData.length > 0) {
-                  updatedSet = await updateSet(sggApiKey, set);
+                realSet.entrant1Id === originalSet.entrant1Id &&
+                realSet.entrant2Id === originalSet.entrant2Id &&
+                realSet.round === originalSet.round,
+            );
+            if (candidateRealIds.length === 1) {
+              set.setId = candidateRealIds[0].id;
+              try {
+                updatedSet = await reportSet(sggApiKey, set);
+              } catch (e2: unknown) {
+                if (
+                  e2 instanceof Error &&
+                  e2.message === 'Cannot report completed set via API.'
+                ) {
+                  if (set.gameData.length > 0) {
+                    updatedSet = await updateSet(sggApiKey, set);
+                  }
+                } else {
+                  throw e2;
                 }
-              } else {
-                throw e2;
               }
+            } else {
+              throw e;
             }
           } else {
             throw e;

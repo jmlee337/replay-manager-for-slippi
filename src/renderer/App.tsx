@@ -74,6 +74,7 @@ import {
   Set,
   StartggSet,
   State,
+  Stream,
   Tournament,
 } from '../common/types';
 import { DraggableChip, DroppableChip } from './DragAndDrop';
@@ -1031,15 +1032,11 @@ function Hello() {
     }
   };
 
-  const reportStartggSet = async (
-    set: StartggSet,
-    entrant1Id: number,
-    entrant2Id: number,
-    update: boolean,
-  ) => {
-    const updatedSet = update
-      ? await window.electron.updateSet(set)
-      : await window.electron.reportSet(set, entrant1Id, entrant2Id);
+  const reportStartggSet = async (set: StartggSet, originalSet: Set) => {
+    const updatedSet =
+      originalSet.state === State.COMPLETED
+        ? await window.electron.updateSet(set)
+        : await window.electron.reportSet(set, originalSet);
     resetDq();
     return updatedSet;
   };
@@ -1082,7 +1079,11 @@ function Hello() {
   const [copySuccess, setCopySuccess] = useState('');
 
   const onCopy = async (
-    set?: Set,
+    updatedSetFields?: {
+      id: number | string;
+      completedAtMs: number;
+      stream: Stream | null;
+    },
     violators?: {
       checkNames: Map<string, boolean>;
       displayName: string;
@@ -1090,14 +1091,16 @@ function Hello() {
     }[],
   ) => {
     setIsCopying(true);
-    const copySet = set ?? selectedSet;
 
     let offsetMs = 0;
     let startDate = selectedReplays[0].startAt;
     if (copySettings.writeStartTimes) {
       const lastReplay = selectedReplays[selectedReplays.length - 1];
       const lastStartMs = lastReplay.startAt.getTime();
-      const completedMs = copySet.completedAtMs || Date.now();
+      const completedMs =
+        (updatedSetFields
+          ? updatedSetFields.completedAtMs
+          : selectedSet.completedAtMs) || Date.now();
       offsetMs =
         completedMs -
         lastStartMs -
@@ -1185,12 +1188,12 @@ function Hello() {
 
       let roundShort = '';
       const regex = /([A-Z]|[0-9])/g;
-      let regexRes = regex.exec(copySet.fullRoundText);
+      let regexRes = regex.exec(selectedSet.fullRoundText);
       while (regexRes) {
         roundShort += regexRes[0];
-        regexRes = regex.exec(copySet.fullRoundText);
+        regexRes = regex.exec(selectedSet.fullRoundText);
       }
-      const roundLong = String(copySet.fullRoundText);
+      const roundLong = String(selectedSet.fullRoundText);
       if (
         copySettings.output === Output.FOLDER ||
         copySettings.output === Output.ZIP
@@ -1410,10 +1413,10 @@ function Hello() {
         };
         if (canWriteContext) {
           const contextPlayers: ContextPlayers = {
-            entrant1: copySet.entrant1Participants.map((participant) => {
+            entrant1: selectedSet.entrant1Participants.map((participant) => {
               const combinedNameObj = combinedNameObjs.find(
                 (cbn) =>
-                  cbn.entrantId === copySet.entrant1Id &&
+                  cbn.entrantId === selectedSet.entrant1Id &&
                   cbn.displayName === participant.displayName,
               )!;
               return {
@@ -1421,10 +1424,10 @@ function Hello() {
                 characters: combinedNameObj.characterNames,
               };
             }),
-            entrant2: copySet.entrant2Participants.map((participant) => {
+            entrant2: selectedSet.entrant2Participants.map((participant) => {
               const combinedNameObj = combinedNameObjs.find(
                 (cbn) =>
-                  cbn.entrantId === copySet.entrant2Id &&
+                  cbn.entrantId === selectedSet.entrant2Id &&
                   cbn.displayName === participant.displayName,
               )!;
               return {
@@ -1446,7 +1449,8 @@ function Hello() {
             startMs: startDate.getTime(),
           };
 
-          if (copySet.id) {
+          const setId = updatedSetFields ? updatedSetFields.id : selectedSet.id;
+          if (setId) {
             if (mode === Mode.STARTGG) {
               context.startgg = {
                 tournament: {
@@ -1458,14 +1462,16 @@ function Hello() {
                 phaseGroup: selectedSetChain.phaseGroup!,
                 set: {
                   id:
-                    typeof copySet.id === 'string' ||
-                    (Number.isInteger(copySet.id) && copySet.id > 0)
-                      ? copySet.id
+                    typeof setId === 'string' ||
+                    (Number.isInteger(setId) && setId > 0)
+                      ? setId
                       : undefined,
-                  fullRoundText: copySet.fullRoundText,
-                  ordinal: copySet.ordinal,
-                  round: copySet.round,
-                  stream: copySet.stream,
+                  fullRoundText: selectedSet.fullRoundText,
+                  ordinal: selectedSet.ordinal,
+                  round: selectedSet.round,
+                  stream: updatedSetFields
+                    ? updatedSetFields.stream
+                    : selectedSet.stream,
                 },
               };
             } else if (mode === Mode.CHALLONGE) {
@@ -1477,13 +1483,15 @@ function Hello() {
                 },
                 set: {
                   id:
-                    Number.isInteger(copySet.id) && (copySet.id as number) > 0
-                      ? (copySet.id as number)
+                    Number.isInteger(setId) && (setId as number) > 0
+                      ? (setId as number)
                       : undefined,
-                  fullRoundText: copySet.fullRoundText,
-                  ordinal: copySet.ordinal,
-                  round: copySet.round,
-                  stream: copySet.stream,
+                  fullRoundText: selectedSet.fullRoundText,
+                  ordinal: selectedSet.ordinal,
+                  round: selectedSet.round,
+                  stream: updatedSetFields
+                    ? updatedSetFields.stream
+                    : selectedSet.stream,
                 },
               };
             }
@@ -1498,7 +1506,6 @@ function Hello() {
         new Date(replay.startAt.getTime() + offsetMs).toISOString(),
       );
     }
-
     try {
       await window.electron.writeReplays(
         fileNames,
@@ -1510,9 +1517,9 @@ function Hello() {
         context,
       );
       if (violators && violators.length > 0) {
-        const vsStr = `${copySet.entrant1Participants
+        const vsStr = `${selectedSet.entrant1Participants
           .map((participant) => participant.displayName)
-          .join('/')} vs ${copySet.entrant2Participants
+          .join('/')} vs ${selectedSet.entrant2Participants
           .map((participant) => participant.displayName)
           .join('/')}`;
         let poolName = '';
@@ -1527,7 +1534,9 @@ function Hello() {
               ({ checkNames, displayName, entrantId }) =>
                 `${entrantId},${displayName},${Array.from(checkNames.keys())
                   .sort()
-                  .join('|')},${poolName},${copySet.fullRoundText},${vsStr}`,
+                  .join('|')},${poolName},${
+                  selectedSet.fullRoundText
+                },${vsStr}`,
             )
             .join('\n')
             .concat('\n'),

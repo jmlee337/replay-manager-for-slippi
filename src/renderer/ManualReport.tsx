@@ -46,12 +46,7 @@ export default function ManualReport({
     matchId: number,
     items: ChallongeMatchItem[],
   ) => Promise<Set>;
-  reportStartggSet: (
-    set: StartggSet,
-    entrant1Id: number,
-    entrant2Id: number,
-    update: boolean,
-  ) => Promise<Set>;
+  reportStartggSet: (set: StartggSet, originalSet: Set) => Promise<Set>;
   selectedSet: Set;
 }) {
   const [open, setOpen] = useState(false);
@@ -511,12 +506,7 @@ export default function ManualReport({
               setReporting(true);
               try {
                 if (mode === Mode.STARTGG) {
-                  await reportStartggSet(
-                    startggSet,
-                    selectedSet.entrant1Id,
-                    selectedSet.entrant2Id,
-                    selectedSet.state === State.COMPLETED,
-                  );
+                  await reportStartggSet(startggSet, selectedSet);
                 } else if (mode === Mode.CHALLONGE) {
                   await reportChallongeSet(
                     selectedSet.id as number,

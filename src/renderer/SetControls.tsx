@@ -31,6 +31,7 @@ import {
   StartggGameSelection,
   StartggSet,
   State,
+  Stream,
 } from '../common/types';
 import {
   characterNames,
@@ -219,7 +220,11 @@ export default function SetControls({
   replayLoadCount,
 }: {
   copyReplays: (
-    set?: Set,
+    updatedSetFields?: {
+      id: number | string;
+      completedAtMs: number;
+      stream: Stream | null;
+    },
     violators?: {
       checkNames: Map<string, boolean>;
       displayName: string;
@@ -231,12 +236,7 @@ export default function SetControls({
     matchId: number,
     items: ChallongeMatchItem[],
   ) => Promise<Set>;
-  reportStartggSet: (
-    set: StartggSet,
-    entrant1Id: number,
-    entrant2Id: number,
-    update: boolean,
-  ) => Promise<Set>;
+  reportStartggSet: (set: StartggSet, originalSet: Set) => Promise<Set>;
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
   resetGuide: () => void;
   mode: Mode;
@@ -779,12 +779,7 @@ export default function SetControls({
               try {
                 let updatedSet: Set | undefined;
                 if (mode === Mode.STARTGG) {
-                  updatedSet = await reportStartggSet(
-                    startggSet,
-                    set.entrant1Id,
-                    set.entrant2Id,
-                    set.state === State.COMPLETED,
-                  );
+                  updatedSet = await reportStartggSet(startggSet, set);
                 } else if (mode === Mode.CHALLONGE) {
                   updatedSet = await reportChallongeSet(
                     set.id as number,
@@ -833,7 +828,13 @@ export default function SetControls({
                       });
                   });
                   await copyReplays(
-                    updatedSet,
+                    updatedSet
+                      ? {
+                          id: updatedSet.id,
+                          completedAtMs: updatedSet.completedAtMs,
+                          stream: updatedSet.stream,
+                        }
+                      : undefined,
                     Array.from(entrantIdToDisplayNameAndCheckNames).map(
                       ([entrantId, { checkNames, displayName }]) => ({
                         checkNames,
