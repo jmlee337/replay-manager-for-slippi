@@ -44,45 +44,59 @@ export default function SearchBox({
 
   return (
     (showSearch || (vlerkMode && mode === Mode.STARTGG)) && (
-      <Box style={{ background: 'white', padding: '8px 0' }}>
-        <TextField
-          autoFocus
-          fullWidth
-          label="Search"
-          onChange={(event) => {
-            setSearchSubstr(event.target.value);
+      <>
+        <Box
+          style={{
+            background: '#F5A9B8',
+            padding: '8px',
+            position: 'fixed',
+            width: '300px',
+            right: 0,
           }}
-          onKeyDown={(event) => {
-            if (event.key === 'Escape') {
-              clearSearch();
-            } else if (
-              ((window.electron.isMac && event.metaKey) ||
-                (!window.electron.isMac && event.ctrlKey)) &&
-              event.key === 'f'
-            ) {
-              searchInputRef.current?.select();
-            }
+          sx={{
+            zIndex: (theme) => theme.zIndex.drawer + 5,
           }}
-          inputRef={searchInputRef}
-          size="small"
-          value={searchSubstr}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <Tooltip title="Clear search">
-                  <IconButton
-                    onClick={() => {
-                      clearSearch();
-                    }}
-                  >
-                    <Clear />
-                  </IconButton>
-                </Tooltip>
-              </InputAdornment>
-            ),
-          }}
-        />
-      </Box>
+        >
+          <TextField
+            autoFocus
+            fullWidth
+            label="Search"
+            onChange={(event) => {
+              setSearchSubstr(event.target.value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') {
+                clearSearch();
+              } else if (
+                ((window.electron.isMac && event.metaKey) ||
+                  (!window.electron.isMac && event.ctrlKey)) &&
+                event.key === 'f'
+              ) {
+                searchInputRef.current?.select();
+              }
+            }}
+            inputRef={searchInputRef}
+            size="small"
+            value={searchSubstr}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Tooltip title="Clear search">
+                    <IconButton
+                      onClick={() => {
+                        clearSearch();
+                      }}
+                    >
+                      <Clear />
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Box>
+        <Box marginTop="56px" />
+      </>
     )
   );
 }
