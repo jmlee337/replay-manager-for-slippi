@@ -140,10 +140,8 @@ const ReplayListItem = forwardRef(
       replay: Replay;
       selectedChipData: PlayerOverrides;
       findUnusedPlayer: (
-        displayName: string,
         entrantId: number,
-        prefix: string,
-        pronouns: string,
+        participantId: number,
         overrideSet: Map<string, boolean>,
       ) => PlayerOverrides;
       onClick: (index: number) => void;
@@ -272,10 +270,17 @@ const ReplayListItem = forwardRef(
       const onClickOrDrop = (
         displayName: string,
         entrantId: number,
+        participantId: number,
         prefix: string,
         pronouns: string,
       ) => {
-        player.playerOverrides = { displayName, entrantId, prefix, pronouns };
+        player.playerOverrides = {
+          displayName,
+          entrantId,
+          participantId,
+          prefix,
+          pronouns,
+        };
         const validPlayers = replay.players.filter(
           (otherPlayer) =>
             otherPlayer.playerType === 0 || otherPlayer.playerType === 1,
@@ -285,11 +290,14 @@ const ReplayListItem = forwardRef(
             return;
           }
           if (
-            otherPlayer.playerOverrides.displayName === displayName &&
-            otherPlayer.playerOverrides.entrantId === entrantId
+            otherPlayer.playerOverrides.entrantId === entrantId &&
+            otherPlayer.playerOverrides.participantId === participantId
           ) {
             otherPlayer.playerOverrides.displayName = '';
             otherPlayer.playerOverrides.entrantId = 0;
+            otherPlayer.playerOverrides.participantId = 0;
+            otherPlayer.playerOverrides.prefix = '';
+            otherPlayer.playerOverrides.pronouns = '';
           }
         });
 
@@ -306,14 +314,15 @@ const ReplayListItem = forwardRef(
           );
           playersToCheck.forEach((playerToCheck) => {
             if (
-              playerToCheck.playerOverrides.displayName === '' &&
-              playerToCheck.playerOverrides.entrantId === 0
+              playerToCheck.playerOverrides.entrantId === 0 &&
+              playerToCheck.playerOverrides.participantId === 0
             ) {
               remainingPorts.push(playerToCheck.port);
             } else {
               overrideSet.set(
                 playerToCheck.playerOverrides.displayName +
                   playerToCheck.playerOverrides.entrantId +
+                  playerToCheck.playerOverrides.participantId +
                   playerToCheck.playerOverrides.prefix +
                   playerToCheck.playerOverrides.pronouns,
                 true,
@@ -324,10 +333,8 @@ const ReplayListItem = forwardRef(
           // find the player to put in the hole
           if (remainingPorts.length === 1) {
             const unusedPlayer = findUnusedPlayer(
-              displayName,
               entrantId,
-              prefix,
-              pronouns,
+              participantId,
               overrideSet,
             );
             if (unusedPlayer.displayName && unusedPlayer.entrantId) {
@@ -420,10 +427,8 @@ export default function ReplayList({
   replayRefs: RefObject<HTMLDivElement>[];
   selectedChipData: PlayerOverrides;
   findUnusedPlayer: (
-    displayName: string,
     entrantId: number,
-    prefix: string,
-    pronouns: string,
+    participantId: number,
     overrideSet: Map<string, boolean>,
   ) => PlayerOverrides;
   onClick: (index: number) => void;

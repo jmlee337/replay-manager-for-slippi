@@ -236,7 +236,7 @@ export async function getPhaseGroup(
   const phaseGroup = json.entities.groups;
   const {
     groupTypeId: bracketType,
-    displayIdentifier: name,
+    displayIdentifier,
     state,
     waveId,
     winnersTargetPhaseId,
@@ -255,7 +255,7 @@ export async function getPhaseGroup(
       id,
       bracketType,
       entrants,
-      name,
+      name: displayIdentifier,
       state,
       sets: { completedSets: [], pendingSets: [] },
       waveId,
@@ -282,7 +282,7 @@ export async function getPhaseGroup(
         (entrant) => entrant.id === entrantId,
       );
       if (actualApiEntrant) {
-        const { participantIds } = actualApiEntrant;
+        const { name, participantIds } = actualApiEntrant;
         if (Array.isArray(participantIds) && participantIds.length > 0) {
           participantIds.forEach((participantId) => {
             const participant =
@@ -290,6 +290,7 @@ export async function getPhaseGroup(
             const { gamerTag: displayName, playerId, prefix } = participant;
             const pronouns = playerIdToPronouns.get(playerId) || '';
             const newParticipant: Participant = {
+              id: participantId,
               displayName,
               prefix: prefix ?? '',
               pronouns: pronouns ?? '',
@@ -300,6 +301,15 @@ export async function getPhaseGroup(
               missingPlayerParticipants.push({ participantId, playerId });
             }
           });
+          if (
+            participants.length === 2 &&
+            (name as string).startsWith(`${participants[1].displayName} /`)
+          ) {
+            [participants[0], participants[1]] = [
+              participants[1],
+              participants[0],
+            ];
+          }
           entrants.push({
             id: entrantId,
             participants,
@@ -556,7 +566,7 @@ export async function getPhaseGroup(
     id,
     bracketType,
     entrants,
-    name,
+    name: displayIdentifier,
     state,
     sets: { completedSets: [], pendingSets: [] },
     waveId,
@@ -568,7 +578,7 @@ export async function getPhaseGroup(
     id,
     bracketType,
     entrants,
-    name,
+    name: displayIdentifier,
     state,
     sets: { completedSets, pendingSets },
     waveId,
@@ -979,6 +989,7 @@ const GQL_SET_INNER = `
   slots {
     entrant {
       id
+      name
       participants {
         gamerTag
         prefix
@@ -1022,6 +1033,7 @@ type ApiParticipant = {
 };
 function gqlParticipantToParticipant(participant: ApiParticipant): Participant {
   return {
+    id: participant.id,
     displayName: participant.gamerTag,
     prefix: participant.prefix || '',
     pronouns: participant.player.user?.genderPronoun || '',
@@ -1033,9 +1045,31 @@ function gqlSetToSet(set: any): Set {
   const entrant1Participants: Participant[] = slot1.entrant.participants.map(
     gqlParticipantToParticipant,
   );
+  if (
+    entrant1Participants.length === 2 &&
+    (slot1.entrant.name as string).startsWith(
+      `${entrant1Participants[1].displayName} /`,
+    )
+  ) {
+    [entrant1Participants[0], entrant1Participants[1]] = [
+      entrant1Participants[1],
+      entrant1Participants[0],
+    ];
+  }
   const entrant2Participants: Participant[] = slot2.entrant.participants.map(
     gqlParticipantToParticipant,
   );
+  if (
+    entrant2Participants.length === 2 &&
+    (slot2.entrant.name as string).startsWith(
+      `${entrant2Participants[1].displayName} /`,
+    )
+  ) {
+    [entrant2Participants[0], entrant2Participants[1]] = [
+      entrant2Participants[1],
+      entrant2Participants[0],
+    ];
+  }
   return {
     id: set.id,
     state: set.state,

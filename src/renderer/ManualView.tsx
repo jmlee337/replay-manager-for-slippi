@@ -35,6 +35,7 @@ export default function ManualView({
           key={nameWithHighlight.name}
           entrantId={i + 1}
           nameWithHighlight={nameWithHighlight}
+          participantId={i + 1}
           prefix=""
           pronouns=""
           selectedChipData={selectedChipData}

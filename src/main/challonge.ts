@@ -137,6 +137,7 @@ const toSet = (
     entrant1Id: participant1.participant_id,
     entrant1Participants: [
       {
+        id: participant1.participant_id,
         displayName: participantIdToName.get(participant1.participant_id)!,
         prefix: '',
         pronouns: '',
@@ -149,6 +150,7 @@ const toSet = (
     entrant2Id: participant2.participant_id,
     entrant2Participants: [
       {
+        id: participant2.participant_id,
         displayName: participantIdToName.get(participant2.participant_id)!,
         prefix: '',
         pronouns: '',
@@ -227,6 +229,7 @@ export async function getChallongeTournament(
           id: participant.id,
           participants: [
             {
+              id: participant.id,
               displayName: participant.attributes.name,
               prefix: '',
               pronouns: '',
@@ -341,6 +344,7 @@ export async function startChallongeSet(
     entrant1Id: match.player1_id,
     entrant1Participants: [
       {
+        id: match.player1_id,
         displayName: participantIdToName.get(match.player1_id)!,
         prefix: '',
         pronouns: '',
@@ -350,6 +354,7 @@ export async function startChallongeSet(
     entrant2Id: match.player2_id,
     entrant2Participants: [
       {
+        id: match.player2_id,
         displayName: participantIdToName.get(match.player2_id)!,
         prefix: '',
         pronouns: '',

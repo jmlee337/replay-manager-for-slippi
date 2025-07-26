@@ -355,18 +355,18 @@ export default function SetControls({
       let entrant2CostumeOffset = Math.floor(originalEntrant2Score / 100) * 100;
       let entrant1Stocks = originalEntrant1Score % 100;
       let entrant2Stocks = originalEntrant2Score % 100;
-      const selections: StartggGameSelection[] = [];
+      const participantIdToSelection = new Map<number, StartggGameSelection>();
       const validPlayers = replay.players.filter(
         (player) =>
           isValid(player) && isValidCharacter(player.externalCharacterId),
       );
-      if (validPlayers.length === 2) {
-        validPlayers.forEach((player) => {
-          const { entrantId } = player.playerOverrides;
-          selections.push({
-            characterId: characterStartggIds.get(player.externalCharacterId)!,
-            entrantId,
-          });
+      validPlayers.forEach((player) => {
+        const { entrantId, participantId } = player.playerOverrides;
+        participantIdToSelection.set(participantId, {
+          characterId: characterStartggIds.get(player.externalCharacterId)!,
+          entrantId,
+        });
+        if (validPlayers.length === 2) {
           if (entrantId === set.entrant1Id) {
             if (smuggleCostumeIndex) {
               entrant1CostumeOffset = (player.costumeIndex + 1) * 100;
@@ -382,11 +382,16 @@ export default function SetControls({
               entrant2Stocks = player.stocksRemaining;
             }
           }
-        });
-        if (selections[1].entrantId === set.entrant1Id) {
-          [selections[0], selections[1]] = [selections[1], selections[0]];
         }
-      }
+      });
+      const selections = [
+        ...set.entrant1Participants.map(
+          (participant) => participantIdToSelection.get(participant.id)!,
+        ),
+        ...set.entrant2Participants.map(
+          (participant) => participantIdToSelection.get(participant.id)!,
+        ),
+      ];
       gameData.push({
         entrant1Score: entrant1CostumeOffset + entrant1Stocks,
         entrant2Score: entrant2CostumeOffset + entrant2Stocks,
@@ -587,6 +592,38 @@ export default function SetControls({
                           variant="square"
                         />
                       )}
+                      {set.entrant1Participants.length === 2 && (
+                        <>
+                          <Avatar
+                            alt={characterNames.get(
+                              startggCharacterIds.get(
+                                gameData.selections[1].characterId,
+                              )!,
+                            )}
+                            src={getCharacterIconInner(
+                              startggCharacterIds.get(
+                                gameData.selections[1].characterId,
+                              ),
+                            )}
+                            sx={{ height: 24, width: 24 }}
+                            variant="square"
+                          />
+                          <Avatar
+                            alt={characterNames.get(
+                              startggCharacterIds.get(
+                                gameData.selections[0].characterId,
+                              )!,
+                            )}
+                            src={getCharacterIconInner(
+                              startggCharacterIds.get(
+                                gameData.selections[0].characterId,
+                              ),
+                            )}
+                            sx={{ height: 24, width: 24 }}
+                            variant="square"
+                          />
+                        </>
+                      )}
                     </Stack>
                     {set.entrant1Participants.length === 1 &&
                       set.entrant1Id === gameData.winnerId &&
@@ -662,6 +699,46 @@ export default function SetControls({
                           sx={{ height: 24, width: 24 }}
                           variant="square"
                         />
+                      )}
+                      {set.entrant2Participants.length === 2 && (
+                        <>
+                          <Avatar
+                            alt={characterNames.get(
+                              startggCharacterIds.get(
+                                gameData.selections[
+                                  set.entrant1Participants.length
+                                ].characterId,
+                              )!,
+                            )}
+                            src={getCharacterIconInner(
+                              startggCharacterIds.get(
+                                gameData.selections[
+                                  set.entrant1Participants.length
+                                ].characterId,
+                              ),
+                            )}
+                            sx={{ height: 24, width: 24 }}
+                            variant="square"
+                          />
+                          <Avatar
+                            alt={characterNames.get(
+                              startggCharacterIds.get(
+                                gameData.selections[
+                                  set.entrant1Participants.length + 1
+                                ].characterId,
+                              )!,
+                            )}
+                            src={getCharacterIconInner(
+                              startggCharacterIds.get(
+                                gameData.selections[
+                                  set.entrant1Participants.length + 1
+                                ].characterId,
+                              ),
+                            )}
+                            sx={{ height: 24, width: 24 }}
+                            variant="square"
+                          />
+                        </>
                       )}
                     </Stack>
                     {set.entrant2Participants.length === 1 &&

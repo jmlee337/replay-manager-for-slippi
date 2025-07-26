@@ -35,6 +35,7 @@ function Name({ nameWithHighlight }: { nameWithHighlight: NameWithHighlight }) {
 export function DraggableChip({
   entrantId,
   nameWithHighlight,
+  participantId,
   prefix,
   pronouns,
   selectedChipData,
@@ -43,17 +44,20 @@ export function DraggableChip({
 }: {
   entrantId: number;
   nameWithHighlight: NameWithHighlight;
+  participantId: number;
   prefix: string;
   pronouns: string;
   selectedChipData: PlayerOverrides;
   setSelectedChipData: ({
     displayName,
     entrantId,
+    participantId,
     prefix,
     pronouns,
   }: {
     displayName: string;
     entrantId: number;
+    participantId: number;
     prefix: string;
     pronouns: string;
   }) => void;
@@ -71,8 +75,8 @@ export function DraggableChip({
     );
   };
   const selected =
-    selectedChipData.displayName === nameWithHighlight.name &&
-    selectedChipData.entrantId === entrantId;
+    selectedChipData.entrantId === entrantId &&
+    selectedChipData.participantId === participantId;
 
   return (
     <ThemeProvider
@@ -101,6 +105,7 @@ export function DraggableChip({
         color={selected ? 'primary' : undefined}
         data-display-name={nameWithHighlight.name}
         data-entrant-id={entrantId.toString(10)}
+        data-participant-id={participantId.toString(10)}
         data-prefix={prefix}
         data-pronouns={pronouns}
         draggable
@@ -109,6 +114,7 @@ export function DraggableChip({
             setSelectedChipData({
               displayName: '',
               entrantId: 0,
+              participantId: 0,
               prefix: '',
               pronouns: '',
             });
@@ -116,6 +122,7 @@ export function DraggableChip({
             setSelectedChipData({
               displayName: nameWithHighlight.name,
               entrantId,
+              participantId,
               prefix,
               pronouns,
             });
@@ -164,6 +171,7 @@ export function DroppableChip({
   onClickOrDrop: (
     displayName: string,
     entrantId: number,
+    participantId: number,
     prefix: string,
     pronouns: string,
   ) => void;
@@ -174,6 +182,7 @@ export function DroppableChip({
     onClickOrDrop(
       json.displayName,
       parseInt(json.entrantId, 10),
+      parseInt(json.participantId, 10),
       json.prefix,
       json.pronouns,
     );
@@ -222,6 +231,7 @@ export function DroppableChip({
               onClickOrDrop(
                 selectedChipData.displayName,
                 selectedChipData.entrantId,
+                selectedChipData.participantId,
                 selectedChipData.prefix,
                 selectedChipData.pronouns,
               );

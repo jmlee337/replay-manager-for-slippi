@@ -139,6 +139,7 @@ const EMPTY_SET: Set = {
   entrant1Id: 0,
   entrant1Participants: [
     {
+      id: 0,
       displayName: '',
       prefix: '',
       pronouns: '',
@@ -148,6 +149,7 @@ const EMPTY_SET: Set = {
   entrant2Id: 0,
   entrant2Participants: [
     {
+      id: 0,
       displayName: '',
       prefix: '',
       pronouns: '',
@@ -408,17 +410,65 @@ function Hello() {
     (batchActive) => batchActive.active,
   ).length;
   const [overrides, setOverrides] = useState<PlayerOverrides[]>([
-    { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
-    { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
-    { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
-    { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
+    {
+      displayName: '',
+      entrantId: 0,
+      participantId: 0,
+      prefix: '',
+      pronouns: '',
+    },
+    {
+      displayName: '',
+      entrantId: 0,
+      participantId: 0,
+      prefix: '',
+      pronouns: '',
+    },
+    {
+      displayName: '',
+      entrantId: 0,
+      participantId: 0,
+      prefix: '',
+      pronouns: '',
+    },
+    {
+      displayName: '',
+      entrantId: 0,
+      participantId: 0,
+      prefix: '',
+      pronouns: '',
+    },
   ]);
   const resetOverrides = () => {
     setOverrides([
-      { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
-      { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
-      { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
-      { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
+      {
+        displayName: '',
+        entrantId: 0,
+        participantId: 0,
+        prefix: '',
+        pronouns: '',
+      },
+      {
+        displayName: '',
+        entrantId: 0,
+        participantId: 0,
+        prefix: '',
+        pronouns: '',
+      },
+      {
+        displayName: '',
+        entrantId: 0,
+        participantId: 0,
+        prefix: '',
+        pronouns: '',
+      },
+      {
+        displayName: '',
+        entrantId: 0,
+        participantId: 0,
+        prefix: '',
+        pronouns: '',
+      },
     ]);
   };
   const [dq, setDq] = useState({ displayName: '', entrantId: 0 });
@@ -672,6 +722,7 @@ function Hello() {
         newOverrides[i] = {
           displayName: '',
           entrantId: 0,
+          participantId: 0,
           prefix: '',
           pronouns: '',
         };
@@ -687,6 +738,7 @@ function Hello() {
         player.playerOverrides = {
           displayName: '',
           entrantId: 0,
+          participantId: 0,
           prefix: '',
           pronouns: '',
         };
@@ -742,6 +794,7 @@ function Hello() {
     availablePlayers.push({
       displayName: participant.displayName,
       entrantId: selectedSet.entrant1Id,
+      participantId: participant.id,
       prefix: participant.prefix,
       pronouns: participant.pronouns,
     });
@@ -750,6 +803,7 @@ function Hello() {
     availablePlayers.push({
       displayName: participant.displayName,
       entrantId: selectedSet.entrant1Id,
+      participantId: participant.id,
       prefix: participant.prefix,
       pronouns: participant.pronouns,
     });
@@ -775,10 +829,8 @@ function Hello() {
   };
 
   const findUnusedPlayer = (
-    displayName: string,
     entrantId: number,
-    prefix: string,
-    pronouns: string,
+    participantId: number,
     // Had problems using Set because we also import Set type in this file lol.
     overrideSet: Map<string, boolean>,
   ): PlayerOverrides => {
@@ -786,60 +838,71 @@ function Hello() {
     const isTeams = selectedSet.entrant1Participants.length > 1;
     let displayNameToCheck = '';
     let entrantIdToCheck = 0;
+    let participantIdToCheck = 0;
     let prefixToCheck = '';
     let pronounsToCheck = '';
     if (isEntrant1 && isTeams) {
       const participantToCheck = selectedSet.entrant1Participants.find(
-        (participant) =>
-          participant.displayName !== displayName ||
-          participant.pronouns !== pronouns ||
-          participant.prefix !== prefix,
-      ) || { displayName, pronouns, prefix }; // two participants could have the exact same name/pronouns/prefix, I guess
-      displayNameToCheck = participantToCheck.displayName;
+        (participant) => participant.id !== participantId,
+      );
+      displayNameToCheck = participantToCheck!.displayName;
       entrantIdToCheck = selectedSet.entrant1Id;
-      prefixToCheck = participantToCheck.prefix;
-      pronounsToCheck = participantToCheck.pronouns;
+      participantIdToCheck = participantToCheck!.id;
+      prefixToCheck = participantToCheck!.prefix;
+      pronounsToCheck = participantToCheck!.pronouns;
     } else if (!isEntrant1 && isTeams) {
       const participantToCheck = selectedSet.entrant2Participants.find(
-        (participant) =>
-          participant.displayName !== displayName ||
-          participant.pronouns !== pronouns ||
-          participant.prefix !== prefix,
-      ) || { displayName, pronouns, prefix }; // two participants could have the exact same name/pronouns/prefix, I guess
-      displayNameToCheck = participantToCheck.displayName;
+        (participant) => participant.id !== participantId,
+      );
+      displayNameToCheck = participantToCheck!.displayName;
       entrantIdToCheck = selectedSet.entrant2Id;
-      prefixToCheck = participantToCheck.prefix;
-      pronounsToCheck = participantToCheck.pronouns;
+      participantIdToCheck = participantToCheck!.id;
+      prefixToCheck = participantToCheck!.prefix;
+      pronounsToCheck = participantToCheck!.pronouns;
     } else if (isEntrant1 && !isTeams) {
       displayNameToCheck = selectedSet.entrant2Participants[0].displayName;
       entrantIdToCheck = selectedSet.entrant2Id;
+      participantIdToCheck = selectedSet.entrant2Participants[0].id;
       prefixToCheck = selectedSet.entrant2Participants[0].prefix;
       pronounsToCheck = selectedSet.entrant2Participants[0].pronouns;
     } else if (!isEntrant1 && !isTeams) {
       displayNameToCheck = selectedSet.entrant1Participants[0].displayName;
       entrantIdToCheck = selectedSet.entrant1Id;
+      participantIdToCheck = selectedSet.entrant1Participants[0].id;
       prefixToCheck = selectedSet.entrant1Participants[0].prefix;
       pronounsToCheck = selectedSet.entrant1Participants[0].pronouns;
     }
     if (
       !overrideSet.has(
-        displayNameToCheck + entrantIdToCheck + prefixToCheck + pronounsToCheck,
+        displayNameToCheck +
+          entrantIdToCheck +
+          participantIdToCheck +
+          prefixToCheck +
+          pronounsToCheck,
       )
     ) {
       return {
         displayName: displayNameToCheck,
         entrantId: entrantIdToCheck,
+        participantId: participantIdToCheck,
         prefix: prefixToCheck,
         pronouns: pronounsToCheck,
       };
     }
-    return { displayName: '', entrantId: 0, prefix: '', pronouns: '' };
+    return {
+      displayName: '',
+      entrantId: 0,
+      participantId: 0,
+      prefix: '',
+      pronouns: '',
+    };
   };
 
   // for click-assigning set participants
   const [selectedChipData, setSelectedChipData] = useState<PlayerOverrides>({
     displayName: '',
     entrantId: 0,
+    participantId: 0,
     prefix: '',
     pronouns: '',
   });
@@ -847,6 +910,7 @@ function Hello() {
     setSelectedChipData({
       displayName: '',
       entrantId: 0,
+      participantId: 0,
       prefix: '',
       pronouns: '',
     });
@@ -856,20 +920,30 @@ function Hello() {
   const onClickOrDrop = (
     displayName: string,
     entrantId: number,
+    participantId: number,
     prefix: string,
     pronouns: string,
     index: number,
   ) => {
     const newOverrides = Array.from(overrides);
-    newOverrides[index] = { displayName, entrantId, prefix, pronouns };
+    newOverrides[index] = {
+      displayName,
+      entrantId,
+      participantId,
+      prefix,
+      pronouns,
+    };
     newOverrides.forEach((override, i) => {
       if (
         i !== index &&
-        override.displayName === displayName &&
-        override.entrantId === entrantId
+        override.entrantId === entrantId &&
+        override.participantId === participantId
       ) {
         override.displayName = '';
         override.entrantId = 0;
+        override.participantId = 0;
+        override.prefix = '';
+        override.pronouns = '';
       }
     });
 
@@ -895,14 +969,15 @@ function Hello() {
       batchActivesWithIndex.forEach((batchActiveWithIndex) => {
         const { i } = batchActiveWithIndex;
         if (
-          newOverrides[i].displayName === '' &&
-          newOverrides[i].entrantId === 0
+          newOverrides[i].entrantId === 0 &&
+          newOverrides[i].participantId === 0
         ) {
           remainingIndices.push(i);
         } else {
           overrideSet.set(
             newOverrides[i].displayName +
               newOverrides[i].entrantId +
+              newOverrides[i].participantId +
               newOverrides[i].prefix +
               newOverrides[i].pronouns,
             true,
@@ -913,10 +988,8 @@ function Hello() {
       // find the player to put in the hole
       if (remainingIndices.length === 1) {
         const unusedPlayer = findUnusedPlayer(
-          displayName,
           entrantId,
-          prefix,
-          pronouns,
+          participantId,
           overrideSet,
         );
         if (unusedPlayer.displayName && unusedPlayer.entrantId) {
@@ -940,6 +1013,9 @@ function Hello() {
         ) {
           otherPlayer.playerOverrides.displayName = '';
           otherPlayer.playerOverrides.entrantId = 0;
+          otherPlayer.playerOverrides.participantId = 0;
+          otherPlayer.playerOverrides.prefix = '';
+          otherPlayer.playerOverrides.pronouns = '';
         }
       });
       for (let i = 0; i < 4; i += 1) {
@@ -962,9 +1038,19 @@ function Hello() {
         onClickOrDrop={(
           displayName: string,
           entrantId: number,
+          participantId: number,
           prefix: string,
           pronouns: string,
-        ) => onClickOrDrop(displayName, entrantId, prefix, pronouns, index)}
+        ) =>
+          onClickOrDrop(
+            displayName,
+            entrantId,
+            participantId,
+            prefix,
+            pronouns,
+            index,
+          )
+        }
       />
     );
   };
@@ -996,11 +1082,35 @@ function Hello() {
 
   // set controls
   const selectSet = (set: Set) => {
-    const newOverrides = [
-      { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
-      { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
-      { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
-      { displayName: '', entrantId: 0, prefix: '', pronouns: '' },
+    const newOverrides: PlayerOverrides[] = [
+      {
+        displayName: '',
+        entrantId: 0,
+        participantId: 0,
+        prefix: '',
+        pronouns: '',
+      },
+      {
+        displayName: '',
+        entrantId: 0,
+        participantId: 0,
+        prefix: '',
+        pronouns: '',
+      },
+      {
+        displayName: '',
+        entrantId: 0,
+        participantId: 0,
+        prefix: '',
+        pronouns: '',
+      },
+      {
+        displayName: '',
+        entrantId: 0,
+        participantId: 0,
+        prefix: '',
+        pronouns: '',
+      },
     ];
     selectedReplays.forEach((replay) => {
       replay.players.forEach((player, i) => {
@@ -1058,18 +1168,21 @@ function Hello() {
     characterName: string;
     displayName: string;
     entrantId: number;
+    participantId: number;
     nametag: string;
   };
   type NamesObj = {
     characterNames: Map<string, number>;
     displayName: string;
     entrantId: number;
+    participantId: number;
     nametags: Map<string, number>;
   };
   type CombinedNameObj = {
     characterNames: string[];
     displayName: string;
     entrantId: number;
+    participantId: number;
     nametags: string[];
   };
 
@@ -1128,6 +1241,7 @@ function Hello() {
               displayName:
                 player.playerOverrides.displayName || player.displayName,
               entrantId: player.playerOverrides.entrantId,
+              participantId: player.playerOverrides.participantId,
               nametag: player.nametag,
             };
           }
@@ -1135,6 +1249,7 @@ function Hello() {
             characterName: '',
             displayName: '',
             entrantId: 0,
+            participantId: 0,
             nametag: '',
           };
         }),
@@ -1169,7 +1284,7 @@ function Hello() {
         }
         return nameObj.characterName;
       };
-      const combinedNameObjtoPlayerChar = (
+      const combinedNameObjToPlayerChar = (
         combinedNameObj: CombinedNameObj,
       ) => {
         if (combinedNameObj.displayName) {
@@ -1184,7 +1299,8 @@ function Hello() {
         }
         return combinedNameObj.characterNames.join(', ');
       };
-      let combinedNameObjs: CombinedNameObj[] = [];
+      const entrant1CombinedNameObjs: CombinedNameObj[] = [];
+      const entrant2CombinedNameObjs: CombinedNameObj[] = [];
 
       let roundShort = '';
       const regex = /([A-Z]|[0-9])/g;
@@ -1202,6 +1318,7 @@ function Hello() {
           characterNames: new Map([[nameObj.characterName, 0]]),
           displayName: nameObj.displayName,
           entrantId: nameObj.entrantId,
+          participantId: nameObj.participantId,
           nametags: new Map([[nameObj.nametag, 0]]),
         }));
         if (allEntrantIdsSet) {
@@ -1211,7 +1328,7 @@ function Hello() {
               const existingNamesObj = namesObjs.find(
                 (namesObj) =>
                   namesObj.entrantId === nameObj.entrantId &&
-                  namesObj.displayName === nameObj.displayName,
+                  namesObj.participantId === nameObj.participantId,
               )!;
               if (
                 nameObj.characterName &&
@@ -1247,10 +1364,11 @@ function Hello() {
             }
           }
         }
-        combinedNameObjs = namesObjs
+        const combinedNameObjs: CombinedNameObj[] = namesObjs
           .map((namesObj) => ({
             displayName: namesObj.displayName,
             entrantId: namesObj.entrantId,
+            participantId: namesObj.participantId,
             characterNames: [...namesObj.characterNames.entries()]
               .sort(([, a], [, b]) => a - b)
               .map((entry) => entry[0]),
@@ -1262,12 +1380,33 @@ function Hello() {
             nameObj.characterNames.some((characterName) => characterName),
           );
 
-        const playersOnly = combinedNameObjs
+        selectedSet.entrant1Participants.forEach((participant) => {
+          const combinedNameObj = combinedNameObjs.find(
+            (cbn) => cbn.participantId === participant.id,
+          );
+          if (combinedNameObj) {
+            entrant1CombinedNameObjs.push(combinedNameObj);
+          }
+        });
+        selectedSet.entrant2Participants.forEach((participant) => {
+          const combinedNameObj = combinedNameObjs.find(
+            (cbn) => cbn.participantId === participant.id,
+          );
+          if (combinedNameObj) {
+            entrant2CombinedNameObjs.push(combinedNameObj);
+          }
+        });
+
+        const playersOnly = `${entrant1CombinedNameObjs
           .map(combinedNameObjToPlayerOnly)
-          .join(combinedNameObjs.length === 2 ? ' vs ' : ', ');
-        const playersChars = combinedNameObjs
-          .map(combinedNameObjtoPlayerChar)
-          .join(combinedNameObjs.length === 2 ? ' vs ' : ', ');
+          .join(' + ')} vs ${entrant2CombinedNameObjs
+          .map(combinedNameObjToPlayerOnly)
+          .join(' + ')}`;
+        const playersChars = `${entrant1CombinedNameObjs
+          .map(combinedNameObjToPlayerChar)
+          .join(' + ')} vs ${entrant2CombinedNameObjs
+          .map(combinedNameObjToPlayerChar)
+          .join(' + ')}`;
         const singlesChars =
           combinedNameObjs.length === 4 ? playersOnly : playersChars;
         subdir = String(folderNameFormat);
@@ -1413,28 +1552,14 @@ function Hello() {
         };
         if (canWriteContext) {
           const contextPlayers: ContextPlayers = {
-            entrant1: selectedSet.entrant1Participants.map((participant) => {
-              const combinedNameObj = combinedNameObjs.find(
-                (cbn) =>
-                  cbn.entrantId === selectedSet.entrant1Id &&
-                  cbn.displayName === participant.displayName,
-              )!;
-              return {
-                name: combinedNameObj.displayName,
-                characters: combinedNameObj.characterNames,
-              };
-            }),
-            entrant2: selectedSet.entrant2Participants.map((participant) => {
-              const combinedNameObj = combinedNameObjs.find(
-                (cbn) =>
-                  cbn.entrantId === selectedSet.entrant2Id &&
-                  cbn.displayName === participant.displayName,
-              )!;
-              return {
-                name: combinedNameObj.displayName,
-                characters: combinedNameObj.characterNames,
-              };
-            }),
+            entrant1: entrant1CombinedNameObjs.map((cbn) => ({
+              name: cbn.displayName,
+              characters: cbn.characterNames,
+            })),
+            entrant2: entrant2CombinedNameObjs.map((cbn) => ({
+              name: cbn.displayName,
+              characters: cbn.characterNames,
+            })),
           };
           context = {
             bestOf: Math.max(gameScores[0], gameScores[1]) * 2 - 1,
@@ -1576,6 +1701,7 @@ function Hello() {
                         player.playerOverrides = {
                           displayName: '',
                           entrantId: 0,
+                          participantId: 0,
                           prefix: '',
                           pronouns: '',
                         };
@@ -2359,6 +2485,7 @@ function Hello() {
                             name: selectedSet.entrant1Participants[0]
                               .displayName,
                           }}
+                          participantId={selectedSet.entrant1Participants[0].id}
                           prefix={selectedSet.entrant1Participants[0].prefix}
                           pronouns={
                             selectedSet.entrant1Participants[0].pronouns
@@ -2378,6 +2505,9 @@ function Hello() {
                               name: selectedSet.entrant1Participants[1]
                                 .displayName,
                             }}
+                            participantId={
+                              selectedSet.entrant1Participants[1].id
+                            }
                             prefix={selectedSet.entrant1Participants[1].prefix}
                             pronouns={
                               selectedSet.entrant1Participants[1].pronouns
@@ -2399,6 +2529,7 @@ function Hello() {
                             name: selectedSet.entrant2Participants[0]
                               .displayName,
                           }}
+                          participantId={selectedSet.entrant2Participants[0].id}
                           prefix={selectedSet.entrant2Participants[0].prefix}
                           pronouns={
                             selectedSet.entrant2Participants[0].pronouns
@@ -2418,6 +2549,9 @@ function Hello() {
                               name: selectedSet.entrant2Participants[1]
                                 .displayName,
                             }}
+                            participantId={
+                              selectedSet.entrant2Participants[1].id
+                            }
                             prefix={selectedSet.entrant2Participants[1].prefix}
                             pronouns={
                               selectedSet.entrant2Participants[1].pronouns

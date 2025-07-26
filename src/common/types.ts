@@ -1,6 +1,7 @@
 export type PlayerOverrides = {
   displayName: string;
   entrantId: number;
+  participantId: number;
   prefix: string;
   pronouns: string;
 };
@@ -45,6 +46,7 @@ export enum State {
 }
 
 export type Participant = {
+  id: number;
   displayName: string;
   prefix: string;
   pronouns: string;
