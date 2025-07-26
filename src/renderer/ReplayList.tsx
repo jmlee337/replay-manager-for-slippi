@@ -128,7 +128,7 @@ const ReplayListItem = forwardRef(
       numAvailablePlayers,
       replay,
       selectedChipData,
-      findUnusedPlayer,
+      findOtherPlayer,
       onClick,
       onOverride,
       resetSelectedChipData,
@@ -139,10 +139,9 @@ const ReplayListItem = forwardRef(
       numAvailablePlayers: number;
       replay: Replay;
       selectedChipData: PlayerOverrides;
-      findUnusedPlayer: (
+      findOtherPlayer: (
         entrantId: number,
         participantId: number,
-        overrideSet: Map<string, boolean>,
       ) => PlayerOverrides;
       onClick: (index: number) => void;
       onOverride: () => void;
@@ -286,10 +285,8 @@ const ReplayListItem = forwardRef(
             otherPlayer.playerType === 0 || otherPlayer.playerType === 1,
         );
         validPlayers.forEach((otherPlayer) => {
-          if (otherPlayer.port === player.port) {
-            return;
-          }
           if (
+            otherPlayer.port !== player.port &&
             otherPlayer.playerOverrides.entrantId === entrantId &&
             otherPlayer.playerOverrides.participantId === participantId
           ) {
@@ -303,43 +300,35 @@ const ReplayListItem = forwardRef(
 
         // pigeonhole remaining player if possible
         if (numAvailablePlayers === validPlayers.length) {
-          const overrideSet = new Map<string, boolean>();
-          const remainingPorts: number[] = [];
           const { teamId } = player;
           const isTeams = numAvailablePlayers === 4 && teamId !== -1;
 
           // find if there's exactly one hole to pigeon
           const playersToCheck = validPlayers.filter(
-            (validPlayer) => !isTeams || validPlayer.teamId === teamId,
+            (validPlayer) =>
+              (!isTeams || validPlayer.teamId === teamId) &&
+              validPlayer.playerOverrides.participantId !== participantId,
           );
-          playersToCheck.forEach((playerToCheck) => {
-            if (
-              playerToCheck.playerOverrides.entrantId === 0 &&
-              playerToCheck.playerOverrides.participantId === 0
-            ) {
-              remainingPorts.push(playerToCheck.port);
-            } else {
-              overrideSet.set(
-                playerToCheck.playerOverrides.displayName +
-                  playerToCheck.playerOverrides.entrantId +
-                  playerToCheck.playerOverrides.participantId +
-                  playerToCheck.playerOverrides.prefix +
-                  playerToCheck.playerOverrides.pronouns,
-                true,
-              );
-            }
-          });
-
-          // find the player to put in the hole
-          if (remainingPorts.length === 1) {
-            const unusedPlayer = findUnusedPlayer(
-              entrantId,
-              participantId,
-              overrideSet,
-            );
-            if (unusedPlayer.displayName && unusedPlayer.entrantId) {
-              replay.players[remainingPorts[0] - 1].playerOverrides =
-                unusedPlayer;
+          if (playersToCheck.length === 1) {
+            const otherPlayer = findOtherPlayer(entrantId, participantId);
+            if (otherPlayer.entrantId && otherPlayer.participantId) {
+              replay.players[playersToCheck[0].port - 1].playerOverrides =
+                otherPlayer;
+              replay.players.forEach((replayPlayer) => {
+                if (
+                  replayPlayer.port !== playersToCheck[0].port &&
+                  replayPlayer.playerOverrides.entrantId ===
+                    otherPlayer.entrantId &&
+                  replayPlayer.playerOverrides.participantId ===
+                    otherPlayer.participantId
+                ) {
+                  replayPlayer.playerOverrides.displayName = '';
+                  replayPlayer.playerOverrides.entrantId = 0;
+                  replayPlayer.playerOverrides.participantId = 0;
+                  replayPlayer.playerOverrides.prefix = '';
+                  replayPlayer.playerOverrides.pronouns = '';
+                }
+              });
             }
           }
         }
@@ -369,7 +358,7 @@ const ReplayListItem = forwardRef(
         ref={ref}
         style={
           replay.invalidReasons.length === 0 ||
-          (selectedChipData.displayName && selectedChipData.entrantId) ||
+          (selectedChipData.entrantId && selectedChipData.participantId) ||
           elevateChips ||
           elevateNames
             ? {}
@@ -413,7 +402,7 @@ export default function ReplayList({
   replays,
   replayRefs,
   selectedChipData,
-  findUnusedPlayer,
+  findOtherPlayer,
   onClick,
   onOverride,
   resetSelectedChipData,
@@ -426,10 +415,9 @@ export default function ReplayList({
   replays: Replay[];
   replayRefs: RefObject<HTMLDivElement>[];
   selectedChipData: PlayerOverrides;
-  findUnusedPlayer: (
+  findOtherPlayer: (
     entrantId: number,
     participantId: number,
-    overrideSet: Map<string, boolean>,
   ) => PlayerOverrides;
   onClick: (index: number) => void;
   onOverride: () => void;
@@ -456,7 +444,7 @@ export default function ReplayList({
             key={replay.filePath}
             ref={replayRefs[index]}
             index={index}
-            findUnusedPlayer={findUnusedPlayer}
+            findOtherPlayer={findOtherPlayer}
             numAvailablePlayers={numAvailablePlayers}
             replay={replay}
             selectedChipData={selectedChipData}

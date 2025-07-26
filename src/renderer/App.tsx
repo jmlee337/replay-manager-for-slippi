@@ -400,7 +400,14 @@ function Hello() {
     });
   }, []);
 
-  const [batchActives, setBatchActives] = useState([
+  const [batchActives, setBatchActives] = useState<
+    [
+      { active: boolean; teamI: number },
+      { active: boolean; teamI: number },
+      { active: boolean; teamI: number },
+      { active: boolean; teamI: number },
+    ]
+  >([
     { active: false, teamI: -1 },
     { active: false, teamI: -1 },
     { active: false, teamI: -1 },
@@ -409,7 +416,9 @@ function Hello() {
   const numBatchActive = batchActives.filter(
     (batchActive) => batchActive.active,
   ).length;
-  const [overrides, setOverrides] = useState<PlayerOverrides[]>([
+  const [overrides, setOverrides] = useState<
+    [PlayerOverrides, PlayerOverrides, PlayerOverrides, PlayerOverrides]
+  >([
     {
       displayName: '',
       entrantId: 0,
@@ -502,13 +511,15 @@ function Hello() {
         replay.selected = selected;
       });
   const getNewBatchActives = (newReplays: Replay[]) => {
-    const isPlayerArr =
+    const isPlayerArr: [boolean, boolean, boolean, boolean] =
       newReplays.length > 0
         ? newReplays
-            .map((replay) =>
-              replay.players.map(
-                (player) => player.playerType === 0 || player.playerType === 1,
-              ),
+            .map(
+              (replay) =>
+                replay.players.map(
+                  (player) =>
+                    player.playerType === 0 || player.playerType === 1,
+                ) as [boolean, boolean, boolean, boolean],
             )
             .reduce(
               (accArr, curArr) => [
@@ -546,12 +557,15 @@ function Hello() {
     const teamsConsistent = teamIndiciesArr.every(
       (teamIndicies) => teamIndicies.size === 1,
     );
-    return isPlayerArr.map((isPlayer, i) => {
-      return {
-        active: teamsConsistent && isPlayer,
-        teamI: teamsConsistent ? Array.from(teamIndiciesArr[i].keys())[0] : -1,
-      };
-    });
+    return isPlayerArr.map((isPlayer, i) => ({
+      active: teamsConsistent && isPlayer,
+      teamI: teamsConsistent ? Array.from(teamIndiciesArr[i].keys())[0] : -1,
+    })) as [
+      { active: boolean; teamI: number },
+      { active: boolean; teamI: number },
+      { active: boolean; teamI: number },
+      { active: boolean; teamI: number },
+    ];
   };
   const [replayLoadCount, setReplayLoadCount] = useState(0);
   const copyControlsRef = useRef<HTMLDivElement | null>(null);
@@ -716,7 +730,12 @@ function Hello() {
       newReplays.filter((replay) => replay.selected),
     );
 
-    const newOverrides = Array.from(overrides);
+    const newOverrides = Array.from(overrides) as [
+      PlayerOverrides,
+      PlayerOverrides,
+      PlayerOverrides,
+      PlayerOverrides,
+    ];
     for (let i = 0; i < 4; i += 1) {
       if (batchActives[i].active && !newBatchActives[i].active) {
         newOverrides[i] = {
@@ -828,65 +847,53 @@ function Hello() {
     }
   };
 
-  const findUnusedPlayer = (
+  const findOtherPlayer = (
     entrantId: number,
     participantId: number,
-    // Had problems using Set because we also import Set type in this file lol.
-    overrideSet: Map<string, boolean>,
   ): PlayerOverrides => {
     const isEntrant1 = entrantId === selectedSet.entrant1Id;
     const isTeams = selectedSet.entrant1Participants.length > 1;
-    let displayNameToCheck = '';
-    let entrantIdToCheck = 0;
-    let participantIdToCheck = 0;
-    let prefixToCheck = '';
-    let pronounsToCheck = '';
     if (isEntrant1 && isTeams) {
       const participantToCheck = selectedSet.entrant1Participants.find(
         (participant) => participant.id !== participantId,
       );
-      displayNameToCheck = participantToCheck!.displayName;
-      entrantIdToCheck = selectedSet.entrant1Id;
-      participantIdToCheck = participantToCheck!.id;
-      prefixToCheck = participantToCheck!.prefix;
-      pronounsToCheck = participantToCheck!.pronouns;
+      if (participantToCheck) {
+        return {
+          displayName: participantToCheck.displayName,
+          entrantId: selectedSet.entrant1Id,
+          participantId: participantToCheck.id,
+          prefix: participantToCheck.prefix,
+          pronouns: participantToCheck.pronouns,
+        };
+      }
     } else if (!isEntrant1 && isTeams) {
       const participantToCheck = selectedSet.entrant2Participants.find(
         (participant) => participant.id !== participantId,
       );
-      displayNameToCheck = participantToCheck!.displayName;
-      entrantIdToCheck = selectedSet.entrant2Id;
-      participantIdToCheck = participantToCheck!.id;
-      prefixToCheck = participantToCheck!.prefix;
-      pronounsToCheck = participantToCheck!.pronouns;
+      if (participantToCheck) {
+        return {
+          displayName: participantToCheck.displayName,
+          entrantId: selectedSet.entrant2Id,
+          participantId: participantToCheck.id,
+          prefix: participantToCheck.prefix,
+          pronouns: participantToCheck.pronouns,
+        };
+      }
     } else if (isEntrant1 && !isTeams) {
-      displayNameToCheck = selectedSet.entrant2Participants[0].displayName;
-      entrantIdToCheck = selectedSet.entrant2Id;
-      participantIdToCheck = selectedSet.entrant2Participants[0].id;
-      prefixToCheck = selectedSet.entrant2Participants[0].prefix;
-      pronounsToCheck = selectedSet.entrant2Participants[0].pronouns;
-    } else if (!isEntrant1 && !isTeams) {
-      displayNameToCheck = selectedSet.entrant1Participants[0].displayName;
-      entrantIdToCheck = selectedSet.entrant1Id;
-      participantIdToCheck = selectedSet.entrant1Participants[0].id;
-      prefixToCheck = selectedSet.entrant1Participants[0].prefix;
-      pronounsToCheck = selectedSet.entrant1Participants[0].pronouns;
-    }
-    if (
-      !overrideSet.has(
-        displayNameToCheck +
-          entrantIdToCheck +
-          participantIdToCheck +
-          prefixToCheck +
-          pronounsToCheck,
-      )
-    ) {
       return {
-        displayName: displayNameToCheck,
-        entrantId: entrantIdToCheck,
-        participantId: participantIdToCheck,
-        prefix: prefixToCheck,
-        pronouns: pronounsToCheck,
+        displayName: selectedSet.entrant2Participants[0].displayName,
+        entrantId: selectedSet.entrant2Id,
+        participantId: selectedSet.entrant2Participants[0].id,
+        prefix: selectedSet.entrant2Participants[0].prefix,
+        pronouns: selectedSet.entrant2Participants[0].pronouns,
+      };
+    } else if (!isEntrant1 && !isTeams) {
+      return {
+        displayName: selectedSet.entrant1Participants[0].displayName,
+        entrantId: selectedSet.entrant1Id,
+        participantId: selectedSet.entrant1Participants[0].id,
+        prefix: selectedSet.entrant1Participants[0].prefix,
+        pronouns: selectedSet.entrant1Participants[0].pronouns,
       };
     }
     return {
@@ -925,7 +932,12 @@ function Hello() {
     pronouns: string,
     index: number,
   ) => {
-    const newOverrides = Array.from(overrides);
+    const newOverrides = Array.from(overrides) as [
+      PlayerOverrides,
+      PlayerOverrides,
+      PlayerOverrides,
+      PlayerOverrides,
+    ];
     newOverrides[index] = {
       displayName,
       entrantId,
@@ -949,51 +961,37 @@ function Hello() {
 
     // pigeonhole remaining player if possible
     if (numBatchActive === availablePlayers.length) {
-      const overrideSet = new Map<string, boolean>();
-      const remainingIndices: number[] = [];
       const { teamI } = batchActives[index];
       const isTeams = availablePlayers.length === 4 && teamI !== -1;
 
       // find if there's exactly one hole to pigeon
-      const batchActivesWithIndex = batchActives
-        .map((batchActive, i) => ({
-          active: batchActive.active,
-          teamI: batchActive.teamI,
-          i,
-        }))
-        .filter(
-          (batchActiveWithIndex) =>
-            batchActiveWithIndex.active &&
-            (!isTeams || batchActiveWithIndex.teamI === teamI),
-        );
-      batchActivesWithIndex.forEach((batchActiveWithIndex) => {
-        const { i } = batchActiveWithIndex;
+      const elligibleIndicies: number[] = [];
+      for (let i = 0; i < 4; i += 1) {
         if (
-          newOverrides[i].entrantId === 0 &&
-          newOverrides[i].participantId === 0
+          batchActives[i].active &&
+          (!isTeams || batchActives[i].teamI === teamI) &&
+          newOverrides[i].participantId !== participantId
         ) {
-          remainingIndices.push(i);
-        } else {
-          overrideSet.set(
-            newOverrides[i].displayName +
-              newOverrides[i].entrantId +
-              newOverrides[i].participantId +
-              newOverrides[i].prefix +
-              newOverrides[i].pronouns,
-            true,
-          );
+          elligibleIndicies.push(i);
         }
-      });
-
-      // find the player to put in the hole
-      if (remainingIndices.length === 1) {
-        const unusedPlayer = findUnusedPlayer(
-          entrantId,
-          participantId,
-          overrideSet,
-        );
-        if (unusedPlayer.displayName && unusedPlayer.entrantId) {
-          newOverrides[remainingIndices[0]] = unusedPlayer;
+      }
+      if (elligibleIndicies.length === 1) {
+        const otherPlayer = findOtherPlayer(entrantId, participantId);
+        if (otherPlayer.entrantId && otherPlayer.participantId) {
+          newOverrides[elligibleIndicies[0]] = otherPlayer;
+          newOverrides.forEach((override, i) => {
+            if (
+              i !== elligibleIndicies[0] &&
+              override.entrantId === otherPlayer.entrantId &&
+              override.participantId === otherPlayer.participantId
+            ) {
+              override.displayName = '';
+              override.entrantId = 0;
+              override.participantId = 0;
+              override.prefix = '';
+              override.pronouns = '';
+            }
+          });
         }
       }
     }
@@ -1082,7 +1080,12 @@ function Hello() {
 
   // set controls
   const selectSet = (set: Set) => {
-    const newOverrides: PlayerOverrides[] = [
+    const newOverrides: [
+      PlayerOverrides,
+      PlayerOverrides,
+      PlayerOverrides,
+      PlayerOverrides,
+    ] = [
       {
         displayName: '',
         entrantId: 0,
@@ -1997,7 +2000,7 @@ function Hello() {
                   replays={replays}
                   replayRefs={replayRefs}
                   selectedChipData={selectedChipData}
-                  findUnusedPlayer={findUnusedPlayer}
+                  findOtherPlayer={findOtherPlayer}
                   onClick={onReplayClick}
                   onOverride={onPlayerOverride}
                   resetSelectedChipData={resetSelectedChipData}
@@ -2652,7 +2655,9 @@ function Hello() {
       </Bottom>
       <Backdrop
         onClick={resetSelectedChipData}
-        open={!!(selectedChipData.displayName && selectedChipData.entrantId)}
+        open={Boolean(
+          selectedChipData.entrantId && selectedChipData.participantId,
+        )}
         sx={{ zIndex: (theme) => theme.zIndex.drawer + 3 }}
       />
       <Backdrop

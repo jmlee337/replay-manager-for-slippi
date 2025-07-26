@@ -194,8 +194,9 @@ export function DroppableChip({
     }
   };
 
-  const selectedChip =
-    selectedChipData.displayName && selectedChipData.entrantId;
+  const selectedChip = Boolean(
+    selectedChipData.entrantId && selectedChipData.participantId,
+  );
 
   const themeOptions: ThemeOptions = {
     palette: {

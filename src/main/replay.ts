@@ -201,13 +201,24 @@ export async function getReplaysInDir(
         let hasCPUPlayers = false;
         let hasIllegalCharacters = false;
         let nonStandardStockCount = false;
-        const players: Player[] = new Array<Player>(4);
+        const players = new Array<Player>(4) as [
+          Player,
+          Player,
+          Player,
+          Player,
+        ];
         for (let i = 0; i < 4; i += 1) {
           const offset = i * 36 + 101;
           const teamId = isTeams ? gameStart[offset + 9] : -1;
           players[i] = {
             isWinner: false,
-            playerOverrides: { displayName: '', entrantId: 0 },
+            playerOverrides: {
+              displayName: '',
+              entrantId: 0,
+              participantId: 0,
+              prefix: '',
+              pronouns: '',
+            },
             playerType: gameStart[offset + 1],
             port: i + 1,
             stocksRemaining: -1,

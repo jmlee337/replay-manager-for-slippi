@@ -26,7 +26,7 @@ export type Replay = {
   invalidReasons: string[];
   isTeams: boolean;
   lastFrame: number;
-  players: Player[];
+  players: [Player, Player, Player, Player];
   selected: boolean;
   stageId: number;
   startAt: Date;
