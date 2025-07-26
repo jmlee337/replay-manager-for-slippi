@@ -2710,11 +2710,19 @@ function Hello() {
       />
       <GlobalHotKeys
         keyMap={{
-          COPY: window.electron.isMac ? 'command+s' : 'ctrl+s',
-          ENTRANTS: window.electron.isMac ? 'command+e' : 'ctrl+e',
+          COPY: window.electron.isMac
+            ? ['command+s', 'command+S']
+            : ['ctrl+s', 'ctrl+S'],
+          ENTRANTS: window.electron.isMac
+            ? ['command+e', 'command+E']
+            : ['ctrl+e', 'ctrl+E'],
           ESC: 'escape',
-          FIND: window.electron.isMac ? 'command+f' : 'ctrl+f',
-          SKEW: window.electron.isMac ? 'command+t' : 'ctrl+t',
+          FIND: window.electron.isMac
+            ? ['command+f', 'command+F']
+            : ['ctrl+f', 'ctrl+F'],
+          SKEW: window.electron.isMac
+            ? ['command+t', 'command+T']
+            : ['ctrl+t', 'ctrl+T'],
         }}
         handlers={{
           COPY: () => {
