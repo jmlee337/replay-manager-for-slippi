@@ -236,7 +236,10 @@ export default function SetControls({
     matchId: number,
     items: ChallongeMatchItem[],
   ) => Promise<Set>;
-  reportStartggSet: (set: StartggSet, originalSet: Set) => Promise<Set>;
+  reportStartggSet: (
+    set: StartggSet,
+    originalSet: Set,
+  ) => Promise<Set | undefined>;
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
   resetGuide: () => void;
   mode: Mode;
@@ -430,7 +433,11 @@ export default function SetControls({
   if (reportSettings.alsoCopy) {
     reportCopyDeleteIntent += ', Copy';
   }
-  if (reportSettings.alsoDelete) {
+  if (
+    reportSettings.alsoCopy &&
+    reportSettings.alsoDelete &&
+    deleteOverrideReason.length === 0
+  ) {
     reportCopyDeleteIntent += ', Delete';
   }
 

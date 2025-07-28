@@ -682,7 +682,7 @@ export default function setupIPCs(
       event: IpcMainInvokeEvent,
       set: StartggSet,
       originalSet: Set,
-    ): Promise<Set> => {
+    ): Promise<Set | undefined> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
@@ -737,9 +737,6 @@ export default function setupIPCs(
         updatedSet = updatedPhaseGroup.sets.completedSets.find(
           (completedSet) => completedSet.id === set.setId,
         );
-        if (!updatedSet) {
-          throw new Error(`Could not find updated set: ${set.setId}`);
-        }
       }
       return updatedSet;
     },
@@ -748,7 +745,10 @@ export default function setupIPCs(
   ipcMain.removeHandler('updateSet');
   ipcMain.handle(
     'updateSet',
-    async (event: IpcMainInvokeEvent, set: StartggSet): Promise<Set> => {
+    async (
+      event: IpcMainInvokeEvent,
+      set: StartggSet,
+    ): Promise<Set | undefined> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }

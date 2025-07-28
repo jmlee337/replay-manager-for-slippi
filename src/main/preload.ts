@@ -151,9 +151,9 @@ const electronHandler = {
   resetSet: (id: number): Promise<void> => ipcRenderer.invoke('resetSet', id),
   startSet: (originalSet: Set): Promise<void> =>
     ipcRenderer.invoke('startSet', originalSet),
-  reportSet: (set: StartggSet, originalSet: Set): Promise<Set> =>
+  reportSet: (set: StartggSet, originalSet: Set): Promise<Set | undefined> =>
     ipcRenderer.invoke('reportSet', set, originalSet),
-  updateSet: (set: StartggSet): Promise<Set> =>
+  updateSet: (set: StartggSet): Promise<Set | undefined> =>
     ipcRenderer.invoke('updateSet', set),
   getMode: (): Promise<Mode> => ipcRenderer.invoke('getMode'),
   setMode: (mode: Mode): Promise<void> => ipcRenderer.invoke('setMode', mode),

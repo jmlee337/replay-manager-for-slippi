@@ -144,9 +144,7 @@ const toSet = (
       },
     ],
     entrant1Score:
-      match.attributes.state === 'complete'
-        ? (participant1.scores[0] as number).toString(10)
-        : null,
+      match.attributes.state === 'complete' ? participant1.scores[0] : null,
     entrant2Id: participant2.participant_id,
     entrant2Participants: [
       {
@@ -157,9 +155,7 @@ const toSet = (
       },
     ],
     entrant2Score:
-      match.attributes.state === 'complete'
-        ? (participant2.scores[0] as number).toString(10)
-        : null,
+      match.attributes.state === 'complete' ? participant2.scores[0] : null,
     gameScores: [],
     stream: getStreamFromMatch(match, stationIdToStream),
     station: null,

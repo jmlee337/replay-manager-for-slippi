@@ -46,7 +46,10 @@ export default function ManualReport({
     matchId: number,
     items: ChallongeMatchItem[],
   ) => Promise<Set>;
-  reportStartggSet: (set: StartggSet, originalSet: Set) => Promise<Set>;
+  reportStartggSet: (
+    set: StartggSet,
+    originalSet: Set,
+  ) => Promise<Set | undefined>;
   selectedSet: Set;
 }) {
   const [open, setOpen] = useState(false);
@@ -62,20 +65,21 @@ export default function ManualReport({
   const [entrant1Score, setEntrant1Score] = useState(0);
   const [entrant2Score, setEntrant2Score] = useState(0);
 
-  const resetForm = () => {
-    const entrant1ScoreInt =
-      selectedSet.entrant1Score === null
-        ? 0
-        : Number.parseInt(selectedSet.entrant1Score, 10);
-    const entrant2ScoreInt =
-      selectedSet.entrant2Score === null
-        ? 0
-        : Number.parseInt(selectedSet.entrant2Score, 10);
+  const resetFormToZero = () => {
+    setEntrant1Dq(false);
+    setEntrant2Dq(false);
+    setEntrant1Win(false);
+    setEntrant2Win(false);
+    setEntrant1Score(0);
+    setEntrant2Score(0);
+  };
+
+  const resetFormToSelectedSet = () => {
     setEntrant1Dq(
-      selectedSet.state === State.COMPLETED && entrant1ScoreInt === -1,
+      selectedSet.state === State.COMPLETED && selectedSet.entrant1Score === -1,
     );
     setEntrant2Dq(
-      selectedSet.state === State.COMPLETED && entrant2ScoreInt === -1,
+      selectedSet.state === State.COMPLETED && selectedSet.entrant2Score === -1,
     );
     setEntrant1Win(
       selectedSet.state === State.COMPLETED &&
@@ -85,8 +89,16 @@ export default function ManualReport({
       selectedSet.state === State.COMPLETED &&
         selectedSet.winnerId === selectedSet.entrant2Id,
     );
-    setEntrant1Score(entrant1ScoreInt);
-    setEntrant2Score(entrant2ScoreInt);
+    setEntrant1Score(
+      selectedSet.entrant1Score === null
+        ? 0
+        : Math.max(selectedSet.entrant1Score, 0),
+    );
+    setEntrant2Score(
+      selectedSet.entrant2Score === null
+        ? 0
+        : Math.max(selectedSet.entrant2Score, 0),
+    );
   };
 
   const [reportError, setReportError] = useState('');
@@ -165,7 +177,7 @@ export default function ManualReport({
             }
             size="small"
             onClick={() => {
-              resetForm();
+              resetFormToSelectedSet();
               setOpen(true);
             }}
           >
@@ -217,8 +229,9 @@ export default function ManualReport({
                       color="secondary"
                       variant={entrant1Dq ? 'contained' : 'outlined'}
                       onClick={() => {
-                        resetForm();
+                        resetFormToZero();
                         setEntrant1Dq(true);
+                        setEntrant2Win(true);
                       }}
                     >
                       DQ
@@ -243,6 +256,8 @@ export default function ManualReport({
                       color="secondary"
                       variant={entrant1Score === 1 ? 'contained' : 'outlined'}
                       onClick={() => {
+                        setEntrant1Dq(false);
+                        setEntrant2Dq(false);
                         setEntrant1Score(1);
                         if (entrant2Score < 1) {
                           setEntrant1Win(true);
@@ -262,6 +277,8 @@ export default function ManualReport({
                       color="secondary"
                       variant={entrant1Score === 2 ? 'contained' : 'outlined'}
                       onClick={() => {
+                        setEntrant1Dq(false);
+                        setEntrant2Dq(false);
                         setEntrant1Score(2);
                         if (entrant2Score < 2) {
                           setEntrant1Win(true);
@@ -281,6 +298,8 @@ export default function ManualReport({
                       color="secondary"
                       variant={entrant1Score === 3 ? 'contained' : 'outlined'}
                       onClick={() => {
+                        setEntrant1Dq(false);
+                        setEntrant2Dq(false);
                         setEntrant1Score(3);
                         if (entrant2Score < 3) {
                           setEntrant1Win(true);
@@ -297,8 +316,9 @@ export default function ManualReport({
                       color="secondary"
                       variant={entrant1Win ? 'contained' : 'outlined'}
                       onClick={() => {
-                        resetForm();
+                        resetFormToZero();
                         setEntrant1Win(true);
+                        setEntrant2Dq(false);
                       }}
                     >
                       W
@@ -375,8 +395,9 @@ export default function ManualReport({
                       color="secondary"
                       variant={entrant2Dq ? 'contained' : 'outlined'}
                       onClick={() => {
-                        resetForm();
+                        resetFormToZero();
                         setEntrant2Dq(true);
+                        setEntrant1Win(true);
                       }}
                     >
                       DQ
@@ -401,6 +422,8 @@ export default function ManualReport({
                       color="secondary"
                       variant={entrant2Score === 1 ? 'contained' : 'outlined'}
                       onClick={() => {
+                        setEntrant1Dq(false);
+                        setEntrant2Dq(false);
                         setEntrant2Score(1);
                         if (entrant1Score < 1) {
                           setEntrant1Win(false);
@@ -420,6 +443,8 @@ export default function ManualReport({
                       color="secondary"
                       variant={entrant2Score === 2 ? 'contained' : 'outlined'}
                       onClick={() => {
+                        setEntrant1Dq(false);
+                        setEntrant2Dq(false);
                         setEntrant2Score(2);
                         if (entrant1Score < 2) {
                           setEntrant1Win(false);
@@ -439,6 +464,8 @@ export default function ManualReport({
                       color="secondary"
                       variant={entrant2Score === 3 ? 'contained' : 'outlined'}
                       onClick={() => {
+                        setEntrant1Dq(false);
+                        setEntrant2Dq(false);
                         setEntrant2Score(3);
                         if (entrant1Score < 3) {
                           setEntrant1Win(false);
@@ -455,7 +482,8 @@ export default function ManualReport({
                       color="secondary"
                       variant={entrant2Win ? 'contained' : 'outlined'}
                       onClick={() => {
-                        resetForm();
+                        resetFormToZero();
+                        setEntrant1Dq(false);
                         setEntrant2Win(true);
                       }}
                     >
@@ -531,7 +559,7 @@ export default function ManualReport({
                     challongeMatchItems,
                   );
                 }
-                resetForm();
+                resetFormToZero();
                 setOpen(false);
               } catch (e: any) {
                 const message = e instanceof Error ? e.message : e;

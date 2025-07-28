@@ -81,10 +81,10 @@ export type Set = {
   winnerId: number | null;
   entrant1Id: number;
   entrant1Participants: Participant[];
-  entrant1Score: string | null;
+  entrant1Score: number | null;
   entrant2Id: number;
   entrant2Participants: Participant[];
-  entrant2Score: string | null;
+  entrant2Score: number | null;
   gameScores: GameScore[];
   stream: Stream | null;
   station: Station | null;

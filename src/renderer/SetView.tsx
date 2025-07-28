@@ -60,10 +60,10 @@ export default function SetView({
   wasReported,
 }: {
   entrant1Names: NameWithHighlight[];
-  entrant1Score: string | null;
+  entrant1Score: number | null;
   entrant1Win: boolean;
   entrant2Names: NameWithHighlight[];
-  entrant2Score: string | null;
+  entrant2Score: number | null;
   fullRoundText: string;
   showScores: boolean;
   state: number;
@@ -75,8 +75,8 @@ export default function SetView({
   let rightScore = '\u00A0';
   if (showScores) {
     if (entrant1Score || entrant2Score) {
-      leftScore = entrant1Score || '0';
-      rightScore = entrant2Score || '0';
+      leftScore = entrant1Score ? entrant1Score.toString(10) : '0';
+      rightScore = entrant2Score ? entrant2Score.toString(10) : '0';
     } else if (entrant1Win) {
       leftScore = 'W';
       rightScore = 'L';

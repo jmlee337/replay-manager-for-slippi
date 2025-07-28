@@ -991,6 +991,7 @@ const GQL_SET_INNER = `
       id
       name
       participants {
+        id
         gamerTag
         prefix
         player {
@@ -1070,6 +1071,10 @@ function gqlSetToSet(set: any): Set {
       entrant2Participants[0],
     ];
   }
+  const entrant1DisplayValue =
+    (slot1.standing?.stats?.score?.displayValue as string) || null;
+  const entrant2DisplayValue =
+    (slot2.standing?.stats?.score?.displayValue as string) || null;
   return {
     id: set.id,
     state: set.state,
@@ -1079,13 +1084,13 @@ function gqlSetToSet(set: any): Set {
     winnerId: set.winnerId,
     entrant1Id: slot1.entrant.id,
     entrant1Participants,
-    entrant1Score: slot1.standing
-      ? slot1.standing.stats.score.displayValue
+    entrant1Score: entrant1DisplayValue
+      ? Number.parseInt(entrant1DisplayValue, 10)
       : null,
     entrant2Id: slot2.entrant.id,
     entrant2Participants,
-    entrant2Score: slot2.standing
-      ? slot2.standing.stats.score.displayValue
+    entrant2Score: entrant2DisplayValue
+      ? Number.parseInt(entrant2DisplayValue, 10)
       : null,
     gameScores: Array.isArray(set.games)
       ? set.games.map((game: any) => ({
@@ -1228,6 +1233,10 @@ const UPDATE_BRACKET_SET_MUTATION = `
 `;
 export async function updateSet(key: string, set: StartggSet) {
   const data = await fetchGql(key, UPDATE_BRACKET_SET_MUTATION, set);
+  if (!data.updateBracketSet) {
+    return undefined;
+  }
+
   const updatedSet = gqlSetToSet(data.updateBracketSet);
   reportedSetIds.set(updatedSet.id, true);
   idToSet.set(updatedSet.id, updatedSet);
