@@ -63,12 +63,30 @@ export default function ManualReport({
   const [entrant2Score, setEntrant2Score] = useState(0);
 
   const resetForm = () => {
-    setEntrant1Dq(false);
-    setEntrant2Dq(false);
-    setEntrant1Win(false);
-    setEntrant2Win(false);
-    setEntrant1Score(0);
-    setEntrant2Score(0);
+    const entrant1ScoreInt =
+      selectedSet.entrant1Score === null
+        ? 0
+        : Number.parseInt(selectedSet.entrant1Score, 10);
+    const entrant2ScoreInt =
+      selectedSet.entrant2Score === null
+        ? 0
+        : Number.parseInt(selectedSet.entrant2Score, 10);
+    setEntrant1Dq(
+      selectedSet.state === State.COMPLETED && entrant1ScoreInt === -1,
+    );
+    setEntrant2Dq(
+      selectedSet.state === State.COMPLETED && entrant2ScoreInt === -1,
+    );
+    setEntrant1Win(
+      selectedSet.state === State.COMPLETED &&
+        selectedSet.winnerId === selectedSet.entrant1Id,
+    );
+    setEntrant2Win(
+      selectedSet.state === State.COMPLETED &&
+        selectedSet.winnerId === selectedSet.entrant2Id,
+    );
+    setEntrant1Score(entrant1ScoreInt);
+    setEntrant2Score(entrant2ScoreInt);
   };
 
   const [reportError, setReportError] = useState('');
@@ -143,7 +161,7 @@ export default function ManualReport({
               !(
                 typeof selectedSet.id === 'string' ||
                 (Number.isInteger(selectedSet.id) && selectedSet.id > 0)
-              ) || selectedSet.state === State.COMPLETED
+              )
             }
             size="small"
             onClick={() => {
