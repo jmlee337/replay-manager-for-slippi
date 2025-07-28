@@ -81,7 +81,7 @@ function Entrants() {
           <Typography variant="h5" marginLeft="16px">
             Seeds by Pool
           </Typography>
-          <Tooltip title="Refresh">
+          <Tooltip arrow title="Refresh">
             <IconButton
               disabled={gettingWaves}
               onClick={async () => {

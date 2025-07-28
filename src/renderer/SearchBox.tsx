@@ -81,7 +81,7 @@ export default function SearchBox({
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  <Tooltip title="Clear search">
+                  <Tooltip arrow title="Clear search">
                     <IconButton
                       onClick={() => {
                         clearSearch();

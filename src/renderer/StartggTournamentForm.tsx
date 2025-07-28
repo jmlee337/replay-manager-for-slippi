@@ -61,7 +61,7 @@ export default function StartggTournamentForm({
         {gettingAdminedTournaments ? (
           <CircularProgress size="24px" style={{ padding: '8px' }} />
         ) : (
-          <Tooltip title="Refresh">
+          <Tooltip arrow title="Refresh">
             <IconButton onClick={getAdminedTournaments}>
               <Refresh />
             </IconButton>

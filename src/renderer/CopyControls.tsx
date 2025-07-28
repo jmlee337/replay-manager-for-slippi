@@ -105,7 +105,7 @@ function ClientsDialog({
                 disablePadding
                 style={{ marginRight: '-16px', width: 'calc(100% + 16px)' }}
                 secondaryAction={
-                  <Tooltip title="Disconnect">
+                  <Tooltip arrow title="Disconnect">
                     <IconButton
                       edge="end"
                       onClick={async () => {
@@ -185,19 +185,17 @@ function HostsDialog({ host }: { host: CopyHostOrClient }) {
 
   return (
     <>
-      <Tooltip title="Search LAN">
-        <Button
-          onClick={async () => {
-            setHosts([]);
-            setError('');
-            setSelfName(await window.electron.startListeningForHosts());
-            setOpen(true);
-          }}
-          endIcon={<Router />}
-        >
-          {host.address ? 'Connected' : 'Search LAN'}
-        </Button>
-      </Tooltip>
+      <Button
+        onClick={async () => {
+          setHosts([]);
+          setError('');
+          setSelfName(await window.electron.startListeningForHosts());
+          setOpen(true);
+        }}
+        endIcon={<Router />}
+      >
+        {host.address ? 'Connected' : 'Search LAN'}
+      </Button>
       <Dialog
         open={open}
         onClose={async () => {
@@ -262,7 +260,7 @@ function HostsDialog({ host }: { host: CopyHostOrClient }) {
                 disablePadding
                 style={{ marginRight: '-16px', width: 'calc(100% + 16px)' }}
                 secondaryAction={
-                  <Tooltip title="Disconnect">
+                  <Tooltip arrow title="Disconnect">
                     <IconButton
                       edge="end"
                       onClick={async () => {
@@ -428,7 +426,7 @@ export default function CopyControls({
               {!hosting && <HostsDialog host={host} />}
             </>
           )}
-          <Tooltip title="Set copy folder">
+          <Tooltip arrow title="Set copy folder">
             <IconButton onClick={chooseDir}>
               <FolderOpen />
             </IconButton>

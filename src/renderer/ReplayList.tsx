@@ -389,7 +389,7 @@ const ReplayListItem = forwardRef(
     return replay.invalidReasons.length === 0 || replay.selected ? (
       replayListItemInner
     ) : (
-      <Tooltip title={replay.invalidReasons.join(' ')}>
+      <Tooltip arrow title={replay.invalidReasons.join(' ')}>
         {replayListItemInner}
       </Tooltip>
     );

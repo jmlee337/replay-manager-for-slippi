@@ -28,7 +28,7 @@ export default function ResetSet({
 
   return (
     <>
-      <Tooltip title="Reset set">
+      <Tooltip arrow title="Reset set">
         <div>
           <IconButton
             color="primary"

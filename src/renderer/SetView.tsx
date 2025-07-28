@@ -104,17 +104,17 @@ export default function SetView({
     <Stack direction="row" width="100%">
       <Stack alignItems="center" direction="row" width="20px">
         {wasReported && (
-          <Tooltip title="Reported">
+          <Tooltip arrow title="Reported">
             <CheckBox />
           </Tooltip>
         )}
         {!wasReported && stream && (
-          <Tooltip title={`${streamVerb} on ${stream.path}`}>
+          <Tooltip arrow title={`${streamVerb} on ${stream.path}`}>
             <Tv fontSize="small" />
           </Tooltip>
         )}
         {!wasReported && !stream && station && (
-          <Tooltip title={`${stationVerb} at station ${station.number}`}>
+          <Tooltip arrow title={`${stationVerb} at station ${station.number}`}>
             <Typography variant="body1" textAlign="center" width="20px">
               {station.number}
             </Typography>
@@ -153,12 +153,12 @@ export default function SetView({
         width="20px"
       >
         {state === 2 && (
-          <Tooltip title="Started">
+          <Tooltip arrow title="Started">
             <HourglassTop fontSize="small" />
           </Tooltip>
         )}
         {state === 3 && (
-          <Tooltip title="Completed">
+          <Tooltip arrow title="Completed">
             <Backup fontSize="small" />
           </Tooltip>
         )}

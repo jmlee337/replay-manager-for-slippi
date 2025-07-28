@@ -2039,11 +2039,11 @@ function Hello() {
                         <Stack alignItems="center" direction="row" gap="8px">
                           <SkewReplay replay={replay} />
                           {i === 0 ? (
-                            <Tooltip placement="left" title="First">
+                            <Tooltip arrow placement="left" title="First">
                               <div style={{ height: '40px', width: '40px' }} />
                             </Tooltip>
                           ) : (
-                            <Tooltip placement="left" title="Move up">
+                            <Tooltip arrow placement="left" title="Move up">
                               <IconButton
                                 onClick={() => {
                                   const arr = [...replays];
@@ -2056,11 +2056,11 @@ function Hello() {
                             </Tooltip>
                           )}
                           {i === replays.length - 1 ? (
-                            <Tooltip placement="right" title="Last">
+                            <Tooltip arrow placement="right" title="Last">
                               <div style={{ height: '40px', width: '40px' }} />
                             </Tooltip>
                           ) : (
-                            <Tooltip placement="right" title="Move down">
+                            <Tooltip arrow placement="right" title="Move down">
                               <IconButton
                                 onClick={() => {
                                   const arr = [...replays];
@@ -2465,7 +2465,7 @@ function Hello() {
                     {selectedSet.state === State.STARTED && (
                       <>
                         &nbsp;
-                        <Tooltip title="Started">
+                        <Tooltip arrow placement="top" title="Started">
                           <HourglassTop fontSize="inherit" />
                         </Tooltip>
                       </>
@@ -2473,13 +2473,13 @@ function Hello() {
                     {selectedSet.state === State.COMPLETED && (
                       <>
                         &nbsp;
-                        <Tooltip placement="top" title="Finished">
+                        <Tooltip arrow placement="top" title="Completed">
                           <Backup fontSize="inherit" />
                         </Tooltip>
                       </>
                     )}
                   </Stack>
-                  <Tooltip arrow title="Click or drag!">
+                  <Tooltip arrow placement="top" title="Click or drag!">
                     <Stack direction="row" gap="8px">
                       <Stack gap="8px" width="50%">
                         <DraggableChip
@@ -2582,7 +2582,7 @@ function Hello() {
             >
               <AssignStream mode={mode} selectedSet={selectedSet} />
               <ResetSet mode={mode} selectedSet={selectedSet} />
-              <Tooltip title="Mark set started">
+              <Tooltip arrow title="Mark set started">
                 <div>
                   <IconButton
                     color="primary"

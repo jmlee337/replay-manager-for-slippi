@@ -65,7 +65,7 @@ export default function AssignStream({
 
   return (
     <>
-      <Tooltip title="Assign set to stream or station">
+      <Tooltip arrow title="Assign set to stream or station">
         <div>
           <IconButton
             color="primary"

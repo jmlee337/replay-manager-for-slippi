@@ -135,7 +135,7 @@ export default function ManualReport({
 
   return (
     <>
-      <Tooltip title="Report Manually">
+      <Tooltip arrow title="Report Manually">
         <div>
           <IconButton
             color="primary"
@@ -168,7 +168,7 @@ export default function ManualReport({
             {selectedSet.state === State.STARTED && (
               <>
                 &nbsp;
-                <Tooltip title="Started">
+                <Tooltip arrow placement="top" title="Started">
                   <HourglassTop fontSize="small" />
                 </Tooltip>
               </>

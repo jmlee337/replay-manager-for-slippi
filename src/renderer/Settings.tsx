@@ -167,7 +167,7 @@ export default function Settings({
 
   return (
     <>
-      <Tooltip title="Settings">
+      <Tooltip arrow title="Settings">
         <Fab
           onClick={() => setOpen(true)}
           size="small"

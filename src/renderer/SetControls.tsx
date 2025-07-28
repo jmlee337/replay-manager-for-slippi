@@ -629,6 +629,7 @@ export default function SetControls({
                       set.entrant1Id === gameData.winnerId &&
                       gameData.entrant1Score % 100 && (
                         <Tooltip
+                          arrow
                           placement="left"
                           title={`${gameData.entrant1Score % 100} stock`}
                         >
@@ -745,6 +746,7 @@ export default function SetControls({
                       set.entrant2Id === gameData.winnerId &&
                       gameData.entrant2Score % 100 && (
                         <Tooltip
+                          arrow
                           placement="right"
                           title={`${gameData.entrant2Score % 100} stock`}
                         >
@@ -813,7 +815,7 @@ export default function SetControls({
         </DialogContent>
         <DialogActions>
           {enforceState.status === EnforceStatus.ERROR && (
-            <Tooltip placement="top" title="SLP Enforcer Failure">
+            <Tooltip arrow placement="top" title="SLP Enforcer Failure">
               <IconButton
                 onClick={() => {
                   setEnforcerResultOpen(true);
@@ -825,6 +827,7 @@ export default function SetControls({
           )}
           {selectedReplaysWithEnforceErrors.length > 0 && (
             <Tooltip
+              arrow
               placement="top"
               title="Controller Ruleset Violation Detected"
             >
