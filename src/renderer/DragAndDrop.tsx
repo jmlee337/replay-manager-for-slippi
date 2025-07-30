@@ -69,6 +69,7 @@ export function DraggableChip({
       JSON.stringify({
         displayName: event.currentTarget.dataset.displayName,
         entrantId: event.currentTarget.dataset.entrantId,
+        participantId: event.currentTarget.dataset.participantId,
         prefix: event.currentTarget.dataset.prefix,
         pronouns: event.currentTarget.dataset.pronouns,
       }),
