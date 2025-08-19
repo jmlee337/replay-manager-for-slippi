@@ -13,9 +13,12 @@ import {
 } from '@mui/material';
 import { HourglassTop, SaveAs } from '@mui/icons-material';
 import styled from '@emotion/styled';
+import { SlotState } from '@parry-gg/client';
 import {
   ChallongeMatchItem,
+  Id,
   Mode,
+  ParryggSetResult,
   Set,
   StartggGame,
   StartggSet,
@@ -39,6 +42,7 @@ export default function ManualReport({
   mode,
   reportChallongeSet,
   reportStartggSet,
+  reportParryggSet,
   selectedSet,
 }: {
   mode: Mode;
@@ -48,6 +52,10 @@ export default function ManualReport({
   ) => Promise<Set>;
   reportStartggSet: (
     set: StartggSet,
+    originalSet: Set,
+  ) => Promise<Set | undefined>;
+  reportParryggSet: (
+    result: ParryggSetResult,
     originalSet: Set,
   ) => Promise<Set | undefined>;
   selectedSet: Set;
@@ -104,8 +112,8 @@ export default function ManualReport({
   const [reportError, setReportError] = useState('');
   const [reportErrorOpen, setReportErrorOpen] = useState(false);
 
-  let winnerId = 0;
-  if (mode === Mode.STARTGG) {
+  let winnerId: Id = 0;
+  if (mode === Mode.STARTGG || mode === Mode.PARRYGG) {
     if (entrant1Win || entrant2Dq) {
       winnerId = selectedSet.entrant1Id;
     } else if (entrant2Win || entrant1Dq) {
@@ -123,8 +131,9 @@ export default function ManualReport({
     for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
       gameData.push({
         gameNum: n,
-        winnerId:
-          n <= entrant1Score ? selectedSet.entrant1Id : selectedSet.entrant2Id,
+        winnerId: (n <= entrant1Score
+          ? selectedSet.entrant1Id
+          : selectedSet.entrant2Id) as number,
         entrant1Score: 0,
         entrant2Score: 0,
         selections: [],
@@ -134,8 +143,9 @@ export default function ManualReport({
     for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
       gameData.push({
         gameNum: n,
-        winnerId:
-          n <= entrant2Score ? selectedSet.entrant2Id : selectedSet.entrant1Id,
+        winnerId: (n <= entrant2Score
+          ? selectedSet.entrant2Id
+          : selectedSet.entrant1Id) as number,
         entrant1Score: 0,
         entrant2Score: 0,
         selections: [],
@@ -144,7 +154,7 @@ export default function ManualReport({
   }
   const startggSet: StartggSet = {
     setId: selectedSet.id,
-    winnerId,
+    winnerId: winnerId as number,
     isDQ: entrant1Dq || entrant2Dq,
     gameData,
   };
@@ -162,6 +172,25 @@ export default function ManualReport({
       advancing: winnerId === selectedSet.entrant2Id,
     },
   ];
+
+  const parryggSetResult: ParryggSetResult = {
+    slotsList: [
+      {
+        slot: 0,
+        score: entrant1Dq ? 0 : entrant1Score,
+        state: entrant1Dq
+          ? SlotState.SLOT_STATE_DQ
+          : SlotState.SLOT_STATE_NUMERIC,
+      },
+      {
+        slot: 1,
+        score: entrant2Dq ? 0 : entrant2Score,
+        state: entrant2Dq
+          ? SlotState.SLOT_STATE_DQ
+          : SlotState.SLOT_STATE_NUMERIC,
+      },
+    ],
+  };
 
   return (
     <>
@@ -223,7 +252,7 @@ export default function ManualReport({
                 )}
               </EntrantNames>
               <Stack direction="row" spacing="8px">
-                {mode === Mode.STARTGG && (
+                {(mode === Mode.STARTGG || mode === Mode.PARRYGG) && (
                   <>
                     <ThinButton
                       color="secondary"
@@ -312,17 +341,19 @@ export default function ManualReport({
                     >
                       3
                     </ThinButton>
-                    <ThinButton
-                      color="secondary"
-                      variant={entrant1Win ? 'contained' : 'outlined'}
-                      onClick={() => {
-                        resetFormToZero();
-                        setEntrant1Win(true);
-                        setEntrant2Dq(false);
-                      }}
-                    >
-                      W
-                    </ThinButton>
+                    {mode === Mode.STARTGG && (
+                      <ThinButton
+                        color="secondary"
+                        variant={entrant1Win ? 'contained' : 'outlined'}
+                        onClick={() => {
+                          resetFormToZero();
+                          setEntrant1Win(true);
+                          setEntrant2Dq(false);
+                        }}
+                      >
+                        W
+                      </ThinButton>
+                    )}
                   </>
                 )}
                 {mode === Mode.CHALLONGE && (
@@ -389,7 +420,7 @@ export default function ManualReport({
                 )}
               </EntrantNames>
               <Stack direction="row" spacing="8px">
-                {mode === Mode.STARTGG && (
+                {(mode === Mode.STARTGG || mode === Mode.PARRYGG) && (
                   <>
                     <ThinButton
                       color="secondary"
@@ -478,17 +509,19 @@ export default function ManualReport({
                     >
                       3
                     </ThinButton>
-                    <ThinButton
-                      color="secondary"
-                      variant={entrant2Win ? 'contained' : 'outlined'}
-                      onClick={() => {
-                        resetFormToZero();
-                        setEntrant1Dq(false);
-                        setEntrant2Win(true);
-                      }}
-                    >
-                      W
-                    </ThinButton>
+                    {mode === Mode.STARTGG && (
+                      <ThinButton
+                        color="secondary"
+                        variant={entrant2Win ? 'contained' : 'outlined'}
+                        onClick={() => {
+                          resetFormToZero();
+                          setEntrant1Dq(false);
+                          setEntrant2Win(true);
+                        }}
+                      >
+                        W
+                      </ThinButton>
+                    )}
                   </>
                 )}
                 {mode === Mode.CHALLONGE && (
@@ -558,6 +591,8 @@ export default function ManualReport({
                     selectedSet.id as number,
                     challongeMatchItems,
                   );
+                } else if (mode === Mode.PARRYGG) {
+                  await reportParryggSet(parryggSetResult, selectedSet);
                 }
                 resetFormToZero();
                 setOpen(false);

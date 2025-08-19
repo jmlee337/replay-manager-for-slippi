@@ -5,14 +5,17 @@ import {
   ChallongeTournament,
   GuideState,
   Mode,
+  ParryggTournament,
   PlayerOverrides,
   SelectedEvent,
+  ParryggSetChain,
   SelectedPhase,
   SelectedPhaseGroup,
   Set,
   Tournament,
 } from '../common/types';
 import ChallongeView from './ChallongeView';
+import ParryggView from './ParryggView';
 import ManualView from './ManualView';
 import ErrorDialog from './ErrorDialog';
 
@@ -24,10 +27,13 @@ export default function RightColumn({
   vlerkMode,
   selectedSetChain,
   setSelectedSetChain,
+  selectedParryggSetChain,
+  setSelectedParryggSetChain,
   startggTournament,
   challongeTournaments,
   getChallongeTournament,
   setSelectedChallongeTournament,
+  parryggTournament,
   manualNames,
   selectedChipData,
   setSelectedChipData,
@@ -47,6 +53,8 @@ export default function RightColumn({
     phase?: SelectedPhase;
     phaseGroup?: SelectedPhaseGroup;
   }) => void;
+  selectedParryggSetChain: ParryggSetChain;
+  setSelectedParryggSetChain: (selectedSetChain: ParryggSetChain) => void;
   startggTournament: Tournament;
   challongeTournaments: Map<string, ChallongeTournament>;
   getChallongeTournament: (maybeSlug: string) => Promise<void>;
@@ -55,6 +63,7 @@ export default function RightColumn({
     slug: string;
     tournamentType: string;
   }) => void;
+  parryggTournament: ParryggTournament | undefined;
   manualNames: string[];
   selectedChipData: PlayerOverrides;
   setSelectedChipData: (selectedChipData: PlayerOverrides) => void;
@@ -84,6 +93,33 @@ export default function RightColumn({
   const getEvent = async (id: number) => {
     try {
       await window.electron.getEvent(id);
+    } catch (e: any) {
+      setError(e.toString());
+      setErrorOpen(true);
+    }
+  };
+
+  const getParryggBracket = async (id: string) => {
+    try {
+      await window.electron.getParryggBracket(id);
+    } catch (e: any) {
+      setError(e.toString());
+      setErrorOpen(true);
+    }
+  };
+
+  const getParryggPhase = async (id: string) => {
+    try {
+      await window.electron.getParryggPhase(id);
+    } catch (e: any) {
+      setError(e.toString());
+      setErrorOpen(true);
+    }
+  };
+
+  const getParryggEvent = async (id: string) => {
+    try {
+      await window.electron.getParryggEvent(id);
     } catch (e: any) {
       setError(e.toString());
       setErrorOpen(true);
@@ -122,6 +158,12 @@ export default function RightColumn({
       selectedTournament.slug,
     );
   };
+  const selectParryggSet = async (set: Set, setChain: ParryggSetChain) => {
+    selectSet(set);
+    setSelectedParryggSetChain(setChain);
+    await window.electron.setSelectedParryggSetChain(setChain);
+  };
+
   return (
     <>
       <SearchBox
@@ -171,6 +213,25 @@ export default function RightColumn({
             }}
           />
         ))}
+      {mode === Mode.PARRYGG && (
+        <ParryggView
+          searchSubstr={searchSubstr}
+          tournament={parryggTournament}
+          vlerkMode={vlerkMode}
+          selectedEventId={selectedParryggSetChain?.event?.id}
+          selectedPhaseId={selectedParryggSetChain?.phase?.id}
+          selectedBracketId={selectedParryggSetChain?.bracket?.id}
+          getEvent={getParryggEvent}
+          getPhase={getParryggPhase}
+          getBracket={getParryggBracket}
+          selectSet={async (set: Set, setChain: ParryggSetChain) => {
+            await selectParryggSet(set, setChain);
+            if (guideState !== GuideState.NONE) {
+              setGuideState(GuideState.REPLAYS);
+            }
+          }}
+        />
+      )}
       {mode === Mode.MANUAL && (
         <ManualView
           manualNames={manualNames}

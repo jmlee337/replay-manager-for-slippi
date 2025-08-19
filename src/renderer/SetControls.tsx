@@ -1,3 +1,4 @@
+import { SlotState } from '@parry-gg/client';
 import { Backup, Report, VideogameAssetOff } from '@mui/icons-material';
 import {
   Avatar,
@@ -22,7 +23,9 @@ import {
   EnforcerSetting,
   EnforceState,
   EnforceStatus,
+  Id,
   Mode,
+  ParryggSetResult,
   Player,
   Replay,
   ReportSettings,
@@ -137,8 +140,8 @@ function setAndReplaysValid(selectedReplays: Replay[], set: Set, mode: Mode) {
 
 function getScoresAndWinnerId(selectedReplays: Replay[]) {
   let gameCount = 0;
-  const gameWins = new Map<number, number>();
-  let leaderId = 0;
+  const gameWins = new Map<Id, number>();
+  let leaderId: Id = 0;
   let leaderWins = 0;
   selectedReplays.forEach((replay) => {
     const gameWinnerId = replay.players
@@ -201,6 +204,7 @@ export default function SetControls({
   deleteReplays,
   reportChallongeSet,
   reportStartggSet,
+  reportParryggSet,
   setReportSettings,
   resetGuide,
   mode,
@@ -221,14 +225,14 @@ export default function SetControls({
 }: {
   copyReplays: (
     updatedSetFields?: {
-      id: number | string;
+      id: Id;
       completedAtMs: number;
       stream: Stream | null;
     },
     violators?: {
       checkNames: Map<string, boolean>;
       displayName: string;
-      entrantId: number;
+      entrantId: Id;
     }[],
   ) => Promise<void>;
   deleteReplays: () => Promise<void>;
@@ -240,13 +244,17 @@ export default function SetControls({
     set: StartggSet,
     originalSet: Set,
   ) => Promise<Set | undefined>;
+  reportParryggSet: (
+    result: ParryggSetResult,
+    originalSet: Set,
+  ) => Promise<Set | undefined>;
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
   resetGuide: () => void;
   mode: Mode;
   isCopying: boolean;
   copyDisabled: boolean;
   isDeleting: boolean;
-  dqId: number;
+  dqId: Id;
   hasRemainingReplays: boolean;
   reportSettings: ReportSettings;
   selectedReplays: Replay[];
@@ -320,8 +328,8 @@ export default function SetControls({
 
   const isDq = dqId === set.entrant1Id || dqId === set.entrant2Id;
   const validSelections = setAndReplaysValid(selectedReplays, set, mode);
-  let scores = new Map<number, number>();
-  let winnerId = 0;
+  let scores = new Map<Id, number>();
+  let winnerId: Id = 0;
   if (validSelections.valid) {
     ({ scores, winnerId } = getScoresAndWinnerId(selectedReplays));
   } else if (isDq) {
@@ -346,8 +354,9 @@ export default function SetControls({
 
     const gameData: StartggGame[] = [];
     selectedReplays.forEach((replay, i) => {
-      const gameWinnerId = replay.players.find((player) => player.isWinner)
-        ?.playerOverrides.entrantId;
+      const gameWinnerId: Id | undefined = replay.players.find(
+        (player) => player.isWinner,
+      )?.playerOverrides.entrantId;
       if (!gameWinnerId) {
         return;
       }
@@ -358,7 +367,7 @@ export default function SetControls({
       let entrant2CostumeOffset = Math.floor(originalEntrant2Score / 100) * 100;
       let entrant1Stocks = originalEntrant1Score % 100;
       let entrant2Stocks = originalEntrant2Score % 100;
-      const participantIdToSelection = new Map<number, StartggGameSelection>();
+      const participantIdToSelection = new Map<Id, StartggGameSelection>();
       const validPlayers = replay.players.filter(
         (player) =>
           isValid(player) && isValidCharacter(player.externalCharacterId),
@@ -401,7 +410,7 @@ export default function SetControls({
         gameNum: i + 1,
         stageId: stageStartggIds.get(replay.stageId),
         selections,
-        winnerId: gameWinnerId,
+        winnerId: gameWinnerId as number,
       });
     });
     return { setId: set.id, winnerId, isDQ: false, gameData };
@@ -421,6 +430,30 @@ export default function SetControls({
       advancing: winnerId === set.entrant2Id,
     },
   ];
+
+  const getParryggSetResult = (): ParryggSetResult => {
+    const entrant1Dq = isDq && dqId === set.entrant1Id;
+    const entrant2Dq = isDq && dqId === set.entrant2Id;
+
+    return {
+      slotsList: [
+        {
+          slot: 0,
+          score: entrant1Dq ? 0 : entrant1SetScore,
+          state: entrant1Dq
+            ? SlotState.SLOT_STATE_DQ
+            : SlotState.SLOT_STATE_NUMERIC,
+        },
+        {
+          slot: 1,
+          score: entrant2Dq ? 0 : entrant2SetScore,
+          state: entrant2Dq
+            ? SlotState.SLOT_STATE_DQ
+            : SlotState.SLOT_STATE_NUMERIC,
+        },
+      ],
+    };
+  };
 
   let deleteOverrideReason = '';
   if (set.fullRoundText === 'Grand Final' && hasRemainingReplays) {
@@ -453,6 +486,7 @@ export default function SetControls({
   } else if (reporting) {
     reportCopyDeleteButton = 'Reporting';
   }
+
   return (
     <>
       {validSelections.valid && (winnerId || isDq) ? (
@@ -496,6 +530,7 @@ export default function SetControls({
         <DialogTitle typography="body1">
           Report set on {mode === Mode.STARTGG && 'start.gg'}
           {mode === Mode.CHALLONGE && 'Challonge'}
+          {mode === Mode.PARRYGG && 'parry.gg'}
         </DialogTitle>
         <DialogContent sx={{ width: '500px' }}>
           <Stack>
@@ -872,10 +907,15 @@ export default function SetControls({
                     set.id as number,
                     challongeMatchItems,
                   );
+                } else if (mode === Mode.PARRYGG) {
+                  updatedSet = await reportParryggSet(
+                    getParryggSetResult(),
+                    set,
+                  );
                 }
                 if (reportSettings.alsoCopy) {
                   const entrantIdToDisplayNameAndCheckNames = new Map<
-                    number,
+                    Id,
                     { checkNames: Map<string, boolean>; displayName: string }
                   >();
                   selectedReplaysWithEnforceErrors.forEach((replay) => {

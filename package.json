@@ -91,12 +91,15 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.14.12",
     "@mui/material": "^5.14.12",
+    "@parry-gg/client": "^1.0.4",
     "@shelacek/ubjson": "^1.1.1",
     "date-fns": "^2.30.0",
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.8",
     "electron-store": "^8.1.0",
     "electron-updater": "^6.1.4",
+    "google-protobuf": "^3.21.2",
+    "grpc-web": "^1.5.0",
     "iconv-lite": "^0.6.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -104,6 +107,7 @@
     "react-router-dom": "^6.16.0",
     "sanitize-filename": "^1.6.3",
     "slp-enforcer": "^1.4.4",
+    "xhr2": "^0.2.1",
     "yazl": "^2.5.1"
   },
   "devDependencies": {

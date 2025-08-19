@@ -21,6 +21,7 @@ import path from 'path';
 import { eject } from 'eject-media';
 import { format } from 'date-fns';
 import {
+  AdminedTournament,
   ChallongeMatchItem,
   Context,
   CopySettings,
@@ -28,8 +29,11 @@ import {
   EnforcerSetting,
   EnforceState,
   EnforceStatus,
+  Id,
   Mode,
   Output,
+  ParryggSetResult,
+  ParryggSetChain,
   Replay,
   ReportSettings,
   Set,
@@ -67,6 +71,22 @@ import {
   setSelectedTournament,
   startChallongeSet,
 } from './challonge';
+import {
+  getCurrentParryggTournaments,
+  getParryggTournament,
+  getParryggTournaments,
+  getParryggEvent,
+  getParryggPhase,
+  getParryggBracket,
+  getSelectedParryggSet,
+  getSelectedParryggTournament,
+  reportParryggSet,
+  setSelectedParryggSetChain,
+  setSelectedParryggSetId,
+  setSelectedParryggTournament,
+  startParryggSet,
+  getSelectedParryggSetChain,
+} from './parrygg';
 import {
   appendEnforcerResult,
   connectToHost,
@@ -790,6 +810,21 @@ export default function setupIPCs(
     },
   );
 
+  let parryggApiKey = store.has('parryggApiKey')
+    ? (store.get('parryggApiKey') as string)
+    : '';
+  ipcMain.removeHandler('getParryggKey');
+  ipcMain.handle('getParryggKey', () => parryggApiKey);
+
+  ipcMain.removeHandler('setParryggKey');
+  ipcMain.handle(
+    'setParryggKey',
+    (event: IpcMainInvokeEvent, newParryggKey: string) => {
+      store.set('parryggApiKey', newParryggKey);
+      parryggApiKey = newParryggKey;
+    },
+  );
+
   ipcMain.removeHandler('getCurrentChallongeTournaments');
   ipcMain.handle('getCurrentChallongeTournaments', getCurrentTournaments);
 
@@ -801,6 +836,39 @@ export default function setupIPCs(
     'setSelectedChallongeTournament',
     (event: IpcMainInvokeEvent, slug: string) => {
       setSelectedTournament(slug);
+    },
+  );
+
+  ipcMain.removeHandler('getCurrentParryggTournaments');
+  ipcMain.handle('getCurrentParryggTournaments', getCurrentParryggTournaments);
+
+  ipcMain.removeHandler('getSelectedParryggTournament');
+  ipcMain.handle('getSelectedParryggTournament', getSelectedParryggTournament);
+
+  ipcMain.removeHandler('setSelectedParryggTournament');
+  ipcMain.handle(
+    'setSelectedParryggTournament',
+    (event: IpcMainInvokeEvent, slug: string) => {
+      setSelectedParryggTournament(slug);
+    },
+  );
+
+  ipcMain.removeHandler('setSelectedParryggSetChain');
+  ipcMain.handle(
+    'setSelectedParryggSetChain',
+    (event: IpcMainInvokeEvent, setChain: ParryggSetChain) => {
+      setSelectedParryggSetChain(setChain);
+    },
+  );
+
+  ipcMain.removeHandler('getSelectedParryggSet');
+  ipcMain.handle('getSelectedParryggSet', getSelectedParryggSet);
+
+  ipcMain.removeHandler('setSelectedParryggSetId');
+  ipcMain.handle(
+    'setSelectedParryggSetId',
+    (event: IpcMainInvokeEvent, setId: string) => {
+      setSelectedParryggSetId(setId);
     },
   );
 
@@ -820,6 +888,70 @@ export default function setupIPCs(
     },
   );
 
+  ipcMain.removeHandler('getParryggTournament');
+  ipcMain.handle(
+    'getParryggTournament',
+    async (event: IpcMainInvokeEvent, slug: string, recursive?: boolean) => {
+      if (!parryggApiKey) {
+        throw new Error('Please set parry.gg API key.');
+      }
+
+      await getParryggTournament(parryggApiKey, slug, recursive);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedParryggSet(),
+        parryggTournament: getSelectedParryggTournament(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('getParryggEvent');
+  ipcMain.handle(
+    'getParryggEvent',
+    async (event: IpcMainInvokeEvent, eventId: string) => {
+      if (!parryggApiKey) {
+        throw new Error('Please set parry.gg API key.');
+      }
+
+      await getParryggEvent(parryggApiKey, eventId);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedParryggSet(),
+        parryggTournament: getSelectedParryggTournament(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('getParryggPhase');
+  ipcMain.handle(
+    'getParryggPhase',
+    async (event: IpcMainInvokeEvent, phaseId: string) => {
+      if (!parryggApiKey) {
+        throw new Error('Please set parry.gg API key.');
+      }
+
+      await getParryggPhase(parryggApiKey, phaseId);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedParryggSet(),
+        parryggTournament: getSelectedParryggTournament(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('getParryggBracket');
+  ipcMain.handle(
+    'getParryggBracket',
+    async (event: IpcMainInvokeEvent, bracketId: string) => {
+      if (!parryggApiKey) {
+        throw new Error('Please set parry.gg API key.');
+      }
+
+      await getParryggBracket(parryggApiKey, bracketId);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedParryggSet(),
+        parryggTournament: getSelectedParryggTournament(),
+      });
+    },
+  );
+
   ipcMain.removeHandler('startChallongeSet');
   ipcMain.handle(
     'startChallongeSet',
@@ -833,6 +965,26 @@ export default function setupIPCs(
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedChallongeSet(),
         challongeTournaments: getCurrentTournaments(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('startParryggSet');
+  ipcMain.handle(
+    'startParryggSet',
+    async (event: IpcMainInvokeEvent, setId: string) => {
+      if (!parryggApiKey) {
+        throw new Error('Please set parry.gg API key.');
+      }
+
+      await startParryggSet(parryggApiKey, setId);
+      await getParryggBracket(
+        parryggApiKey,
+        getSelectedParryggSetChain().bracket!.id,
+      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedParryggSet(),
+        parryggTournament: getSelectedParryggTournament(),
       });
     },
   );
@@ -865,24 +1017,55 @@ export default function setupIPCs(
     },
   );
 
+  ipcMain.removeHandler('reportParryggSet');
+  ipcMain.handle(
+    'reportParryggSet',
+    async (
+      event: IpcMainInvokeEvent,
+      slug: string,
+      setId: string,
+      result: ParryggSetResult,
+    ) => {
+      if (!parryggApiKey) {
+        throw new Error('Please set parry.gg API key.');
+      }
+      const updatedSet = await reportParryggSet(parryggApiKey, setId, result);
+      await getParryggBracket(
+        parryggApiKey,
+        getSelectedParryggSetChain().bracket!.id,
+      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedParryggSet(),
+        parryggTournament: getSelectedParryggTournament(),
+      });
+      return updatedSet;
+    },
+  );
+
   ipcMain.removeHandler('getTournaments');
-  ipcMain.handle('getTournaments', async () => {
+  ipcMain.handle('getTournaments', async (): Promise<AdminedTournament[]> => {
     if (mode === Mode.STARTGG) {
       return sggApiKey ? getTournaments(sggApiKey) : [];
     }
     if (mode === Mode.CHALLONGE) {
       return challongeApiKey ? getChallongeTournaments(challongeApiKey) : [];
     }
+    if (mode === Mode.PARRYGG) {
+      return parryggApiKey ? getParryggTournaments(parryggApiKey) : [];
+    }
     return [];
   });
 
   ipcMain.removeHandler('getSelectedSet');
-  ipcMain.handle('getSelectedSet', () => {
+  ipcMain.handle('getSelectedSet', (): Set | undefined => {
     if (mode === Mode.STARTGG) {
       return getSelectedSet();
     }
     if (mode === Mode.CHALLONGE) {
       return getSelectedChallongeSet();
+    }
+    if (mode === Mode.PARRYGG) {
+      return getSelectedParryggSet();
     }
     return undefined;
   });
@@ -890,11 +1073,13 @@ export default function setupIPCs(
   ipcMain.removeHandler('setSelectedSetId');
   ipcMain.handle(
     'setSelectedSetId',
-    (event: IpcMainInvokeEvent, selectedSetId: number | string) => {
+    (event: IpcMainInvokeEvent, selectedSetId: Id) => {
       if (mode === Mode.STARTGG) {
         setSelectedSetId(selectedSetId);
       } else if (mode === Mode.CHALLONGE) {
         setSelectedChallongeSetId(selectedSetId as number);
+      } else if (mode === Mode.PARRYGG) {
+        setSelectedParryggSetId(selectedSetId as string);
       }
     },
   );

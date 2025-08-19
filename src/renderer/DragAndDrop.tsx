@@ -6,8 +6,17 @@ import {
   createTheme,
 } from '@mui/material';
 import { CSSProperties, DragEvent, ReactElement } from 'react';
-import { NameWithHighlight, PlayerOverrides } from '../common/types';
+import { Id, NameWithHighlight, PlayerOverrides } from '../common/types';
 import { highlightColor } from '../common/constants';
+
+function parseJsonId(id: string): Id {
+  try {
+    const parsed = Number(id);
+    return Number.isNaN(parsed) ? id : parsed;
+  } catch {
+    return id;
+  }
+}
 
 function Name({ nameWithHighlight }: { nameWithHighlight: NameWithHighlight }) {
   if (!nameWithHighlight.highlight) {
@@ -42,9 +51,9 @@ export function DraggableChip({
   setSelectedChipData,
   elevate,
 }: {
-  entrantId: number;
+  entrantId: Id;
   nameWithHighlight: NameWithHighlight;
-  participantId: number;
+  participantId: Id;
   prefix: string;
   pronouns: string;
   selectedChipData: PlayerOverrides;
@@ -56,8 +65,8 @@ export function DraggableChip({
     pronouns,
   }: {
     displayName: string;
-    entrantId: number;
-    participantId: number;
+    entrantId: Id;
+    participantId: Id;
     prefix: string;
     pronouns: string;
   }) => void;
@@ -171,8 +180,8 @@ export function DroppableChip({
   style: CSSProperties;
   onClickOrDrop: (
     displayName: string,
-    entrantId: number,
-    participantId: number,
+    entrantId: Id,
+    participantId: Id,
     prefix: string,
     pronouns: string,
   ) => void;
@@ -182,8 +191,8 @@ export function DroppableChip({
     const json = JSON.parse(event.dataTransfer.getData('text/plain'));
     onClickOrDrop(
       json.displayName,
-      parseInt(json.entrantId, 10),
-      parseInt(json.participantId, 10),
+      parseJsonId(json.entrantId),
+      parseJsonId(json.participantId),
       json.prefix,
       json.pronouns,
     );

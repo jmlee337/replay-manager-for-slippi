@@ -1,7 +1,20 @@
+import {
+  Tournament as ParryggTournamentPb,
+  Event as ParryggEventPb,
+  Phase as ParryggPhasePb,
+  Bracket as ParryggBracketPb,
+  Match as ParryggSetPb,
+  MatchResult as ParryggSetResultPb,
+  Slot as ParryggSlotPb,
+  Seed as ParryggSeedPb,
+} from '@parry-gg/client';
+
+export type Id = string | number;
+
 export type PlayerOverrides = {
   displayName: string;
-  entrantId: number;
-  participantId: number;
+  entrantId: Id;
+  participantId: Id;
   prefix: string;
   pronouns: string;
 };
@@ -46,7 +59,7 @@ export enum State {
 }
 
 export type Participant = {
-  id: number;
+  id: Id;
   displayName: string;
   prefix: string;
   pronouns: string;
@@ -74,15 +87,15 @@ export type GameScore = {
 };
 
 export type Set = {
-  id: number | string;
+  id: Id;
   state: State;
   round: number;
   fullRoundText: string;
-  winnerId: number | null;
-  entrant1Id: number;
+  winnerId: Id | null;
+  entrant1Id: Id;
   entrant1Participants: Participant[];
   entrant1Score: number | null;
-  entrant2Id: number;
+  entrant2Id: Id;
   entrant2Participants: Participant[];
   entrant2Score: number | null;
   gameScores: GameScore[];
@@ -170,7 +183,7 @@ export type ChallongeTournament = {
 
 export type StartggGameSelection = {
   characterId: number;
-  entrantId: number;
+  entrantId: Id;
 };
 
 export type StartggGame = {
@@ -184,8 +197,8 @@ export type StartggGame = {
 };
 
 export type StartggSet = {
-  setId: number | string;
-  winnerId: number;
+  setId: Id;
+  winnerId: Id;
   isDQ: boolean;
   gameData: StartggGame[];
 };
@@ -251,6 +264,24 @@ export type SelectedPhaseGroup = {
   winnersTargetPhaseId: number | null;
 };
 
+export type SelectedParryggEvent = {
+  id: string;
+  name: string;
+  hasSiblings: boolean;
+};
+
+export type SelectedParryggPhase = {
+  id: string;
+  name: string;
+  hasSiblings: boolean;
+};
+
+export type SelectedParryggBracket = {
+  id: string;
+  name: string;
+  hasSiblings: boolean;
+};
+
 export type ContextSlot = {
   displayNames: string[];
   ports: number[];
@@ -290,7 +321,7 @@ export type Context = {
     phase: SelectedPhase;
     phaseGroup: SelectedPhaseGroup;
     set: {
-      id?: number | string;
+      id?: Id;
       fullRoundText: string;
       ordinal: number | null;
       round: number;
@@ -310,6 +341,29 @@ export type Context = {
       ordinal: number | null;
       round: number;
       stream: Stream | null;
+    };
+  };
+  parrygg?: {
+    tournament: {
+      name: string;
+      slug: string;
+    };
+    event: {
+      id: string;
+      name: string;
+    };
+    phase: {
+      id: string;
+      name: string;
+    };
+    bracket: {
+      id: string;
+      name: string;
+    };
+    set: {
+      id: string;
+      fullRoundText: string;
+      round: number;
     };
   };
   startMs: number;
@@ -332,6 +386,7 @@ export enum Mode {
   MANUAL = 'manual',
   STARTGG = 'start.gg',
   CHALLONGE = 'challonge',
+  PARRYGG = 'parry.gg',
 }
 
 export type NameWithHighlight = {
@@ -379,3 +434,29 @@ export enum WebSocketServerStatus {
   STOPPED,
   STARTED,
 }
+
+type ParryggTournament = ParryggTournamentPb.AsObject;
+type ParryggEvent = ParryggEventPb.AsObject;
+type ParryggPhase = ParryggPhasePb.AsObject;
+type ParryggSet = ParryggSetPb.AsObject;
+type ParryggBracket = ParryggBracketPb.AsObject & { sets?: Sets };
+type ParryggSetResult = ParryggSetResultPb.AsObject;
+type ParryggSlot = ParryggSlotPb.AsObject;
+type ParryggSeed = ParryggSeedPb.AsObject;
+
+export type {
+  ParryggTournament,
+  ParryggEvent,
+  ParryggPhase,
+  ParryggBracket,
+  ParryggSet,
+  ParryggSetResult,
+  ParryggSlot,
+  ParryggSeed,
+};
+
+export type ParryggSetChain = {
+  event?: SelectedParryggEvent;
+  phase?: SelectedParryggPhase;
+  bracket?: SelectedParryggBracket;
+};

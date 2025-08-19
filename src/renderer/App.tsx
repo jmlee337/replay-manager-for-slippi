@@ -49,12 +49,16 @@ import {
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { GlobalHotKeys } from 'react-hotkeys';
+import { SlugType } from '@parry-gg/client';
 import {
   AdminedTournament,
   ChallongeMatchItem,
   ChallongeTournament,
   Context,
   ContextPlayers,
+  ParryggTournament,
+  ParryggSetChain,
+  ParryggSetResult,
   ContextScore,
   ContextSlot,
   CopyHostFormat,
@@ -62,6 +66,7 @@ import {
   CopySettings,
   EnforcerSetting,
   GuideState,
+  Id,
   InvalidReplay,
   Mode,
   Output,
@@ -94,6 +99,7 @@ import ManualBar from './ManualBar';
 import GuidedDialog from './GuidedDialog';
 import StartggTournamentForm from './StartggTournamentForm';
 import ChallongeTournamentForm from './ChallongeTournamentForm';
+import ParryggTournamentForm from './ParryggTournamentForm';
 import ResetSet from './ResetSet';
 import AssignStream from './AssignStream';
 import getCharacterIcon from './getCharacterIcon';
@@ -175,6 +181,12 @@ const EMPTY_SELECTED_SET_CHAIN: {
   phaseGroup: undefined,
 };
 
+const EMPTY_PARRYGG_SET_CHAIN: ParryggSetChain = {
+  event: undefined,
+  phase: undefined,
+  bracket: undefined,
+};
+
 function hasTimeSkew(replays: Replay[]) {
   if (replays.length < 2) {
     return false;
@@ -188,6 +200,14 @@ function hasTimeSkew(replays: Replay[]) {
     }
   }
   return false;
+}
+
+function getParryggSlug(tournament: ParryggTournament) {
+  return (
+    tournament.slugsList.find(
+      (slug) => slug.type === SlugType.SLUG_TYPE_PRIMARY,
+    )?.slug || ''
+  );
 }
 
 function Hello() {
@@ -257,8 +277,13 @@ function Hello() {
   const [challongeTournaments, setChallongeTournaments] = useState(
     new Map<string, ChallongeTournament>(),
   );
+  const [parryggTournament, setParryggTournament] =
+    useState<ParryggTournament>();
+  const [parryggSlug, setParryggSlug] = useState('');
   const [selectedChallongeTournament, setSelectedChallongeTournament] =
     useState({ name: '', slug: '', tournamentType: '' });
+  const [selectedParryggSetChain, setSelectedParryggSetChain] =
+    useState<ParryggSetChain>({});
   const [manualNames, setManualNames] = useState<string[]>([]);
   useEffect(() => {
     const inner = async () => {
@@ -287,6 +312,8 @@ function Hello() {
         window.electron.getCurrentChallongeTournaments();
       const selectedChallongeTournamentPromise =
         window.electron.getSelectedChallongeTournament();
+      const selectedParryggTournamentPromise =
+        window.electron.getSelectedParryggTournament();
       const manualNamesPromise = window.electron.getManualNames();
 
       // req network
@@ -333,6 +360,12 @@ function Hello() {
         await selectedChallongeTournamentPromise;
       if (initSelectedChallongeTournament) {
         setSelectedChallongeTournament(initSelectedChallongeTournament);
+      }
+      const initSelectedParryggTournament =
+        await selectedParryggTournamentPromise;
+      if (initSelectedParryggTournament) {
+        setParryggTournament(initSelectedParryggTournament);
+        setParryggSlug(getParryggSlug(initSelectedParryggTournament));
       }
       setManualNames(await manualNamesPromise);
 
@@ -630,6 +663,7 @@ function Hello() {
   const tournamentSet =
     (mode === Mode.STARTGG && slug.length > 0) ||
     (mode === Mode.CHALLONGE && challongeTournaments.size > 0) ||
+    (mode === Mode.PARRYGG && slug.length > 0) ||
     (mode === Mode.MANUAL && manualNames.length > 0);
   const copyDirSet = copyDir.length > 0;
   const guideActive =
@@ -777,6 +811,7 @@ function Hello() {
           selectedSet: newSelectedSet,
           startggTournament: newTournament,
           challongeTournaments: newChallongeTournaments,
+          parryggTournament: newParryggTournament,
         },
       ) => {
         if (newSelectedSet) {
@@ -793,6 +828,13 @@ function Hello() {
             setGuideBackdropOpen(false);
           }
           setChallongeTournaments(newChallongeTournaments);
+        }
+        if (newParryggTournament) {
+          if (tournamentSet && copyDirSet && confirmedCopySettings) {
+            setGuideBackdropOpen(false);
+          }
+          setParryggTournament(newParryggTournament);
+          setParryggSlug(getParryggSlug(newParryggTournament));
         }
       },
       selectedSet.id,
@@ -829,6 +871,7 @@ function Hello() {
   });
 
   const [slugDialogOpen, setSlugDialogOpen] = useState(false);
+  const [parryggSlugDialogOpen, setParryggSlugDialogOpen] = useState(false);
   const [gettingTournament, setGettingTournament] = useState(false);
 
   // Challonge tournament view
@@ -847,9 +890,39 @@ function Hello() {
     }
   };
 
+  const getParryggTournament = async (
+    maybeSlug: string,
+    initial: boolean = false,
+  ) => {
+    if (!maybeSlug) {
+      return '';
+    }
+
+    setGettingTournament(true);
+    try {
+      await window.electron.getParryggTournament(
+        maybeSlug,
+        initial && vlerkMode,
+      );
+      if (slug !== maybeSlug) {
+        setSelectedSet(EMPTY_SET);
+        setSelectedParryggSetChain(EMPTY_PARRYGG_SET_CHAIN);
+        await window.electron.setSelectedParryggSetChain(
+          EMPTY_PARRYGG_SET_CHAIN,
+        );
+      }
+      return maybeSlug;
+    } catch (e: any) {
+      showErrorDialog([e.toString()]);
+      return '';
+    } finally {
+      setGettingTournament(false);
+    }
+  };
+
   const findOtherPlayer = (
-    entrantId: number,
-    participantId: number,
+    entrantId: Id,
+    participantId: Id,
   ): PlayerOverrides => {
     const isEntrant1 = entrantId === selectedSet.entrant1Id;
     const isTeams = selectedSet.entrant1Participants.length > 1;
@@ -926,8 +999,8 @@ function Hello() {
   // batch chips
   const onClickOrDrop = (
     displayName: string,
-    entrantId: number,
-    participantId: number,
+    entrantId: Id,
+    participantId: Id,
     prefix: string,
     pronouns: string,
     index: number,
@@ -1035,8 +1108,8 @@ function Hello() {
         style={{ width: '25%' }}
         onClickOrDrop={(
           displayName: string,
-          entrantId: number,
-          participantId: number,
+          entrantId: Id,
+          participantId: Id,
           prefix: string,
           pronouns: string,
         ) =>
@@ -1137,6 +1210,8 @@ function Hello() {
           selectedChallongeTournament.slug,
           originalSet.id as number,
         );
+      } else if (mode === Mode.PARRYGG) {
+        await window.electron.startParryggSet(originalSet.id as string);
       }
     } catch (e: any) {
       showErrorDialog([e.toString()]);
@@ -1166,26 +1241,39 @@ function Hello() {
     return updatedSet;
   };
 
+  const reportParryggSet = async (
+    result: ParryggSetResult,
+    originalSet: Set,
+  ) => {
+    const updatedSet = await window.electron.reportParryggSet(
+      parryggSlug,
+      originalSet.id as string,
+      result,
+    );
+    resetDq();
+    return updatedSet;
+  };
+
   // copy
   type NameObj = {
     characterName: string;
     displayName: string;
-    entrantId: number;
-    participantId: number;
+    entrantId: Id;
+    participantId: Id;
     nametag: string;
   };
   type NamesObj = {
     characterNames: Map<string, number>;
     displayName: string;
-    entrantId: number;
-    participantId: number;
+    entrantId: Id;
+    participantId: Id;
     nametags: Map<string, number>;
   };
   type CombinedNameObj = {
     characterNames: string[];
     displayName: string;
-    entrantId: number;
-    participantId: number;
+    entrantId: Id;
+    participantId: Id;
     nametags: string[];
   };
 
@@ -1196,14 +1284,14 @@ function Hello() {
 
   const onCopy = async (
     updatedSetFields?: {
-      id: number | string;
+      id: Id;
       completedAtMs: number;
       stream: Stream | null;
     },
     violators?: {
       checkNames: Map<string, boolean>;
       displayName: string;
-      entrantId: number;
+      entrantId: Id;
     }[],
   ) => {
     setIsCopying(true);
@@ -1243,7 +1331,7 @@ function Hello() {
               characterName: characterNames.get(player.externalCharacterId)!,
               displayName:
                 player.playerOverrides.displayName || player.displayName,
-              entrantId: player.playerOverrides.entrantId,
+              entrantId: player.playerOverrides.entrantId as number,
               participantId: player.playerOverrides.participantId,
               nametag: player.nametag,
             };
@@ -1419,8 +1507,16 @@ function Hello() {
         subdir = subdir.replace('{roundLong}', roundLong);
         subdir = subdir.replace('{games}', selectedReplays.length.toString(10));
         // do last in case tournament/event/phase/phase group names contain template strings LOL
-        subdir = subdir.replace('{tournamentName}', tournament.name);
-        subdir = subdir.replace('{tournamentSlug}', tournament.slug);
+        if (mode === Mode.PARRYGG) {
+          subdir = subdir.replace(
+            '{tournamentName}',
+            parryggTournament?.name || '',
+          );
+          subdir = subdir.replace('{tournamentSlug}', parryggSlug || '');
+        } else {
+          subdir = subdir.replace('{tournamentName}', tournament.name);
+          subdir = subdir.replace('{tournamentSlug}', tournament.slug);
+        }
         if (mode === Mode.STARTGG) {
           subdir = subdir.replace(
             '{event}',
@@ -1439,6 +1535,26 @@ function Hello() {
             phaseOrEvent = selectedSetChain.phase.name;
           } else if (selectedSetChain.event) {
             phaseOrEvent = selectedSetChain.event.name;
+          }
+          subdir = subdir.replace('{phaseOrEvent}', phaseOrEvent);
+        } else if (mode === Mode.PARRYGG) {
+          subdir = subdir.replace(
+            '{event}',
+            selectedParryggSetChain.event?.name ?? '',
+          );
+          subdir = subdir.replace(
+            '{phase}',
+            selectedParryggSetChain.phase?.name ?? '',
+          );
+          subdir = subdir.replace(
+            '{phaseGroup}',
+            selectedParryggSetChain.bracket?.name ?? '',
+          );
+          let phaseOrEvent = '';
+          if (selectedParryggSetChain.phase?.hasSiblings) {
+            phaseOrEvent = selectedParryggSetChain.phase.name;
+          } else if (selectedParryggSetChain.event) {
+            phaseOrEvent = selectedParryggSetChain.event.name;
           }
           subdir = subdir.replace('{phaseOrEvent}', phaseOrEvent);
         }
@@ -1622,6 +1738,30 @@ function Hello() {
                     : selectedSet.stream,
                 },
               };
+            } else if (mode === Mode.PARRYGG && selectedParryggSetChain) {
+              context.parrygg = {
+                tournament: {
+                  name: parryggTournament?.name || '',
+                  slug: parryggSlug || '',
+                },
+                event: {
+                  id: selectedParryggSetChain.event?.id || '',
+                  name: selectedParryggSetChain.event?.name || '',
+                },
+                phase: {
+                  id: selectedParryggSetChain.phase?.id || '',
+                  name: selectedParryggSetChain.phase?.name || '',
+                },
+                bracket: {
+                  id: selectedParryggSetChain.bracket?.id || '',
+                  name: selectedParryggSetChain.bracket?.name || '',
+                },
+                set: {
+                  id: setId as string,
+                  fullRoundText: selectedSet.fullRoundText,
+                  round: selectedSet.round,
+                },
+              };
             }
           }
         }
@@ -1655,6 +1795,8 @@ function Hello() {
           poolName = selectedSetChain.phaseGroup?.name ?? '';
         } else if (mode === Mode.CHALLONGE) {
           poolName = selectedChallongeTournament.name;
+        } else if (mode === Mode.PARRYGG && selectedParryggSetChain) {
+          poolName = selectedParryggSetChain.bracket?.name ?? '';
         }
         await window.electron.appendEnforcerResult(
           violators
@@ -1973,6 +2115,70 @@ function Hello() {
                 </Dialog>
               </Stack>
             )}
+            {mode === Mode.PARRYGG && (
+              <Stack direction="row">
+                <InputBase
+                  disabled
+                  size="small"
+                  value={slug || 'Set parry.gg tournament...'}
+                  style={{ flexGrow: 1 }}
+                />
+                <Tooltip arrow title="Refresh tournament and all descendants">
+                  <div>
+                    <IconButton
+                      disabled={gettingTournament}
+                      onClick={() => getParryggTournament(slug)}
+                    >
+                      {gettingTournament ? (
+                        <CircularProgress size="24px" />
+                      ) : (
+                        <Refresh />
+                      )}
+                    </IconButton>
+                  </div>
+                </Tooltip>
+                <Tooltip arrow title="Set parry.gg tournament">
+                  <IconButton
+                    aria-label="Set parry.gg tournament"
+                    onClick={() => setParryggSlugDialogOpen(true)}
+                  >
+                    <Edit />
+                  </IconButton>
+                </Tooltip>
+                <Dialog
+                  open={parryggSlugDialogOpen}
+                  onClose={() => {
+                    setParryggSlugDialogOpen(false);
+                  }}
+                >
+                  <ParryggTournamentForm
+                    gettingAdminedTournaments={gettingAdminedTournaments}
+                    adminedTournaments={adminedTournaments}
+                    gettingTournament={gettingTournament}
+                    getAdminedTournaments={async () => {
+                      setGettingAdminedTournaments(true);
+                      try {
+                        setAdminedTournaments(
+                          await window.electron.getTournaments(),
+                        );
+                      } catch (e: unknown) {
+                        showErrorDialog([
+                          `Unable to fetch admined tournaments: ${
+                            e instanceof Error ? e.message : e
+                          }`,
+                        ]);
+                      }
+                      setGettingAdminedTournaments(false);
+                    }}
+                    getTournament={getParryggTournament}
+                    setSlug={setParryggSlug}
+                    close={() => {
+                      setParryggSlugDialogOpen(false);
+                    }}
+                  />
+                </Dialog>
+              </Stack>
+            )}
             {mode === Mode.MANUAL && (
               <ManualBar
                 manualDialogOpen={manualDialogOpen}
@@ -2171,10 +2377,13 @@ function Hello() {
             vlerkMode={vlerkMode}
             selectedSetChain={selectedSetChain}
             setSelectedSetChain={setSelectedSetChain}
+            selectedParryggSetChain={selectedParryggSetChain}
+            setSelectedParryggSetChain={setSelectedParryggSetChain}
             startggTournament={tournament}
             challongeTournaments={challongeTournaments}
             getChallongeTournament={getChallongeTournament}
             setSelectedChallongeTournament={setSelectedChallongeTournament}
+            parryggTournament={parryggTournament}
             manualNames={manualNames}
             selectedChipData={selectedChipData}
             setSelectedChipData={setSelectedChipData}
@@ -2610,6 +2819,7 @@ function Hello() {
                 mode={mode}
                 reportChallongeSet={reportChallongeSet}
                 reportStartggSet={reportStartggSet}
+                reportParryggSet={reportParryggSet}
                 selectedSet={selectedSet}
               />
               <SetControls
@@ -2618,6 +2828,7 @@ function Hello() {
                 deleteReplays={isUsb ? deleteDir : deleteSelected}
                 reportChallongeSet={reportChallongeSet}
                 reportStartggSet={reportStartggSet}
+                reportParryggSet={reportParryggSet}
                 setReportSettings={async (
                   newReportSettings: ReportSettings,
                 ) => {
