@@ -20,6 +20,7 @@ import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
 import { format } from 'date-fns';
+import { MatchResult } from '@parry-gg/client';
 import {
   AdminedTournament,
   ChallongeMatchItem,
@@ -108,7 +109,6 @@ import {
   stopListening,
 } from './host';
 import { assertNumber, assertString, resolveHtmlPath } from './util';
-import { MatchResult } from '@parry-gg/client';
 
 type ReplayDir = {
   dir: string;
@@ -606,7 +606,10 @@ export default function setupIPCs(
           throw e;
         }
       }
-      await getPhaseGroup(sggApiKey, assertNumber(getSelectedSetChain().phaseGroup!.id));
+      await getPhaseGroup(
+        sggApiKey,
+        assertNumber(getSelectedSetChain().phaseGroup!.id),
+      );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -639,7 +642,10 @@ export default function setupIPCs(
           throw e;
         }
       }
-      await getPhaseGroup(sggApiKey, assertNumber(getSelectedSetChain().phaseGroup!.id));
+      await getPhaseGroup(
+        sggApiKey,
+        assertNumber(getSelectedSetChain().phaseGroup!.id),
+      );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -656,7 +662,10 @@ export default function setupIPCs(
       }
 
       await resetSet(sggApiKey, setId);
-      await getPhaseGroup(sggApiKey, assertNumber(getSelectedSetChain().phaseGroup!.id));
+      await getPhaseGroup(
+        sggApiKey,
+        assertNumber(getSelectedSetChain().phaseGroup!.id),
+      );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -689,7 +698,10 @@ export default function setupIPCs(
           throw e;
         }
       }
-      await getPhaseGroup(sggApiKey, assertNumber(getSelectedSetChain().phaseGroup!.id));
+      await getPhaseGroup(
+        sggApiKey,
+        assertNumber(getSelectedSetChain().phaseGroup!.id),
+      );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -776,7 +788,10 @@ export default function setupIPCs(
       }
 
       const updatedSet = await updateSet(sggApiKey, set);
-      await getPhaseGroup(sggApiKey, assertNumber(getSelectedSetChain().phaseGroup!.id));
+      await getPhaseGroup(
+        sggApiKey,
+        assertNumber(getSelectedSetChain().phaseGroup!.id),
+      );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -916,9 +931,12 @@ export default function setupIPCs(
   ipcMain.removeHandler('setSelectedParryggSetChain');
   ipcMain.handle(
     'setSelectedParryggSetChain',
-    (event: IpcMainInvokeEvent, eventId: string,
+    (
+      event: IpcMainInvokeEvent,
+      eventId: string,
       phaseId: string,
-      bracketId: string) => {
+      bracketId: string,
+    ) => {
       setSelectedParryggSetChain(eventId, phaseId, bracketId);
     },
   );

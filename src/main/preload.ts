@@ -1,4 +1,5 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer } from 'electron';
+import { Tournament as ParryggTournament, MatchResult } from '@parry-gg/client';
 import {
   AdminedTournament,
   ChallongeMatchItem,
@@ -27,7 +28,6 @@ import {
   Station,
   RendererWave,
 } from '../common/types';
-import { Tournament as ParryggTournament, Match, MatchResult } from '@parry-gg/client';
 
 const electronHandler = {
   getReplaysDir: (): Promise<string> => ipcRenderer.invoke('getReplaysDir'),
@@ -190,22 +190,30 @@ const electronHandler = {
   getParryggKey: (): Promise<string> => ipcRenderer.invoke('getParryggKey'),
   setParryggKey: (parryggKey: string): Promise<void> =>
     ipcRenderer.invoke('setParryggKey', parryggKey),
-  getAdminedParryggTournaments: (): Promise<Map<string, ParryggTournament.AsObject>> =>
-    ipcRenderer.invoke('getAdminedParryggTournaments'),
-  getCurrentParryggTournament: (): Promise<ParryggTournament.AsObject | undefined> =>
-    ipcRenderer.invoke('getCurrentParryggTournament'),
+  getAdminedParryggTournaments: (): Promise<
+    Map<string, ParryggTournament.AsObject>
+  > => ipcRenderer.invoke('getAdminedParryggTournaments'),
+  getCurrentParryggTournament: (): Promise<
+    ParryggTournament.AsObject | undefined
+  > => ipcRenderer.invoke('getCurrentParryggTournament'),
   setSelectedParryggTournament: (slug: string): Promise<void> =>
     ipcRenderer.invoke('setSelectedParryggTournament', slug),
-  setSelectedParryggSetChain: (eventId: string,
+  setSelectedParryggSetChain: (
+    eventId: string,
     phaseId: string,
-    bracketId: string): Promise<void> =>
-    ipcRenderer.invoke('setSelectedParryggSetChain', eventId, phaseId, bracketId),
-  getSelectedParryggSet: ():  Promise<{
+    bracketId: string,
+  ): Promise<void> =>
+    ipcRenderer.invoke(
+      'setSelectedParryggSetChain',
+      eventId,
+      phaseId,
+      bracketId,
+    ),
+  getSelectedParryggSet: (): Promise<{
     event?: SelectedEvent;
     phase?: SelectedPhase;
     phaseGroup?: SelectedPhaseGroup;
-  }> =>
-    ipcRenderer.invoke('getSelectedParryggSet'),
+  }> => ipcRenderer.invoke('getSelectedParryggSet'),
   setSelectedParryggSetId: (setId: string): Promise<void> =>
     ipcRenderer.invoke('setSelectedParryggSetId', setId),
   getParryggTournament: (slug: string, recursive?: boolean): Promise<void> =>

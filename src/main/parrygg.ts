@@ -24,7 +24,7 @@ import {
   Match,
   Phase,
   Event,
-  Seed
+  Seed,
 } from '@parry-gg/client';
 import XMLHttpRequest from 'xhr2';
 import {
@@ -270,9 +270,9 @@ export function getSelectedParryggSetChain(): {
   const selectedEvent = idToEvent.get(selectedEventId!);
   const selectedPhase = idToPhase.get(selectedPhaseId!);
   const selectedBracket = idToBracket.get(selectedBracketId!);
-  let event: SelectedEvent|undefined;
-  let phase: SelectedPhase|undefined;
-  let bracket: SelectedPhaseGroup|undefined;
+  let event: SelectedEvent | undefined;
+  let phase: SelectedPhase | undefined;
+  let bracket: SelectedPhaseGroup | undefined;
   if (currentTournament) {
     if (selectedEvent) {
       event = {
@@ -297,7 +297,7 @@ export function getSelectedParryggSetChain(): {
         hasSiblings: phaseIdToBracketIds.get(selectedPhaseId!)!.length > 1,
         bracketType: selectedBracket.type,
         waveId: null,
-        winnersTargetPhaseId: null
+        winnersTargetPhaseId: null,
       };
     }
   }

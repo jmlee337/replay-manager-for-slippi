@@ -1,4 +1,4 @@
-import {Bracket as ParryggBracketPb} from '@parry-gg/client';
+import { Bracket as ParryggBracketPb } from '@parry-gg/client';
 
 export type Id = string | number;
 
