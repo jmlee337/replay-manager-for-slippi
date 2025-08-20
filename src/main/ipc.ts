@@ -484,6 +484,18 @@ export default function setupIPCs(
     ? (store.get('sggApiKey') as string)
     : '';
 
+  ipcMain.removeHandler('getStartggKey');
+  ipcMain.handle('getStartggKey', () => sggApiKey);
+
+  ipcMain.removeHandler('setStartggKey');
+  ipcMain.handle(
+    'setStartggKey',
+    (event: IpcMainInvokeEvent, newSggApiKey: string) => {
+      store.set('sggApiKey', newSggApiKey);
+      sggApiKey = newSggApiKey;
+    },
+  );
+
   ipcMain.removeHandler('getCurrentTournament');
   ipcMain.handle('getCurrentTournament', getCurrentTournament);
 
@@ -502,15 +514,6 @@ export default function setupIPCs(
       setSelectedSetChain(eventId, phaseId, phaseGroupId);
     },
   );
-
-  ipcMain.removeHandler('getPoolsByWave');
-  ipcMain.handle('getPoolsByWave', () => {
-    if (!sggApiKey) {
-      throw new Error('Please set start.gg API key');
-    }
-
-    return getPoolsByWave(sggApiKey);
-  });
 
   ipcMain.removeHandler('getTournament');
   ipcMain.handle(
@@ -782,17 +785,14 @@ export default function setupIPCs(
     },
   );
 
-  ipcMain.removeHandler('getStartggKey');
-  ipcMain.handle('getStartggKey', () => sggApiKey);
+  ipcMain.removeHandler('getPoolsByWave');
+  ipcMain.handle('getPoolsByWave', () => {
+    if (!sggApiKey) {
+      throw new Error('Please set start.gg API key');
+    }
 
-  ipcMain.removeHandler('setStartggKey');
-  ipcMain.handle(
-    'setStartggKey',
-    (event: IpcMainInvokeEvent, newSggApiKey: string) => {
-      store.set('sggApiKey', newSggApiKey);
-      sggApiKey = newSggApiKey;
-    },
-  );
+    return getPoolsByWave(sggApiKey);
+  });
 
   let challongeApiKey = store.has('challongeApiKey')
     ? (store.get('challongeApiKey') as string)
@@ -838,6 +838,67 @@ export default function setupIPCs(
     },
   );
 
+  ipcMain.removeHandler('getChallongeTournament');
+  ipcMain.handle(
+    'getChallongeTournament',
+    async (event: IpcMainInvokeEvent, slug: string) => {
+      if (!challongeApiKey) {
+        throw new Error('Please set Challonge API key.');
+      }
+
+      await getChallongeTournament(challongeApiKey, slug);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedChallongeSet(),
+        challongeTournaments: getCurrentTournaments(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('startChallongeSet');
+  ipcMain.handle(
+    'startChallongeSet',
+    async (event: IpcMainInvokeEvent, slug: string, id: number) => {
+      if (!challongeApiKey) {
+        throw new Error('Please set Challonge API key.');
+      }
+
+      await startChallongeSet(slug, id, challongeApiKey);
+      await getChallongeTournament(challongeApiKey, slug);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedChallongeSet(),
+        challongeTournaments: getCurrentTournaments(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('reportChallongeSet');
+  ipcMain.handle(
+    'reportChallongeSet',
+    async (
+      event: IpcMainInvokeEvent,
+      slug: string,
+      id: number,
+      items: ChallongeMatchItem[],
+    ) => {
+      if (!challongeApiKey) {
+        throw new Error('Please set Challonge API key.');
+      }
+
+      const updatedSet = await reportChallongeSet(
+        slug,
+        id,
+        items,
+        challongeApiKey,
+      );
+      await getChallongeTournament(challongeApiKey, slug);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedChallongeSet(),
+        challongeTournaments: getCurrentTournaments(),
+      });
+      return updatedSet;
+    },
+  );
+
   ipcMain.removeHandler('getAdminedParryggTournaments');
   ipcMain.handle('getAdminedParryggTournaments', getAdminedParryggTournaments);
 
@@ -870,22 +931,6 @@ export default function setupIPCs(
     'setSelectedParryggSetId',
     (event: IpcMainInvokeEvent, setId: string) => {
       setSelectedParryggSetId(setId);
-    },
-  );
-
-  ipcMain.removeHandler('getChallongeTournament');
-  ipcMain.handle(
-    'getChallongeTournament',
-    async (event: IpcMainInvokeEvent, slug: string) => {
-      if (!challongeApiKey) {
-        throw new Error('Please set Challonge API key.');
-      }
-
-      await getChallongeTournament(challongeApiKey, slug);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedChallongeSet(),
-        challongeTournaments: getCurrentTournaments(),
-      });
     },
   );
 
@@ -953,23 +998,6 @@ export default function setupIPCs(
     },
   );
 
-  ipcMain.removeHandler('startChallongeSet');
-  ipcMain.handle(
-    'startChallongeSet',
-    async (event: IpcMainInvokeEvent, slug: string, id: number) => {
-      if (!challongeApiKey) {
-        throw new Error('Please set Challonge API key.');
-      }
-
-      await startChallongeSet(slug, id, challongeApiKey);
-      await getChallongeTournament(challongeApiKey, slug);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedChallongeSet(),
-        challongeTournaments: getCurrentTournaments(),
-      });
-    },
-  );
-
   ipcMain.removeHandler('startParryggSet');
   ipcMain.handle(
     'startParryggSet',
@@ -987,34 +1015,6 @@ export default function setupIPCs(
         selectedSet: getSelectedParryggSet(),
         parryggTournament: getCurrentParryggTournament(),
       });
-    },
-  );
-
-  ipcMain.removeHandler('reportChallongeSet');
-  ipcMain.handle(
-    'reportChallongeSet',
-    async (
-      event: IpcMainInvokeEvent,
-      slug: string,
-      id: number,
-      items: ChallongeMatchItem[],
-    ) => {
-      if (!challongeApiKey) {
-        throw new Error('Please set Challonge API key.');
-      }
-
-      const updatedSet = await reportChallongeSet(
-        slug,
-        id,
-        items,
-        challongeApiKey,
-      );
-      await getChallongeTournament(challongeApiKey, slug);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedChallongeSet(),
-        challongeTournaments: getCurrentTournaments(),
-      });
-      return updatedSet;
     },
   );
 
