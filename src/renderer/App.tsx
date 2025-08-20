@@ -49,16 +49,17 @@ import {
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { GlobalHotKeys } from 'react-hotkeys';
-import { SlugType } from '@parry-gg/client';
+import {
+  SlugType,
+  Tournament as ParryggTournament,
+  MatchResult,
+} from '@parry-gg/client';
 import {
   AdminedTournament,
   ChallongeMatchItem,
   ChallongeTournament,
   Context,
   ContextPlayers,
-  ParryggTournament,
-  ParryggSetChain,
-  ParryggSetResult,
   ContextScore,
   ContextSlot,
   CopyHostFormat,
@@ -181,12 +182,6 @@ const EMPTY_SELECTED_SET_CHAIN: {
   phaseGroup: undefined,
 };
 
-const EMPTY_PARRYGG_SET_CHAIN: ParryggSetChain = {
-  event: undefined,
-  phase: undefined,
-  bracket: undefined,
-};
-
 function hasTimeSkew(replays: Replay[]) {
   if (replays.length < 2) {
     return false;
@@ -202,7 +197,7 @@ function hasTimeSkew(replays: Replay[]) {
   return false;
 }
 
-function getParryggSlug(tournament: ParryggTournament) {
+function getParryggSlug(tournament: ParryggTournament.AsObject) {
   return (
     tournament.slugsList.find(
       (slug) => slug.type === SlugType.SLUG_TYPE_PRIMARY,
@@ -278,12 +273,13 @@ function Hello() {
     new Map<string, ChallongeTournament>(),
   );
   const [parryggTournament, setParryggTournament] =
-    useState<ParryggTournament>();
+    useState<ParryggTournament.AsObject>();
   const [parryggSlug, setParryggSlug] = useState('');
   const [selectedChallongeTournament, setSelectedChallongeTournament] =
     useState({ name: '', slug: '', tournamentType: '' });
-  const [selectedParryggSetChain, setSelectedParryggSetChain] =
-    useState<ParryggSetChain>({});
+  const [selectedParryggSetChain, setSelectedParryggSetChain] = useState(
+    EMPTY_SELECTED_SET_CHAIN,
+  );
   const [manualNames, setManualNames] = useState<string[]>([]);
   useEffect(() => {
     const inner = async () => {
@@ -313,7 +309,7 @@ function Hello() {
       const selectedChallongeTournamentPromise =
         window.electron.getSelectedChallongeTournament();
       const selectedParryggTournamentPromise =
-        window.electron.getSelectedParryggTournament();
+        window.electron.getCurrentParryggTournament();
       const manualNamesPromise = window.electron.getManualNames();
 
       // req network
@@ -906,10 +902,8 @@ function Hello() {
       );
       if (slug !== maybeSlug) {
         setSelectedSet(EMPTY_SET);
-        setSelectedParryggSetChain(EMPTY_PARRYGG_SET_CHAIN);
-        await window.electron.setSelectedParryggSetChain(
-          EMPTY_PARRYGG_SET_CHAIN,
-        );
+        setSelectedParryggSetChain(EMPTY_SELECTED_SET_CHAIN);
+        await window.electron.setSelectedParryggSetChain('', '', '');
       }
       return maybeSlug;
     } catch (e: any) {
@@ -1242,7 +1236,7 @@ function Hello() {
   };
 
   const reportParryggSet = async (
-    result: ParryggSetResult,
+    result: MatchResult.AsObject,
     originalSet: Set,
   ) => {
     const updatedSet = await window.electron.reportParryggSet(
@@ -1517,44 +1511,20 @@ function Hello() {
           subdir = subdir.replace('{tournamentName}', tournament.name);
           subdir = subdir.replace('{tournamentSlug}', tournament.slug);
         }
-        if (mode === Mode.STARTGG) {
-          subdir = subdir.replace(
-            '{event}',
-            selectedSetChain.event?.name ?? '',
-          );
-          subdir = subdir.replace(
-            '{phase}',
-            selectedSetChain.phase?.name ?? '',
-          );
+        if (mode === Mode.STARTGG || mode === Mode.PARRYGG) {
+          const selectedChain =
+            mode === Mode.STARTGG ? selectedSetChain : selectedParryggSetChain;
+          subdir = subdir.replace('{event}', selectedChain.event?.name ?? '');
+          subdir = subdir.replace('{phase}', selectedChain.phase?.name ?? '');
           subdir = subdir.replace(
             '{phaseGroup}',
-            selectedSetChain.phaseGroup?.name ?? '',
+            selectedChain.phaseGroup?.name ?? '',
           );
           let phaseOrEvent = '';
-          if (selectedSetChain.phase?.hasSiblings) {
-            phaseOrEvent = selectedSetChain.phase.name;
-          } else if (selectedSetChain.event) {
-            phaseOrEvent = selectedSetChain.event.name;
-          }
-          subdir = subdir.replace('{phaseOrEvent}', phaseOrEvent);
-        } else if (mode === Mode.PARRYGG) {
-          subdir = subdir.replace(
-            '{event}',
-            selectedParryggSetChain.event?.name ?? '',
-          );
-          subdir = subdir.replace(
-            '{phase}',
-            selectedParryggSetChain.phase?.name ?? '',
-          );
-          subdir = subdir.replace(
-            '{phaseGroup}',
-            selectedParryggSetChain.bracket?.name ?? '',
-          );
-          let phaseOrEvent = '';
-          if (selectedParryggSetChain.phase?.hasSiblings) {
-            phaseOrEvent = selectedParryggSetChain.phase.name;
-          } else if (selectedParryggSetChain.event) {
-            phaseOrEvent = selectedParryggSetChain.event.name;
+          if (selectedChain.phase?.hasSiblings) {
+            phaseOrEvent = selectedChain.phase.name;
+          } else if (selectedChain.event) {
+            phaseOrEvent = selectedChain.event.name;
           }
           subdir = subdir.replace('{phaseOrEvent}', phaseOrEvent);
         }
@@ -1739,27 +1709,26 @@ function Hello() {
                 },
               };
             } else if (mode === Mode.PARRYGG && selectedParryggSetChain) {
-              context.parrygg = {
+              context.startgg = {
                 tournament: {
                   name: parryggTournament?.name || '',
-                  slug: parryggSlug || '',
+                  location: parryggTournament?.venueAddress || '',
                 },
-                event: {
-                  id: selectedParryggSetChain.event?.id || '',
-                  name: selectedParryggSetChain.event?.name || '',
-                },
-                phase: {
-                  id: selectedParryggSetChain.phase?.id || '',
-                  name: selectedParryggSetChain.phase?.name || '',
-                },
-                bracket: {
-                  id: selectedParryggSetChain.bracket?.id || '',
-                  name: selectedParryggSetChain.bracket?.name || '',
-                },
+                event: selectedParryggSetChain.event!,
+                phase: selectedParryggSetChain.phase!,
+                phaseGroup: selectedParryggSetChain.phaseGroup!,
                 set: {
-                  id: setId as string,
+                  id:
+                    typeof setId === 'string' ||
+                    (Number.isInteger(setId) && setId > 0)
+                      ? setId
+                      : undefined,
                   fullRoundText: selectedSet.fullRoundText,
+                  ordinal: selectedSet.ordinal,
                   round: selectedSet.round,
+                  stream: updatedSetFields
+                    ? updatedSetFields.stream
+                    : selectedSet.stream,
                 },
               };
             }
@@ -1796,7 +1765,7 @@ function Hello() {
         } else if (mode === Mode.CHALLONGE) {
           poolName = selectedChallongeTournament.name;
         } else if (mode === Mode.PARRYGG && selectedParryggSetChain) {
-          poolName = selectedParryggSetChain.bracket?.name ?? '';
+          poolName = selectedParryggSetChain.phaseGroup?.name ?? '';
         }
         await window.electron.appendEnforcerResult(
           violators

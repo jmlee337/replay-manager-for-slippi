@@ -1,4 +1,4 @@
-import { SlotState } from '@parry-gg/client';
+import { MatchResult, SlotState } from '@parry-gg/client';
 import { Backup, Report, VideogameAssetOff } from '@mui/icons-material';
 import {
   Avatar,
@@ -25,7 +25,6 @@ import {
   EnforceStatus,
   Id,
   Mode,
-  ParryggSetResult,
   Player,
   Replay,
   ReportSettings,
@@ -245,7 +244,7 @@ export default function SetControls({
     originalSet: Set,
   ) => Promise<Set | undefined>;
   reportParryggSet: (
-    result: ParryggSetResult,
+    result: MatchResult.AsObject,
     originalSet: Set,
   ) => Promise<Set | undefined>;
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
@@ -354,9 +353,8 @@ export default function SetControls({
 
     const gameData: StartggGame[] = [];
     selectedReplays.forEach((replay, i) => {
-      const gameWinnerId: Id | undefined = replay.players.find(
-        (player) => player.isWinner,
-      )?.playerOverrides.entrantId;
+      const gameWinnerId = replay.players.find((player) => player.isWinner)
+        ?.playerOverrides.entrantId;
       if (!gameWinnerId) {
         return;
       }
@@ -431,7 +429,7 @@ export default function SetControls({
     },
   ];
 
-  const getParryggSetResult = (): ParryggSetResult => {
+  const getMatchResult = (): MatchResult.AsObject => {
     const entrant1Dq = isDq && dqId === set.entrant1Id;
     const entrant2Dq = isDq && dqId === set.entrant2Id;
 
@@ -908,10 +906,7 @@ export default function SetControls({
                     challongeMatchItems,
                   );
                 } else if (mode === Mode.PARRYGG) {
-                  updatedSet = await reportParryggSet(
-                    getParryggSetResult(),
-                    set,
-                  );
+                  updatedSet = await reportParryggSet(getMatchResult(), set);
                 }
                 if (reportSettings.alsoCopy) {
                   const entrantIdToDisplayNameAndCheckNames = new Map<

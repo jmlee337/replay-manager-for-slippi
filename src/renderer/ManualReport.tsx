@@ -13,17 +13,17 @@ import {
 } from '@mui/material';
 import { HourglassTop, SaveAs } from '@mui/icons-material';
 import styled from '@emotion/styled';
-import { SlotState } from '@parry-gg/client';
+import { MatchResult, SlotState } from '@parry-gg/client';
 import {
   ChallongeMatchItem,
   Id,
   Mode,
-  ParryggSetResult,
   Set,
   StartggGame,
   StartggSet,
   State,
 } from '../common/types';
+import { assertNumber } from '../main/util';
 
 const EntrantNames = styled(Stack)`
   flex-grow: 1;
@@ -55,7 +55,7 @@ export default function ManualReport({
     originalSet: Set,
   ) => Promise<Set | undefined>;
   reportParryggSet: (
-    result: ParryggSetResult,
+    result: MatchResult.AsObject,
     originalSet: Set,
   ) => Promise<Set | undefined>;
   selectedSet: Set;
@@ -131,9 +131,9 @@ export default function ManualReport({
     for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
       gameData.push({
         gameNum: n,
-        winnerId: (n <= entrant1Score
-          ? selectedSet.entrant1Id
-          : selectedSet.entrant2Id) as number,
+        winnerId: assertNumber(
+          n <= entrant1Score ? selectedSet.entrant1Id : selectedSet.entrant2Id,
+        ),
         entrant1Score: 0,
         entrant2Score: 0,
         selections: [],
@@ -143,9 +143,9 @@ export default function ManualReport({
     for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
       gameData.push({
         gameNum: n,
-        winnerId: (n <= entrant2Score
-          ? selectedSet.entrant2Id
-          : selectedSet.entrant1Id) as number,
+        winnerId: assertNumber(
+          n <= entrant2Score ? selectedSet.entrant2Id : selectedSet.entrant1Id,
+        ),
         entrant1Score: 0,
         entrant2Score: 0,
         selections: [],
@@ -173,7 +173,7 @@ export default function ManualReport({
     },
   ];
 
-  const parryggSetResult: ParryggSetResult = {
+  const parryggSetResult: MatchResult.AsObject = {
     slotsList: [
       {
         slot: 0,
@@ -588,7 +588,7 @@ export default function ManualReport({
                   await reportStartggSet(startggSet, selectedSet);
                 } else if (mode === Mode.CHALLONGE) {
                   await reportChallongeSet(
-                    selectedSet.id as number,
+                    assertNumber(selectedSet.id),
                     challongeMatchItems,
                   );
                 } else if (mode === Mode.PARRYGG) {

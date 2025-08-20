@@ -9,7 +9,7 @@ import { CSSProperties, DragEvent, ReactElement } from 'react';
 import { Id, NameWithHighlight, PlayerOverrides } from '../common/types';
 import { highlightColor } from '../common/constants';
 
-function parseJsonId(id: string): Id {
+function parseId(id: string): Id {
   try {
     const parsed = Number(id);
     return Number.isNaN(parsed) ? id : parsed;
@@ -191,8 +191,8 @@ export function DroppableChip({
     const json = JSON.parse(event.dataTransfer.getData('text/plain'));
     onClickOrDrop(
       json.displayName,
-      parseJsonId(json.entrantId),
-      parseJsonId(json.participantId),
+      parseId(json.entrantId),
+      parseId(json.participantId),
       json.prefix,
       json.pronouns,
     );

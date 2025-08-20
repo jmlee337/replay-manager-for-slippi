@@ -9,9 +9,6 @@ import {
   InvalidReplay,
   Mode,
   Output,
-  ParryggSetResult,
-  ParryggSet,
-  ParryggTournament,
   Replay,
   ReportSettings,
   SelectedEvent,
@@ -29,8 +26,8 @@ import {
   EnforcePlayerFailure,
   Station,
   RendererWave,
-  ParryggSetChain,
 } from '../common/types';
+import { Tournament as ParryggTournament, Match, MatchResult } from '@parry-gg/client';
 
 const electronHandler = {
   getReplaysDir: (): Promise<string> => ipcRenderer.invoke('getReplaysDir'),
@@ -181,15 +178,21 @@ const electronHandler = {
     ipcRenderer.invoke('setSelectedChallongeTournament', slug),
   getChallongeTournament: (slug: string): Promise<void> =>
     ipcRenderer.invoke('getChallongeTournament', slug),
-  getCurrentParryggTournaments: (): Promise<Map<string, ParryggTournament>> =>
-    ipcRenderer.invoke('getCurrentParryggTournaments'),
-  getSelectedParryggTournament: (): Promise<ParryggTournament | undefined> =>
-    ipcRenderer.invoke('getSelectedParryggTournament'),
+  getAdminedParryggTournaments: (): Promise<Map<string, ParryggTournament.AsObject>> =>
+    ipcRenderer.invoke('getAdminedParryggTournaments'),
+  getCurrentParryggTournament: (): Promise<ParryggTournament.AsObject | undefined> =>
+    ipcRenderer.invoke('getCurrentParryggTournament'),
   setSelectedParryggTournament: (slug: string): Promise<void> =>
     ipcRenderer.invoke('setSelectedParryggTournament', slug),
-  setSelectedParryggSetChain: (setChain: ParryggSetChain): Promise<void> =>
-    ipcRenderer.invoke('setSelectedParryggSetChain', setChain),
-  getSelectedParryggSet: (): Promise<ParryggSet | undefined> =>
+  setSelectedParryggSetChain: (eventId: string,
+    phaseId: string,
+    bracketId: string): Promise<void> =>
+    ipcRenderer.invoke('setSelectedParryggSetChain', eventId, phaseId, bracketId),
+  getSelectedParryggSet: ():  Promise<{
+    event?: SelectedEvent;
+    phase?: SelectedPhase;
+    phaseGroup?: SelectedPhaseGroup;
+  }> =>
     ipcRenderer.invoke('getSelectedParryggSet'),
   setSelectedParryggSetId: (setId: string): Promise<void> =>
     ipcRenderer.invoke('setSelectedParryggSetId', setId),
@@ -213,7 +216,7 @@ const electronHandler = {
   reportParryggSet: (
     slug: string,
     setId: string,
-    result: ParryggSetResult,
+    result: MatchResult.AsObject,
   ): Promise<Set> =>
     ipcRenderer.invoke('reportParryggSet', slug, setId, result),
   getTournaments: (): Promise<AdminedTournament[]> =>
@@ -280,7 +283,7 @@ const electronHandler = {
         selectedSet?: Set;
         startggTournament?: Tournament;
         challongeTournaments?: Map<string, ChallongeTournament>;
-        parryggTournament?: ParryggTournament;
+        parryggTournament?: ParryggTournament.AsObject;
       },
     ) => void,
     selectedSetId: Id,

@@ -15,17 +15,15 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import { useState } from 'react';
+import { Phase, Tournament, Event } from '@parry-gg/client';
 import {
   State,
-  ParryggTournament,
-  ParryggEvent,
-  ParryggPhase,
   ParryggBracket,
-  SelectedParryggPhase,
-  SelectedParryggBracket,
   Set,
   SetWithNames,
-  ParryggSetChain,
+  SelectedPhaseGroup,
+  SelectedPhase,
+  SelectedEvent,
 } from '../common/types';
 import SetViewInner from './SetView';
 import filterSets from './filterSets';
@@ -221,14 +219,14 @@ function PhaseView({
   getBracket,
   selectSet,
 }: {
-  phase: ParryggPhase;
+  phase: Phase.AsObject;
   initiallyOpen: boolean;
   searchSubstr: string;
   vlerkMode: boolean;
   selectedBracketId: string | undefined;
   getPhase: (id: string) => Promise<void>;
   getBracket: (id: string) => Promise<void>;
-  selectSet: (set: Set, bracket: SelectedParryggBracket) => Promise<void>;
+  selectSet: (set: Set, bracket: SelectedPhaseGroup) => Promise<void>;
 }) {
   const [getting, setGetting] = useState(false);
   const [open, setOpen] = useState(initiallyOpen);
@@ -284,6 +282,9 @@ function PhaseView({
                   id: bracket.id,
                   name: bracket.slug,
                   hasSiblings: phase.bracketsList.length > 1,
+                  bracketType: bracket.type,
+                  waveId: null,
+                  winnersTargetPhaseId: null,
                 })
               }
             />
@@ -306,7 +307,7 @@ function EventView({
   getBracket,
   selectSet,
 }: {
-  event: ParryggEvent;
+  event: Event.AsObject;
   initiallyOpen: boolean;
   searchSubstr: string;
   vlerkMode: boolean;
@@ -317,8 +318,8 @@ function EventView({
   getBracket: (id: string) => Promise<void>;
   selectSet: (
     set: Set,
-    bracket: SelectedParryggBracket,
-    phase: SelectedParryggPhase,
+    bracket: SelectedPhaseGroup,
+    phase: SelectedPhase,
   ) => Promise<void>;
 }) {
   const [getting, setGetting] = useState(false);
@@ -373,7 +374,7 @@ function EventView({
               selectedBracketId={selectedBracketId}
               getPhase={getPhase}
               getBracket={getBracket}
-              selectSet={(set: Set, bracket: SelectedParryggBracket) =>
+              selectSet={(set: Set, bracket: SelectedPhaseGroup) =>
                 selectSet(set, bracket, {
                   id: phase.id,
                   name: phase.slug,
@@ -401,7 +402,7 @@ export default function ParryggView({
   selectSet,
 }: {
   searchSubstr: string;
-  tournament: ParryggTournament | undefined;
+  tournament: Tournament.AsObject | undefined;
   vlerkMode: boolean;
   selectedEventId: string | undefined;
   selectedPhaseId: string | undefined;
@@ -409,7 +410,12 @@ export default function ParryggView({
   getEvent: (id: string) => Promise<void>;
   getPhase: (id: string) => Promise<void>;
   getBracket: (id: string) => Promise<void>;
-  selectSet: (set: Set, setChain: ParryggSetChain) => Promise<void>;
+  selectSet: (
+    set: Set,
+    bracket: SelectedPhaseGroup,
+    phase: SelectedPhase,
+    event: SelectedEvent,
+  ) => Promise<void>;
 }) {
   const events = tournament?.eventsList || [];
   return (
@@ -428,17 +434,14 @@ export default function ParryggView({
           getBracket={getBracket}
           selectSet={(
             set: Set,
-            bracket: SelectedParryggBracket,
-            phase: SelectedParryggPhase,
+            bracket: SelectedPhaseGroup,
+            phase: SelectedPhase,
           ) =>
-            selectSet(set, {
-              bracket,
-              phase,
-              event: {
-                id: event.id,
-                name: event.name,
-                hasSiblings: events.length > 1,
-              },
+            selectSet(set, bracket, phase, {
+              id: event.id,
+              name: event.name,
+              slug: event.slug,
+              hasSiblings: events.length > 1,
             })
           }
         />

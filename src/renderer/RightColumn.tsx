@@ -1,14 +1,13 @@
 import { useState } from 'react';
+import { Tournament as ParryggTournament } from '@parry-gg/client';
 import SearchBox from './SearchBox';
 import StartggView from './StartggView';
 import {
   ChallongeTournament,
   GuideState,
   Mode,
-  ParryggTournament,
   PlayerOverrides,
   SelectedEvent,
-  ParryggSetChain,
   SelectedPhase,
   SelectedPhaseGroup,
   Set,
@@ -18,6 +17,7 @@ import ChallongeView from './ChallongeView';
 import ParryggView from './ParryggView';
 import ManualView from './ManualView';
 import ErrorDialog from './ErrorDialog';
+import { assertNumber, assertString } from '../main/util';
 
 export default function RightColumn({
   mode,
@@ -53,8 +53,16 @@ export default function RightColumn({
     phase?: SelectedPhase;
     phaseGroup?: SelectedPhaseGroup;
   }) => void;
-  selectedParryggSetChain: ParryggSetChain;
-  setSelectedParryggSetChain: (selectedSetChain: ParryggSetChain) => void;
+  selectedParryggSetChain: {
+    event?: SelectedEvent;
+    phase?: SelectedPhase;
+    phaseGroup?: SelectedPhaseGroup;
+  };
+  setSelectedParryggSetChain: (selectedSetChain: {
+    event?: SelectedEvent;
+    phase?: SelectedPhase;
+    phaseGroup?: SelectedPhaseGroup;
+  }) => void;
   startggTournament: Tournament;
   challongeTournaments: Map<string, ChallongeTournament>;
   getChallongeTournament: (maybeSlug: string) => Promise<void>;
@@ -63,7 +71,7 @@ export default function RightColumn({
     slug: string;
     tournamentType: string;
   }) => void;
-  parryggTournament: ParryggTournament | undefined;
+  parryggTournament: ParryggTournament.AsObject | undefined;
   manualNames: string[];
   selectedChipData: PlayerOverrides;
   setSelectedChipData: (selectedChipData: PlayerOverrides) => void;
@@ -139,9 +147,9 @@ export default function RightColumn({
       phaseGroup,
     });
     await window.electron.setSelectedSetChain(
-      event.id,
-      phase.id,
-      phaseGroup.id,
+      assertNumber(event.id),
+      assertNumber(phase.id),
+      assertNumber(phaseGroup.id),
     );
   };
   const selectChallongeSet = async (
@@ -158,10 +166,19 @@ export default function RightColumn({
       selectedTournament.slug,
     );
   };
-  const selectParryggSet = async (set: Set, setChain: ParryggSetChain) => {
+  const selectParryggSet = async (
+    set: Set,
+    phaseGroup: SelectedPhaseGroup,
+    phase: SelectedPhase,
+    event: SelectedEvent,
+  ) => {
     selectSet(set);
-    setSelectedParryggSetChain(setChain);
-    await window.electron.setSelectedParryggSetChain(setChain);
+    setSelectedParryggSetChain(selectedParryggSetChain);
+    await window.electron.setSelectedParryggSetChain(
+      assertNumber(event.id),
+      assertNumber(phase.id),
+      assertNumber(phaseGroup.id),
+    );
   };
 
   return (
@@ -177,9 +194,9 @@ export default function RightColumn({
           searchSubstr={searchSubstr}
           tournament={startggTournament}
           vlerkMode={vlerkMode}
-          selectedEventId={selectedSetChain.event?.id}
-          selectedPhaseId={selectedSetChain.phase?.id}
-          selectedPhaseGroupId={selectedSetChain.phaseGroup?.id}
+          selectedEventId={assertNumber(selectedSetChain.event?.id)}
+          selectedPhaseId={assertNumber(selectedSetChain.phase?.id)}
+          selectedPhaseGroupId={assertNumber(selectedSetChain.phaseGroup?.id)}
           getEvent={(id: number) => getEvent(id)}
           getPhase={(id: number) => getPhase(id)}
           getPhaseGroup={getPhaseGroup}
@@ -218,14 +235,21 @@ export default function RightColumn({
           searchSubstr={searchSubstr}
           tournament={parryggTournament}
           vlerkMode={vlerkMode}
-          selectedEventId={selectedParryggSetChain?.event?.id}
-          selectedPhaseId={selectedParryggSetChain?.phase?.id}
-          selectedBracketId={selectedParryggSetChain?.bracket?.id}
+          selectedEventId={assertString(selectedParryggSetChain?.event?.id)}
+          selectedPhaseId={assertString(selectedParryggSetChain?.phase?.id)}
+          selectedBracketId={assertString(
+            selectedParryggSetChain?.phaseGroup?.id,
+          )}
           getEvent={getParryggEvent}
           getPhase={getParryggPhase}
           getBracket={getParryggBracket}
-          selectSet={async (set: Set, setChain: ParryggSetChain) => {
-            await selectParryggSet(set, setChain);
+          selectSet={async (
+            set: Set,
+            bracket: SelectedPhaseGroup,
+            phase: SelectedPhase,
+            event: SelectedEvent,
+          ) => {
+            await selectParryggSet(set, bracket, phase, event);
             if (guideState !== GuideState.NONE) {
               setGuideState(GuideState.REPLAYS);
             }

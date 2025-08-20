@@ -1,13 +1,4 @@
-import {
-  Tournament as ParryggTournamentPb,
-  Event as ParryggEventPb,
-  Phase as ParryggPhasePb,
-  Bracket as ParryggBracketPb,
-  Match as ParryggSetPb,
-  MatchResult as ParryggSetResultPb,
-  Slot as ParryggSlotPb,
-  Seed as ParryggSeedPb,
-} from '@parry-gg/client';
+import {Bracket as ParryggBracketPb} from '@parry-gg/client';
 
 export type Id = string | number;
 
@@ -234,20 +225,20 @@ export type EnforceState = {
 };
 
 export type SelectedEvent = {
-  id: number;
+  id: Id;
   name: string;
   slug: string;
   hasSiblings: boolean;
 };
 
 export type SelectedPhase = {
-  id: number;
+  id: Id;
   name: string;
   hasSiblings: boolean;
 };
 
 export type SelectedPhaseGroup = {
-  id: number;
+  id: Id;
   name: string;
   /**
    * 1: SINGLE_ELIMINATION
@@ -262,24 +253,6 @@ export type SelectedPhaseGroup = {
   hasSiblings: boolean;
   waveId: number | null;
   winnersTargetPhaseId: number | null;
-};
-
-export type SelectedParryggEvent = {
-  id: string;
-  name: string;
-  hasSiblings: boolean;
-};
-
-export type SelectedParryggPhase = {
-  id: string;
-  name: string;
-  hasSiblings: boolean;
-};
-
-export type SelectedParryggBracket = {
-  id: string;
-  name: string;
-  hasSiblings: boolean;
 };
 
 export type ContextSlot = {
@@ -341,29 +314,6 @@ export type Context = {
       ordinal: number | null;
       round: number;
       stream: Stream | null;
-    };
-  };
-  parrygg?: {
-    tournament: {
-      name: string;
-      slug: string;
-    };
-    event: {
-      id: string;
-      name: string;
-    };
-    phase: {
-      id: string;
-      name: string;
-    };
-    bracket: {
-      id: string;
-      name: string;
-    };
-    set: {
-      id: string;
-      fullRoundText: string;
-      round: number;
     };
   };
   startMs: number;
@@ -435,28 +385,4 @@ export enum WebSocketServerStatus {
   STARTED,
 }
 
-type ParryggTournament = ParryggTournamentPb.AsObject;
-type ParryggEvent = ParryggEventPb.AsObject;
-type ParryggPhase = ParryggPhasePb.AsObject;
-type ParryggSet = ParryggSetPb.AsObject;
-type ParryggBracket = ParryggBracketPb.AsObject & { sets?: Sets };
-type ParryggSetResult = ParryggSetResultPb.AsObject;
-type ParryggSlot = ParryggSlotPb.AsObject;
-type ParryggSeed = ParryggSeedPb.AsObject;
-
-export type {
-  ParryggTournament,
-  ParryggEvent,
-  ParryggPhase,
-  ParryggBracket,
-  ParryggSet,
-  ParryggSetResult,
-  ParryggSlot,
-  ParryggSeed,
-};
-
-export type ParryggSetChain = {
-  event?: SelectedParryggEvent;
-  phase?: SelectedParryggPhase;
-  bracket?: SelectedParryggBracket;
-};
+export type ParryggBracket = ParryggBracketPb.AsObject & { sets?: Sets };
