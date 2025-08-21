@@ -22,7 +22,6 @@ import { eject } from 'eject-media';
 import { format } from 'date-fns';
 import { MatchResult } from '@parry-gg/client';
 import {
-  AdminedTournament,
   ChallongeMatchItem,
   Context,
   CopySettings,
@@ -108,7 +107,7 @@ import {
   stopHostServer,
   stopListening,
 } from './host';
-import { assertNumber, assertString } from '../common/asserts';
+import { assertInteger, assertString } from '../common/asserts';
 import { resolveHtmlPath } from './util';
 
 type ReplayDir = {
@@ -121,7 +120,7 @@ let entrantsWindow: BrowserWindow | null = null;
 async function getRealSetId(sggApiKey: string, originalSet: Set) {
   const updatedPhaseGroup = await getPhaseGroup(
     sggApiKey,
-    assertNumber(getSelectedSetChain().phaseGroup!.id),
+    assertInteger(getSelectedSetChain().phaseGroup!.id),
   );
   const candidateRealSets = updatedPhaseGroup.sets.pendingSets.filter(
     (realSet) =>
@@ -130,7 +129,7 @@ async function getRealSetId(sggApiKey: string, originalSet: Set) {
       realSet.round === originalSet.round,
   );
   if (candidateRealSets.length === 1) {
-    return assertNumber(candidateRealSets[0].id);
+    return assertInteger(candidateRealSets[0].id);
   }
   return null;
 }
@@ -591,7 +590,7 @@ export default function setupIPCs(
       }
 
       try {
-        await assignStream(sggApiKey, assertNumber(originalSet.id), streamId);
+        await assignStream(sggApiKey, originalSet.id, streamId);
       } catch (e: unknown) {
         if (
           e instanceof Error &&
@@ -609,7 +608,7 @@ export default function setupIPCs(
       }
       await getPhaseGroup(
         sggApiKey,
-        assertNumber(getSelectedSetChain().phaseGroup!.id),
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
       );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
@@ -645,7 +644,7 @@ export default function setupIPCs(
       }
       await getPhaseGroup(
         sggApiKey,
-        assertNumber(getSelectedSetChain().phaseGroup!.id),
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
       );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
@@ -665,7 +664,7 @@ export default function setupIPCs(
       await resetSet(sggApiKey, setId);
       await getPhaseGroup(
         sggApiKey,
-        assertNumber(getSelectedSetChain().phaseGroup!.id),
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
       );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
@@ -701,7 +700,7 @@ export default function setupIPCs(
       }
       await getPhaseGroup(
         sggApiKey,
-        assertNumber(getSelectedSetChain().phaseGroup!.id),
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
       );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
@@ -761,7 +760,7 @@ export default function setupIPCs(
       }
       const updatedPhaseGroup = await getPhaseGroup(
         sggApiKey,
-        assertNumber(getSelectedSetChain().phaseGroup!.id),
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
       );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
@@ -791,7 +790,7 @@ export default function setupIPCs(
       const updatedSet = await updateSet(sggApiKey, set);
       await getPhaseGroup(
         sggApiKey,
-        assertNumber(getSelectedSetChain().phaseGroup!.id),
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
       );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
@@ -1063,7 +1062,7 @@ export default function setupIPCs(
   );
 
   ipcMain.removeHandler('getTournaments');
-  ipcMain.handle('getTournaments', async (): Promise<AdminedTournament[]> => {
+  ipcMain.handle('getTournaments', async () => {
     if (mode === Mode.STARTGG) {
       return sggApiKey ? getTournaments(sggApiKey) : [];
     }
@@ -1077,7 +1076,7 @@ export default function setupIPCs(
   });
 
   ipcMain.removeHandler('getSelectedSet');
-  ipcMain.handle('getSelectedSet', (): Set | undefined => {
+  ipcMain.handle('getSelectedSet', () => {
     if (mode === Mode.STARTGG) {
       return getSelectedSet();
     }
@@ -1100,7 +1099,7 @@ export default function setupIPCs(
       if (mode === Mode.STARTGG) {
         setSelectedSetId(selectedSetId);
       } else if (mode === Mode.CHALLONGE) {
-        setSelectedChallongeSetId(assertNumber(selectedSetId));
+        setSelectedChallongeSetId(assertInteger(selectedSetId));
       } else if (mode === Mode.PARRYGG) {
         setSelectedParryggSetId(assertString(selectedSetId));
       }

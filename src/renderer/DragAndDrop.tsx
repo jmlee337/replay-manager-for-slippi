@@ -12,7 +12,7 @@ import { highlightColor } from '../common/constants';
 function parseId(id: string): Id {
   try {
     const parsed = Number(id);
-    return Number.isNaN(parsed) ? id : parsed;
+    return Number.isInteger(parsed) ? parsed : id;
   } catch {
     return id;
   }

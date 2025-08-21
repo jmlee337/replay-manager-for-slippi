@@ -25,6 +25,7 @@ import {
   Phase,
   Event,
   Seed,
+  BracketType,
 } from '@parry-gg/client';
 import XMLHttpRequest from 'xhr2';
 import {
@@ -52,6 +53,7 @@ const phaseIdToBracketIds = new Map<string, string[]>();
 const idToBracket = new Map<string, ParryggBracket>();
 const bracketIdToSets = new Map<string, Sets>();
 const setIdToSet = new Map<string, Set>();
+const setIdToOrdinal = new Map<string, number>();
 let currentTournament: Tournament.AsObject | undefined;
 let selectedEventId: string | undefined;
 let selectedPhaseId: string | undefined;
@@ -104,6 +106,94 @@ function getParticipants(entrant?: Entrant.AsObject) {
   }));
 }
 
+// DAG Graph of a bracket.
+// nodes are set ids. Edges connect sets to their winner/loser sets.
+// Key: setId, Value: array of destination setIds
+type Graph = Map<string, string[]>;
+
+function buildGraph(matches: Match.AsObject[]): Graph {
+  const graph: Graph = new Map();
+  const matchMap = new Map<string, Match.AsObject>();
+
+  matches.forEach((match) => {
+    matchMap.set(match.id, match);
+    graph.set(match.id, []);
+  });
+
+  matches.forEach((match) => {
+    if (match.winnersMatchId && matchMap.has(match.winnersMatchId)) {
+      graph.get(match.id)?.push(match.winnersMatchId);
+    }
+    if (match.losersMatchId && matchMap.has(match.losersMatchId)) {
+      graph.get(match.id)?.push(match.losersMatchId);
+    }
+  });
+
+  return graph;
+}
+
+// Kahn's algorithm for topological sorting
+function topoSort(graph: Graph) {
+  const inDegree = new Map<string, number>();
+
+  Array.from(graph.keys()).forEach((node) => {
+    inDegree.set(node, 0);
+  });
+
+  Array.from(graph.values()).forEach((neighbors) => {
+    neighbors.forEach((neighbor) => {
+      inDegree.set(neighbor, (inDegree.get(neighbor) || 0) + 1);
+    });
+  });
+
+  const queue: string[] = [];
+  const sortedNodes: string[] = [];
+
+  Array.from(inDegree.entries()).forEach(([node, degree]) => {
+    if (degree === 0) {
+      queue.push(node);
+    }
+  });
+
+  while (queue.length > 0) {
+    const currentNode = queue.shift()!;
+    sortedNodes.push(currentNode);
+
+    const neighbors = graph.get(currentNode) || [];
+    neighbors.forEach((neighbor) => {
+      const newDegree = (inDegree.get(neighbor) || 0) - 1;
+      inDegree.set(neighbor, newDegree);
+
+      if (newDegree === 0) {
+        queue.push(neighbor);
+      }
+    });
+  }
+
+  return sortedNodes;
+}
+
+function getOrderedSetIds(bracket: ParryggBracket): string[] {
+  if (
+    bracket.type === BracketType.BRACKET_TYPE_SINGLE_ELIMINATION ||
+    bracket.type === BracketType.BRACKET_TYPE_DOUBLE_ELIMINATION
+  ) {
+    const graph = buildGraph(bracket.matchesList);
+    return topoSort(graph);
+  }
+
+  return bracket.matchesList
+    .map((match) => match.id) // UUIDv7 which are timestamp ordered
+    .sort();
+}
+
+function updateSetOrdinalMap(bracket: ParryggBracket): void {
+  const sortedMatchIds = getOrderedSetIds(bracket);
+  sortedMatchIds.forEach((matchId, i) => {
+    setIdToOrdinal.set(matchId, i);
+  });
+}
+
 export function convertParryggSetToSet(set: Match.AsObject): Set {
   const slots = set.slotsList;
   const slot1 = slots[0];
@@ -136,7 +226,7 @@ export function convertParryggSetToSet(set: Match.AsObject): Set {
     gameScores: [],
     stream: null,
     station: null,
-    ordinal: null,
+    ordinal: setIdToOrdinal.get(set.id) ?? null,
     wasReported: false,
     updatedAtMs: 0,
     completedAtMs: 0,
@@ -145,6 +235,9 @@ export function convertParryggSetToSet(set: Match.AsObject): Set {
 
 function updateBracketGlobalState(bracket: ParryggBracket): void {
   idToBracket.set(bracket.id, bracket);
+
+  // Update ordinal map for single/double elimination brackets
+  updateSetOrdinalMap(bracket);
 
   bracket.seedsList.forEach((seed) => {
     seedMap.set(seed.id, seed);

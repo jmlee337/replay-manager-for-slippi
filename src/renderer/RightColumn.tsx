@@ -17,7 +17,7 @@ import ChallongeView from './ChallongeView';
 import ParryggView from './ParryggView';
 import ManualView from './ManualView';
 import ErrorDialog from './ErrorDialog';
-import { assertNumber, assertString } from '../common/asserts';
+import { assertInteger, assertString } from '../common/asserts';
 
 export default function RightColumn({
   mode,
@@ -147,9 +147,9 @@ export default function RightColumn({
       phaseGroup,
     });
     await window.electron.setSelectedSetChain(
-      assertNumber(event.id),
-      assertNumber(phase.id),
-      assertNumber(phaseGroup.id),
+      assertInteger(event.id),
+      assertInteger(phase.id),
+      assertInteger(phaseGroup.id),
     );
   };
   const selectChallongeSet = async (
@@ -194,9 +194,21 @@ export default function RightColumn({
           searchSubstr={searchSubstr}
           tournament={startggTournament}
           vlerkMode={vlerkMode}
-          selectedEventId={assertNumber(selectedSetChain.event?.id)}
-          selectedPhaseId={assertNumber(selectedSetChain.phase?.id)}
-          selectedPhaseGroupId={assertNumber(selectedSetChain.phaseGroup?.id)}
+          selectedEventId={
+            selectedSetChain.event?.id
+              ? assertInteger(selectedSetChain.event?.id)
+              : undefined
+          }
+          selectedPhaseId={
+            selectedSetChain.phase?.id
+              ? assertInteger(selectedSetChain.phase?.id)
+              : undefined
+          }
+          selectedPhaseGroupId={
+            selectedSetChain.phaseGroup?.id
+              ? assertInteger(selectedSetChain.phaseGroup?.id)
+              : undefined
+          }
           getEvent={(id: number) => getEvent(id)}
           getPhase={(id: number) => getPhase(id)}
           getPhaseGroup={getPhaseGroup}
@@ -235,11 +247,21 @@ export default function RightColumn({
           searchSubstr={searchSubstr}
           tournament={parryggTournament}
           vlerkMode={vlerkMode}
-          selectedEventId={assertString(selectedParryggSetChain?.event?.id)}
-          selectedPhaseId={assertString(selectedParryggSetChain?.phase?.id)}
-          selectedBracketId={assertString(
-            selectedParryggSetChain?.phaseGroup?.id,
-          )}
+          selectedEventId={
+            selectedParryggSetChain?.event?.id
+              ? assertString(selectedParryggSetChain?.event?.id)
+              : undefined
+          }
+          selectedPhaseId={
+            selectedParryggSetChain?.phase?.id
+              ? assertString(selectedParryggSetChain?.phase?.id)
+              : undefined
+          }
+          selectedBracketId={
+            selectedParryggSetChain?.phaseGroup?.id
+              ? assertString(selectedParryggSetChain?.phaseGroup?.id)
+              : undefined
+          }
           getEvent={getParryggEvent}
           getPhase={getParryggPhase}
           getBracket={getParryggBracket}

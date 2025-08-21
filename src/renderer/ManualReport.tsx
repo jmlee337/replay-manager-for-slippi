@@ -23,7 +23,7 @@ import {
   StartggSet,
   State,
 } from '../common/types';
-import { assertNumber } from '../common/asserts';
+import { assertInteger } from '../common/asserts';
 
 const createStartggGameData = (
   entrant1Score: number,
@@ -36,7 +36,7 @@ const createStartggGameData = (
     for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
       gameData.push({
         gameNum: n,
-        winnerId: assertNumber(n <= entrant1Score ? entrant1Id : entrant2Id),
+        winnerId: assertInteger(n <= entrant1Score ? entrant1Id : entrant2Id),
         entrant1Score: 0,
         entrant2Score: 0,
         selections: [],
@@ -46,7 +46,7 @@ const createStartggGameData = (
     for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
       gameData.push({
         gameNum: n,
-        winnerId: assertNumber(n <= entrant2Score ? entrant2Id : entrant1Id),
+        winnerId: assertInteger(n <= entrant2Score ? entrant2Id : entrant1Id),
         entrant1Score: 0,
         entrant2Score: 0,
         selections: [],
@@ -602,7 +602,7 @@ export default function ManualReport({
                   await reportStartggSet(startggSet, selectedSet);
                 } else if (mode === Mode.CHALLONGE) {
                   await reportChallongeSet(
-                    assertNumber(selectedSet.id),
+                    assertInteger(selectedSet.id),
                     challongeMatchItems,
                   );
                 } else if (mode === Mode.PARRYGG) {

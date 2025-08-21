@@ -1325,7 +1325,7 @@ function Hello() {
               characterName: characterNames.get(player.externalCharacterId)!,
               displayName:
                 player.playerOverrides.displayName || player.displayName,
-              entrantId: player.playerOverrides.entrantId as number,
+              entrantId: player.playerOverrides.entrantId,
               participantId: player.playerOverrides.participantId,
               nametag: player.nametag,
             };
