@@ -46,6 +46,7 @@ import {
 } from '../common/constants';
 import LabeledCheckbox from './LabeledCheckbox';
 import getCharacterIcon from './getCharacterIcon';
+import { assertNumber } from '../common/asserts';
 
 const bgColor = 'rgba(34, 178, 76, 0.2)';
 
@@ -408,7 +409,7 @@ export default function SetControls({
         gameNum: i + 1,
         stageId: stageStartggIds.get(replay.stageId),
         selections,
-        winnerId: gameWinnerId as number,
+        winnerId: assertNumber(gameWinnerId),
       });
     });
     return { setId: set.id, winnerId, isDQ: false, gameData };
