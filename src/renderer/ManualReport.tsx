@@ -25,12 +25,12 @@ import {
 } from '../common/types';
 import { assertInteger } from '../common/asserts';
 
-const createStartggGameData = (
+function createStartggGameData(
   entrant1Score: number,
   entrant2Score: number,
   entrant1Id: Id,
   entrant2Id: Id,
-): StartggGame[] => {
+): StartggGame[] {
   const gameData: StartggGame[] = [];
   if (entrant1Score > entrant2Score) {
     for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
@@ -54,7 +54,7 @@ const createStartggGameData = (
     }
   }
   return gameData;
-};
+}
 
 const EntrantNames = styled(Stack)`
   flex-grow: 1;
@@ -168,7 +168,7 @@ export default function ManualReport({
       : [];
   const startggSet: StartggSet = {
     setId: selectedSet.id,
-    winnerId: winnerId as number,
+    winnerId: assertInteger(winnerId),
     isDQ: entrant1Dq || entrant2Dq,
     gameData,
   };
