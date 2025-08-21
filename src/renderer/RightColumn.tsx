@@ -17,7 +17,7 @@ import ChallongeView from './ChallongeView';
 import ParryggView from './ParryggView';
 import ManualView from './ManualView';
 import ErrorDialog from './ErrorDialog';
-import { assertNumber, assertString } from '../main/util';
+import { assertNumber, assertString } from '../common/asserts';
 
 export default function RightColumn({
   mode,
@@ -175,9 +175,9 @@ export default function RightColumn({
     selectSet(set);
     setSelectedParryggSetChain(selectedParryggSetChain);
     await window.electron.setSelectedParryggSetChain(
-      assertNumber(event.id),
-      assertNumber(phase.id),
-      assertNumber(phaseGroup.id),
+      assertString(event.id),
+      assertString(phase.id),
+      assertString(phaseGroup.id),
     );
   };
 

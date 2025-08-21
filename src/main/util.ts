@@ -11,17 +11,3 @@ export function resolveHtmlPath(htmlFileName: string) {
   }
   return `file://${path.resolve(__dirname, '../renderer/', htmlFileName)}`;
 }
-
-export function assertNumber(value: any) {
-  if (Number.isInteger(value)) {
-    return value;
-  }
-  throw new TypeError(`Expected a number, got ${value}`);
-}
-
-export function assertString(value: any) {
-  if (value === undefined || typeof value === 'string') {
-    return value;
-  }
-  throw new TypeError(`Expected a string, got ${value}`);
-}

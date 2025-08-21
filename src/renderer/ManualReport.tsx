@@ -23,7 +23,38 @@ import {
   StartggSet,
   State,
 } from '../common/types';
-import { assertNumber } from '../main/util';
+import { assertNumber } from '../common/asserts';
+
+const createStartggGameData = (
+  entrant1Score: number,
+  entrant2Score: number,
+  entrant1Id: Id,
+  entrant2Id: Id,
+): StartggGame[] => {
+  const gameData: StartggGame[] = [];
+  if (entrant1Score > entrant2Score) {
+    for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
+      gameData.push({
+        gameNum: n,
+        winnerId: assertNumber(n <= entrant1Score ? entrant1Id : entrant2Id),
+        entrant1Score: 0,
+        entrant2Score: 0,
+        selections: [],
+      });
+    }
+  } else if (entrant1Score < entrant2Score) {
+    for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
+      gameData.push({
+        gameNum: n,
+        winnerId: assertNumber(n <= entrant2Score ? entrant2Id : entrant1Id),
+        entrant1Score: 0,
+        entrant2Score: 0,
+        selections: [],
+      });
+    }
+  }
+  return gameData;
+};
 
 const EntrantNames = styled(Stack)`
   flex-grow: 1;
@@ -126,32 +157,15 @@ export default function ManualReport({
       winnerId = selectedSet.entrant2Id;
     }
   }
-  const gameData: StartggGame[] = [];
-  if (entrant1Score > entrant2Score) {
-    for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
-      gameData.push({
-        gameNum: n,
-        winnerId: assertNumber(
-          n <= entrant1Score ? selectedSet.entrant1Id : selectedSet.entrant2Id,
-        ),
-        entrant1Score: 0,
-        entrant2Score: 0,
-        selections: [],
-      });
-    }
-  } else if (entrant1Score < entrant2Score) {
-    for (let n = 1; n <= entrant1Score + entrant2Score; n += 1) {
-      gameData.push({
-        gameNum: n,
-        winnerId: assertNumber(
-          n <= entrant2Score ? selectedSet.entrant2Id : selectedSet.entrant1Id,
-        ),
-        entrant1Score: 0,
-        entrant2Score: 0,
-        selections: [],
-      });
-    }
-  }
+  const gameData =
+    mode === Mode.STARTGG
+      ? createStartggGameData(
+          entrant1Score,
+          entrant2Score,
+          selectedSet.entrant1Id,
+          selectedSet.entrant2Id,
+        )
+      : [];
   const startggSet: StartggSet = {
     setId: selectedSet.id,
     winnerId: winnerId as number,

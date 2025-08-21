@@ -1,3 +1,4 @@
+import { assertNumber } from '../common/asserts';
 import {
   AdminedTournament,
   Entrant,
@@ -30,7 +31,7 @@ const idToPhaseGroup = new Map<number, PhaseGroup>();
 const phaseGroupIdToEntrants = new Map<number, Entrant[]>();
 const phaseGroupIdToSets = new Map<number, Sets>();
 const idToSet = new Map<Id, Set>();
-let selectedSetId: Id = 0;
+let selectedSetId = 0;
 let selectedPhaseGroupId = 0;
 let selectedPhaseId = 0;
 let selectedEventId = 0;
@@ -70,7 +71,7 @@ export function getSelectedSet() {
 }
 
 export function setSelectedSetId(id: Id) {
-  selectedSetId = id;
+  selectedSetId = assertNumber(id);
 }
 
 export function getSelectedSetChain(): {
@@ -1121,7 +1122,11 @@ const ASSIGN_STREAM_MUTATION = `
     assignStream(setId: $setId, streamId: $streamId) {${GQL_SET_INNER}}
   }
 `;
-export async function assignStream(key: string, setId: Id, streamId: number) {
+export async function assignStream(
+  key: string,
+  setId: number,
+  streamId: number,
+) {
   const data = await fetchGql(key, ASSIGN_STREAM_MUTATION, { setId, streamId });
   const updatedSet = gqlSetToSet(data.assignStream);
   idToSet.set(updatedSet.id, updatedSet);

@@ -108,7 +108,8 @@ import {
   stopHostServer,
   stopListening,
 } from './host';
-import { assertNumber, assertString, resolveHtmlPath } from './util';
+import { assertNumber, assertString } from '../common/asserts';
+import { resolveHtmlPath } from './util';
 
 type ReplayDir = {
   dir: string;
@@ -129,7 +130,7 @@ async function getRealSetId(sggApiKey: string, originalSet: Set) {
       realSet.round === originalSet.round,
   );
   if (candidateRealSets.length === 1) {
-    return candidateRealSets[0].id;
+    return assertNumber(candidateRealSets[0].id);
   }
   return null;
 }
@@ -590,7 +591,7 @@ export default function setupIPCs(
       }
 
       try {
-        await assignStream(sggApiKey, originalSet.id, streamId);
+        await assignStream(sggApiKey, assertNumber(originalSet.id), streamId);
       } catch (e: unknown) {
         if (
           e instanceof Error &&
@@ -1093,6 +1094,9 @@ export default function setupIPCs(
   ipcMain.handle(
     'setSelectedSetId',
     (event: IpcMainInvokeEvent, selectedSetId: Id) => {
+      if (!selectedSetId) {
+        return;
+      }
       if (mode === Mode.STARTGG) {
         setSelectedSetId(selectedSetId);
       } else if (mode === Mode.CHALLONGE) {
