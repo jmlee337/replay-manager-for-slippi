@@ -1139,16 +1139,19 @@ export default function setupIPCs(
 
   ipcMain.removeHandler('getLatestVersion');
   ipcMain.handle('getLatestVersion', async () => {
-    let response: Response | undefined;
     try {
-      response = await fetch(
-        'https://api.github.com/repos/jmlee337/replay-manager-for-slippi/releases',
+      const response = await fetch(
+        'https://api.github.com/repos/jmlee337/replay-manager-for-slippi/releases/latest',
       );
+      const json = await response.json();
+      const latestVersion = json.tag_name;
+      if (typeof latestVersion !== 'string') {
+        return '';
+      }
+      return latestVersion;
     } catch {
       throw new Error('***You may not be connected to the internet***');
     }
-    const json = await response.json();
-    return json[0].tag_name;
   });
 
   ipcMain.removeHandler('update');
