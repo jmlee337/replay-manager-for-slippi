@@ -353,7 +353,14 @@ export default function CopyControls({
   vlerkMode: boolean;
 }) {
   const [hosting, setHosting] = useState(false);
+  const [copySettingsOpen, setCopySettingsOpen] = useState(false);
   const [copyToastOpen, setCopyToastOpen] = useState(false);
+
+  useEffect(() => {
+    if (elevateSettings) {
+      setCopySettingsOpen(true);
+    }
+  }, [elevateSettings]);
 
   const chooseDir = async () => {
     const newDir = await window.electron.chooseCopyDir();
@@ -415,7 +422,10 @@ export default function CopyControls({
                   disabled={!dir}
                   setHosting={async (newHosting: boolean) => {
                     if (newHosting) {
-                      setCopySettings({ ...copySettings, output: Output.ZIP });
+                      setCopySettings({
+                        ...copySettings,
+                        output: Output.ZIP,
+                      });
                     } else {
                       setCopySettings(await window.electron.getCopySettings());
                     }
@@ -433,114 +443,6 @@ export default function CopyControls({
           </Tooltip>
         </Stack>
         <Stack
-          direction="row"
-          justifyContent="right"
-          bgcolor={elevateSettings ? 'white' : undefined}
-          sx={{
-            zIndex: (theme) =>
-              elevateSettings ? theme.zIndex.drawer + 2 : undefined,
-          }}
-        >
-          <Stack>
-            <Tooltip
-              arrow
-              title="A file containing set metadata will be included in the copy folder/zip"
-            >
-              <div>
-                <LabeledCheckbox
-                  checked={copySettings.writeContext}
-                  disabled={
-                    hostFormat.copySettings !== undefined ||
-                    copySettings.output === Output.FILES
-                  }
-                  label="Write context.json"
-                  set={async (checked: boolean) => {
-                    const newCopySettings = { ...copySettings };
-                    newCopySettings.writeContext = checked;
-                    await window.electron.setCopySettings(newCopySettings);
-                    setCopySettings(newCopySettings);
-                  }}
-                />
-              </div>
-            </Tooltip>
-          </Stack>
-          <Stack>
-            <Tooltip
-              arrow
-              title="Player tags will appear in the in-game HUD (like Slippi Broadcast/Online) depending on playback settings"
-            >
-              <div>
-                <LabeledCheckbox
-                  checked={copySettings.writeDisplayNames}
-                  disabled={hostFormat.copySettings !== undefined}
-                  label="Overwrite Display Names"
-                  set={async (checked: boolean) => {
-                    const newCopySettings = { ...copySettings };
-                    newCopySettings.writeDisplayNames = checked;
-                    await window.electron.setCopySettings(newCopySettings);
-                    setCopySettings(newCopySettings);
-                  }}
-                />
-              </div>
-            </Tooltip>
-            <Tooltip
-              arrow
-              title="New file names will indicate game start time, player tags, and characters"
-            >
-              <div>
-                <LabeledCheckbox
-                  checked={copySettings.writeFileNames}
-                  disabled={hostFormat.copySettings !== undefined}
-                  label="Overwrite File Names"
-                  set={async (checked: boolean) => {
-                    const newCopySettings = { ...copySettings };
-                    newCopySettings.writeFileNames = checked;
-                    await window.electron.setCopySettings(newCopySettings);
-                    setCopySettings(newCopySettings);
-                  }}
-                />
-              </div>
-            </Tooltip>
-          </Stack>
-          <Stack>
-            <Tooltip
-              arrow
-              title="Game start times will be shifted to have the set end exactly now. Useful if your Wii clocks aren't accurate"
-            >
-              <div>
-                <LabeledCheckbox
-                  checked={copySettings.writeStartTimes}
-                  disabled={hostFormat.copySettings !== undefined}
-                  label="Overwrite Start Times"
-                  set={async (checked: boolean) => {
-                    const newCopySettings = { ...copySettings };
-                    newCopySettings.writeStartTimes = checked;
-                    await window.electron.setCopySettings(newCopySettings);
-                    setCopySettings(newCopySettings);
-                  }}
-                />
-              </div>
-            </Tooltip>
-            <TextField
-              disabled={hostFormat.copySettings !== undefined || hosting}
-              label="Output"
-              onChange={async (event) => {
-                const newCopySettings = { ...copySettings };
-                newCopySettings.output = parseInt(event.target.value, 10);
-                await window.electron.setCopySettings(newCopySettings);
-                setCopySettings(newCopySettings);
-              }}
-              select
-              size="small"
-              value={copySettings.output}
-            >
-              <MenuItem value={Output.FILES}>Separate Files</MenuItem>
-              <MenuItem value={Output.FOLDER}>Make Subfolder</MenuItem>
-              <MenuItem value={Output.ZIP}>Make ZIP folder</MenuItem>
-            </TextField>
-          </Stack>
-        </Stack>
-        <Stack
           alignItems="center"
           direction="row"
           justifyContent="right"
@@ -554,6 +456,129 @@ export default function CopyControls({
             }}
             open={errorDialogOpen}
           />
+          <Button
+            variant="text"
+            onClick={() => {
+              setCopySettingsOpen(true);
+            }}
+            sx={
+              elevateSettings
+                ? {
+                    backgroundColor: 'white',
+                    zIndex: (theme) => theme.zIndex.drawer + 2,
+                  }
+                : undefined
+            }
+          >
+            Copy Settings
+          </Button>
+          <Dialog
+            open={copySettingsOpen}
+            onClose={() => {
+              setCopySettingsOpen(false);
+            }}
+          >
+            <DialogTitle>Copy Settings</DialogTitle>
+            <DialogContent>
+              <Tooltip
+                arrow
+                placement="right"
+                title="A file containing set metadata will be included in the copy folder/zip"
+              >
+                <div>
+                  <LabeledCheckbox
+                    checked={copySettings.writeContext}
+                    disabled={
+                      hostFormat.copySettings !== undefined ||
+                      copySettings.output === Output.FILES
+                    }
+                    label="Write context.json"
+                    set={async (checked: boolean) => {
+                      const newCopySettings = { ...copySettings };
+                      newCopySettings.writeContext = checked;
+                      await window.electron.setCopySettings(newCopySettings);
+                      setCopySettings(newCopySettings);
+                    }}
+                  />
+                </div>
+              </Tooltip>
+              <Tooltip
+                arrow
+                placement="right"
+                title="Player tags will appear in the in-game HUD (like Slippi Broadcast/Online) depending on playback settings"
+              >
+                <div>
+                  <LabeledCheckbox
+                    checked={copySettings.writeDisplayNames}
+                    disabled={hostFormat.copySettings !== undefined}
+                    label="Overwrite Display Names"
+                    set={async (checked: boolean) => {
+                      const newCopySettings = { ...copySettings };
+                      newCopySettings.writeDisplayNames = checked;
+                      await window.electron.setCopySettings(newCopySettings);
+                      setCopySettings(newCopySettings);
+                    }}
+                  />
+                </div>
+              </Tooltip>
+              <Tooltip
+                arrow
+                placement="right"
+                title="New file names will indicate game start time, player tags, and characters"
+              >
+                <div>
+                  <LabeledCheckbox
+                    checked={copySettings.writeFileNames}
+                    disabled={hostFormat.copySettings !== undefined}
+                    label="Overwrite File Names"
+                    set={async (checked: boolean) => {
+                      const newCopySettings = { ...copySettings };
+                      newCopySettings.writeFileNames = checked;
+                      await window.electron.setCopySettings(newCopySettings);
+                      setCopySettings(newCopySettings);
+                    }}
+                  />
+                </div>
+              </Tooltip>
+              <Tooltip
+                arrow
+                placement="right"
+                title="Game start times will be shifted to have the set end exactly now. Useful if your Wii clocks aren't accurate"
+              >
+                <div>
+                  <LabeledCheckbox
+                    checked={copySettings.writeStartTimes}
+                    disabled={hostFormat.copySettings !== undefined}
+                    label="Overwrite Start Times"
+                    set={async (checked: boolean) => {
+                      const newCopySettings = { ...copySettings };
+                      newCopySettings.writeStartTimes = checked;
+                      await window.electron.setCopySettings(newCopySettings);
+                      setCopySettings(newCopySettings);
+                    }}
+                  />
+                </div>
+              </Tooltip>
+              <TextField
+                disabled={hostFormat.copySettings !== undefined || hosting}
+                label="Output"
+                onChange={async (event) => {
+                  const newCopySettings = { ...copySettings };
+                  newCopySettings.output = parseInt(event.target.value, 10);
+                  await window.electron.setCopySettings(newCopySettings);
+                  setCopySettings(newCopySettings);
+                }}
+                select
+                size="small"
+                style={{ marginTop: '8px' }}
+                value={copySettings.output}
+              >
+                <MenuItem value={Output.FILES}>Separate Files</MenuItem>
+                <MenuItem value={Output.FOLDER}>Make Subfolder</MenuItem>
+                <MenuItem value={Output.ZIP}>Make ZIP folder</MenuItem>
+              </TextField>
+            </DialogContent>
+          </Dialog>
           {success && <Typography variant="caption">{success}</Typography>}
           <Button
             disabled={
