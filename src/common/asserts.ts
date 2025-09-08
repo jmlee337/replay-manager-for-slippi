@@ -7,7 +7,7 @@ export function assertInteger(value: Id): number {
   throw new TypeError(`Expected a number, got ${value}`);
 }
 
-export function assertIntegerOrUndefined(value?: Id): number|undefined {
+export function assertIntegerOrUndefined(value?: Id): number | undefined {
   return value ? assertInteger(value) : undefined;
 }
 
