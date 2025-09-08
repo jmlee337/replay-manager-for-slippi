@@ -17,7 +17,12 @@ import ChallongeView from './ChallongeView';
 import ParryggView from './ParryggView';
 import ManualView from './ManualView';
 import ErrorDialog from './ErrorDialog';
-import { assertInteger, assertString } from '../common/asserts';
+import {
+  assertInteger,
+  assertIntegerOrUndefined,
+  assertString,
+  assertStringOrUndefined,
+} from '../common/asserts';
 
 export default function RightColumn({
   mode,
@@ -194,21 +199,11 @@ export default function RightColumn({
           searchSubstr={searchSubstr}
           tournament={startggTournament}
           vlerkMode={vlerkMode}
-          selectedEventId={
-            selectedSetChain.event?.id
-              ? assertInteger(selectedSetChain.event?.id)
-              : undefined
-          }
-          selectedPhaseId={
-            selectedSetChain.phase?.id
-              ? assertInteger(selectedSetChain.phase?.id)
-              : undefined
-          }
-          selectedPhaseGroupId={
-            selectedSetChain.phaseGroup?.id
-              ? assertInteger(selectedSetChain.phaseGroup?.id)
-              : undefined
-          }
+          selectedEventId={assertIntegerOrUndefined(selectedSetChain.event?.id)}
+          selectedPhaseId={assertIntegerOrUndefined(selectedSetChain.phase?.id)}
+          selectedPhaseGroupId={assertIntegerOrUndefined(
+            selectedSetChain.phaseGroup?.id,
+          )}
           getEvent={(id: number) => getEvent(id)}
           getPhase={(id: number) => getPhase(id)}
           getPhaseGroup={getPhaseGroup}
@@ -247,21 +242,15 @@ export default function RightColumn({
           searchSubstr={searchSubstr}
           tournament={parryggTournament}
           vlerkMode={vlerkMode}
-          selectedEventId={
-            selectedParryggSetChain?.event?.id
-              ? assertString(selectedParryggSetChain?.event?.id)
-              : undefined
-          }
-          selectedPhaseId={
-            selectedParryggSetChain?.phase?.id
-              ? assertString(selectedParryggSetChain?.phase?.id)
-              : undefined
-          }
-          selectedBracketId={
-            selectedParryggSetChain?.phaseGroup?.id
-              ? assertString(selectedParryggSetChain?.phaseGroup?.id)
-              : undefined
-          }
+          selectedEventId={assertStringOrUndefined(
+            selectedParryggSetChain?.event?.id,
+          )}
+          selectedPhaseId={assertStringOrUndefined(
+            selectedParryggSetChain?.phase?.id,
+          )}
+          selectedBracketId={assertStringOrUndefined(
+            selectedParryggSetChain?.phaseGroup?.id,
+          )}
           getEvent={getParryggEvent}
           getPhase={getParryggPhase}
           getBracket={getParryggBracket}
