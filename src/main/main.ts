@@ -14,8 +14,41 @@ import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import setupIPCs from './ipc';
 
+let handleProtocolLoadSlpUrls:
+  | ((slpUrls: string[]) => Promise<void>)
+  | undefined;
+
 let mainWindow: BrowserWindow | null = null;
 let enforcerWindow: BrowserWindow | null = null;
+
+function handleProtocolUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'replay-manager:') return;
+    if (parsed.hostname === 'load') {
+      const paths = parsed.searchParams.get('path');
+      if (paths) {
+        const slpUrls = paths.split(';');
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.show();
+          mainWindow.focus();
+        }
+        if (handleProtocolLoadSlpUrls) {
+          handleProtocolLoadSlpUrls(slpUrls);
+        } else {
+          console.error('handleProtocolLoadSlpUrls is not initialized');
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Invalid protocol URL:', url, e);
+  }
+}
+
+if (!app.isDefaultProtocolClient('replay-manager')) {
+  app.setAsDefaultProtocolClient('replay-manager');
+}
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -113,6 +146,7 @@ const createWindow = async () => {
   }
 
   setupIPCs(mainWindow, enforcerWindow);
+  handleProtocolLoadSlpUrls = (setupIPCs as any).handleProtocolLoadSlpUrls;
 };
 
 /**
@@ -122,6 +156,24 @@ app
   .whenReady()
   .then(() => {
     createWindow();
+
+    // macOS: handle protocol URLs
+    app.on('open-url', (event, url) => {
+      event.preventDefault();
+      handleProtocolUrl(url);
+    });
+
+    // Windows/Linux: handle protocol URLs via second-instance
+    if (!app.requestSingleInstanceLock()) {
+      app.quit();
+    } else {
+      app.on('second-instance', (event, argv) => {
+        // protocol URL is in argv
+        const urlArg = argv.find((arg) => arg.startsWith('replay-manager://'));
+        if (urlArg) handleProtocolUrl(urlArg);
+      });
+    }
+
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
       // dock icon is clicked and there are no other windows open.

@@ -16,7 +16,11 @@ import {
   readFile,
   unlink,
 } from 'fs/promises';
+import { createWriteStream, unlinkSync } from 'fs';
 import detectUsb from 'detect-usb';
+import os from 'os';
+import https from 'https';
+import http from 'http';
 import path from 'path';
 import { eject } from 'eject-media';
 import { format } from 'date-fns';
@@ -122,6 +126,127 @@ export default function setupIPCs(
   const store = new Store<{ copySettings: CopySettings }>();
   let replayDirs: ReplayDir[] = [];
   const knownUsbs = new Map<string, boolean>();
+  // Helper to add a new replay directory and notify renderer
+  function addReplayDir(dir: string, usbKey: string) {
+    replayDirs.push({ dir, usbKey });
+    mainWindow.webContents.send('usbstorage', dir, !!usbKey);
+  }
+  // Helper to download a file from a URL to a given path
+  async function downloadFile(url: string, dest: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const proto = url.startsWith('https') ? https : http;
+      const file = createWriteStream(dest);
+      let finished = false;
+      const timeoutMs = 15000; // 15 seconds
+      const timeout = setTimeout(() => {
+        finished = true;
+        file.destroy();
+        unlink(dest).catch(() => {});
+        reject(new Error(`Timeout downloading '${url}'`));
+      }, timeoutMs);
+
+      const request = proto.get(url, (response: any) => {
+        if (response.statusCode !== 200) {
+          clearTimeout(timeout);
+          finished = true;
+          file.destroy();
+          unlink(dest).catch(() => {});
+          reject(new Error(`Failed to get '${url}' (${response.statusCode})`));
+          return;
+        }
+        response.pipe(file);
+        file.on('finish', () => {
+          if (finished) return;
+          clearTimeout(timeout);
+          file.close((err) => {
+            if (err) {
+              unlinkSync(dest);
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        });
+      });
+
+      request.on('error', (err: Error) => {
+        if (finished) return;
+        clearTimeout(timeout);
+        finished = true;
+        file.destroy();
+        unlinkSync(dest);
+        reject(err);
+      });
+
+      file.on('error', (err: Error) => {
+        if (finished) return;
+        clearTimeout(timeout);
+        finished = true;
+        request.destroy();
+        unlinkSync(dest);
+        reject(err);
+      });
+    });
+  }
+
+  let slpDownloadStatus: {
+    status: 'idle' | 'downloading' | 'error' | 'success';
+    slpUrls?: string[];
+    progress?: number;
+    currentFile?: string;
+    failedFiles?: string[];
+  } = { status: 'idle' };
+
+  async function handleProtocolLoadSlpUrls(slpUrls: string[]) {
+    const tempDir = path.join(os.tmpdir(), 'ReplayManagerDownloads');
+    await mkdir(tempDir, { recursive: true });
+    const downloadedFiles: string[] = [];
+    const failedFiles: string[] = [];
+    const total = slpUrls.length;
+    await slpUrls.reduce(async (prevPromise, url, i) => {
+      await prevPromise;
+      const fileName = path.basename(new URL(url).pathname);
+      const dest = path.join(tempDir, fileName);
+      // Emit progress before starting each file
+      slpDownloadStatus = {
+        status: 'downloading',
+        slpUrls,
+        progress: Math.round((i / total) * 100),
+        currentFile: fileName,
+      };
+      if (mainWindow) {
+        mainWindow.webContents.send('slp-download-status', slpDownloadStatus);
+      }
+      try {
+        await downloadFile(url, dest);
+        downloadedFiles.push(dest);
+      } catch (err) {
+        failedFiles.push(url);
+      }
+    }, Promise.resolve());
+    // Emit 100% progress after last file
+    slpDownloadStatus = {
+      status: 'downloading',
+      slpUrls,
+      progress: 100,
+      currentFile: '',
+    };
+    if (mainWindow) {
+      mainWindow.webContents.send('slp-download-status', slpDownloadStatus);
+    }
+    if (failedFiles.length > 0) {
+      slpDownloadStatus = { status: 'error', failedFiles };
+      if (mainWindow)
+        mainWindow.webContents.send('slp-download-status', slpDownloadStatus);
+    } else {
+      slpDownloadStatus = { status: 'success' };
+      if (mainWindow)
+        mainWindow.webContents.send('slp-download-status', slpDownloadStatus);
+      addReplayDir(tempDir, '');
+    }
+  }
+  (setupIPCs as any).handleProtocolLoadSlpUrls = handleProtocolLoadSlpUrls;
+
   const onInsert = (e: any) => {
     if (knownUsbs.has(e.data.key)) {
       return;
@@ -129,18 +254,11 @@ export default function setupIPCs(
 
     if (e.data.isAccessible) {
       knownUsbs.set(e.data.key, true);
-      replayDirs.push({
-        dir:
-          process.platform === 'win32'
-            ? `${e.data.key}Slippi`
-            : path.join(e.data.key, 'Slippi'),
-        usbKey: e.data.key,
-      });
-      mainWindow.webContents.send(
-        'usbstorage',
-        replayDirs[replayDirs.length - 1].dir,
-        true,
-      );
+      const dir =
+        process.platform === 'win32'
+          ? `${e.data.key}Slippi`
+          : path.join(e.data.key, 'Slippi');
+      addReplayDir(dir, e.data.key);
     }
   };
   const onEject = (e: any) => {
