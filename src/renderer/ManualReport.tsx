@@ -166,12 +166,12 @@ export default function ManualReport({
           selectedSet.entrant2Id,
         )
       : [];
-  const startggSet: StartggSet = {
+  const getStartggSet = () => ({
     setId: selectedSet.id,
     winnerId: assertInteger(winnerId),
     isDQ: entrant1Dq || entrant2Dq,
     gameData,
-  };
+  });
   const challongeMatchItems: ChallongeMatchItem[] = [
     {
       participant_id: selectedSet.entrant1Id.toString(10),
@@ -599,7 +599,7 @@ export default function ManualReport({
               setReporting(true);
               try {
                 if (mode === Mode.STARTGG) {
-                  await reportStartggSet(startggSet, selectedSet);
+                  await reportStartggSet(getStartggSet(), selectedSet);
                 } else if (mode === Mode.CHALLONGE) {
                   await reportChallongeSet(
                     assertInteger(selectedSet.id),
