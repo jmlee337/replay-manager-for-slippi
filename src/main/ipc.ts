@@ -15,8 +15,8 @@ import {
   readdir,
   readFile,
   unlink,
+  writeFile,
 } from 'fs/promises';
-import { createWriteStream } from 'fs';
 import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
@@ -148,15 +148,8 @@ export default function setupIPCs(
       }
 
       const arrayBuffer = await response.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
-      const file = createWriteStream(dest);
-
-      return new Promise<void>((resolve, reject) => {
-        file.on('finish', resolve);
-        file.on('error', reject);
-        file.end(buffer);
-      });
+      const uint8 = new Uint8Array(arrayBuffer);
+      await writeFile(dest, uint8);
     } catch (error) {
       try {
         await unlink(dest);
