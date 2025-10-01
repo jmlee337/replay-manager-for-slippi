@@ -16,11 +16,8 @@ import {
   readFile,
   unlink,
 } from 'fs/promises';
-import { createWriteStream, unlinkSync } from 'fs';
+import { createWriteStream } from 'fs';
 import detectUsb from 'detect-usb';
-import os from 'os';
-import https from 'https';
-import http from 'http';
 import path from 'path';
 import { eject } from 'eject-media';
 import { format } from 'date-fns';
@@ -129,64 +126,51 @@ export default function setupIPCs(
   // Helper to add a new replay directory and notify renderer
   function addReplayDir(dir: string, usbKey: string) {
     replayDirs.push({ dir, usbKey });
-    mainWindow.webContents.send('usbstorage', dir, !!usbKey);
+    mainWindow.webContents.send('usbstorage', dir, Boolean(usbKey));
   }
   // Helper to download a file from a URL to a given path
   async function downloadFile(url: string, dest: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const proto = url.startsWith('https') ? https : http;
+    const controller = new AbortController();
+    const timeoutMs = 15000; // 15 seconds
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get '${url}' (${response.status})`);
+      }
+
+      if (!response.body) {
+        throw new Error(`No response body for '${url}'`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
       const file = createWriteStream(dest);
-      let finished = false;
-      const timeoutMs = 15000; // 15 seconds
-      const timeout = setTimeout(() => {
-        finished = true;
-        file.destroy();
-        unlink(dest).catch(() => {});
-        reject(new Error(`Timeout downloading '${url}'`));
-      }, timeoutMs);
 
-      const request = proto.get(url, (response: any) => {
-        if (response.statusCode !== 200) {
-          clearTimeout(timeout);
-          finished = true;
-          file.destroy();
-          unlink(dest).catch(() => {});
-          reject(new Error(`Failed to get '${url}' (${response.statusCode})`));
-          return;
-        }
-        response.pipe(file);
-        file.on('finish', () => {
-          if (finished) return;
-          clearTimeout(timeout);
-          file.close((err) => {
-            if (err) {
-              unlinkSync(dest);
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        });
+      return new Promise<void>((resolve, reject) => {
+        file.on('finish', resolve);
+        file.on('error', reject);
+        file.end(buffer);
       });
+    } catch (error) {
+      try {
+        await unlink(dest);
+      } catch {
+        // Ignore cleanup errors
+      }
 
-      request.on('error', (err: Error) => {
-        if (finished) return;
-        clearTimeout(timeout);
-        finished = true;
-        file.destroy();
-        unlinkSync(dest);
-        reject(err);
-      });
-
-      file.on('error', (err: Error) => {
-        if (finished) return;
-        clearTimeout(timeout);
-        finished = true;
-        request.destroy();
-        unlinkSync(dest);
-        reject(err);
-      });
-    });
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(`Timeout downloading '${url}'`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   let slpDownloadStatus: {
@@ -198,7 +182,7 @@ export default function setupIPCs(
   } = { status: 'idle' };
 
   async function handleProtocolLoadSlpUrls(slpUrls: string[]) {
-    const tempDir = path.join(os.tmpdir(), 'ReplayManagerDownloads');
+    const tempDir = path.join(app.getPath('temp'), 'ReplayManagerDownloads');
     await mkdir(tempDir, { recursive: true });
     const downloadedFiles: string[] = [];
     const failedFiles: string[] = [];
