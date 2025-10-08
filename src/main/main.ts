@@ -14,14 +14,10 @@ import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import setupIPCs from './ipc';
 
-let handleProtocolLoadSlpUrls:
-  | ((slpUrls: string[]) => Promise<void>)
-  | undefined;
-
 let mainWindow: BrowserWindow | null = null;
 let enforcerWindow: BrowserWindow | null = null;
 
-function handleProtocolUrl(url: string) {
+async function handleProtocolUrl(url: string) {
   try {
     const parsed = new URL(url);
     if (parsed.protocol !== 'replay-manager:') return;
@@ -34,15 +30,11 @@ function handleProtocolUrl(url: string) {
           mainWindow.show();
           mainWindow.focus();
         }
-        if (handleProtocolLoadSlpUrls) {
-          handleProtocolLoadSlpUrls(slpUrls);
-        } else {
-          console.error('handleProtocolLoadSlpUrls is not initialized');
-        }
+        app.emit('protocol-load-slp-urls', slpUrls);
       }
     }
   } catch (e) {
-    console.error('Invalid protocol URL:', url, e);
+    // invalid URL
   }
 }
 
@@ -146,7 +138,6 @@ const createWindow = async () => {
   }
 
   setupIPCs(mainWindow, enforcerWindow);
-  handleProtocolLoadSlpUrls = (setupIPCs as any).handleProtocolLoadSlpUrls;
 };
 
 /**
@@ -168,9 +159,11 @@ app
       app.quit();
     } else {
       app.on('second-instance', (event, argv) => {
-        // protocol URL is in argv
-        const urlArg = argv.find((arg) => arg.startsWith('replay-manager://'));
-        if (urlArg) handleProtocolUrl(urlArg);
+        // protocol URL should always be last in argv
+        const lastArg = argv.pop();
+        if (lastArg && lastArg.startsWith('replay-manager://')) {
+          handleProtocolUrl(lastArg);
+        }
       });
     }
 

@@ -11,16 +11,7 @@ import {
   Box,
 } from '@mui/material';
 
-export type SlpDownloadStatus =
-  | { status: 'idle' }
-  | {
-      status: 'downloading';
-      slpUrls: string[];
-      progress: number;
-      currentFile: string;
-    }
-  | { status: 'error'; failedFiles: string[] }
-  | { status: 'success' };
+import { SlpDownloadStatus } from '../common/types';
 
 function LinearProgressWithLabel({ value }: { value: number }) {
   return (

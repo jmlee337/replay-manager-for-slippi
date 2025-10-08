@@ -14,6 +14,7 @@ import {
   SelectedPhase,
   SelectedPhaseGroup,
   Set,
+  SlpDownloadStatus,
   StartggSet,
   Tournament,
   WebSocketServerStatus,
@@ -29,19 +30,7 @@ import {
 
 const electronHandler = {
   onSlpDownloadStatus: (
-    callback: (
-      event: IpcRendererEvent,
-      status:
-        | { status: 'idle' }
-        | {
-            status: 'downloading';
-            slpUrls: string[];
-            progress: number;
-            currentFile: string;
-          }
-        | { status: 'error'; failedFiles: string[] }
-        | { status: 'success' },
-    ) => void,
+    callback: (event: IpcRendererEvent, status: SlpDownloadStatus) => void,
   ) => {
     ipcRenderer.removeAllListeners('slp-download-status');
     ipcRenderer.on('slp-download-status', callback);
