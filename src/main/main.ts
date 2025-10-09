@@ -29,6 +29,7 @@ async function handleProtocolUrl(url: string) {
           if (mainWindow.isMinimized()) mainWindow.restore();
           mainWindow.show();
           mainWindow.focus();
+          mainWindow.emit('protocol-load-slp-urls', slpUrls);
         }
         app.emit('protocol-load-slp-urls', slpUrls);
       }

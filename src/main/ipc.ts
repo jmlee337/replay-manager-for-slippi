@@ -130,27 +130,27 @@ export default function setupIPCs(
   }
   // Helper to download a file from a URL to a given path
   async function downloadFile(url: string, dest: string): Promise<void> {
+    let response;
     try {
-      const response = await fetch(url, {
+      response = await fetch(url, {
         signal: AbortSignal.timeout(15000),
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to get '${url}' (${response.status})`);
-      }
-
-      if (!response.body) {
-        throw new Error(`No response body for '${url}'`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      await writeFile(dest, new Uint8Array(arrayBuffer));
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error(`Timeout downloading '${url}'`);
       }
       throw error;
     }
+
+    if (!response.ok) {
+      throw new Error(`Failed to get '${url}' (${response.status})`);
+    }
+
+    if (!response.body) {
+      throw new Error(`No response body for '${url}'`);
+    }
+
+    await writeFile(dest, new Uint8Array(await response.arrayBuffer()));
   }
 
   let slpDownloadStatus: {
@@ -164,7 +164,6 @@ export default function setupIPCs(
   async function handleProtocolLoadSlpUrls(slpUrls: string[]) {
     const tempDir = path.join(app.getPath('temp'), app.getName());
     await mkdir(tempDir, { recursive: true });
-    const downloadedFiles: string[] = [];
     const failedFiles: string[] = [];
     const total = slpUrls.length;
     let completed = 0;
@@ -174,7 +173,6 @@ export default function setupIPCs(
         const dest = path.join(tempDir, fileName);
         try {
           await downloadFile(url, dest);
-          downloadedFiles.push(dest);
         } catch (err) {
           // Delete partial files
           try {
@@ -222,7 +220,7 @@ export default function setupIPCs(
     }
   }
 
-  (app as any).on('protocol-load-slp-urls', (slpUrls: string[]) => {
+  (mainWindow as any).on('protocol-load-slp-urls', (slpUrls: string[]) => {
     handleProtocolLoadSlpUrls(slpUrls);
   });
 
