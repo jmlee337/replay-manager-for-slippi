@@ -4,6 +4,7 @@ import {
   ThemeProvider,
   Tooltip,
   createTheme,
+  useTheme,
 } from '@mui/material';
 import { CSSProperties, DragEvent, ReactElement } from 'react';
 import { NameWithHighlight, PlayerOverrides } from '../common/types';
@@ -79,17 +80,13 @@ export function DraggableChip({
     selectedChipData.entrantId === entrantId &&
     selectedChipData.participantId === participantId;
 
+  const parentTheme = useTheme();
+
   return (
     <ThemeProvider
       theme={createTheme({
-        components: {
-          MuiButtonBase: {
-            defaultProps: {
-              disableRipple: true,
-            },
-          },
-        },
         palette: {
+          mode: parentTheme.palette.mode,
           primary: {
             contrastText: '#FFF',
             light: '#5BCEFA',
@@ -98,6 +95,13 @@ export function DraggableChip({
           },
           action: {
             hover: elevate ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.04)',
+          },
+        },
+        components: {
+          MuiButtonBase: {
+            defaultProps: {
+              disableRipple: true,
+            },
           },
         },
       })}
@@ -132,7 +136,7 @@ export function DraggableChip({
         onDragStart={dragStart}
         label={<Name nameWithHighlight={nameWithHighlight} />}
         sx={{
-          backgroundColor: !selected && elevate ? 'white' : undefined,
+          bgcolor: !selected && elevate ? 'background.paper' : undefined,
           zIndex: (theme) => {
             if (selected) {
               return theme.zIndex.drawer + 4;
@@ -199,8 +203,11 @@ export function DroppableChip({
     selectedChipData.entrantId && selectedChipData.participantId,
   );
 
+  const parentTheme = useTheme();
+
   const themeOptions: ThemeOptions = {
     palette: {
+      mode: parentTheme.palette.mode,
       secondary: {
         contrastText: '#FFF',
         light: '#F5A9B8',
@@ -247,8 +254,8 @@ export function DroppableChip({
       label={label}
       style={style}
       sx={{
-        backgroundColor:
-          active && elevate && !selectedChip ? 'white' : undefined,
+        bgcolor:
+          active && elevate && !selectedChip ? 'background.paper' : undefined,
         zIndex: (theme) => {
           if (active && selectedChip) {
             return theme.zIndex.drawer + 4;

@@ -1126,6 +1126,19 @@ export default function setupIPCs(
     },
   );
 
+  let darkMode = store.get('darkMode', false);
+  ipcMain.removeHandler('getDarkMode');
+  ipcMain.handle('getDarkMode', () => darkMode);
+
+  ipcMain.removeHandler('setDarkMode');
+  ipcMain.handle(
+    'setDarkMode',
+    (event: IpcMainInvokeEvent, newDarkMode: boolean) => {
+      store.set('darkMode', newDarkMode);
+      darkMode = newDarkMode;
+    },
+  );
+
   ipcMain.removeHandler('copyToClipboard');
   ipcMain.handle(
     'copyToClipboard',

@@ -63,6 +63,8 @@ export default function Settings({
   setSmuggleCostumeIndex,
   useLAN,
   setUseLAN,
+  darkMode,
+  setDarkMode,
   fileNameFormat,
   setFileNameFormat,
   folderNameFormat,
@@ -86,6 +88,8 @@ export default function Settings({
   setSmuggleCostumeIndex: (smuggleCostumeIndex: boolean) => void;
   useLAN: boolean;
   setUseLAN: (useLAN: boolean) => void;
+  darkMode: boolean;
+  setDarkMode: (darkMode: boolean) => void;
   fileNameFormat: string;
   setFileNameFormat: (fileNameFormat: string) => void;
   folderNameFormat: string;
@@ -171,7 +175,16 @@ export default function Settings({
         <Fab
           onClick={() => setOpen(true)}
           size="small"
-          style={{ position: 'absolute', bottom: 8, left: 8 }}
+          sx={{
+            position: 'absolute',
+            bottom: '8px',
+            left: '8px',
+            bgcolor: 'background.paper',
+            color: 'text.primary',
+            '&:hover': {
+              bgcolor: 'action.hover',
+            },
+          }}
         >
           <SettingsIcon />
         </Fab>
@@ -338,6 +351,15 @@ export default function Settings({
               set={async (checked) => {
                 await window.electron.setGuidedMode(checked);
                 setGuidedMode(checked);
+              }}
+            />
+            <LabeledCheckbox
+              checked={darkMode}
+              label="Use dark mode"
+              labelPlacement="end"
+              set={async (checked) => {
+                await window.electron.setDarkMode(checked);
+                setDarkMode(checked);
               }}
             />
             <Stack

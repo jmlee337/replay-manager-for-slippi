@@ -222,6 +222,9 @@ const electronHandler = {
     ipcRenderer.invoke('getSmuggleCostumeIndex'),
   setSmuggleCostumeIndex: (smuggleCostumeIndex: boolean) =>
     ipcRenderer.invoke('setSmuggleCostumeIndex', smuggleCostumeIndex),
+  getDarkMode: (): Promise<boolean> => ipcRenderer.invoke('getDarkMode'),
+  setDarkMode: (darkMode: boolean): Promise<void> =>
+    ipcRenderer.invoke('setDarkMode', darkMode),
   copyToClipboard: (text: string): Promise<void> =>
     ipcRenderer.invoke('copyToClipboard', text),
   getVersion: (): Promise<string> => ipcRenderer.invoke('getVersion'),

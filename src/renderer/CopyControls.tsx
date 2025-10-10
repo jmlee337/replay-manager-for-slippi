@@ -464,7 +464,7 @@ export default function CopyControls({
             sx={
               elevateSettings
                 ? {
-                    backgroundColor: 'white',
+                    bgcolor: 'background.paper',
                     zIndex: (theme) => theme.zIndex.drawer + 2,
                   }
                 : undefined

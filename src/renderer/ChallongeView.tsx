@@ -83,7 +83,7 @@ export default function ChallongeView({
     (!searchSubstr ||
       pendingSetsToShow.length > 0 ||
       completedSetsToShow.length > 0) && (
-      <Box bgcolor="white">
+      <Box sx={{ bgcolor: 'background.paper' }}>
         <ListItemButton
           dense
           disableGutters
