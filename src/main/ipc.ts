@@ -21,6 +21,7 @@ import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
 import { format } from 'date-fns';
+import { EventEmitter } from 'events';
 import {
   ChallongeMatchItem,
   Context,
@@ -119,7 +120,7 @@ async function getRealSetId(sggApiKey: string, originalSet: Set) {
 export default function setupIPCs(
   mainWindow: BrowserWindow,
   enforcerWindow: BrowserWindow,
-  eventEmitter: import('events').EventEmitter,
+  eventEmitter: EventEmitter,
 ): void {
   const store = new Store<{ copySettings: CopySettings }>();
   let replayDirs: ReplayDir[] = [];

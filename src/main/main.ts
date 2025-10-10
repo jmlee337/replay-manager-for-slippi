@@ -28,11 +28,13 @@ async function handleProtocolUrl(url: string) {
       if (paths) {
         const slpUrls = paths.split(';');
         if (mainWindow) {
-          if (mainWindow.isMinimized()) mainWindow.restore();
+          if (mainWindow.isMinimized()) {
+            mainWindow.restore();
+          }
           mainWindow.show();
           mainWindow.focus();
-          eventEmitter.emit('protocol-load-slp-urls', slpUrls);
         }
+        eventEmitter.emit('protocol-load-slp-urls', slpUrls);
       }
     }
   } catch (e) {
