@@ -188,6 +188,10 @@ const electronHandler = {
   getUseLAN: (): Promise<boolean> => ipcRenderer.invoke('getUseLAN'),
   setUseLAN: (useLAN: boolean): Promise<void> =>
     ipcRenderer.invoke('setUseLAN', useLAN),
+  getDoublesTeamFormat: (): Promise<boolean> =>
+    ipcRenderer.invoke('getDoublesTeamFormat'),
+  setDoublesTeamFormat: (doublesTeamFormat: boolean): Promise<void> =>
+    ipcRenderer.invoke('setDoublesTeamFormat', doublesTeamFormat),
   getEnforcerSetting: (): Promise<EnforcerSetting> =>
     ipcRenderer.invoke('getEnforcerSetting'),
   setEnforcerSetting: (enforcerSetting: EnforcerSetting): Promise<void> =>

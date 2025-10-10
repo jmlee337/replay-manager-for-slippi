@@ -63,6 +63,8 @@ export default function Settings({
   setSmuggleCostumeIndex,
   useLAN,
   setUseLAN,
+  doublesTeamFormat,
+  setDoublesTeamFormat,
   fileNameFormat,
   setFileNameFormat,
   folderNameFormat,
@@ -86,6 +88,8 @@ export default function Settings({
   setSmuggleCostumeIndex: (smuggleCostumeIndex: boolean) => void;
   useLAN: boolean;
   setUseLAN: (useLAN: boolean) => void;
+  doublesTeamFormat: boolean;
+  setDoublesTeamFormat: (doublesTeamFormat: boolean) => void;
   fileNameFormat: string;
   setFileNameFormat: (fileNameFormat: string) => void;
   folderNameFormat: string;
@@ -425,6 +429,15 @@ export default function Settings({
               set={async (checked) => {
                 await window.electron.setUseLAN(checked);
                 setUseLAN(checked);
+              }}
+            />
+            <LabeledCheckbox
+              checked={doublesTeamFormat}
+              label="Format doubles names as team vs team"
+              labelPlacement="end"
+              set={async (checked) => {
+                await window.electron.setDoublesTeamFormat(checked);
+                setDoublesTeamFormat(checked);
               }}
             />
             {mode === Mode.STARTGG && (
