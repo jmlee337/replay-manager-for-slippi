@@ -29,7 +29,7 @@ export default function ManualView({
     }
   });
   return (
-    <Stack bgcolor="white" paddingTop="8px" spacing="8px">
+    <Stack sx={{ bgcolor: 'background.paper' }} paddingTop="8px" spacing="8px">
       {namesWithHighlights.map((nameWithHighlight, i) => (
         <DraggableChip
           key={nameWithHighlight.name}

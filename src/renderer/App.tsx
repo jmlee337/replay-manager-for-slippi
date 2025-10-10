@@ -4,6 +4,7 @@ import {
   RefObject,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -16,6 +17,8 @@ import {
   Button,
   Checkbox,
   CircularProgress,
+  createTheme,
+  CssBaseline,
   Dialog,
   DialogActions,
   DialogContent,
@@ -30,6 +33,7 @@ import {
   Paper,
   Select,
   Stack,
+  ThemeProvider,
   Toolbar,
   Tooltip,
   Typography,
@@ -47,6 +51,7 @@ import {
   Refresh,
 } from '@mui/icons-material';
 import styled from '@emotion/styled';
+import { styled as muiStyled } from '@mui/material/styles';
 import { format } from 'date-fns';
 import { GlobalHotKeys } from 'react-hotkeys';
 import {
@@ -118,12 +123,13 @@ const TopColumns = styled(Stack)`
   padding: 0 8px;
 `;
 
-const TopColumn = styled(Stack)`
-  flex-shrink: 1;
-  overflow-y: scroll;
-  padding: 64px 0 8px;
-  scroll-padding-top: 64px;
-`;
+const TopColumn = muiStyled(Stack)(({ theme }) => ({
+  flexShrink: 1,
+  overflowY: 'scroll',
+  padding: '64px 0 8px',
+  scrollPaddingTop: '64px',
+  backgroundColor: theme.palette.background.default,
+}));
 
 const AppBarSection = styled(Stack)`
   flex-shrink: 1;
@@ -207,6 +213,7 @@ function Hello() {
   const [vlerkModeFilterLastIndex, setVlerkModeFilterLastIndex] = useState(0);
   const [vlerkModeFilterNotFound, setVlerkModeFilterNotFound] = useState(false);
   const [guidedMode, setGuidedMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
   const [fileNameFormat, setFileNameFormat] = useState('');
   const [folderNameFormat, setFolderNameFormat] = useState('');
   const [smuggleCostumeIndex, setSmuggleCostumeIndex] = useState(false);
@@ -268,6 +275,7 @@ function Hello() {
       const enforcerSettingPromise = window.electron.getEnforcerSetting();
       const vlerkModePromise = window.electron.getVlerkMode();
       const guidedModePromise = window.electron.getGuidedMode();
+      const darkModePromise = window.electron.getDarkMode();
       const fileNameFormatPromise = window.electron.getFileNameFormat();
       const folderNameFormatPromise = window.electron.getFolderNameFormat();
       const smuggleCostumeIndexPromise =
@@ -301,6 +309,7 @@ function Hello() {
       setFolderNameFormat(await folderNameFormatPromise);
       setVlerkMode(await vlerkModePromise);
       setGuidedMode(await guidedModePromise);
+      setDarkMode(await darkModePromise);
       setSmuggleCostumeIndex(await smuggleCostumeIndexPromise);
       setCopySettings(await copySettingsPromise);
       setReportSettings(await reportSettingsPromise);
@@ -1679,8 +1688,31 @@ function Hello() {
 
   const superKey = window.electron.isMac ? 'CMD' : 'CTRL';
 
+  const muiTheme = useMemo(
+    () =>
+      createTheme({
+        palette: {
+          mode: darkMode ? 'dark' : 'light',
+        },
+        components: {
+          MuiInputBase: {
+            styleOverrides: {
+              root: ({ theme }) => ({
+                '&.Mui-disabled': {
+                  color: theme.palette.text.primary,
+                  WebkitTextFillColor: theme.palette.text.primary,
+                },
+              }),
+            },
+          },
+        },
+      }),
+    [darkMode],
+  );
+
   return (
-    <>
+    <ThemeProvider theme={muiTheme}>
+      <CssBaseline />
       <AppBar position="fixed" color="inherit">
         <Toolbar disableGutters variant="dense">
           <AppBarSection flexGrow={1} minWidth={600}>
@@ -2699,6 +2731,8 @@ function Hello() {
         setGuidedMode={setGuidedMode}
         smuggleCostumeIndex={smuggleCostumeIndex}
         setSmuggleCostumeIndex={setSmuggleCostumeIndex}
+        darkMode={darkMode}
+        setDarkMode={setDarkMode}
         fileNameFormat={fileNameFormat}
         setFileNameFormat={setFileNameFormat}
         folderNameFormat={folderNameFormat}
@@ -2742,7 +2776,7 @@ function Hello() {
           },
         }}
       />
-    </>
+    </ThemeProvider>
   );
 }
 

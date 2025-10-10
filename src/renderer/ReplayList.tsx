@@ -211,11 +211,12 @@ const ReplayListItem = forwardRef(
         <QuarterSegment key={key}>
           {trophy}
           <Box
-            bgcolor={
-              displayName.length > 0 && elevateNames ? 'white' : undefined
-            }
             flexGrow={1}
             sx={{
+              bgcolor:
+                displayName.length > 0 && elevateNames
+                  ? 'background.paper'
+                  : undefined,
               zIndex: (theme) =>
                 displayName.length > 0 && elevateNames
                   ? theme.zIndex.drawer + 2
@@ -429,8 +430,8 @@ export default function ReplayList({
   return (
     <List
       disablePadding
-      style={{ backgroundColor: 'white' }}
       sx={{
+        bgcolor: 'background.paper',
         zIndex: (theme) => (elevate ? theme.zIndex.drawer + 2 : undefined),
       }}
     >
