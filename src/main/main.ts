@@ -10,12 +10,14 @@
  */
 import path from 'path';
 import { app, BrowserWindow, shell } from 'electron';
+import { EventEmitter } from 'events';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import setupIPCs from './ipc';
 
 let mainWindow: BrowserWindow | null = null;
 let enforcerWindow: BrowserWindow | null = null;
+const eventEmitter = new EventEmitter();
 
 async function handleProtocolUrl(url: string) {
   try {
@@ -29,9 +31,8 @@ async function handleProtocolUrl(url: string) {
           if (mainWindow.isMinimized()) mainWindow.restore();
           mainWindow.show();
           mainWindow.focus();
-          mainWindow.emit('protocol-load-slp-urls', slpUrls);
+          eventEmitter.emit('protocol-load-slp-urls', slpUrls);
         }
-        app.emit('protocol-load-slp-urls', slpUrls);
       }
     }
   } catch (e) {
@@ -138,7 +139,7 @@ const createWindow = async () => {
     enforcerWindow.loadURL(resolveHtmlPath('enforcer.html'));
   }
 
-  setupIPCs(mainWindow, enforcerWindow);
+  setupIPCs(mainWindow, enforcerWindow, eventEmitter);
 };
 
 /**

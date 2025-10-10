@@ -119,6 +119,7 @@ async function getRealSetId(sggApiKey: string, originalSet: Set) {
 export default function setupIPCs(
   mainWindow: BrowserWindow,
   enforcerWindow: BrowserWindow,
+  eventEmitter: import('events').EventEmitter,
 ): void {
   const store = new Store<{ copySettings: CopySettings }>();
   let replayDirs: ReplayDir[] = [];
@@ -220,7 +221,7 @@ export default function setupIPCs(
     }
   }
 
-  (mainWindow as any).on('protocol-load-slp-urls', (slpUrls: string[]) => {
+  eventEmitter.on('protocol-load-slp-urls', (slpUrls: string[]) => {
     handleProtocolLoadSlpUrls(slpUrls);
   });
 
