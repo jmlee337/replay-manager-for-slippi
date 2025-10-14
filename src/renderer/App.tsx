@@ -78,6 +78,7 @@ import {
   SelectedPhase,
   SelectedPhaseGroup,
   Set,
+  SlpDownloadStatus,
   StartggSet,
   State,
   Stream,
@@ -106,7 +107,7 @@ import AssignStream from './AssignStream';
 import getCharacterIcon from './getCharacterIcon';
 import RightColumn from './RightColumn';
 import { WindowEvent } from './setWindowEventListener';
-import SlpDownloadModal, { SlpDownloadStatus } from './SlpDownloadModal';
+import SlpDownloadModal from './SlpDownloadModal';
 
 const ENFORCER_VERSION = '1.4.4';
 

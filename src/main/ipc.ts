@@ -171,7 +171,7 @@ export default function setupIPCs(
       throw new Error(`No response body for '${url}'`);
     }
 
-    await writeFile(dest, new Uint8Array(await response.arrayBuffer()));
+    await writeFile(dest, Buffer.from(await response.arrayBuffer()));
   }
 
   let slpDownloadStatus: {
