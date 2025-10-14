@@ -20,6 +20,7 @@ import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
 import { format } from 'date-fns';
+import { MatchResult } from '@parry-gg/client';
 import {
   ChallongeMatchItem,
   Context,
@@ -28,6 +29,7 @@ import {
   EnforcerSetting,
   EnforceState,
   EnforceStatus,
+  Id,
   Mode,
   Output,
   Replay,
@@ -68,6 +70,22 @@ import {
   startChallongeSet,
 } from './challonge';
 import {
+  getParryggTournament,
+  getParryggTournaments,
+  getParryggEvent,
+  getParryggPhase,
+  getParryggBracket,
+  getSelectedParryggSet,
+  getCurrentParryggTournament,
+  reportParryggSet,
+  setSelectedParryggSetChain,
+  setSelectedParryggSetId,
+  setSelectedParryggTournament,
+  startParryggSet,
+  getSelectedParryggSetChain,
+  getAdminedParryggTournaments,
+} from './parrygg';
+import {
   appendEnforcerResult,
   connectToHost,
   disconnectFromHost,
@@ -89,6 +107,7 @@ import {
   stopHostServer,
   stopListening,
 } from './host';
+import { assertInteger, assertString } from '../common/asserts';
 import { resolveHtmlPath } from './util';
 
 type ReplayDir = {
@@ -101,7 +120,7 @@ let entrantsWindow: BrowserWindow | null = null;
 async function getRealSetId(sggApiKey: string, originalSet: Set) {
   const updatedPhaseGroup = await getPhaseGroup(
     sggApiKey,
-    getSelectedSetChain().phaseGroup!.id,
+    assertInteger(getSelectedSetChain().phaseGroup!.id),
   );
   const candidateRealSets = updatedPhaseGroup.sets.pendingSets.filter(
     (realSet) =>
@@ -110,7 +129,7 @@ async function getRealSetId(sggApiKey: string, originalSet: Set) {
       realSet.round === originalSet.round,
   );
   if (candidateRealSets.length === 1) {
-    return candidateRealSets[0].id;
+    return assertInteger(candidateRealSets[0].id);
   }
   return null;
 }
@@ -465,6 +484,18 @@ export default function setupIPCs(
     ? (store.get('sggApiKey') as string)
     : '';
 
+  ipcMain.removeHandler('getStartggKey');
+  ipcMain.handle('getStartggKey', () => sggApiKey);
+
+  ipcMain.removeHandler('setStartggKey');
+  ipcMain.handle(
+    'setStartggKey',
+    (event: IpcMainInvokeEvent, newSggApiKey: string) => {
+      store.set('sggApiKey', newSggApiKey);
+      sggApiKey = newSggApiKey;
+    },
+  );
+
   ipcMain.removeHandler('getCurrentTournament');
   ipcMain.handle('getCurrentTournament', getCurrentTournament);
 
@@ -483,15 +514,6 @@ export default function setupIPCs(
       setSelectedSetChain(eventId, phaseId, phaseGroupId);
     },
   );
-
-  ipcMain.removeHandler('getPoolsByWave');
-  ipcMain.handle('getPoolsByWave', () => {
-    if (!sggApiKey) {
-      throw new Error('Please set start.gg API key');
-    }
-
-    return getPoolsByWave(sggApiKey);
-  });
 
   ipcMain.removeHandler('getTournament');
   ipcMain.handle(
@@ -584,7 +606,10 @@ export default function setupIPCs(
           throw e;
         }
       }
-      await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
+      await getPhaseGroup(
+        sggApiKey,
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
+      );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -617,7 +642,10 @@ export default function setupIPCs(
           throw e;
         }
       }
-      await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
+      await getPhaseGroup(
+        sggApiKey,
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
+      );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -634,7 +662,10 @@ export default function setupIPCs(
       }
 
       await resetSet(sggApiKey, setId);
-      await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
+      await getPhaseGroup(
+        sggApiKey,
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
+      );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -667,7 +698,10 @@ export default function setupIPCs(
           throw e;
         }
       }
-      await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
+      await getPhaseGroup(
+        sggApiKey,
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
+      );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -726,7 +760,7 @@ export default function setupIPCs(
       }
       const updatedPhaseGroup = await getPhaseGroup(
         sggApiKey,
-        getSelectedSetChain().phaseGroup!.id,
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
       );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
@@ -754,7 +788,10 @@ export default function setupIPCs(
       }
 
       const updatedSet = await updateSet(sggApiKey, set);
-      await getPhaseGroup(sggApiKey, getSelectedSetChain().phaseGroup!.id);
+      await getPhaseGroup(
+        sggApiKey,
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
+      );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -763,17 +800,14 @@ export default function setupIPCs(
     },
   );
 
-  ipcMain.removeHandler('getStartggKey');
-  ipcMain.handle('getStartggKey', () => sggApiKey);
+  ipcMain.removeHandler('getPoolsByWave');
+  ipcMain.handle('getPoolsByWave', () => {
+    if (!sggApiKey) {
+      throw new Error('Please set start.gg API key');
+    }
 
-  ipcMain.removeHandler('setStartggKey');
-  ipcMain.handle(
-    'setStartggKey',
-    (event: IpcMainInvokeEvent, newSggApiKey: string) => {
-      store.set('sggApiKey', newSggApiKey);
-      sggApiKey = newSggApiKey;
-    },
-  );
+    return getPoolsByWave(sggApiKey);
+  });
 
   let challongeApiKey = store.has('challongeApiKey')
     ? (store.get('challongeApiKey') as string)
@@ -787,6 +821,21 @@ export default function setupIPCs(
     (event: IpcMainInvokeEvent, newChallongeKey: string) => {
       store.set('challongeApiKey', newChallongeKey);
       challongeApiKey = newChallongeKey;
+    },
+  );
+
+  let parryggApiKey = store.has('parryggApiKey')
+    ? (store.get('parryggApiKey') as string)
+    : '';
+  ipcMain.removeHandler('getParryggKey');
+  ipcMain.handle('getParryggKey', () => parryggApiKey);
+
+  ipcMain.removeHandler('setParryggKey');
+  ipcMain.handle(
+    'setParryggKey',
+    (event: IpcMainInvokeEvent, newParryggKey: string) => {
+      store.set('parryggApiKey', newParryggKey);
+      parryggApiKey = newParryggKey;
     },
   );
 
@@ -865,6 +914,153 @@ export default function setupIPCs(
     },
   );
 
+  ipcMain.removeHandler('getAdminedParryggTournaments');
+  ipcMain.handle('getAdminedParryggTournaments', getAdminedParryggTournaments);
+
+  ipcMain.removeHandler('getCurrentParryggTournament');
+  ipcMain.handle('getCurrentParryggTournament', getCurrentParryggTournament);
+
+  ipcMain.removeHandler('setSelectedParryggTournament');
+  ipcMain.handle(
+    'setSelectedParryggTournament',
+    (event: IpcMainInvokeEvent, slug: string) => {
+      setSelectedParryggTournament(slug);
+    },
+  );
+
+  ipcMain.removeHandler('setSelectedParryggSetChain');
+  ipcMain.handle(
+    'setSelectedParryggSetChain',
+    (
+      event: IpcMainInvokeEvent,
+      eventId: string,
+      phaseId: string,
+      bracketId: string,
+    ) => {
+      setSelectedParryggSetChain(eventId, phaseId, bracketId);
+    },
+  );
+
+  ipcMain.removeHandler('getSelectedParryggSet');
+  ipcMain.handle('getSelectedParryggSet', getSelectedParryggSet);
+
+  ipcMain.removeHandler('setSelectedParryggSetId');
+  ipcMain.handle(
+    'setSelectedParryggSetId',
+    (event: IpcMainInvokeEvent, setId: string) => {
+      setSelectedParryggSetId(setId);
+    },
+  );
+
+  ipcMain.removeHandler('getParryggTournament');
+  ipcMain.handle(
+    'getParryggTournament',
+    async (event: IpcMainInvokeEvent, slug: string, recursive?: boolean) => {
+      if (!parryggApiKey) {
+        throw new Error('Please set parry.gg API key.');
+      }
+
+      await getParryggTournament(parryggApiKey, slug, recursive);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedParryggSet(),
+        parryggTournament: getCurrentParryggTournament(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('getParryggEvent');
+  ipcMain.handle(
+    'getParryggEvent',
+    async (event: IpcMainInvokeEvent, eventId: string) => {
+      if (!parryggApiKey) {
+        throw new Error('Please set parry.gg API key.');
+      }
+
+      await getParryggEvent(parryggApiKey, eventId);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedParryggSet(),
+        parryggTournament: getCurrentParryggTournament(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('getParryggPhase');
+  ipcMain.handle(
+    'getParryggPhase',
+    async (event: IpcMainInvokeEvent, phaseId: string) => {
+      if (!parryggApiKey) {
+        throw new Error('Please set parry.gg API key.');
+      }
+
+      await getParryggPhase(parryggApiKey, phaseId);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedParryggSet(),
+        parryggTournament: getCurrentParryggTournament(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('getParryggBracket');
+  ipcMain.handle(
+    'getParryggBracket',
+    async (event: IpcMainInvokeEvent, bracketId: string) => {
+      if (!parryggApiKey) {
+        throw new Error('Please set parry.gg API key.');
+      }
+
+      await getParryggBracket(parryggApiKey, bracketId);
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedParryggSet(),
+        parryggTournament: getCurrentParryggTournament(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('startParryggSet');
+  ipcMain.handle(
+    'startParryggSet',
+    async (event: IpcMainInvokeEvent, setId: string) => {
+      if (!parryggApiKey) {
+        throw new Error('Please set parry.gg API key.');
+      }
+
+      await startParryggSet(parryggApiKey, setId);
+      await getParryggBracket(
+        parryggApiKey,
+        assertString(getSelectedParryggSetChain().bracket!.id),
+      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedParryggSet(),
+        parryggTournament: getCurrentParryggTournament(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('reportParryggSet');
+  ipcMain.handle(
+    'reportParryggSet',
+    async (
+      event: IpcMainInvokeEvent,
+      slug: string,
+      setId: string,
+      result: MatchResult.AsObject,
+    ) => {
+      if (!parryggApiKey) {
+        throw new Error('Please set parry.gg API key.');
+      }
+      const updatedSet = await reportParryggSet(parryggApiKey, setId, result);
+      await getParryggBracket(
+        parryggApiKey,
+        assertString(getSelectedParryggSetChain().bracket!.id),
+      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedParryggSet(),
+        parryggTournament: getCurrentParryggTournament(),
+      });
+      return updatedSet;
+    },
+  );
+
   ipcMain.removeHandler('getTournaments');
   ipcMain.handle('getTournaments', async () => {
     if (mode === Mode.STARTGG) {
@@ -872,6 +1068,9 @@ export default function setupIPCs(
     }
     if (mode === Mode.CHALLONGE) {
       return challongeApiKey ? getChallongeTournaments(challongeApiKey) : [];
+    }
+    if (mode === Mode.PARRYGG) {
+      return parryggApiKey ? getParryggTournaments(parryggApiKey) : [];
     }
     return [];
   });
@@ -884,17 +1083,25 @@ export default function setupIPCs(
     if (mode === Mode.CHALLONGE) {
       return getSelectedChallongeSet();
     }
+    if (mode === Mode.PARRYGG) {
+      return getSelectedParryggSet();
+    }
     return undefined;
   });
 
   ipcMain.removeHandler('setSelectedSetId');
   ipcMain.handle(
     'setSelectedSetId',
-    (event: IpcMainInvokeEvent, selectedSetId: number | string) => {
+    (event: IpcMainInvokeEvent, selectedSetId: Id) => {
+      if (!selectedSetId) {
+        return;
+      }
       if (mode === Mode.STARTGG) {
         setSelectedSetId(selectedSetId);
       } else if (mode === Mode.CHALLONGE) {
-        setSelectedChallongeSetId(selectedSetId as number);
+        setSelectedChallongeSetId(assertInteger(selectedSetId));
+      } else if (mode === Mode.PARRYGG) {
+        setSelectedParryggSetId(assertString(selectedSetId));
       }
     },
   );
