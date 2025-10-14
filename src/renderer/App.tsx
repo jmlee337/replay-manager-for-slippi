@@ -106,6 +106,7 @@ import AssignStream from './AssignStream';
 import getCharacterIcon from './getCharacterIcon';
 import RightColumn from './RightColumn';
 import { WindowEvent } from './setWindowEventListener';
+import SlpDownloadModal, { SlpDownloadStatus } from './SlpDownloadModal';
 
 const ENFORCER_VERSION = '1.4.4';
 
@@ -206,6 +207,17 @@ function getParryggSlug(tournament: ParryggTournament.AsObject) {
 }
 
 function Hello() {
+  const [slpDownloadStatus, setSlpDownloadStatus] = useState<SlpDownloadStatus>(
+    { status: 'idle' },
+  );
+
+  useEffect(() => {
+    const handler = (_event: any, status: SlpDownloadStatus) => {
+      setSlpDownloadStatus(status);
+    };
+    window.electron?.onSlpDownloadStatus?.(handler);
+  }, []);
+
   const [errors, setErrors] = useState<string[]>([]);
   const [errorDialogOpen, setErrorDialogOpen] = useState(false);
   const showErrorDialog = (messages: string[]) => {
@@ -1792,6 +1804,12 @@ function Hello() {
 
   return (
     <>
+      <SlpDownloadModal
+        status={slpDownloadStatus}
+        onClose={async () => {
+          setSlpDownloadStatus({ status: 'idle' });
+        }}
+      />
       <AppBar position="fixed" color="inherit">
         <Toolbar disableGutters variant="dense">
           <AppBarSection flexGrow={1} minWidth={600}>

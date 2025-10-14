@@ -16,6 +16,7 @@ import {
   SelectedPhase,
   SelectedPhaseGroup,
   Set,
+  SlpDownloadStatus,
   StartggSet,
   Tournament,
   WebSocketServerStatus,
@@ -30,6 +31,12 @@ import {
 } from '../common/types';
 
 const electronHandler = {
+  onSlpDownloadStatus: (
+    callback: (event: IpcRendererEvent, status: SlpDownloadStatus) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('slp-download-status');
+    ipcRenderer.on('slp-download-status', callback);
+  },
   getReplaysDir: (): Promise<string> => ipcRenderer.invoke('getReplaysDir'),
   chooseReplaysDir: (): Promise<string> =>
     ipcRenderer.invoke('chooseReplaysDir'),

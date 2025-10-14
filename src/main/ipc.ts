@@ -15,11 +15,13 @@ import {
   readdir,
   readFile,
   unlink,
+  writeFile,
 } from 'fs/promises';
 import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
 import { format } from 'date-fns';
+import { EventEmitter } from 'events';
 import { MatchResult } from '@parry-gg/client';
 import {
   ChallongeMatchItem,
@@ -137,10 +139,112 @@ async function getRealSetId(sggApiKey: string, originalSet: Set) {
 export default function setupIPCs(
   mainWindow: BrowserWindow,
   enforcerWindow: BrowserWindow,
+  eventEmitter: EventEmitter,
 ): void {
   const store = new Store<{ copySettings: CopySettings }>();
   let replayDirs: ReplayDir[] = [];
   const knownUsbs = new Map<string, boolean>();
+  // Helper to add a new replay directory and notify renderer
+  function addReplayDir(dir: string, usbKey: string) {
+    replayDirs.push({ dir, usbKey });
+    mainWindow.webContents.send('usbstorage', dir, Boolean(usbKey));
+  }
+  // Helper to download a file from a URL to a given path
+  async function downloadFile(url: string, dest: string): Promise<void> {
+    let response;
+    try {
+      response = await fetch(url, {
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error(`Timeout downloading '${url}'`);
+      }
+      throw error;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to get '${url}' (${response.status})`);
+    }
+
+    if (!response.body) {
+      throw new Error(`No response body for '${url}'`);
+    }
+
+    await writeFile(dest, new Uint8Array(await response.arrayBuffer()));
+  }
+
+  let slpDownloadStatus: {
+    status: 'idle' | 'downloading' | 'error' | 'success';
+    slpUrls?: string[];
+    progress?: number;
+    currentFile?: string;
+    failedFiles?: string[];
+  } = { status: 'idle' };
+
+  async function handleProtocolLoadSlpUrls(slpUrls: string[]) {
+    const tempDir = path.join(app.getPath('temp'), app.getName());
+    await mkdir(tempDir, { recursive: true });
+    const failedFiles: string[] = [];
+    const total = slpUrls.length;
+    let completed = 0;
+    await Promise.all(
+      slpUrls.map(async (url) => {
+        const fileName = path.basename(new URL(url).pathname);
+        const dest = path.join(tempDir, fileName);
+        try {
+          await downloadFile(url, dest);
+        } catch (err) {
+          // Delete partial files
+          try {
+            await unlink(dest);
+          } catch (unlinkErr) {
+            // ignore
+          }
+          failedFiles.push(url);
+        } finally {
+          completed += 1;
+          slpDownloadStatus = {
+            status: 'downloading',
+            slpUrls,
+            progress: Math.round((completed / total) * 100),
+            currentFile: fileName,
+          };
+          if (mainWindow) {
+            mainWindow.webContents.send(
+              'slp-download-status',
+              slpDownloadStatus,
+            );
+          }
+        }
+      }),
+    );
+    // Emit 100% progress after last file
+    slpDownloadStatus = {
+      status: 'downloading',
+      slpUrls,
+      progress: 100,
+      currentFile: '',
+    };
+    if (mainWindow) {
+      mainWindow.webContents.send('slp-download-status', slpDownloadStatus);
+    }
+    if (failedFiles.length > 0) {
+      slpDownloadStatus = { status: 'error', failedFiles };
+      if (mainWindow)
+        mainWindow.webContents.send('slp-download-status', slpDownloadStatus);
+    } else {
+      slpDownloadStatus = { status: 'success' };
+      if (mainWindow)
+        mainWindow.webContents.send('slp-download-status', slpDownloadStatus);
+      addReplayDir(tempDir, '');
+    }
+  }
+
+  eventEmitter.on('protocol-load-slp-urls', (slpUrls: string[]) => {
+    handleProtocolLoadSlpUrls(slpUrls);
+  });
+
   const onInsert = (e: any) => {
     if (knownUsbs.has(e.data.key)) {
       return;
@@ -148,18 +252,11 @@ export default function setupIPCs(
 
     if (e.data.isAccessible) {
       knownUsbs.set(e.data.key, true);
-      replayDirs.push({
-        dir:
-          process.platform === 'win32'
-            ? `${e.data.key}Slippi`
-            : path.join(e.data.key, 'Slippi'),
-        usbKey: e.data.key,
-      });
-      mainWindow.webContents.send(
-        'usbstorage',
-        replayDirs[replayDirs.length - 1].dir,
-        true,
-      );
+      const dir =
+        process.platform === 'win32'
+          ? `${e.data.key}Slippi`
+          : path.join(e.data.key, 'Slippi');
+      addReplayDir(dir, e.data.key);
     }
   };
   const onEject = (e: any) => {
