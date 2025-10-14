@@ -20,7 +20,7 @@ import {
 import { ForwardedRef, forwardRef, RefObject, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
-import { PlayerOverrides, Replay } from '../common/types';
+import { Id, PlayerOverrides, Replay } from '../common/types';
 import {
   characterNames,
   frameMsDivisor,
@@ -139,10 +139,7 @@ const ReplayListItem = forwardRef(
       numAvailablePlayers: number;
       replay: Replay;
       selectedChipData: PlayerOverrides;
-      findOtherPlayer: (
-        entrantId: number,
-        participantId: number,
-      ) => PlayerOverrides;
+      findOtherPlayer: (entrantId: Id, participantId: Id) => PlayerOverrides;
       onClick: (index: number) => void;
       onOverride: () => void;
       resetSelectedChipData: () => void;
@@ -268,8 +265,8 @@ const ReplayListItem = forwardRef(
           : 'CPU';
       const onClickOrDrop = (
         displayName: string,
-        entrantId: number,
-        participantId: number,
+        entrantId: Id,
+        participantId: Id,
         prefix: string,
         pronouns: string,
       ) => {
@@ -415,10 +412,7 @@ export default function ReplayList({
   replays: Replay[];
   replayRefs: RefObject<HTMLDivElement>[];
   selectedChipData: PlayerOverrides;
-  findOtherPlayer: (
-    entrantId: number,
-    participantId: number,
-  ) => PlayerOverrides;
+  findOtherPlayer: (entrantId: Id, participantId: Id) => PlayerOverrides;
   onClick: (index: number) => void;
   onOverride: () => void;
   resetSelectedChipData: () => void;

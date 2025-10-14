@@ -98,12 +98,15 @@ export default function Settings({
   const [gotSettings, setGotSettings] = useState(false);
   const [startggApiKey, setStartggApiKey] = useState('');
   const [challongeApiKey, setChallongeApiKey] = useState('');
+  const [parryggApiKey, setParryggApiKey] = useState('');
   useEffect(() => {
     (async () => {
       const startggKeyPromise = window.electron.getStartggKey();
       const challongeKeyPromise = window.electron.getChallongeKey();
+      const parryggKeyPromise = window.electron.getParryggKey();
       setStartggApiKey(await startggKeyPromise);
       setChallongeApiKey(await challongeKeyPromise);
+      setParryggApiKey(await parryggKeyPromise);
       setGotSettings(true);
     })();
   }, []);
@@ -149,6 +152,7 @@ export default function Settings({
     !hasAutoOpened &&
     ((mode === Mode.STARTGG && !startggApiKey) ||
       (mode === Mode.CHALLONGE && !challongeApiKey) ||
+      (mode === Mode.PARRYGG && !parryggApiKey) ||
       needUpdate)
   ) {
     setOpen(true);
@@ -184,6 +188,7 @@ export default function Settings({
             await Promise.all([
               window.electron.setChallongeKey(challongeApiKey),
               window.electron.setStartggKey(startggApiKey),
+              window.electron.setParryggKey(parryggApiKey),
               window.electron.setFileNameFormat(fileNameFormat),
               window.electron.setFolderNameFormat(folderNameFormat),
             ]);
@@ -193,7 +198,8 @@ export default function Settings({
           if (shouldGetTournaments) {
             if (
               (mode === Mode.STARTGG && startggApiKey) ||
-              (mode === Mode.CHALLONGE && challongeApiKey)
+              (mode === Mode.CHALLONGE && challongeApiKey) ||
+              (mode === Mode.PARRYGG && parryggApiKey)
             ) {
               try {
                 setAdminedTournaments(await window.electron.getTournaments());
@@ -239,6 +245,7 @@ export default function Settings({
               >
                 <LabeledRadioButton label="start.gg" value={Mode.STARTGG} />
                 <LabeledRadioButton label="Challonge" value={Mode.CHALLONGE} />
+                <LabeledRadioButton label="parry.gg" value={Mode.PARRYGG} />
                 <LabeledRadioButton label="Manual" value={Mode.MANUAL} />
               </RadioGroup>
             </FormControl>
@@ -320,6 +327,44 @@ export default function Settings({
                   endIcon={copied ? undefined : <ContentCopy />}
                   onClick={async () => {
                     await window.electron.copyToClipboard(challongeApiKey);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 5000);
+                  }}
+                  variant="contained"
+                >
+                  {copied ? 'Copied!' : 'Copy'}
+                </Button>
+              </Stack>
+            </>
+          )}
+          {mode === Mode.PARRYGG && (
+            <>
+              <DialogContentText>
+                Get your parry.gg API key from{' '}
+                <Link href="https://parry.gg" target="_blank" rel="noreferrer">
+                  parry.gg
+                </Link>
+                . Keep it private!
+              </DialogContentText>
+              <Stack alignItems="center" direction="row" gap="8px">
+                <TextField
+                  autoFocus
+                  fullWidth
+                  label="parry.gg API key (Keep it private!)"
+                  onChange={(event) => {
+                    setParryggApiKey(event.target.value);
+                    setShouldGetTournaments(true);
+                  }}
+                  size="small"
+                  type="password"
+                  value={parryggApiKey}
+                  variant="standard"
+                />
+                <Button
+                  disabled={copied}
+                  endIcon={copied ? undefined : <ContentCopy />}
+                  onClick={async () => {
+                    await window.electron.copyToClipboard(parryggApiKey);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 5000);
                   }}

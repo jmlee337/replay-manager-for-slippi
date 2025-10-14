@@ -1,7 +1,11 @@
+import { Bracket as ParryggBracketPb } from '@parry-gg/client';
+
+export type Id = string | number;
+
 export type PlayerOverrides = {
   displayName: string;
-  entrantId: number;
-  participantId: number;
+  entrantId: Id;
+  participantId: Id;
   prefix: string;
   pronouns: string;
 };
@@ -46,7 +50,7 @@ export enum State {
 }
 
 export type Participant = {
-  id: number;
+  id: Id;
   displayName: string;
   prefix: string;
   pronouns: string;
@@ -74,15 +78,15 @@ export type GameScore = {
 };
 
 export type Set = {
-  id: number | string;
+  id: Id;
   state: State;
   round: number;
   fullRoundText: string;
-  winnerId: number | null;
-  entrant1Id: number;
+  winnerId: Id | null;
+  entrant1Id: Id;
   entrant1Participants: Participant[];
   entrant1Score: number | null;
-  entrant2Id: number;
+  entrant2Id: Id;
   entrant2Participants: Participant[];
   entrant2Score: number | null;
   gameScores: GameScore[];
@@ -170,7 +174,7 @@ export type ChallongeTournament = {
 
 export type StartggGameSelection = {
   characterId: number;
-  entrantId: number;
+  entrantId: Id;
 };
 
 export type StartggGame = {
@@ -184,8 +188,8 @@ export type StartggGame = {
 };
 
 export type StartggSet = {
-  setId: number | string;
-  winnerId: number;
+  setId: Id;
+  winnerId: Id;
   isDQ: boolean;
   gameData: StartggGame[];
 };
@@ -221,20 +225,20 @@ export type EnforceState = {
 };
 
 export type SelectedEvent = {
-  id: number;
+  id: Id;
   name: string;
   slug: string;
   hasSiblings: boolean;
 };
 
 export type SelectedPhase = {
-  id: number;
+  id: Id;
   name: string;
   hasSiblings: boolean;
 };
 
 export type SelectedPhaseGroup = {
-  id: number;
+  id: Id;
   name: string;
   /**
    * 1: SINGLE_ELIMINATION
@@ -290,7 +294,7 @@ export type Context = {
     phase: SelectedPhase;
     phaseGroup: SelectedPhaseGroup;
     set: {
-      id?: number | string;
+      id?: Id;
       fullRoundText: string;
       ordinal: number | null;
       round: number;
@@ -332,6 +336,7 @@ export enum Mode {
   MANUAL = 'manual',
   STARTGG = 'start.gg',
   CHALLONGE = 'challonge',
+  PARRYGG = 'parry.gg',
 }
 
 export type NameWithHighlight = {
@@ -390,3 +395,5 @@ export type SlpDownloadStatus =
     }
   | { status: 'error'; failedFiles: string[] }
   | { status: 'success' };
+
+export type ParryggBracket = ParryggBracketPb.AsObject & { sets?: Sets };

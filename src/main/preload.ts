@@ -1,10 +1,12 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer } from 'electron';
+import { Tournament as ParryggTournament, MatchResult } from '@parry-gg/client';
 import {
   AdminedTournament,
   ChallongeMatchItem,
   ChallongeTournament,
   Context,
   CopySettings,
+  Id,
   InvalidReplay,
   Mode,
   Output,
@@ -126,10 +128,16 @@ const electronHandler = {
     ipcRenderer.removeAllListeners('hostServerStatus');
     ipcRenderer.on('hostServerStatus', callback);
   },
-  getCurrentTournament: (): Promise<Tournament | undefined> =>
-    ipcRenderer.invoke('getCurrentTournament'),
+  getMode: (): Promise<Mode> => ipcRenderer.invoke('getMode'),
+  setMode: (mode: Mode): Promise<void> => ipcRenderer.invoke('setMode', mode),
   getSelectedSet: (): Promise<Set | undefined> =>
     ipcRenderer.invoke('getSelectedSet'),
+
+  getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
+  setStartggKey: (startggKey: string): Promise<void> =>
+    ipcRenderer.invoke('setStartggKey', startggKey),
+  getCurrentTournament: (): Promise<Tournament | undefined> =>
+    ipcRenderer.invoke('getCurrentTournament'),
   getSelectedSetChain: (): Promise<{
     event?: SelectedEvent;
     phase?: SelectedPhase;
@@ -162,11 +170,9 @@ const electronHandler = {
     ipcRenderer.invoke('reportSet', set, originalSet),
   updateSet: (set: StartggSet): Promise<Set | undefined> =>
     ipcRenderer.invoke('updateSet', set),
-  getMode: (): Promise<Mode> => ipcRenderer.invoke('getMode'),
-  setMode: (mode: Mode): Promise<void> => ipcRenderer.invoke('setMode', mode),
-  getStartggKey: (): Promise<string> => ipcRenderer.invoke('getStartggKey'),
-  setStartggKey: (startggKey: string): Promise<void> =>
-    ipcRenderer.invoke('setStartggKey', startggKey),
+  getPoolsByWave: (): Promise<RendererWave[]> =>
+    ipcRenderer.invoke('getPoolsByWave'),
+
   getChallongeKey: (): Promise<string> => ipcRenderer.invoke('getChallongeKey'),
   setChallongeKey: (challongeKey: string): Promise<void> =>
     ipcRenderer.invoke('setChallongeKey', challongeKey),
@@ -187,6 +193,52 @@ const electronHandler = {
     id: number,
     items: ChallongeMatchItem[],
   ): Promise<Set> => ipcRenderer.invoke('reportChallongeSet', slug, id, items),
+
+  getParryggKey: (): Promise<string> => ipcRenderer.invoke('getParryggKey'),
+  setParryggKey: (parryggKey: string): Promise<void> =>
+    ipcRenderer.invoke('setParryggKey', parryggKey),
+  getAdminedParryggTournaments: (): Promise<
+    Map<string, ParryggTournament.AsObject>
+  > => ipcRenderer.invoke('getAdminedParryggTournaments'),
+  getCurrentParryggTournament: (): Promise<
+    ParryggTournament.AsObject | undefined
+  > => ipcRenderer.invoke('getCurrentParryggTournament'),
+  setSelectedParryggTournament: (slug: string): Promise<void> =>
+    ipcRenderer.invoke('setSelectedParryggTournament', slug),
+  setSelectedParryggSetChain: (
+    eventId: string,
+    phaseId: string,
+    bracketId: string,
+  ): Promise<void> =>
+    ipcRenderer.invoke(
+      'setSelectedParryggSetChain',
+      eventId,
+      phaseId,
+      bracketId,
+    ),
+  getSelectedParryggSet: (): Promise<{
+    event?: SelectedEvent;
+    phase?: SelectedPhase;
+    phaseGroup?: SelectedPhaseGroup;
+  }> => ipcRenderer.invoke('getSelectedParryggSet'),
+  setSelectedParryggSetId: (setId: string): Promise<void> =>
+    ipcRenderer.invoke('setSelectedParryggSetId', setId),
+  getParryggTournament: (slug: string, recursive?: boolean): Promise<void> =>
+    ipcRenderer.invoke('getParryggTournament', slug, recursive),
+  getParryggEvent: (id: string): Promise<void> =>
+    ipcRenderer.invoke('getParryggEvent', id),
+  getParryggPhase: (id: string): Promise<void> =>
+    ipcRenderer.invoke('getParryggPhase', id),
+  getParryggBracket: (id: string): Promise<void> =>
+    ipcRenderer.invoke('getParryggBracket', id),
+  startParryggSet: (setId: string): Promise<void> =>
+    ipcRenderer.invoke('startParryggSet', setId),
+  reportParryggSet: (
+    slug: string,
+    setId: string,
+    result: MatchResult.AsObject,
+  ): Promise<Set> =>
+    ipcRenderer.invoke('reportParryggSet', slug, setId, result),
   getTournaments: (): Promise<AdminedTournament[]> =>
     ipcRenderer.invoke('getTournaments'),
   getManualNames: (): Promise<string[]> => ipcRenderer.invoke('getManualNames'),
@@ -251,9 +303,10 @@ const electronHandler = {
         selectedSet?: Set;
         startggTournament?: Tournament;
         challongeTournaments?: Map<string, ChallongeTournament>;
+        parryggTournament?: ParryggTournament.AsObject;
       },
     ) => void,
-    selectedSetId: number | string,
+    selectedSetId: Id,
   ) => {
     ipcRenderer.removeAllListeners('tournament');
     ipcRenderer.on('tournament', callback);
@@ -296,8 +349,6 @@ const electronHandler = {
 
   // entrants
   openEntrantsWindow: (): void => ipcRenderer.send('openEntrantsWindow'),
-  getPoolsByWave: (): Promise<RendererWave[]> =>
-    ipcRenderer.invoke('getPoolsByWave'),
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);

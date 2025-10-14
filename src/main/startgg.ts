@@ -2,6 +2,7 @@ import {
   AdminedTournament,
   Entrant,
   Event,
+  Id,
   Participant,
   Phase,
   PhaseGroup,
@@ -28,8 +29,8 @@ const phaseIdToPhaseGroupIds = new Map<number, number[]>();
 const idToPhaseGroup = new Map<number, PhaseGroup>();
 const phaseGroupIdToEntrants = new Map<number, Entrant[]>();
 const phaseGroupIdToSets = new Map<number, Sets>();
-const idToSet = new Map<number | string, Set>();
-let selectedSetId: number | string = 0;
+const idToSet = new Map<Id, Set>();
+let selectedSetId: Id = 0;
 let selectedPhaseGroupId = 0;
 let selectedPhaseId = 0;
 let selectedEventId = 0;
@@ -68,7 +69,7 @@ export function getSelectedSet() {
   return idToSet.get(selectedSetId);
 }
 
-export function setSelectedSetId(id: number | string) {
+export function setSelectedSetId(id: Id) {
   selectedSetId = id;
 }
 
@@ -216,8 +217,8 @@ export async function getTournaments(
 const playerIdToPronouns = new Map<number, string>();
 const idToStream = new Map<number, Stream>();
 const idToStation = new Map<number, Station>();
-const reportedSetIds = new Map<number | string, boolean>();
-const setIdToOrdinal = new Map<number | string, number | null>();
+const reportedSetIds = new Map<Id, boolean>();
+const setIdToOrdinal = new Map<Id, number | null>();
 
 // 1838376 genesis-9-1
 // 2254448 test-tournament-sorry
@@ -355,7 +356,7 @@ export async function getPhaseGroup(
       gfr.round += 1;
     }
 
-    const idToDEOrdinal = new Map<number | string, number>();
+    const idToDEOrdinal = new Map<Id, number>();
     if (bracketType === 2) {
       const idToApiSet = new Map<number, any>();
       reachableSets.forEach((set) => idToApiSet.set(set.id, set));
@@ -423,13 +424,11 @@ export async function getPhaseGroup(
       }
     }
 
-    const setsToUpdate = new Map<number | string, Set>();
-    const missingStreamSets: { setId: number | string; streamId: number }[] =
-      [];
-    const missingStationSets: { setId: number | string; stationId: number }[] =
-      [];
+    const setsToUpdate = new Map<Id, Set>();
+    const missingStreamSets: { setId: Id; streamId: number }[] = [];
+    const missingStationSets: { setId: Id; stationId: number }[] = [];
     reachableSets.forEach((set) => {
-      const { id: setId } = set as { id: number | string };
+      const { id: setId } = set as { id: Id };
       let newSet: Set | undefined;
       const updatedAtMs = set.updatedAt * 1000;
       const existingSet = idToSet.get(setId);
@@ -1122,11 +1121,7 @@ const ASSIGN_STREAM_MUTATION = `
     assignStream(setId: $setId, streamId: $streamId) {${GQL_SET_INNER}}
   }
 `;
-export async function assignStream(
-  key: string,
-  setId: number | string,
-  streamId: number,
-) {
+export async function assignStream(key: string, setId: Id, streamId: number) {
   const data = await fetchGql(key, ASSIGN_STREAM_MUTATION, { setId, streamId });
   const updatedSet = gqlSetToSet(data.assignStream);
   idToSet.set(updatedSet.id, updatedSet);
@@ -1138,11 +1133,7 @@ const ASSIGN_STATION_MUTATION = `
     assignStation(setId: $setId, stationId: $stationId) {${GQL_SET_INNER}}
   }
 `;
-export async function assignStation(
-  key: string,
-  setId: number | string,
-  stationId: number,
-) {
+export async function assignStation(key: string, setId: Id, stationId: number) {
   const data = await fetchGql(key, ASSIGN_STATION_MUTATION, {
     setId,
     stationId,
@@ -1169,7 +1160,7 @@ const MARK_SET_IN_PROGRESS_MUTATION = `
     markSetInProgress(setId: $setId) {${GQL_SET_INNER}}
   }
 `;
-export async function startSet(key: string, setId: number | string) {
+export async function startSet(key: string, setId: Id) {
   try {
     const data = await fetchGql(key, MARK_SET_IN_PROGRESS_MUTATION, { setId });
     const updatedSet = gqlSetToSet(data.markSetInProgress);
