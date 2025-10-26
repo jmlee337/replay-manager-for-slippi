@@ -164,6 +164,8 @@ const electronHandler = {
   assignStation: (originalSet: Set, stationId: number): Promise<void> =>
     ipcRenderer.invoke('assignStation', originalSet, stationId),
   resetSet: (id: number): Promise<void> => ipcRenderer.invoke('resetSet', id),
+  callSet: (originalSet: Set): Promise<void> =>
+    ipcRenderer.invoke('callSet', originalSet),
   startSet: (originalSet: Set): Promise<void> =>
     ipcRenderer.invoke('startSet', originalSet),
   reportSet: (set: StartggSet, originalSet: Set): Promise<Set | undefined> =>
@@ -327,10 +329,7 @@ const electronHandler = {
 
   // enforcer
   sendEnforcerResults: (
-    results: {
-      fileName: string;
-      playerFailures: EnforcePlayerFailure[];
-    }[],
+    results: { fileName: string; playerFailures: EnforcePlayerFailure[] }[],
     enforcerReplayLoadCount: number,
   ): void =>
     ipcRenderer.send('sendEnforcerResults', results, enforcerReplayLoadCount),

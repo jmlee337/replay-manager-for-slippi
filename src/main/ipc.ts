@@ -112,10 +112,7 @@ import {
 import { assertInteger, assertString } from '../common/asserts';
 import { resolveHtmlPath } from './util';
 
-type ReplayDir = {
-  dir: string;
-  usbKey: string;
-};
+type ReplayDir = { dir: string; usbKey: string };
 
 let entrantsWindow: BrowserWindow | null = null;
 
@@ -153,9 +150,7 @@ export default function setupIPCs(
   async function downloadFile(url: string, dest: string): Promise<void> {
     let response;
     try {
-      response = await fetch(url, {
-        signal: AbortSignal.timeout(15000),
-      });
+      response = await fetch(url, { signal: AbortSignal.timeout(15000) });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error(`Timeout downloading '${url}'`);
@@ -759,6 +754,42 @@ export default function setupIPCs(
       }
 
       await resetSet(sggApiKey, setId);
+      await getPhaseGroup(
+        sggApiKey,
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
+      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('callSet');
+  ipcMain.handle(
+    'callSet',
+    async (event: IpcMainInvokeEvent, originalSet: Set) => {
+      if (!sggApiKey) {
+        throw new Error('Please set start.gg API key');
+      }
+
+      try {
+        // await callSet(sggApiKey, originalSet.id);
+      } catch (e: unknown) {
+        if (
+          e instanceof Error &&
+          e.message.startsWith('Set not found for id: preview')
+        ) {
+          const realSetId = await getRealSetId(sggApiKey, originalSet);
+          if (realSetId) {
+            await callSet(sggApiKey, realSetId);
+          } else {
+            throw e;
+          }
+        } else {
+          throw e;
+        }
+      }
       await getPhaseGroup(
         sggApiKey,
         assertInteger(getSelectedSetChain().phaseGroup!.id),

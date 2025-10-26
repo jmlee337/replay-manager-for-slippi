@@ -311,10 +311,7 @@ export async function getPhaseGroup(
               participants[0],
             ];
           }
-          entrants.push({
-            id: entrantId,
-            participants,
-          });
+          entrants.push({ id: entrantId, participants });
           entrantIdToParticipants.set(entrantId, participants);
         }
       }
@@ -547,10 +544,7 @@ export async function getPhaseGroup(
           const stationJson = await stationResponse.json();
           const { number } = stationJson;
           if (Number.isInteger(number) && number > 0) {
-            const station: Station = {
-              id: stationId,
-              number,
-            };
+            const station: Station = { id: stationId, number };
             setsToUpdate.get(setId)!.station = station;
             idToStation.set(stationId, station);
           }
@@ -602,10 +596,7 @@ export async function getPhase(key: string, id: number, recursive: boolean) {
         bracketType: group.groupTypeId,
         entrants: [],
         name: group.displayIdentifier,
-        sets: {
-          pendingSets: [],
-          completedSets: [],
-        },
+        sets: { pendingSets: [], completedSets: [] },
         state: group.state,
         waveId: group.waveId,
         winnersTargetPhaseId: group.winnersTargetPhaseId,
@@ -969,10 +960,7 @@ export async function getPoolsByWave(key: string) {
           pools: waveIdToPools.get(waveId)!,
         }),
       ),
-    {
-      id: 0,
-      pools: noWavePools,
-    },
+    { id: 0, pools: noWavePools },
   ];
 }
 
@@ -1025,11 +1013,7 @@ type ApiParticipant = {
   id: number;
   gamerTag: string;
   prefix: string | null;
-  player: {
-    user: {
-      genderPronoun: string | null;
-    } | null;
-  };
+  player: { user: { genderPronoun: string | null } | null };
 };
 function gqlParticipantToParticipant(participant: ApiParticipant): Participant {
   return {
@@ -1153,6 +1137,24 @@ export async function resetSet(key: string, setId: number) {
   const updatedSet = gqlSetToSet(data.resetSet);
   idToSet.set(updatedSet.id, updatedSet);
   setSelectedSetId(updatedSet.id);
+}
+
+const MARK_SET_CALLED_MUTATION = `
+  mutation markSetCalled(($setId: ID!) {
+    markSetCalled((setId: $setId) {${GQL_SET_INNER}}
+  }
+`;
+export async function callSet(key: string, setId: Id) {
+  try {
+    const data = await fetchGql(key, MARK_SET_CALLED_MUTATION, { setId });
+    const updatedSet = gqlSetToSet(data.markSetCalled);
+    idToSet.set(updatedSet.id, updatedSet);
+    setSelectedSetId(updatedSet.id);
+  } catch (e: any) {
+    if (e.message !== 'Set is already started') {
+      throw e;
+    }
+  }
 }
 
 const MARK_SET_IN_PROGRESS_MUTATION = `
