@@ -1182,8 +1182,9 @@ function Hello() {
     setReplays(newReplays);
   };
 
+  const [callingSet, setCallingSet] = useState(false);
   const callSet = async (originalSet: Set) => {
-    setStartingSet(true);
+    setCallingSet(true);
     try {
       if (mode === Mode.STARTGG) {
         await window.electron.callSet(originalSet);
@@ -1199,7 +1200,7 @@ function Hello() {
     } catch (e: any) {
       showErrorDialog([e.toString()]);
     } finally {
-      setStartingSet(false);
+      setCallingSet(false);
     }
   };
 
@@ -2783,7 +2784,7 @@ function Hello() {
                             selectedSet.id > 0)) &&
                         (selectedSet.state === State.PENDING ||
                           selectedSet.state === State.CALLED)
-                      ) || startingSet
+                      ) || callingSet
                     }
                     size="small"
                     // onClick={() => startSet(selectedSet)

@@ -44,6 +44,7 @@ import {
   getPhase,
   getPhaseGroup,
   getTournament,
+  callSet,
   startSet,
   reportSet,
   updateSet,
