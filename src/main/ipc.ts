@@ -112,7 +112,10 @@ import {
 import { assertInteger, assertString } from '../common/asserts';
 import { resolveHtmlPath } from './util';
 
-type ReplayDir = { dir: string; usbKey: string };
+type ReplayDir = {
+  dir: string;
+  usbKey: string;
+};
 
 let entrantsWindow: BrowserWindow | null = null;
 
@@ -150,7 +153,9 @@ export default function setupIPCs(
   async function downloadFile(url: string, dest: string): Promise<void> {
     let response;
     try {
-      response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      response = await fetch(url, {
+        signal: AbortSignal.timeout(15000),
+      });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error(`Timeout downloading '${url}'`);
