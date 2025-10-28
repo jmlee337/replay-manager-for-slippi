@@ -780,7 +780,7 @@ export default function setupIPCs(
       }
 
       try {
-        // await callSet(sggApiKey, originalSet.id);
+        await callSet(sggApiKey, originalSet.id);
       } catch (e: unknown) {
         if (
           e instanceof Error &&

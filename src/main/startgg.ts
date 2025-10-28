@@ -1156,8 +1156,8 @@ export async function resetSet(key: string, setId: number) {
 }
 
 const MARK_SET_CALLED_MUTATION = `
-  mutation markSetCalled(($setId: ID!) {
-    markSetCalled((setId: $setId) {${GQL_SET_INNER}}
+  mutation MarkSetCalled($setId: ID!) {
+    markSetCalled(setId: $setId) {${GQL_SET_INNER}}
   }
 `;
 export async function callSet(key: string, setId: Id) {
