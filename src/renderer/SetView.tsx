@@ -1,7 +1,13 @@
 import styled from '@emotion/styled';
-import { Backup, CheckBox, HourglassTop, Tv } from '@mui/icons-material';
+import {
+  Backup,
+  CheckBox,
+  HourglassTop,
+  Tv,
+  Sports,
+} from '@mui/icons-material';
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
-import { NameWithHighlight, Station, Stream } from '../common/types';
+import { NameWithHighlight, Station, State, Stream } from '../common/types';
 import { highlightColor } from '../common/constants';
 
 const EntrantNames = styled(Stack)`
@@ -152,14 +158,19 @@ export default function SetView({
         justifyContent="flex-end"
         width="20px"
       >
-        {state === 2 && (
+        {state === State.STARTED && (
           <Tooltip arrow title="Started">
             <HourglassTop fontSize="small" />
           </Tooltip>
         )}
-        {state === 3 && (
+        {state === State.COMPLETED && (
           <Tooltip arrow title="Completed">
             <Backup fontSize="small" />
+          </Tooltip>
+        )}
+        {state === State.CALLED && (
+          <Tooltip arrow title="Called">
+            <Sports fontSize="small" />
           </Tooltip>
         )}
       </Stack>
