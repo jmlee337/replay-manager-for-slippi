@@ -147,10 +147,24 @@ const EMPTY_SET: Set = {
   fullRoundText: '',
   winnerId: null,
   entrant1Id: 0,
-  entrant1Participants: [{ id: 0, displayName: '', prefix: '', pronouns: '' }],
+  entrant1Participants: [
+    {
+      id: 0,
+      displayName: '',
+      prefix: '',
+      pronouns: '',
+    },
+  ],
   entrant1Score: null,
   entrant2Id: 0,
-  entrant2Participants: [{ id: 0, displayName: '', prefix: '', pronouns: '' }],
+  entrant2Participants: [
+    {
+      id: 0,
+      displayName: '',
+      prefix: '',
+      pronouns: '',
+    },
+  ],
   entrant2Score: null,
   gameScores: [],
   stream: null,
@@ -165,7 +179,11 @@ const EMPTY_SELECTED_SET_CHAIN: {
   event?: SelectedEvent;
   phase?: SelectedPhase;
   phaseGroup?: SelectedPhaseGroup;
-} = { event: undefined, phase: undefined, phaseGroup: undefined };
+} = {
+  event: undefined,
+  phase: undefined,
+  phaseGroup: undefined,
+};
 
 function hasTimeSkew(replays: Replay[]) {
   if (replays.length < 2) {
@@ -245,7 +263,10 @@ function Hello() {
   const [dirInit, setDirInit] = useState(false);
   const [isUsb, setIsUsb] = useState(false);
   const [copyDir, setCopyDir] = useState('');
-  const [host, setHost] = useState<CopyHostOrClient>({ name: '', address: '' });
+  const [host, setHost] = useState<CopyHostOrClient>({
+    name: '',
+    address: '',
+  });
   const [hostFormat, setHostFormat] = useState<CopyHostFormat>({
     fileNameFormat: '',
     folderNameFormat: '',
@@ -339,7 +360,11 @@ function Hello() {
       }
       const initSelectedSetChain = await selectedSetChainPromise;
       const { event, phase, phaseGroup } = initSelectedSetChain;
-      setSelectedSetChain({ event, phase, phaseGroup });
+      setSelectedSetChain({
+        event,
+        phase,
+        phaseGroup,
+      });
       setChallongeTournaments(await challongeTournamentsPromise);
       const initSelectedChallongeTournament =
         await selectedChallongeTournamentPromise;
@@ -1288,7 +1313,11 @@ function Hello() {
   const [copySuccess, setCopySuccess] = useState('');
 
   const onCopy = async (
-    updatedSetFields?: { id: Id; completedAtMs: number; stream: Stream | null },
+    updatedSetFields?: {
+      id: Id;
+      completedAtMs: number;
+      stream: Stream | null;
+    },
     violators?: {
       checkNames: Map<string, boolean>;
       displayName: string;

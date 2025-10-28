@@ -311,7 +311,10 @@ export async function getPhaseGroup(
               participants[0],
             ];
           }
-          entrants.push({ id: entrantId, participants });
+          entrants.push({
+            id: entrantId,
+            participants,
+          });
           entrantIdToParticipants.set(entrantId, participants);
         }
       }
@@ -544,7 +547,10 @@ export async function getPhaseGroup(
           const stationJson = await stationResponse.json();
           const { number } = stationJson;
           if (Number.isInteger(number) && number > 0) {
-            const station: Station = { id: stationId, number };
+            const station: Station = {
+              id: stationId,
+              number,
+            };
             setsToUpdate.get(setId)!.station = station;
             idToStation.set(stationId, station);
           }
@@ -596,7 +602,10 @@ export async function getPhase(key: string, id: number, recursive: boolean) {
         bracketType: group.groupTypeId,
         entrants: [],
         name: group.displayIdentifier,
-        sets: { pendingSets: [], completedSets: [] },
+        sets: {
+          pendingSets: [],
+          completedSets: [],
+        },
         state: group.state,
         waveId: group.waveId,
         winnersTargetPhaseId: group.winnersTargetPhaseId,
@@ -960,7 +969,10 @@ export async function getPoolsByWave(key: string) {
           pools: waveIdToPools.get(waveId)!,
         }),
       ),
-    { id: 0, pools: noWavePools },
+    {
+      id: 0,
+      pools: noWavePools,
+    },
   ];
 }
 
@@ -1013,7 +1025,11 @@ type ApiParticipant = {
   id: number;
   gamerTag: string;
   prefix: string | null;
-  player: { user: { genderPronoun: string | null } | null };
+  player: {
+    user: {
+      genderPronoun: string | null;
+    } | null;
+  };
 };
 function gqlParticipantToParticipant(participant: ApiParticipant): Participant {
   return {

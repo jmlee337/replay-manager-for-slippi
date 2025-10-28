@@ -329,7 +329,10 @@ const electronHandler = {
 
   // enforcer
   sendEnforcerResults: (
-    results: { fileName: string; playerFailures: EnforcePlayerFailure[] }[],
+    results: {
+      fileName: string;
+      playerFailures: EnforcePlayerFailure[];
+    }[],
     enforcerReplayLoadCount: number,
   ): void =>
     ipcRenderer.send('sendEnforcerResults', results, enforcerReplayLoadCount),
