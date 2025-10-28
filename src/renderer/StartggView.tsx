@@ -75,6 +75,7 @@ function SetView({
         stream={set.stream}
         station={set.station}
         wasReported={vlerkMode && set.wasReported}
+        updatedAtMs={set.updatedAtMs}
       />
     </ListItemButton>
   );
