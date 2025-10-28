@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import {
   Backup,
@@ -52,6 +53,31 @@ function EntrantName({ entrantName }: { entrantName: NameWithHighlight }) {
   );
 }
 
+function CallTimer() {
+  const [seconds, setSeconds] = useState<number>(0);
+
+  useEffect(() => {
+    setSeconds(0);
+    const timer = window.setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => {
+      if (timer !== undefined) {
+        window.clearInterval(timer);
+      }
+    };
+  }, []);
+
+  const min = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, '0');
+  const sec = (seconds % 60).toString().padStart(2, '0');
+
+  return (
+    <Typography variant="caption" sx={{ pr: 1 }}>
+      {`${min}:${sec}`}
+    </Typography>
+  );
+}
+
 export default function SetView({
   entrant1Names,
   entrant1Score,
@@ -93,16 +119,16 @@ export default function SetView({
   }
 
   let streamVerb = 'Queued';
-  if (state === 2) {
+  if (state === State.CALLED) {
     streamVerb = 'Streaming';
-  } else if (state === 3) {
+  } else if (state === State.COMPLETED) {
     streamVerb = 'Streamed';
   }
 
   let stationVerb = 'Queued';
-  if (state === 2) {
+  if (state === State.CALLED) {
     stationVerb = 'Playing';
-  } else if (state === 3) {
+  } else if (state === State.COMPLETED) {
     stationVerb = 'Played';
   }
 
@@ -160,7 +186,10 @@ export default function SetView({
       >
         {state === State.STARTED && (
           <Tooltip arrow title="Started">
-            <HourglassTop fontSize="small" />
+            <Stack alignItems="center">
+              <HourglassTop fontSize="small" />
+              <CallTimer />
+            </Stack>
           </Tooltip>
         )}
         {state === State.COMPLETED && (
@@ -170,7 +199,10 @@ export default function SetView({
         )}
         {state === State.CALLED && (
           <Tooltip arrow title="Called">
-            <Sports fontSize="small" />
+            <Stack alignItems="center">
+              <Sports fontSize="small" />
+              <CallTimer />
+            </Stack>
           </Tooltip>
         )}
       </Stack>

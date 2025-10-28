@@ -1214,6 +1214,7 @@ function Hello() {
       if (mode === Mode.STARTGG) {
         await window.electron.callSet(originalSet);
       }
+      // TODO: implement for other modes
       // else if (mode === Mode.CHALLONGE) {
       //   await window.electron.startChallongeSet(
       //     selectedChallongeTournament.slug,
@@ -2816,7 +2817,6 @@ function Hello() {
                       ) || callingSet
                     }
                     size="small"
-                    // onClick={() => startSet(selectedSet)
                     onClick={() => callSet(selectedSet)}
                   >
                     {startingSet ? (
