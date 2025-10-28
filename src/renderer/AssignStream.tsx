@@ -109,6 +109,7 @@ export default function AssignStream({
             stream={selectedSet.stream}
             station={selectedSet.station}
             wasReported={false}
+            updatedAtMs={selectedSet.updatedAtMs}
           />
           {gettingStreamsAndStations ? (
             <CircularProgress size="24px" />

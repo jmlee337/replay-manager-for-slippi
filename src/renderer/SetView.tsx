@@ -1,7 +1,8 @@
+import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
-import { Backup, CheckBox, HourglassTop, Tv } from '@mui/icons-material';
+import { Backup, CheckBox, Tv } from '@mui/icons-material';
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
-import { NameWithHighlight, Station, Stream } from '../common/types';
+import { NameWithHighlight, State, Station, Stream } from '../common/types';
 import { highlightColor } from '../common/constants';
 
 const EntrantNames = styled(Stack)`
@@ -27,6 +28,9 @@ const Name = styled.div`
   white-space: nowrap;
 `;
 
+const StartggYellow = '#ffd500';
+const StartggGreen = '#0d8225';
+
 function EntrantName({ entrantName }: { entrantName: NameWithHighlight }) {
   if (!entrantName.highlight) {
     return <Name>{entrantName.name}</Name>;
@@ -46,6 +50,60 @@ function EntrantName({ entrantName }: { entrantName: NameWithHighlight }) {
   );
 }
 
+function CallTimer({
+  updatedAtMs,
+  whiteFont = true,
+  backgroundColor = StartggGreen,
+}: {
+  updatedAtMs: number;
+  whiteFont: boolean;
+  backgroundColor: string;
+}) {
+  const [seconds, setSeconds] = useState<number>(0);
+
+  useEffect(() => {
+    const updateTimer = () => {
+      const elapsedSeconds = Math.floor((Date.now() - updatedAtMs) / 1000);
+      setSeconds(elapsedSeconds);
+    };
+
+    updateTimer();
+    const timer = window.setInterval(updateTimer, 1000);
+    return () => {
+      if (timer !== undefined) {
+        window.clearInterval(timer);
+      }
+    };
+  }, [updatedAtMs]);
+
+  const min = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, '0');
+  const sec = (seconds % 60).toString().padStart(2, '0');
+
+  let textColor = 'common.black';
+  if (whiteFont) {
+    textColor = 'common.white';
+  }
+
+  return (
+    <Stack
+      alignItems="center"
+      sx={{
+        backgroundColor,
+        borderRadius: 1,
+        px: 0.5,
+        padding: '1px',
+        minWidth: '40px',
+      }}
+    >
+      <Typography variant="caption" color={textColor}>
+        {`${min}:${sec}`}
+      </Typography>
+    </Stack>
+  );
+}
+
 export default function SetView({
   entrant1Names,
   entrant1Score,
@@ -58,6 +116,7 @@ export default function SetView({
   stream,
   station,
   wasReported,
+  updatedAtMs,
 }: {
   entrant1Names: NameWithHighlight[];
   entrant1Score: number | null;
@@ -70,6 +129,7 @@ export default function SetView({
   stream: Stream | null;
   station: Station | null;
   wasReported: boolean;
+  updatedAtMs: number;
 }) {
   let leftScore = '\u00A0';
   let rightScore = '\u00A0';
@@ -87,16 +147,16 @@ export default function SetView({
   }
 
   let streamVerb = 'Queued';
-  if (state === 2) {
+  if (state === State.CALLED) {
     streamVerb = 'Streaming';
-  } else if (state === 3) {
+  } else if (state === State.COMPLETED) {
     streamVerb = 'Streamed';
   }
 
   let stationVerb = 'Queued';
-  if (state === 2) {
+  if (state === State.CALLED) {
     stationVerb = 'Playing';
-  } else if (state === 3) {
+  } else if (state === State.COMPLETED) {
     stationVerb = 'Played';
   }
 
@@ -125,7 +185,11 @@ export default function SetView({
         <Box sx={{ typography: 'caption' }} textAlign="center">
           {fullRoundText}
         </Box>
-        <Stack alignItems="center" direction="row" sx={{ typography: 'body2' }}>
+        <Stack
+          alignItems="center"
+          direction="row"
+          sx={{ typography: 'body2', width: 'calc(100% - 30px)' }}
+        >
           <EntrantSection borderRight={1} direction="row-reverse">
             <EntrantScore textAlign="right">{leftScore}</EntrantScore>
             <EntrantNames textAlign="right">
@@ -152,14 +216,27 @@ export default function SetView({
         justifyContent="flex-end"
         width="20px"
       >
-        {state === 2 && (
+        {state === State.STARTED && (
           <Tooltip arrow title="Started">
-            <HourglassTop fontSize="small" />
+            <CallTimer
+              updatedAtMs={updatedAtMs}
+              whiteFont
+              backgroundColor={StartggGreen}
+            />
           </Tooltip>
         )}
-        {state === 3 && (
+        {state === State.COMPLETED && (
           <Tooltip arrow title="Completed">
             <Backup fontSize="small" />
+          </Tooltip>
+        )}
+        {state === State.CALLED && (
+          <Tooltip arrow title="Called">
+            <CallTimer
+              updatedAtMs={updatedAtMs}
+              whiteFont={false}
+              backgroundColor={StartggYellow}
+            />
           </Tooltip>
         )}
       </Stack>
