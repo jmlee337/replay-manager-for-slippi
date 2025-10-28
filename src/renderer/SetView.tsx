@@ -8,7 +8,7 @@ import {
   Sports,
 } from '@mui/icons-material';
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
-import { NameWithHighlight, Station, State, Stream } from '../common/types';
+import { NameWithHighlight, State, Station, Stream } from '../common/types';
 import { highlightColor } from '../common/constants';
 
 const EntrantNames = styled(Stack)`
