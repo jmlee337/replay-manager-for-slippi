@@ -2804,8 +2804,7 @@ function Hello() {
                           (typeof selectedSet.id === 'string' ||
                             (Number.isInteger(selectedSet.id) &&
                               selectedSet.id > 0)) &&
-                          (selectedSet.state === State.PENDING ||
-                            selectedSet.state === State.CALLED)
+                          selectedSet.state === State.PENDING
                         ) || callingSet
                       }
                       size="small"
