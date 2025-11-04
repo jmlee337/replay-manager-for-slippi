@@ -1167,7 +1167,7 @@ export async function callSet(key: string, setId: Id) {
     idToSet.set(updatedSet.id, updatedSet);
     setSelectedSetId(updatedSet.id);
   } catch (e: any) {
-    if (e.message !== 'Set is already started') {
+    if (e.message !== 'Set is already called') {
       throw e;
     }
   }
