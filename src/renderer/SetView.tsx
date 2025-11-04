@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
-import { Backup, CheckBox, Tv } from '@mui/icons-material';
+import {
+  Backup,
+  CheckBox,
+  HourglassTop,
+  NotificationsActive,
+  Tv,
+} from '@mui/icons-material';
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
 import { NameWithHighlight, State, Station, Stream } from '../common/types';
 import { highlightColor } from '../common/constants';
@@ -28,9 +34,6 @@ const Name = styled.div`
   white-space: nowrap;
 `;
 
-const StartggYellow = '#ffd500';
-const StartggGreen = '#0d8225';
-
 function EntrantName({ entrantName }: { entrantName: NameWithHighlight }) {
   if (!entrantName.highlight) {
     return <Name>{entrantName.name}</Name>;
@@ -52,15 +55,12 @@ function EntrantName({ entrantName }: { entrantName: NameWithHighlight }) {
 
 function CallTimer({
   updatedAtMs,
-  whiteFont = true,
-  backgroundColor = StartggGreen,
+  matchState,
 }: {
   updatedAtMs: number;
-  whiteFont: boolean;
-  backgroundColor: string;
+  matchState: number;
 }) {
   const [seconds, setSeconds] = useState<number>(0);
-
   useEffect(() => {
     const updateTimer = () => {
       const elapsedSeconds = Math.floor((Date.now() - updatedAtMs) / 1000);
@@ -76,32 +76,24 @@ function CallTimer({
     };
   }, [updatedAtMs]);
 
-  const min = Math.floor(seconds / 60)
-    .toString()
-    .padStart(2, '0');
-  const sec = (seconds % 60).toString().padStart(2, '0');
+  const min = Math.floor(seconds / 60).toString();
 
-  let textColor = 'common.black';
-  if (whiteFont) {
-    textColor = 'common.white';
+  if (matchState === State.STARTED) {
+    return (
+      <Tooltip arrow title={`Started ${min} min ago`}>
+        <HourglassTop fontSize="small" />
+      </Tooltip>
+    );
+  }
+  if (matchState === State.CALLED) {
+    return (
+      <Tooltip arrow title={`Called ${min} min ago`}>
+        <NotificationsActive fontSize="small" />
+      </Tooltip>
+    );
   }
 
-  return (
-    <Stack
-      alignItems="center"
-      sx={{
-        backgroundColor,
-        borderRadius: 1,
-        px: 0.5,
-        padding: '1px',
-        minWidth: '40px',
-      }}
-    >
-      <Typography variant="caption" color={textColor}>
-        {`${min}:${sec}`}
-      </Typography>
-    </Stack>
-  );
+  return null;
 }
 
 export default function SetView({
@@ -217,13 +209,7 @@ export default function SetView({
         width="20px"
       >
         {state === State.STARTED && (
-          <Tooltip arrow title="Started">
-            <CallTimer
-              updatedAtMs={updatedAtMs}
-              whiteFont
-              backgroundColor={StartggGreen}
-            />
-          </Tooltip>
+          <CallTimer updatedAtMs={updatedAtMs} matchState={State.STARTED} />
         )}
         {state === State.COMPLETED && (
           <Tooltip arrow title="Completed">
@@ -231,13 +217,7 @@ export default function SetView({
           </Tooltip>
         )}
         {state === State.CALLED && (
-          <Tooltip arrow title="Called">
-            <CallTimer
-              updatedAtMs={updatedAtMs}
-              whiteFont={false}
-              backgroundColor={StartggYellow}
-            />
-          </Tooltip>
+          <CallTimer updatedAtMs={updatedAtMs} matchState={State.CALLED} />
         )}
       </Stack>
     </Stack>

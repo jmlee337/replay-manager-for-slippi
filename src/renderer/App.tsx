@@ -43,8 +43,8 @@ import {
   Edit,
   Eject,
   FolderOpen,
-  Sports,
   HourglassTop,
+  NotificationsActive,
   Refresh,
 } from '@mui/icons-material';
 import styled from '@emotion/styled';
@@ -1214,15 +1214,6 @@ function Hello() {
       if (mode === Mode.STARTGG) {
         await window.electron.callSet(originalSet);
       }
-      // TODO: implement for other modes
-      // else if (mode === Mode.CHALLONGE) {
-      //   await window.electron.startChallongeSet(
-      //     selectedChallongeTournament.slug,
-      //     originalSet.id as number,
-      //   );
-      // } else if (mode === Mode.PARRYGG) {
-      //   await window.electron.startParryggSet(originalSet.id as string);
-      // }
     } catch (e: any) {
       showErrorDialog([e.toString()]);
     } finally {
@@ -2803,30 +2794,31 @@ function Hello() {
             >
               <AssignStream mode={mode} selectedSet={selectedSet} />
               <ResetSet mode={mode} selectedSet={selectedSet} />
-              <Tooltip arrow title="Mark set called">
-                <div>
-                  <IconButton
-                    color="primary"
-                    disabled={
-                      !(
-                        (typeof selectedSet.id === 'string' ||
-                          (Number.isInteger(selectedSet.id) &&
-                            selectedSet.id > 0)) &&
-                        (selectedSet.state === State.PENDING ||
-                          selectedSet.state === State.CALLED)
-                      ) || callingSet
-                    }
-                    size="small"
-                    onClick={() => callSet(selectedSet)}
-                  >
-                    {startingSet ? (
-                      <CircularProgress size="24px" />
-                    ) : (
-                      <Sports />
-                    )}
-                  </IconButton>
-                </div>
-              </Tooltip>
+              {mode === Mode.STARTGG && (
+                <Tooltip arrow title="Mark set called">
+                  <div>
+                    <IconButton
+                      color="primary"
+                      disabled={
+                        !(
+                          (typeof selectedSet.id === 'string' ||
+                            (Number.isInteger(selectedSet.id) &&
+                              selectedSet.id > 0)) &&
+                          selectedSet.state === State.PENDING
+                        ) || callingSet
+                      }
+                      size="small"
+                      onClick={() => callSet(selectedSet)}
+                    >
+                      {startingSet ? (
+                        <CircularProgress size="24px" />
+                      ) : (
+                        <NotificationsActive />
+                      )}
+                    </IconButton>
+                  </div>
+                </Tooltip>
+              )}
               <Tooltip arrow title="Mark set started">
                 <div>
                   <IconButton
