@@ -177,11 +177,7 @@ export default function SetView({
         <Box sx={{ typography: 'caption' }} textAlign="center">
           {fullRoundText}
         </Box>
-        <Stack
-          alignItems="center"
-          direction="row"
-          sx={{ typography: 'body2', width: 'calc(100% - 30px)' }}
-        >
+        <Stack alignItems="center" direction="row" sx={{ typography: 'body2' }}>
           <EntrantSection borderRight={1} direction="row-reverse">
             <EntrantScore textAlign="right">{leftScore}</EntrantScore>
             <EntrantNames textAlign="right">
