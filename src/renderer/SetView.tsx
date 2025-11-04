@@ -209,9 +209,7 @@ export default function SetView({
         width="20px"
       >
         {state === State.STARTED && (
-          <Tooltip arrow title="Started">
-            <CallTimer updatedAtMs={updatedAtMs} matchState={State.STARTED} />
-          </Tooltip>
+          <CallTimer updatedAtMs={updatedAtMs} matchState={State.STARTED} />
         )}
         {state === State.COMPLETED && (
           <Tooltip arrow title="Completed">
@@ -219,9 +217,7 @@ export default function SetView({
           </Tooltip>
         )}
         {state === State.CALLED && (
-          <Tooltip arrow title="Called">
-            <CallTimer updatedAtMs={updatedAtMs} matchState={State.CALLED} />
-          </Tooltip>
+          <CallTimer updatedAtMs={updatedAtMs} matchState={State.CALLED} />
         )}
       </Stack>
     </Stack>
