@@ -969,7 +969,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('startChallongeSet');
   ipcMain.handle(
     'startChallongeSet',
-    async (event: IpcMainInvokeEvent, slug: string, id: number) => {
+    async (event: IpcMainInvokeEvent, slug: string, id: string) => {
       if (!challongeApiKey) {
         throw new Error('Please set Challonge API key.');
       }
@@ -989,7 +989,7 @@ export default function setupIPCs(
     async (
       event: IpcMainInvokeEvent,
       slug: string,
-      id: number,
+      id: string,
       items: ChallongeMatchItem[],
     ) => {
       if (!challongeApiKey) {
@@ -1196,7 +1196,7 @@ export default function setupIPCs(
       if (mode === Mode.STARTGG) {
         setSelectedSetId(selectedSetId);
       } else if (mode === Mode.CHALLONGE) {
-        setSelectedChallongeSetId(assertInteger(selectedSetId));
+        setSelectedChallongeSetId(assertString(selectedSetId));
       } else if (mode === Mode.PARRYGG) {
         setSelectedParryggSetId(assertString(selectedSetId));
       }

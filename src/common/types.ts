@@ -309,7 +309,7 @@ export type Context = {
       tournamentType: string;
     };
     set: {
-      id?: number;
+      id?: string;
       fullRoundText: string;
       ordinal: number | null;
       round: number;

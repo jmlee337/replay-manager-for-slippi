@@ -23,7 +23,7 @@ import {
   StartggSet,
   State,
 } from '../common/types';
-import { assertInteger } from '../common/asserts';
+import { assertInteger, assertString } from '../common/asserts';
 
 function createStartggGameData(
   entrant1Score: number,
@@ -78,7 +78,7 @@ export default function ManualReport({
 }: {
   mode: Mode;
   reportChallongeSet: (
-    matchId: number,
+    matchId: string,
     items: ChallongeMatchItem[],
   ) => Promise<Set>;
   reportStartggSet: (
@@ -602,7 +602,7 @@ export default function ManualReport({
                   await reportStartggSet(getStartggSet(), selectedSet);
                 } else if (mode === Mode.CHALLONGE) {
                   await reportChallongeSet(
-                    assertInteger(selectedSet.id),
+                    assertString(selectedSet.id),
                     challongeMatchItems,
                   );
                 } else if (mode === Mode.PARRYGG) {

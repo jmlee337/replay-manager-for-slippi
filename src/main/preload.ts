@@ -186,11 +186,11 @@ const electronHandler = {
     ipcRenderer.invoke('setSelectedChallongeTournament', slug),
   getChallongeTournament: (slug: string): Promise<void> =>
     ipcRenderer.invoke('getChallongeTournament', slug),
-  startChallongeSet: (slug: string, id: number): Promise<void> =>
+  startChallongeSet: (slug: string, id: string): Promise<void> =>
     ipcRenderer.invoke('startChallongeSet', slug, id),
   reportChallongeSet: (
     slug: string,
-    id: number,
+    id: string,
     items: ChallongeMatchItem[],
   ): Promise<Set> => ipcRenderer.invoke('reportChallongeSet', slug, id, items),
 

@@ -1,3 +1,4 @@
+import { assertString } from '../common/asserts';
 import {
   AdminedTournament,
   ChallongeMatchItem,
@@ -8,9 +9,9 @@ import {
 } from '../common/types';
 
 const tournaments = new Map<string, ChallongeTournament>();
-const idToSet = new Map<number, Set>();
+const idToSet = new Map<string, Set>();
 let selectedTournamentSlug = '';
-let selectedSetId = 0;
+let selectedSetId = '';
 export function getCurrentTournaments() {
   return tournaments;
 }
@@ -19,7 +20,7 @@ export function getSelectedChallongeSet() {
   return idToSet.get(selectedSetId);
 }
 
-export function setSelectedChallongeSetId(id: number) {
+export function setSelectedChallongeSetId(id: string) {
   selectedSetId = id;
 }
 
@@ -301,7 +302,7 @@ export async function getChallongeTournament(
           return existingSet;
         }
         const newSet = toSet(match, idToFullRoundText, stationIdToStream);
-        idToSet.set(newSet.id as number, newSet);
+        idToSet.set(assertString(newSet.id), newSet);
         return newSet;
       })
       .forEach((set) => {
@@ -321,7 +322,7 @@ export async function getChallongeTournament(
 
 export async function startChallongeSet(
   tournamentSlug: string,
-  matchId: number,
+  matchId: string,
   key: string,
 ) {
   const url = `https://api.challonge.com/v1/tournaments/${tournamentSlug}/matches/${matchId}/mark_as_underway.json?api_key=${key}`;
@@ -369,7 +370,7 @@ export async function startChallongeSet(
 
 export async function reportChallongeSet(
   tournamentSlug: string,
-  matchId: number,
+  matchId: string,
   matchItems: ChallongeMatchItem[],
   key: string,
 ) {
