@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import { useTimer } from 'react-timer-hook';
+import { formatDistanceToNowStrict } from 'date-fns';
 import styled from '@emotion/styled';
 import {
   Backup,
@@ -60,34 +61,28 @@ function CallTimer({
   updatedAtMs: number;
   matchState: number;
 }) {
-  const [seconds, setSeconds] = useState<number>(0);
-  useEffect(() => {
-    const updateTimer = () => {
-      const elapsedSeconds = Math.floor((Date.now() - updatedAtMs) / 1000);
-      setSeconds(elapsedSeconds);
-    };
+  const startTime = new Date(updatedAtMs);
 
-    updateTimer();
-    const timer = window.setInterval(updateTimer, 1000);
-    return () => {
-      if (timer !== undefined) {
-        window.clearInterval(timer);
-      }
-    };
-  }, [updatedAtMs]);
+  useTimer({
+    expiryTimestamp: new Date(Date.now() + 1000 * 60 * 60),
+    autoStart: true,
+  });
 
-  const min = Math.floor(seconds / 60).toString();
+  const timeAgo = formatDistanceToNowStrict(startTime, {
+    addSuffix: true,
+  });
 
   if (matchState === State.STARTED) {
     return (
-      <Tooltip arrow title={`Started ${min} min ago`}>
+      <Tooltip arrow title={`Started ${timeAgo}`}>
         <HourglassTop fontSize="small" />
       </Tooltip>
     );
   }
+
   if (matchState === State.CALLED) {
     return (
-      <Tooltip arrow title={`Called ${min} min ago`}>
+      <Tooltip arrow title={`Called ${timeAgo}`}>
         <NotificationsActive fontSize="small" />
       </Tooltip>
     );
@@ -139,14 +134,14 @@ export default function SetView({
   }
 
   let streamVerb = 'Queued';
-  if (state === State.CALLED) {
+  if (state === State.STARTED) {
     streamVerb = 'Streaming';
   } else if (state === State.COMPLETED) {
     streamVerb = 'Streamed';
   }
 
   let stationVerb = 'Queued';
-  if (state === State.CALLED) {
+  if (state === State.STARTED) {
     stationVerb = 'Playing';
   } else if (state === State.COMPLETED) {
     stationVerb = 'Played';
@@ -204,6 +199,9 @@ export default function SetView({
         justifyContent="flex-end"
         width="20px"
       >
+        {state === State.CALLED && (
+          <CallTimer updatedAtMs={updatedAtMs} matchState={State.CALLED} />
+        )}
         {state === State.STARTED && (
           <CallTimer updatedAtMs={updatedAtMs} matchState={State.STARTED} />
         )}
@@ -211,9 +209,6 @@ export default function SetView({
           <Tooltip arrow title="Completed">
             <Backup fontSize="small" />
           </Tooltip>
-        )}
-        {state === State.CALLED && (
-          <CallTimer updatedAtMs={updatedAtMs} matchState={State.CALLED} />
         )}
       </Stack>
     </Stack>
