@@ -1,4 +1,3 @@
-import { useTimer } from 'react-timer-hook';
 import { formatDistanceToNowStrict } from 'date-fns';
 import styled from '@emotion/styled';
 import {
@@ -61,20 +60,11 @@ function CallTimer({
   updatedAtMs: number;
   matchState: number;
 }) {
-  const startTime = new Date(updatedAtMs);
-
-  useTimer({
-    expiryTimestamp: new Date(Date.now() + 1000 * 60 * 60),
-    autoStart: true,
-  });
-
-  const timeAgo = formatDistanceToNowStrict(startTime, {
-    addSuffix: true,
-  });
+  const timeAgo = formatDistanceToNowStrict(updatedAtMs, { addSuffix: true });
 
   if (matchState === State.STARTED) {
     return (
-      <Tooltip arrow title={`Started ${timeAgo}`}>
+      <Tooltip arrow title={`Started ${timeAgo} ago`}>
         <HourglassTop fontSize="small" />
       </Tooltip>
     );

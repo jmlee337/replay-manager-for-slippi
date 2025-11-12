@@ -1233,8 +1233,7 @@ export default function setupIPCs(
       if (mode === Mode.STARTGG) {
         setSelectedSetId(selectedSetId);
       } else if (mode === Mode.CHALLONGE) {
-        const selectedSetIdNum = Number(selectedSetId);
-        setSelectedChallongeSetId(assertInteger(selectedSetIdNum));
+        setSelectedChallongeSetId(assertInteger(selectedSetId));
       } else if (mode === Mode.PARRYGG) {
         setSelectedParryggSetId(assertString(selectedSetId));
       }
