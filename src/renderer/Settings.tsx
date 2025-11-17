@@ -27,7 +27,7 @@ import {
   Typography,
 } from '@mui/material';
 import { ChangeEvent, useEffect, useMemo, useState } from 'react';
-import { lt } from 'semver';
+import { lt, valid } from 'semver';
 import LabeledCheckbox from './LabeledCheckbox';
 import {
   AdminedTournament,
@@ -119,8 +119,8 @@ export default function Settings({
 
   const needUpdate = useMemo(
     () =>
-      Boolean(appVersion) &&
-      Boolean(latestAppVersion) &&
+      valid(appVersion) &&
+      valid(latestAppVersion) &&
       lt(appVersion, latestAppVersion),
     [appVersion, latestAppVersion],
   );
