@@ -95,9 +95,6 @@ export const startggCharacterIds = new Map(
   Array.from(characterStartggIds.entries()).map(([key, value]) => [value, key]),
 );
 
-// Stage IDs (not internal stage ID)
-export const legalStages = new Set([2, 3, 8, 28, 31, 32]);
-
 // Stage ID (not internal stage ID) to short name
 export const stageNames = new Map([
   [2, 'Fountain of Dreams'],
