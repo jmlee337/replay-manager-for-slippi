@@ -1514,7 +1514,7 @@ export default function setupIPCs(
     }
 
     entrantsWindow = new BrowserWindow({
-      width: 870,
+      width: 880,
       webPreferences: {
         preload: app.isPackaged
           ? path.join(__dirname, 'preload.js')
