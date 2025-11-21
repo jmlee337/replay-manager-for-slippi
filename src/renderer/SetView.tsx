@@ -8,6 +8,7 @@ import {
   Tv,
 } from '@mui/icons-material';
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
+import { useState } from 'react';
 import { NameWithHighlight, State, Station, Stream } from '../common/types';
 import { highlightColor } from '../common/constants';
 
@@ -60,11 +61,16 @@ function CallTimer({
   updatedAtMs: number;
   matchState: number;
 }) {
-  const timeAgo = formatDistanceToNowStrict(updatedAtMs, { addSuffix: true });
+  const [timeAgo, setTimeAgo] = useState(
+    formatDistanceToNowStrict(updatedAtMs, { addSuffix: true }),
+  );
+  const handleOpen = () => {
+    setTimeAgo(formatDistanceToNowStrict(updatedAtMs, { addSuffix: true }));
+  };
 
   if (matchState === State.STARTED) {
     return (
-      <Tooltip arrow title={`Started ${timeAgo} ago`}>
+      <Tooltip arrow onOpen={handleOpen} title={`Started ${timeAgo} ago`}>
         <HourglassTop fontSize="small" />
       </Tooltip>
     );
@@ -72,7 +78,7 @@ function CallTimer({
 
   if (matchState === State.CALLED) {
     return (
-      <Tooltip arrow title={`Called ${timeAgo}`}>
+      <Tooltip arrow onOpen={handleOpen} title={`Called ${timeAgo}`}>
         <NotificationsActive fontSize="small" />
       </Tooltip>
     );
