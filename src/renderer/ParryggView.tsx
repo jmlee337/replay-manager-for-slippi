@@ -57,6 +57,7 @@ function SetView({
       state,
       stream,
       station,
+      updatedAtMs,
     },
     entrant1Names,
     entrant2Names,
@@ -83,6 +84,7 @@ function SetView({
         stream={stream}
         station={station}
         wasReported={vlerkMode && isCompleted}
+        updatedAtMs={updatedAtMs}
       />
     </ListItemButton>
   );

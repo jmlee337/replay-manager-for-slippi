@@ -228,7 +228,7 @@ export function convertParryggSetToSet(set: Match.AsObject): Set {
     station: null,
     ordinal: setIdToOrdinal.get(set.id) ?? null,
     wasReported: false,
-    updatedAtMs: 0,
+    updatedAtMs: set.stateUpdatedAt.seconds * 1000,
     completedAtMs: 0,
   };
 }

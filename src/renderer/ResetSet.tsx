@@ -65,6 +65,7 @@ export default function ResetSet({
             stream={selectedSet.stream}
             station={selectedSet.station}
             wasReported={false}
+            updatedAtMs={selectedSet.updatedAtMs}
           />
         </DialogContent>
         <DialogActions>
