@@ -109,6 +109,7 @@ import getCharacterIcon from './getCharacterIcon';
 import RightColumn from './RightColumn';
 import { WindowEvent } from './setWindowEventListener';
 import SlpDownloadModal from './SlpDownloadModal';
+import { assertString } from '../common/asserts';
 
 const ENFORCER_VERSION = '1.4.4';
 
@@ -1230,10 +1231,10 @@ function Hello() {
       } else if (mode === Mode.CHALLONGE) {
         await window.electron.startChallongeSet(
           selectedChallongeTournament.slug,
-          originalSet.id as number,
+          assertString(originalSet.id),
         );
       } else if (mode === Mode.PARRYGG) {
-        await window.electron.startParryggSet(originalSet.id as string);
+        await window.electron.startParryggSet(assertString(originalSet.id));
       }
     } catch (e: any) {
       showErrorDialog([e.toString()]);
@@ -1251,7 +1252,7 @@ function Hello() {
     return updatedSet;
   };
   const reportChallongeSet = async (
-    matchId: number,
+    matchId: string,
     items: ChallongeMatchItem[],
   ) => {
     const updatedSet = await window.electron.reportChallongeSet(
@@ -1269,7 +1270,7 @@ function Hello() {
   ) => {
     const updatedSet = await window.electron.reportParryggSet(
       parryggSlug,
-      originalSet.id as string,
+      assertString(originalSet.id),
       result,
     );
     resetDq();
@@ -1724,10 +1725,7 @@ function Hello() {
                   tournamentType: selectedChallongeTournament.tournamentType,
                 },
                 set: {
-                  id:
-                    Number.isInteger(setId) && (setId as number) > 0
-                      ? (setId as number)
-                      : undefined,
+                  id: typeof setId === 'string' ? setId : undefined,
                   fullRoundText: selectedSet.fullRoundText,
                   ordinal: selectedSet.ordinal,
                   round: selectedSet.round,

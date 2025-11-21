@@ -21,7 +21,7 @@ import {
   Player,
   Replay,
 } from '../common/types';
-import { isValidCharacter, legalStages } from '../common/constants';
+import { isValidCharacter } from '../common/constants';
 import { writeZip } from './host';
 
 // https://github.com/project-slippi/slippi-launcher/blob/ae8bb69e235b6e46b24bc966aeaa80f45030c6f9/src/replays/file_system_replay_provider/load_file.ts#L91-L101
@@ -189,9 +189,6 @@ export async function getReplaysInDir(
         const stageId = gameStart.subarray(19, 21).readUint16BE();
         const gameTimerSeconds = gameStart.subarray(21, 25).readUint32BE();
         const invalidReasons: string[] = [];
-        if (!legalStages.has(stageId)) {
-          invalidReasons.push('Illegal stage.');
-        }
         if (gameTimerSeconds > 480) {
           invalidReasons.push('Game timer > 8 minutes.');
         }

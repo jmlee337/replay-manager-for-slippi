@@ -46,7 +46,7 @@ import {
 } from '../common/constants';
 import LabeledCheckbox from './LabeledCheckbox';
 import getCharacterIcon from './getCharacterIcon';
-import { assertInteger } from '../common/asserts';
+import { assertInteger, assertString } from '../common/asserts';
 
 const bgColor = 'rgba(34, 178, 76, 0.2)';
 
@@ -237,7 +237,7 @@ export default function SetControls({
   ) => Promise<void>;
   deleteReplays: () => Promise<void>;
   reportChallongeSet: (
-    matchId: number,
+    matchId: string,
     items: ChallongeMatchItem[],
   ) => Promise<Set>;
   reportStartggSet: (
@@ -922,7 +922,7 @@ export default function SetControls({
                   updatedSet = await reportStartggSet(startggSet, set);
                 } else if (mode === Mode.CHALLONGE) {
                   updatedSet = await reportChallongeSet(
-                    set.id as number,
+                    assertString(set.id),
                     challongeMatchItems,
                   );
                 } else if (mode === Mode.PARRYGG) {
