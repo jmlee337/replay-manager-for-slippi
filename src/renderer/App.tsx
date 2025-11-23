@@ -44,6 +44,7 @@ import {
   Eject,
   FolderOpen,
   HourglassTop,
+  NotificationsActive,
   Refresh,
 } from '@mui/icons-material';
 import styled from '@emotion/styled';
@@ -1205,6 +1206,20 @@ function Hello() {
     setSelectedSet(set);
     setOverrides(newOverrides);
     setReplays(newReplays);
+  };
+
+  const [callingSet, setCallingSet] = useState(false);
+  const callSet = async (originalSet: Set) => {
+    setCallingSet(true);
+    try {
+      if (mode === Mode.STARTGG) {
+        await window.electron.callSet(originalSet);
+      }
+    } catch (e: any) {
+      showErrorDialog([e.toString()]);
+    } finally {
+      setCallingSet(false);
+    }
   };
 
   const [startingSet, setStartingSet] = useState(false);
@@ -2777,6 +2792,31 @@ function Hello() {
             >
               <AssignStream mode={mode} selectedSet={selectedSet} />
               <ResetSet mode={mode} selectedSet={selectedSet} />
+              {mode === Mode.STARTGG && (
+                <Tooltip arrow title="Mark set called">
+                  <div>
+                    <IconButton
+                      color="primary"
+                      disabled={
+                        !(
+                          (typeof selectedSet.id === 'string' ||
+                            (Number.isInteger(selectedSet.id) &&
+                              selectedSet.id > 0)) &&
+                          selectedSet.state === State.PENDING
+                        ) || callingSet
+                      }
+                      size="small"
+                      onClick={() => callSet(selectedSet)}
+                    >
+                      {startingSet ? (
+                        <CircularProgress size="24px" />
+                      ) : (
+                        <NotificationsActive />
+                      )}
+                    </IconButton>
+                  </div>
+                </Tooltip>
+              )}
               <Tooltip arrow title="Mark set started">
                 <div>
                   <IconButton

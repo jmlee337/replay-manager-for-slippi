@@ -44,6 +44,7 @@ import {
   getPhase,
   getPhaseGroup,
   getTournament,
+  callSet,
   startSet,
   reportSet,
   updateSet,
@@ -759,6 +760,42 @@ export default function setupIPCs(
       }
 
       await resetSet(sggApiKey, setId);
+      await getPhaseGroup(
+        sggApiKey,
+        assertInteger(getSelectedSetChain().phaseGroup!.id),
+      );
+      mainWindow.webContents.send('tournament', {
+        selectedSet: getSelectedSet(),
+        startggTournament: getCurrentTournament(),
+      });
+    },
+  );
+
+  ipcMain.removeHandler('callSet');
+  ipcMain.handle(
+    'callSet',
+    async (event: IpcMainInvokeEvent, originalSet: Set) => {
+      if (!sggApiKey) {
+        throw new Error('Please set start.gg API key');
+      }
+
+      try {
+        await callSet(sggApiKey, originalSet.id);
+      } catch (e: unknown) {
+        if (
+          e instanceof Error &&
+          e.message.startsWith('Set not found for id: preview')
+        ) {
+          const realSetId = await getRealSetId(sggApiKey, originalSet);
+          if (realSetId) {
+            await callSet(sggApiKey, realSetId);
+          } else {
+            throw e;
+          }
+        } else {
+          throw e;
+        }
+      }
       await getPhaseGroup(
         sggApiKey,
         assertInteger(getSelectedSetChain().phaseGroup!.id),

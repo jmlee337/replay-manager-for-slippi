@@ -1155,6 +1155,24 @@ export async function resetSet(key: string, setId: number) {
   setSelectedSetId(updatedSet.id);
 }
 
+const MARK_SET_CALLED_MUTATION = `
+  mutation MarkSetCalled($setId: ID!) {
+    markSetCalled(setId: $setId) {${GQL_SET_INNER}}
+  }
+`;
+export async function callSet(key: string, setId: Id) {
+  try {
+    const data = await fetchGql(key, MARK_SET_CALLED_MUTATION, { setId });
+    const updatedSet = gqlSetToSet(data.markSetCalled);
+    idToSet.set(updatedSet.id, updatedSet);
+    setSelectedSetId(updatedSet.id);
+  } catch (e: any) {
+    if (e.message !== 'Set is already called') {
+      throw e;
+    }
+  }
+}
+
 const MARK_SET_IN_PROGRESS_MUTATION = `
   mutation MarkSetInProgress($setId: ID!) {
     markSetInProgress(setId: $setId) {${GQL_SET_INNER}}

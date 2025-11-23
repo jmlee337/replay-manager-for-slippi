@@ -47,6 +47,7 @@ function SetView({
         stream={setWithNames.set.stream}
         station={setWithNames.set.station}
         wasReported={false}
+        updatedAtMs={setWithNames.set.updatedAtMs}
       />
     </ListItemButton>
   );

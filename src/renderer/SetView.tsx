@@ -1,7 +1,15 @@
+import { formatDistanceToNowStrict } from 'date-fns';
 import styled from '@emotion/styled';
-import { Backup, CheckBox, HourglassTop, Tv } from '@mui/icons-material';
+import {
+  Backup,
+  CheckBox,
+  HourglassTop,
+  NotificationsActive,
+  Tv,
+} from '@mui/icons-material';
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
-import { NameWithHighlight, Station, Stream } from '../common/types';
+import { useState } from 'react';
+import { NameWithHighlight, State, Station, Stream } from '../common/types';
 import { highlightColor } from '../common/constants';
 
 const EntrantNames = styled(Stack)`
@@ -46,6 +54,39 @@ function EntrantName({ entrantName }: { entrantName: NameWithHighlight }) {
   );
 }
 
+function CallTimer({
+  updatedAtMs,
+  matchState,
+}: {
+  updatedAtMs: number;
+  matchState: number;
+}) {
+  const [timeAgo, setTimeAgo] = useState(
+    formatDistanceToNowStrict(updatedAtMs, { addSuffix: true }),
+  );
+  const handleOpen = () => {
+    setTimeAgo(formatDistanceToNowStrict(updatedAtMs, { addSuffix: true }));
+  };
+
+  if (matchState === State.STARTED) {
+    return (
+      <Tooltip arrow onOpen={handleOpen} title={`Started ${timeAgo}`}>
+        <HourglassTop fontSize="small" />
+      </Tooltip>
+    );
+  }
+
+  if (matchState === State.CALLED) {
+    return (
+      <Tooltip arrow onOpen={handleOpen} title={`Called ${timeAgo}`}>
+        <NotificationsActive fontSize="small" />
+      </Tooltip>
+    );
+  }
+
+  return null;
+}
+
 export default function SetView({
   entrant1Names,
   entrant1Score,
@@ -58,6 +99,7 @@ export default function SetView({
   stream,
   station,
   wasReported,
+  updatedAtMs,
 }: {
   entrant1Names: NameWithHighlight[];
   entrant1Score: number | null;
@@ -70,6 +112,7 @@ export default function SetView({
   stream: Stream | null;
   station: Station | null;
   wasReported: boolean;
+  updatedAtMs: number;
 }) {
   let leftScore = '\u00A0';
   let rightScore = '\u00A0';
@@ -87,16 +130,16 @@ export default function SetView({
   }
 
   let streamVerb = 'Queued';
-  if (state === 2) {
+  if (state === State.STARTED) {
     streamVerb = 'Streaming';
-  } else if (state === 3) {
+  } else if (state === State.COMPLETED) {
     streamVerb = 'Streamed';
   }
 
   let stationVerb = 'Queued';
-  if (state === 2) {
+  if (state === State.STARTED) {
     stationVerb = 'Playing';
-  } else if (state === 3) {
+  } else if (state === State.COMPLETED) {
     stationVerb = 'Played';
   }
 
@@ -152,12 +195,13 @@ export default function SetView({
         justifyContent="flex-end"
         width="20px"
       >
-        {state === 2 && (
-          <Tooltip arrow title="Started">
-            <HourglassTop fontSize="small" />
-          </Tooltip>
+        {state === State.CALLED && (
+          <CallTimer updatedAtMs={updatedAtMs} matchState={State.CALLED} />
         )}
-        {state === 3 && (
+        {state === State.STARTED && (
+          <CallTimer updatedAtMs={updatedAtMs} matchState={State.STARTED} />
+        )}
+        {state === State.COMPLETED && (
           <Tooltip arrow title="Completed">
             <Backup fontSize="small" />
           </Tooltip>
