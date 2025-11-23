@@ -70,7 +70,7 @@ function CallTimer({
 
   if (matchState === State.STARTED) {
     return (
-      <Tooltip arrow onOpen={handleOpen} title={`Started ${timeAgo} ago`}>
+      <Tooltip arrow onOpen={handleOpen} title={`Started ${timeAgo}`}>
         <HourglassTop fontSize="small" />
       </Tooltip>
     );
