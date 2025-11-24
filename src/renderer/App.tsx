@@ -2784,12 +2784,7 @@ function Hello() {
                 </>
               )}
             </Stack>
-            <Stack
-              direction="row"
-              justifyContent="flex-end"
-              paddingTop="8px"
-              spacing="8px"
-            >
+            <Stack direction="row" justifyContent="flex-end" paddingTop="8px">
               <AssignStream mode={mode} selectedSet={selectedSet} />
               <ResetSet mode={mode} selectedSet={selectedSet} />
               {mode === Mode.STARTGG && (
