@@ -197,6 +197,7 @@ const GET_TOURNAMENTS_QUERY = `
     currentUser {
       tournaments(query: {perPage: 500, filter: {tournamentView: "admin"}}) {
         nodes {
+          hasOfflineEvents
           name
           slug
         }
@@ -208,10 +209,12 @@ export async function getTournaments(
   key: string,
 ): Promise<AdminedTournament[]> {
   const data = await fetchGql(key, GET_TOURNAMENTS_QUERY, {});
-  return data.currentUser.tournaments.nodes.map((tournament: any) => ({
-    slug: tournament.slug.slice(11),
-    name: tournament.name,
-  }));
+  return data.currentUser.tournaments.nodes
+    .filter((tournament: any) => tournament.hasOfflineEvents)
+    .map((tournament: any) => ({
+      slug: tournament.slug.slice(11),
+      name: tournament.name,
+    }));
 }
 
 const playerIdToPronouns = new Map<number, string>();
