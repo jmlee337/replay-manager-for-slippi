@@ -41,7 +41,7 @@ jobs:
           path: |
             release/build/ReplayManagerForSlippi*.dmg
   ubuntu:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Check out Git repository
