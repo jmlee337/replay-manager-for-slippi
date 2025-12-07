@@ -1,7 +1,6 @@
 # Replay Manager for Slippi
 
-Replay Manager for Slippi helps users integrate [Slippi replays](https://github.com/project-slippi/slippi-wiki/blob/master/SPEC.md) with [start.gg](https://www.start.gg/) or [challonge](https://challonge.com/) brackets.
-It enables a workflow where Slippi replays are collected set-by-set, used to report set results (including character and stage data), and grouped/labelled for easier organization.
+The shortcoming of Slippi replays is that they work per-game, while much of console Melee is played per-set. Now, USB hotswap in Slippi Nintendont makes it practical to collect replays per-set. With Replay Manager for Slippi we can add player names, scores, and information about the set all while reporting the result to start.gg in the same amount of time. The result is replays grouped and labelled by set, packaged together with all relevant context, henceforth referred to as *Per-Set Replays*. *Per-Set Replays* can then be used for Auto Streaming and Auto VODs.
 
 Mac users, please see how to [open an app from an unidentified developer](https://support.apple.com/en-gb/guide/mac-help/mh40616/mac).
 
