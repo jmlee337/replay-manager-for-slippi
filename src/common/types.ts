@@ -73,8 +73,8 @@ export type Station = {
 };
 
 export type GameScore = {
-  entrant1Score: number;
-  entrant2Score: number;
+  entrant1Score: number | null;
+  entrant2Score: number | null;
 };
 
 export type Set = {
