@@ -2803,7 +2803,7 @@ function Hello() {
                       size="small"
                       onClick={() => callSet(selectedSet)}
                     >
-                      {startingSet ? (
+                      {callingSet ? (
                         <CircularProgress size="24px" />
                       ) : (
                         <NotificationsActive />
