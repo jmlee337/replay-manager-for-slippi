@@ -70,16 +70,26 @@ function CallTimer({
 
   if (matchState === State.STARTED) {
     return (
-      <Tooltip arrow onOpen={handleOpen} title={`Started ${timeAgo}`}>
-        <HourglassTop fontSize="small" />
+      <Tooltip
+        arrow
+        placement="left-start"
+        onOpen={handleOpen}
+        title={`Started ${timeAgo}`}
+      >
+        <HourglassTop fontSize="small" style={{ padding: '9px 0' }} />
       </Tooltip>
     );
   }
 
   if (matchState === State.CALLED) {
     return (
-      <Tooltip arrow onOpen={handleOpen} title={`Called ${timeAgo}`}>
-        <NotificationsActive fontSize="small" />
+      <Tooltip
+        arrow
+        placement="left-start"
+        onOpen={handleOpen}
+        title={`Called ${timeAgo}`}
+      >
+        <NotificationsActive fontSize="small" style={{ padding: '9px 0' }} />
       </Tooltip>
     );
   }
@@ -195,11 +205,8 @@ export default function SetView({
         justifyContent="flex-end"
         width="20px"
       >
-        {state === State.CALLED && (
-          <CallTimer updatedAtMs={updatedAtMs} matchState={State.CALLED} />
-        )}
-        {state === State.STARTED && (
-          <CallTimer updatedAtMs={updatedAtMs} matchState={State.STARTED} />
+        {(state === State.CALLED || state === State.STARTED) && (
+          <CallTimer updatedAtMs={updatedAtMs} matchState={state} />
         )}
         {state === State.COMPLETED && (
           <Tooltip arrow title="Completed">
