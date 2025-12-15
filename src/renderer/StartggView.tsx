@@ -84,6 +84,7 @@ function SetView({
 function PhaseGroupView({
   phaseGroup,
   initiallyOpen,
+  ancestorsOpen,
   isOnline,
   eventId,
   phaseId,
@@ -95,6 +96,7 @@ function PhaseGroupView({
 }: {
   phaseGroup: PhaseGroup;
   initiallyOpen: boolean;
+  ancestorsOpen: boolean;
   isOnline: boolean;
   eventId: number;
   phaseId: number;
@@ -139,7 +141,7 @@ function PhaseGroupView({
             ) {
               get();
             }
-            setOpen(!open);
+            setOpen((oldOpen) => !oldOpen);
           }}
           sx={{ typography: 'caption' }}
         >
@@ -178,7 +180,7 @@ function PhaseGroupView({
             </Box>
           )}
         </ListItemButton>
-        <Collapse in={open}>
+        <Collapse in={open && ancestorsOpen} unmountOnExit>
           <div style={{ marginLeft: '-16px' }}>
             {pendingSetsToShow.map((setWithNames) => (
               <SetView
@@ -194,7 +196,9 @@ function PhaseGroupView({
               <>
                 <ListItemButton
                   dense
-                  onClick={() => setCompletedOpen(!completedOpen)}
+                  onClick={() =>
+                    setCompletedOpen((oldCompletedOpen) => !oldCompletedOpen)
+                  }
                 >
                   <Typography
                     alignItems="center"
@@ -211,7 +215,7 @@ function PhaseGroupView({
                     )}
                   </Typography>
                 </ListItemButton>
-                <Collapse in={completedOpen}>
+                <Collapse in={completedOpen && ancestorsOpen} unmountOnExit>
                   {completedSetsToShow.map((setWithNames) => (
                     <SetView
                       key={setWithNames.set.id}
@@ -243,6 +247,7 @@ function PhaseGroupView({
 function PhaseView({
   phase,
   initiallyOpen,
+  ancestorsOpen,
   isOnline,
   eventId,
   tournamentSlug,
@@ -255,6 +260,7 @@ function PhaseView({
 }: {
   phase: Phase;
   initiallyOpen: boolean;
+  ancestorsOpen: boolean;
   isOnline: boolean;
   eventId: number;
   tournamentSlug: string;
@@ -282,7 +288,7 @@ function PhaseView({
           if (!open && phase.phaseGroups.length === 0) {
             get();
           }
-          setOpen(!open);
+          setOpen((oldOpen) => !oldOpen);
         }}
         sx={{ typography: 'caption' }}
       >
@@ -311,6 +317,7 @@ function PhaseView({
                 phase.phaseGroups.length === 1 ||
                 phaseGroup.id === selectedPhaseGroupId
               }
+              ancestorsOpen={ancestorsOpen && open}
               isOnline={isOnline}
               eventId={eventId}
               phaseId={phase.id}
@@ -382,7 +389,7 @@ function EventView({
           if (!open && event.phases.length === 0) {
             get();
           }
-          setOpen(!open);
+          setOpen((oldOpen) => !oldOpen);
         }}
         sx={{ typography: 'caption' }}
       >
@@ -412,6 +419,7 @@ function EventView({
               initiallyOpen={
                 event.phases.length === 1 || phase.id === selectedPhaseId
               }
+              ancestorsOpen={open}
               isOnline={event.isOnline}
               eventId={event.id}
               tournamentSlug={tournamentSlug}
