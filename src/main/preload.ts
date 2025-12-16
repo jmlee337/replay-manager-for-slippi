@@ -74,6 +74,8 @@ const electronHandler = {
     ),
   appendEnforcerResult: (str: String): Promise<void> =>
     ipcRenderer.invoke('appendEnforcerResult', str),
+  getReportedSubdirs: (): Promise<string[]> =>
+    ipcRenderer.invoke('getReportedSubdirs'),
   getCopyDir: (): Promise<string> => ipcRenderer.invoke('getCopyDir'),
   chooseCopyDir: (): Promise<string> => ipcRenderer.invoke('chooseCopyDir'),
   getCopyHost: (): Promise<CopyHostOrClient> =>

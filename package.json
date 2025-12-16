@@ -110,6 +110,7 @@
     "semver": "^7.7.3",
     "slp-enforcer": "^1.4.4",
     "xhr2": "^0.2.1",
+    "yauzl": "^3.2.0",
     "yazl": "^2.5.1"
   },
   "devDependencies": {
@@ -128,6 +129,7 @@
     "@types/terser-webpack-plugin": "^5.0.4",
     "@types/webpack-bundle-analyzer": "^4.6.0",
     "@types/webpack-env": "^1.18.2",
+    "@types/yauzl": "^2.10.3",
     "@types/yazl": "^2.4.4",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",

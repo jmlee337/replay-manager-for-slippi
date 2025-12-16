@@ -24,7 +24,10 @@ import {
   IconButton,
   InputBase,
   InputLabel,
+  List,
   ListItem,
+  ListItemButton,
+  ListItemText,
   MenuItem,
   Paper,
   Select,
@@ -1815,6 +1818,8 @@ function Hello() {
   };
 
   const [undoDialogOpen, setUndoDialogOpen] = useState(false);
+  const [gettingReportedSubdirs, setGettingReportedSubdirs] = useState(false);
+  const [reportedSubdirs, setReportedSubdirs] = useState<string[]>([]);
 
   const superKey = window.electron.isMac ? 'CMD' : 'CTRL';
 
@@ -2659,8 +2664,18 @@ function Hello() {
                   <Typography
                     variant="caption"
                     style={{ cursor: 'pointer' }}
-                    onClick={() => {
+                    onClick={async () => {
                       setUndoDialogOpen(true);
+                      try {
+                        setGettingReportedSubdirs(true);
+                        setReportedSubdirs(
+                          await window.electron.getReportedSubdirs(),
+                        );
+                      } catch (e: any) {
+                        showErrorDialog([e instanceof Error ? e.message : e]);
+                      } finally {
+                        setGettingReportedSubdirs(false);
+                      }
                     }}
                   >
                     {superKey} + Z: Fix reported set
@@ -2905,6 +2920,21 @@ function Hello() {
         }}
       >
         <DialogTitle>Fix Reported Set</DialogTitle>
+        <DialogContent>
+          {gettingReportedSubdirs ? (
+            <CircularProgress />
+          ) : (
+            <List disablePadding>
+              {reportedSubdirs.map((reportedSubdir) => (
+                <ListItem disablePadding key={reportedSubdir}>
+                  <ListItemButton disableGutters>
+                    <ListItemText>{reportedSubdir}</ListItemText>
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
       </Dialog>
       <Backdrop
         onClick={resetSelectedChipData}
@@ -2996,8 +3026,16 @@ function Hello() {
           SKEW: () => {
             setSkewDialogOpen(true);
           },
-          UNDO: () => {
+          UNDO: async () => {
             setUndoDialogOpen(true);
+            try {
+              setGettingReportedSubdirs(true);
+              setReportedSubdirs(await window.electron.getReportedSubdirs());
+            } catch (e: any) {
+              showErrorDialog([e instanceof Error ? e.message : e]);
+            } finally {
+              setGettingReportedSubdirs(false);
+            }
           },
         }}
       />

@@ -6,13 +6,15 @@ import {
   FileHandle,
   writeFile,
   access,
+  stat,
 } from 'fs/promises';
-import { join } from 'path';
+import path, { join } from 'path';
 import iconv from 'iconv-lite';
 import sanitize from 'sanitize-filename';
 import { ZipFile } from 'yazl';
 import { parse } from 'date-fns';
 import { buffer as bufferConsumer } from 'stream/consumers';
+import { open as unzip } from 'yauzl';
 import {
   Context,
   CopyHostOrClient,
@@ -289,8 +291,8 @@ export async function getReplaysInDir(
           }
         }
 
-        const stat = await fileHandle.stat();
-        const fileSize = stat.size;
+        const stats = await fileHandle.stat();
+        const fileSize = stats.size;
         if (replayLength > 0) {
           const gameEndOffset = metadataOffset - gameEndSize;
           const frameBookendOffset = gameEndOffset - frameBookendSize;
@@ -346,7 +348,7 @@ export async function getReplaysInDir(
               players,
               selected: false,
               stageId,
-              startAt: filenameToDateAndTime(fileName, stat.birthtimeMs),
+              startAt: filenameToDateAndTime(fileName, stats.birthtimeMs),
               timeout: lastFrame === gameTimerSeconds * 60,
             };
           }
@@ -402,7 +404,7 @@ export async function getReplaysInDir(
               players,
               selected: false,
               stageId,
-              startAt: filenameToDateAndTime(fileName, stat.birthtimeMs),
+              startAt: filenameToDateAndTime(fileName, stats.birthtimeMs),
               timeout: lastFrame === gameTimerSeconds * 60 && gameEnd[1] === 1,
             };
           }
@@ -431,7 +433,7 @@ export async function getReplaysInDir(
               players,
               selected: false,
               stageId,
-              startAt: filenameToDateAndTime(fileName, stat.birthtimeMs),
+              startAt: filenameToDateAndTime(fileName, stats.birthtimeMs),
               timeout: lastFrame === gameTimerSeconds * 60 && gameEnd[1] === 1,
             };
           }
@@ -454,7 +456,7 @@ export async function getReplaysInDir(
           }
           let startAt: Date | undefined = new Date(obj.metadata.startAt);
           if (!startAt || Number.isNaN(startAt.getTime())) {
-            startAt = filenameToDateAndTime(fileName, stat.birthtimeMs);
+            startAt = filenameToDateAndTime(fileName, stats.birthtimeMs);
           }
           return {
             fileName,
@@ -488,7 +490,7 @@ export async function getReplaysInDir(
           players,
           selected: false,
           stageId,
-          startAt: filenameToDateAndTime(fileName, stat.birthtimeMs),
+          startAt: filenameToDateAndTime(fileName, stats.birthtimeMs),
           timeout: lastFrame === gameTimerSeconds * 60,
         };
       } catch (e: any) {
@@ -855,4 +857,73 @@ export async function writeReplays(
       );
     }
   }
+}
+
+export async function getReported(copyDir: string) {
+  const dirents = await readdir(copyDir, { withFileTypes: true });
+  const checkableDirents = dirents.filter(
+    (dirent) =>
+      (dirent.isFile() && dirent.name.endsWith('.zip')) || dirent.isDirectory(),
+  );
+  const sortedDirents = (
+    await Promise.all(
+      checkableDirents.map(async (dirent) => ({
+        dirent,
+        stats: await stat(path.join(copyDir, dirent.name)),
+      })),
+    )
+  )
+    .sort((a, b) => b.stats.birthtimeMs - a.stats.birthtimeMs)
+    .map((direntAndStats) => direntAndStats.dirent);
+
+  const subPaths: string[] = [];
+  for (let i = 0; i < sortedDirents.length; i += 1) {
+    const dirent = sortedDirents[i];
+    const fullPath = path.join(copyDir, dirent.name);
+    if (dirent.isFile()) {
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise<void>((resolve) => {
+        unzip(
+          fullPath,
+          { autoClose: true, lazyEntries: true },
+          (err, zipFile) => {
+            if (err) {
+              resolve();
+            }
+            zipFile.on('error', () => {
+              resolve();
+            });
+            zipFile.on('close', () => {
+              resolve();
+            });
+            zipFile.on('entry', (entry) => {
+              if (entry.fileName === 'context.json') {
+                subPaths.push(dirent.name);
+                zipFile.close();
+              } else {
+                zipFile.readEntry();
+              }
+            });
+            zipFile.readEntry();
+          },
+        );
+      });
+    } else if (dirent.isDirectory()) {
+      try {
+        if (
+          // eslint-disable-next-line no-await-in-loop
+          (await readdir(fullPath, { withFileTypes: true })).find(
+            (subDirent) =>
+              subDirent.isFile() && subDirent.name === 'context.json',
+          )
+        ) {
+          subPaths.push(dirent.name);
+        }
+      } catch {
+        // just catch
+      }
+    }
+  }
+
+  return subPaths;
 }

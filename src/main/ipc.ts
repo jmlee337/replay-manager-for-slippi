@@ -60,7 +60,7 @@ import {
   assignStation,
   getPoolsByWave,
 } from './startgg';
-import { getReplaysInDir, writeReplays } from './replay';
+import { getReplaysInDir, getReported, writeReplays } from './replay';
 import {
   getChallongeTournament,
   getChallongeTournaments,
@@ -518,6 +518,11 @@ export default function setupIPCs(
         );
       }
     },
+  );
+
+  ipcMain.removeHandler('getReportedSubdirs');
+  ipcMain.handle('getReportedSubdirs', () =>
+    copyDir ? getReported(copyDir) : [],
   );
 
   ipcMain.removeHandler('getCopyDir');
