@@ -12,7 +12,6 @@ import {
   AppBar,
   Avatar,
   Backdrop,
-  Box,
   Button,
   Checkbox,
   CircularProgress,
@@ -46,6 +45,7 @@ import {
   HourglassTop,
   NotificationsActive,
   Refresh,
+  Search,
 } from '@mui/icons-material';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
@@ -1814,6 +1814,8 @@ function Hello() {
     }
   };
 
+  const [undoDialogOpen, setUndoDialogOpen] = useState(false);
+
   const superKey = window.electron.isMac ? 'CMD' : 'CTRL';
 
   return (
@@ -2450,25 +2452,29 @@ function Hello() {
               />
             ) : (
               <Stack
-                alignItems="center"
+                alignItems="start"
                 direction="row"
                 flexGrow={1}
                 justifyContent="right"
                 marginTop="8px"
-                spacing="1em"
+                spacing="8px"
               >
                 {vlerkMode && (
-                  <>
-                    <Box>
+                  <Stack alignItems="end">
+                    <Stack direction="row" alignItems="center" gap="8px">
                       <FormControl>
-                        <InputLabel id="vlerk-mode-character-select-label">
+                        <InputLabel
+                          size="small"
+                          id="vlerk-mode-character-select-label"
+                        >
                           Character
                         </InputLabel>
                         <Select
-                          labelId="vlerk-mode-character-select-label"
-                          id="vlerk-mode-character-select"
-                          value={vlerkModeExternalId}
                           label="Character"
+                          labelId="vlerk-mode-character-select-label"
+                          size="small"
+                          style={{ width: '106px' }}
+                          value={vlerkModeExternalId}
                           onChange={(event) => {
                             if (Number.isInteger(event.target.value)) {
                               setVlerkModeExternalId(
@@ -2478,7 +2484,7 @@ function Hello() {
                             }
                           }}
                         >
-                          <MenuItem value={-1}>Any Character</MenuItem>
+                          <MenuItem value={-1}>Any</MenuItem>
                           {Array.from(characterNames.entries())
                             .sort((a, b) => a[1].localeCompare(b[1]))
                             .map(([externalId, characterName]) => (
@@ -2488,17 +2494,18 @@ function Hello() {
                             ))}
                         </Select>
                       </FormControl>
-                    </Box>
-                    <Box>
                       <FormControl>
-                        <InputLabel id="vlerk-mode-color-select-label">
+                        <InputLabel
+                          size="small"
+                          id="vlerk-mode-color-select-label"
+                        >
                           Color
                         </InputLabel>
                         <Select
-                          labelId="vlerk-mode-color-select-label"
-                          id="vlerk-mode-color-select"
-                          value={vlerkModeColorIndex}
                           label="Color"
+                          labelId="vlerk-mode-color-select-label"
+                          size="small"
+                          value={vlerkModeColorIndex}
                           onChange={(event) => {
                             if (Number.isInteger(event.target.value)) {
                               setVlerkModeColorIndex(
@@ -2507,7 +2514,7 @@ function Hello() {
                             }
                           }}
                         >
-                          <MenuItem value={-1}>Any Color</MenuItem>
+                          <MenuItem value={-1}>Any</MenuItem>
                           {vlerkModeExternalId !== -1 &&
                             Array(
                               characterColorIndexLength.get(
@@ -2530,9 +2537,7 @@ function Hello() {
                               ))}
                         </Select>
                       </FormControl>
-                    </Box>
-                    <Stack alignItems="center">
-                      <Button
+                      <IconButton
                         disabled={
                           replays.length === 0 ||
                           (vlerkModeExternalId === -1 &&
@@ -2599,19 +2604,16 @@ function Hello() {
                           setVlerkModeFilterLastIndex(0);
                           setVlerkModeFilterNotFound(true);
                         }}
-                        variant="contained"
                       >
-                        Next
-                      </Button>
-                      {vlerkModeFilterNotFound ? (
-                        <Typography lineHeight="20px" variant="caption">
-                          Not found
-                        </Typography>
-                      ) : (
-                        <Box height="20px" />
-                      )}
+                        <Search />
+                      </IconButton>
                     </Stack>
-                  </>
+                    {vlerkModeFilterNotFound && (
+                      <Typography variant="body2" color="error">
+                        Not found
+                      </Typography>
+                    )}
+                  </Stack>
                 )}
                 <Stack>
                   <Typography
@@ -2621,7 +2623,7 @@ function Hello() {
                       window.electron.openEntrantsWindow();
                     }}
                   >
-                    {superKey} + E: View Wave/Pool Entrants
+                    {superKey} + E: View Pool Entrants
                   </Typography>
                   <Typography
                     variant="caption"
@@ -2643,6 +2645,8 @@ function Hello() {
                       {superKey} + S: Copy replays
                     </Typography>
                   )}
+                </Stack>
+                <Stack>
                   <Typography
                     variant="caption"
                     style={{ cursor: 'pointer' }}
@@ -2651,6 +2655,15 @@ function Hello() {
                     }}
                   >
                     {superKey} + T: Re-order replays
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      setUndoDialogOpen(true);
+                    }}
+                  >
+                    {superKey} + Z: Fix reported set
                   </Typography>
                 </Stack>
               </Stack>
@@ -2885,6 +2898,14 @@ function Hello() {
           </Stack>
         </BottomColumns>
       </Bottom>
+      <Dialog
+        open={undoDialogOpen}
+        onClose={() => {
+          setUndoDialogOpen(false);
+        }}
+      >
+        <DialogTitle>Fix Reported Set</DialogTitle>
+      </Dialog>
       <Backdrop
         onClick={resetSelectedChipData}
         open={Boolean(
@@ -2955,6 +2976,9 @@ function Hello() {
           SKEW: window.electron.isMac
             ? ['command+t', 'command+T']
             : ['ctrl+t', 'ctrl+T'],
+          UNDO: window.electron.isMac
+            ? ['command+z', 'command+Z']
+            : ['ctrl+z', 'ctrl+Z'],
         }}
         handlers={{
           COPY: () => {
@@ -2971,6 +2995,9 @@ function Hello() {
           },
           SKEW: () => {
             setSkewDialogOpen(true);
+          },
+          UNDO: () => {
+            setUndoDialogOpen(true);
           },
         }}
       />
