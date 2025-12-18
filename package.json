@@ -110,7 +110,6 @@
     "semver": "^7.7.3",
     "slp-enforcer": "^1.4.4",
     "xhr2": "^0.2.1",
-    "yauzl-promise": "^4.0.0",
     "yazl": "^2.5.1"
   },
   "devDependencies": {

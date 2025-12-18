@@ -16,7 +16,8 @@
   "dependencies": {
     "detect-usb": "^2.0.0",
     "eject-media": "^0.0.3",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "yauzl-promise": "^4.0.0"
   },
   "devDependencies": {
     "prebuild-install": "^7.1.1"
