@@ -334,6 +334,7 @@ export default function CopyControls({
   elevateSettings,
   vlerkMode,
   undoSubdir,
+  hideCopyButton,
 }: {
   dir: string;
   setDir: (dir: string) => void;
@@ -353,6 +354,7 @@ export default function CopyControls({
   elevateSettings: boolean;
   vlerkMode: boolean;
   undoSubdir: string;
+  hideCopyButton: boolean;
 }) {
   const [hosting, setHosting] = useState(false);
   const [copySettingsOpen, setCopySettingsOpen] = useState(false);
@@ -586,24 +588,28 @@ export default function CopyControls({
               </TextField>
             </DialogContent>
           </Dialog>
-          {success && <Typography variant="caption">{success}</Typography>}
-          <Button
-            disabled={
-              isCopying || (!dir && !host.address) || !hasSelectedReplays
-            }
-            onClick={async () => {
-              try {
-                await onCopy();
-              } catch (e: any) {
-                const message = e instanceof Error ? e.message : e;
-                setError(message);
-                setErrorDialogOpen(true);
-              }
-            }}
-            variant="contained"
-          >
-            {isCopying ? 'Copying...' : 'Copy'}
-          </Button>
+          {(vlerkMode || !hideCopyButton) && (
+            <>
+              {success && <Typography variant="caption">{success}</Typography>}
+              <Button
+                disabled={
+                  isCopying || (!dir && !host.address) || !hasSelectedReplays
+                }
+                onClick={async () => {
+                  try {
+                    await onCopy();
+                  } catch (e: any) {
+                    const message = e instanceof Error ? e.message : e;
+                    setError(message);
+                    setErrorDialogOpen(true);
+                  }
+                }}
+                variant="contained"
+              >
+                {isCopying ? 'Copying...' : 'Copy'}
+              </Button>
+            </>
+          )}
         </Stack>
       </Stack>
       {vlerkMode && (

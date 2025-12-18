@@ -68,6 +68,8 @@ export default function Settings({
   setFileNameFormat,
   folderNameFormat,
   setFolderNameFormat,
+  hideCopyButton,
+  setHideCopyButton,
   setAdminedTournaments,
   showErrorDialog,
   enforcerVersion,
@@ -91,6 +93,8 @@ export default function Settings({
   setFileNameFormat: (fileNameFormat: string) => void;
   folderNameFormat: string;
   setFolderNameFormat: (folderNameFormat: string) => void;
+  hideCopyButton: boolean;
+  setHideCopyButton: (hideCopyButton: boolean) => void;
   setAdminedTournaments: (tournaments: AdminedTournament[]) => void;
   showErrorDialog: (errors: string[]) => void;
   enforcerVersion: string;
@@ -472,6 +476,15 @@ export default function Settings({
                 }}
               />
             )}
+            <LabeledCheckbox
+              checked={hideCopyButton}
+              label="Hide Copy Button"
+              labelPlacement="end"
+              set={async (checked) => {
+                await window.electron.setHideCopyButton(checked);
+                setHideCopyButton(checked);
+              }}
+            />
             <FormControl variant="standard" style={{ marginBottom: '8px' }}>
               <InputLabel id="enforcer-setting-select-label">
                 SLP Enforcer {enforcerVersion} (logged to copy folder

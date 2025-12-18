@@ -149,7 +149,10 @@ export default function setupIPCs(
   enforcerWindow: BrowserWindow,
   eventEmitter: EventEmitter,
 ): void {
-  const store = new Store<{ copySettings: CopySettings }>();
+  const store = new Store<{
+    copySettings: CopySettings;
+    hideCopyButton: boolean;
+  }>();
   let replayDirs: ReplayDir[] = [];
   const knownUsbs = new Map<string, boolean>();
   // Helper to add a new replay directory and notify renderer
@@ -1473,6 +1476,17 @@ export default function setupIPCs(
     }
     return folderNameFormat;
   });
+
+  ipcMain.removeHandler('getHideCopyButton');
+  ipcMain.handle('getHideCopyButton', () => store.get('hideCopyButton', true));
+
+  ipcMain.removeHandler('setHideCopyButton');
+  ipcMain.handle(
+    'setHideCopyButton',
+    (event: IpcMainInvokeEvent, hideCopyButton: boolean) => {
+      store.set('hideCopyButton', hideCopyButton);
+    },
+  );
 
   let copySettings = store.get('copySettings', {
     output: Output.ZIP,

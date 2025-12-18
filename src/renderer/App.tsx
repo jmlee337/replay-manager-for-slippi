@@ -254,6 +254,7 @@ function Hello() {
   const [smuggleCostumeIndex, setSmuggleCostumeIndex] = useState(false);
   const [appVersion, setAppVersion] = useState('');
   const [latestAppVersion, setLatestAppVersion] = useState('');
+  const [hideCopyButton, setHideCopyButton] = useState(false);
   const [copySettings, setCopySettings] = useState<CopySettings>({
     output: Output.FILES,
     writeContext: false,
@@ -321,6 +322,7 @@ function Hello() {
       const folderNameFormatPromise = window.electron.getFolderNameFormat();
       const smuggleCostumeIndexPromise =
         window.electron.getSmuggleCostumeIndex();
+      const hideCopyButtonPromise = window.electron.getHideCopyButton();
       const copySettingsPromise = window.electron.getCopySettings();
       const reportSettingsPromise = window.electron.getReportSettings();
 
@@ -354,6 +356,7 @@ function Hello() {
       setVlerkMode(await vlerkModePromise);
       setGuidedMode(await guidedModePromise);
       setSmuggleCostumeIndex(await smuggleCostumeIndexPromise);
+      setHideCopyButton(await hideCopyButtonPromise);
       setCopySettings(await copySettingsPromise);
       setReportSettings(await reportSettingsPromise);
 
@@ -2414,6 +2417,7 @@ function Hello() {
             }
             vlerkMode={vlerkMode}
             undoSubdir={undoSubdir}
+            hideCopyButton={hideCopyButton}
           />
         </TopColumn>
         <TopColumn
@@ -3058,6 +3062,8 @@ function Hello() {
         setFileNameFormat={setFileNameFormat}
         folderNameFormat={folderNameFormat}
         setFolderNameFormat={setFolderNameFormat}
+        hideCopyButton={hideCopyButton}
+        setHideCopyButton={setHideCopyButton}
         setAdminedTournaments={setAdminedTournaments}
         showErrorDialog={showErrorDialog}
         enforcerVersion={ENFORCER_VERSION}

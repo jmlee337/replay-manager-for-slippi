@@ -272,6 +272,10 @@ const electronHandler = {
     ipcRenderer.invoke('setFolderNameFormat', folderNameFormat),
   resetFolderNameFormat: (): Promise<string> =>
     ipcRenderer.invoke('resetFolderNameFormat'),
+  getHideCopyButton: (): Promise<boolean> =>
+    ipcRenderer.invoke('getHideCopyButton'),
+  setHideCopyButton: (hideCopyButton: boolean): Promise<void> =>
+    ipcRenderer.invoke('setHideCopyButton', hideCopyButton),
   getCopySettings: (): Promise<CopySettings> =>
     ipcRenderer.invoke('getCopySettings'),
   setCopySettings: (copySettings: CopySettings): Promise<void> =>
