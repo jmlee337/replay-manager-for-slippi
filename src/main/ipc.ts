@@ -289,9 +289,6 @@ export default function setupIPCs(
   detectUsb.removeAllListeners('eject');
   detectUsb.on('eject', onEject);
   detectUsb.startListening();
-  app.on('will-quit', () => {
-    detectUsb.stopListening();
-  });
 
   let mode = store.has('mode') ? (store.get('mode') as Mode) : Mode.STARTGG;
   ipcMain.removeHandler('getMode');
@@ -1670,5 +1667,22 @@ export default function setupIPCs(
     entrantsWindow.on('close', () => {
       entrantsWindow = null;
     });
+  });
+
+  app.on('will-quit', (event) => {
+    detectUsb.stopListening();
+    if (undoSrcFullPath) {
+      event.preventDefault();
+      (async () => {
+        try {
+          await rm(undoDstFullPath, { force: true, recursive: true });
+        } catch {
+          // just catch
+        } finally {
+          undoSrcFullPath = '';
+          app.quit();
+        }
+      })();
+    }
   });
 }
