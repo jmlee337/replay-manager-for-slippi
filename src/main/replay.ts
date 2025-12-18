@@ -188,16 +188,11 @@ export async function getReplaysInDir(
         const isTeams = gameStart[13] === 1;
         const stageId = gameStart.subarray(19, 21).readUint16BE();
         const gameTimerSeconds = gameStart.subarray(21, 25).readUint32BE();
-        const invalidReasons: string[] = [];
-        if (gameTimerSeconds > 480) {
-          invalidReasons.push('Game timer > 8 minutes.');
-        }
 
         const teamSizes = new Map<number, number>();
         let numPlayers = 0;
         let hasCPUPlayers = false;
         let hasIllegalCharacters = false;
-        let nonStandardStockCount = false;
         const players = new Array<Player>(4) as [
           Player,
           Player,
@@ -235,20 +230,15 @@ export async function getReplaysInDir(
             if (!isValidCharacter(players[i].externalCharacterId)) {
               hasIllegalCharacters = true;
             }
-            if (gameStart[offset + 2] !== 4) {
-              nonStandardStockCount = true;
-            }
           }
         }
 
+        const invalidReasons: string[] = [];
         if (hasCPUPlayers) {
           invalidReasons.push('Has CPU Player(s).');
         }
         if (hasIllegalCharacters) {
           invalidReasons.push('Has illegal character(s).');
-        }
-        if (nonStandardStockCount) {
-          invalidReasons.push('Non standard starting stock count.');
         }
         if (numPlayers !== 2 && numPlayers !== 4) {
           invalidReasons.push('Not singles or doubles.');
