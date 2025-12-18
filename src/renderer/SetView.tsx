@@ -76,7 +76,7 @@ function CallTimer({
         onOpen={handleOpen}
         title={`Started ${timeAgo}`}
       >
-        <HourglassTop fontSize="small" style={{ padding: '9px 0' }} />
+        <HourglassTop fontSize="small" style={{ color: '#0d8225', padding: '9px 0' }} />
       </Tooltip>
     );
   }
@@ -89,7 +89,7 @@ function CallTimer({
         onOpen={handleOpen}
         title={`Called ${timeAgo}`}
       >
-        <NotificationsActive fontSize="small" style={{ padding: '9px 0' }} />
+        <NotificationsActive fontSize="small" style={{ color: '#f9a825', padding: '9px 0' }} />
       </Tooltip>
     );
   }
