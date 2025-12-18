@@ -7,14 +7,15 @@ import {
   writeFile,
   access,
   stat,
+  readFile,
 } from 'fs/promises';
 import path, { join } from 'path';
 import iconv from 'iconv-lite';
 import sanitize from 'sanitize-filename';
 import { ZipFile } from 'yazl';
 import { parse } from 'date-fns';
-import { buffer as bufferConsumer } from 'stream/consumers';
-import { open as unzip } from 'yauzl';
+import { buffer as bufferConsumer, text } from 'stream/consumers';
+import yauzl from 'yauzl-promise';
 import {
   Context,
   CopyHostOrClient,
@@ -859,7 +860,7 @@ export async function writeReplays(
   }
 }
 
-export async function getReported(copyDir: string) {
+export async function getReportedSubdirs(copyDir: string) {
   const dirents = await readdir(copyDir, { withFileTypes: true });
   const checkableDirents = dirents.filter(
     (dirent) =>
@@ -876,38 +877,30 @@ export async function getReported(copyDir: string) {
     .sort((a, b) => b.stats.birthtimeMs - a.stats.birthtimeMs)
     .map((direntAndStats) => direntAndStats.dirent);
 
-  const subPaths: string[] = [];
+  const subdirs: string[] = [];
   for (let i = 0; i < sortedDirents.length; i += 1) {
     const dirent = sortedDirents[i];
     const fullPath = path.join(copyDir, dirent.name);
     if (dirent.isFile()) {
       // eslint-disable-next-line no-await-in-loop
-      await new Promise<void>((resolve) => {
-        unzip(
-          fullPath,
-          { autoClose: true, lazyEntries: true },
-          (err, zipFile) => {
-            if (err) {
-              resolve();
+      const zip = await yauzl.open(fullPath);
+      try {
+        // eslint-disable-next-line no-restricted-syntax, no-await-in-loop
+        for await (const entry of zip) {
+          if (entry.filename === 'context.json') {
+            const readStream = await entry.openReadStream();
+            const context = JSON.parse(await text(readStream)) as Context;
+            if (context.startgg || context.challonge) {
+              subdirs.push(dirent.name);
+              break;
             }
-            zipFile.on('error', () => {
-              resolve();
-            });
-            zipFile.on('close', () => {
-              resolve();
-            });
-            zipFile.on('entry', (entry) => {
-              if (entry.fileName === 'context.json') {
-                subPaths.push(dirent.name);
-                zipFile.close();
-              } else {
-                zipFile.readEntry();
-              }
-            });
-            zipFile.readEntry();
-          },
-        );
-      });
+          }
+        }
+      } catch {
+        // just catch
+      } finally {
+        zip.close();
+      }
     } else if (dirent.isDirectory()) {
       try {
         if (
@@ -917,7 +910,15 @@ export async function getReported(copyDir: string) {
               subDirent.isFile() && subDirent.name === 'context.json',
           )
         ) {
-          subPaths.push(dirent.name);
+          const context = JSON.parse(
+            // eslint-disable-next-line no-await-in-loop
+            await readFile(path.join(copyDir, dirent.name, 'context.json'), {
+              encoding: 'utf8',
+            }),
+          ) as Context;
+          if (context.startgg || context.challonge) {
+            subdirs.push(dirent.name);
+          }
         }
       } catch {
         // just catch
@@ -925,5 +926,5 @@ export async function getReported(copyDir: string) {
     }
   }
 
-  return subPaths;
+  return subdirs;
 }

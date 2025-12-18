@@ -25,7 +25,8 @@ import { format } from 'date-fns';
 import { EventEmitter } from 'events';
 import { MatchResult } from '@parry-gg/client';
 import { createWriteStream } from 'fs';
-import { open as unzip } from 'yauzl';
+import yauzl from 'yauzl-promise';
+import { pipeline } from 'stream/promises';
 import {
   ChallongeMatchItem,
   Context,
@@ -63,7 +64,7 @@ import {
   assignStation,
   getPoolsByWave,
 } from './startgg';
-import { getReplaysInDir, getReported, writeReplays } from './replay';
+import { getReplaysInDir, getReportedSubdirs, writeReplays } from './replay';
 import {
   getChallongeTournament,
   getChallongeTournaments,
@@ -535,7 +536,7 @@ export default function setupIPCs(
 
   ipcMain.removeHandler('getReportedSubdirs');
   ipcMain.handle('getReportedSubdirs', () =>
-    copyDir ? getReported(copyDir) : [],
+    copyDir ? getReportedSubdirs(copyDir) : [],
   );
 
   ipcMain.removeHandler('getUndoSubdir');
@@ -565,52 +566,21 @@ export default function setupIPCs(
       const newUndoSrcFullPath = path.join(copyDir, newUndoSubdir);
       if (newUndoSrcFullPath.endsWith('.zip')) {
         try {
-          await new Promise<void>((resolve, reject) => {
-            unzip(
-              newUndoSrcFullPath,
-              { autoClose: true, lazyEntries: true },
-              (err, zipFile) => {
-                if (err) {
-                  reject(err);
-                }
-
-                zipFile.on('error', (zipFileError) => {
-                  reject(zipFileError);
-                });
-                zipFile.on('close', () => {
-                  resolve();
-                });
-                zipFile.on('entry', (entry) => {
-                  if (entry.fileName.endsWith('.slp')) {
-                    zipFile.openReadStream(
-                      entry,
-                      (readStreamErr, readStream) => {
-                        if (readStreamErr) {
-                          reject(readStreamErr);
-                        }
-
-                        readStream.on('error', (readStreamError) => {
-                          reject(readStreamError);
-                        });
-                        readStream.on('end', () => {
-                          zipFile.readEntry();
-                        });
-                        const dstSlpFullPath = path.join(
-                          undoDstFullPath,
-                          entry.fileName,
-                        );
-                        const writeStream = createWriteStream(dstSlpFullPath);
-                        readStream.pipe(writeStream);
-                      },
-                    );
-                  } else {
-                    zipFile.readEntry();
-                  }
-                });
-                zipFile.readEntry();
-              },
-            );
-          });
+          const zip = await yauzl.open(newUndoSrcFullPath);
+          try {
+            // eslint-disable-next-line no-restricted-syntax
+            for await (const entry of zip) {
+              if (entry.filename.endsWith('.slp')) {
+                const readStream = await entry.openReadStream();
+                const writeStream = createWriteStream(
+                  path.join(undoDstFullPath, entry.filename),
+                );
+                await pipeline(readStream, writeStream);
+              }
+            }
+          } finally {
+            zip.close();
+          }
         } catch (e: any) {
           await rm(undoDstFullPath, { force: true, recursive: true });
           throw e;
