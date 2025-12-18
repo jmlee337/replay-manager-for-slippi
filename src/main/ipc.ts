@@ -14,6 +14,7 @@ import {
   mkdir,
   readdir,
   readFile,
+  rm,
   unlink,
   writeFile,
 } from 'fs/promises';
@@ -23,6 +24,8 @@ import { eject } from 'eject-media';
 import { format } from 'date-fns';
 import { EventEmitter } from 'events';
 import { MatchResult } from '@parry-gg/client';
+import { createWriteStream } from 'fs';
+import { open as unzip } from 'yauzl';
 import {
   ChallongeMatchItem,
   Context,
@@ -137,6 +140,9 @@ async function getRealSetId(sggApiKey: string, originalSet: Set) {
   return null;
 }
 
+const protocolLoadFullPath = path.join(app.getPath('userData'), 'protocol');
+const undoDstFullPath = path.join(app.getPath('userData'), 'undo');
+
 export default function setupIPCs(
   mainWindow: BrowserWindow,
   enforcerWindow: BrowserWindow,
@@ -184,15 +190,14 @@ export default function setupIPCs(
   } = { status: 'idle' };
 
   async function handleProtocolLoadSlpUrls(slpUrls: string[]) {
-    const tempDir = path.join(app.getPath('temp'), app.getName());
-    await mkdir(tempDir, { recursive: true });
+    await mkdir(protocolLoadFullPath, { recursive: true });
     const failedFiles: string[] = [];
     const total = slpUrls.length;
     let completed = 0;
     await Promise.all(
       slpUrls.map(async (url) => {
         const fileName = path.basename(new URL(url).pathname);
-        const dest = path.join(tempDir, fileName);
+        const dest = path.join(protocolLoadFullPath, fileName);
         try {
           await downloadFile(url, dest);
         } catch (err) {
@@ -238,7 +243,7 @@ export default function setupIPCs(
       slpDownloadStatus = { status: 'success' };
       if (mainWindow)
         mainWindow.webContents.send('slp-download-status', slpDownloadStatus);
-      addReplayDir(tempDir, '');
+      addReplayDir(protocolLoadFullPath, '');
     }
   }
 
@@ -294,10 +299,14 @@ export default function setupIPCs(
     mode = newMode;
   });
 
+  let undoSrcFullPath = '';
   ipcMain.removeHandler('getReplaysDir');
-  ipcMain.handle('getReplaysDir', () =>
-    replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '',
-  );
+  ipcMain.handle('getReplaysDir', () => {
+    if (undoSrcFullPath) {
+      return undoDstFullPath;
+    }
+    return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
+  });
 
   let chosenReplaysDir = '';
   ipcMain.removeHandler('chooseReplaysDir');
@@ -362,18 +371,18 @@ export default function setupIPCs(
   let copyDir = '';
   ipcMain.removeHandler('deleteReplaysDir');
   ipcMain.handle('deleteReplaysDir', async () => {
-    if (replayDirs.length === 0) {
+    if (replayDirs.length === 0 && !undoSrcFullPath) {
       return Promise.resolve(false);
     }
 
-    const currentDir = replayDirs[replayDirs.length - 1];
-    if (currentDir && copyDir && currentDir.dir === copyDir) {
+    const currentDir = undoSrcFullPath
+      ? undoDstFullPath
+      : replayDirs[replayDirs.length - 1].dir;
+    if (currentDir && copyDir && currentDir === copyDir) {
       return Promise.resolve(false);
     }
 
-    const slpFilenames = (
-      await readdir(currentDir.dir, { withFileTypes: true })
-    )
+    const slpFilenames = (await readdir(currentDir, { withFileTypes: true }))
       .filter((dirent) => dirent.isFile() && dirent.name.endsWith('.slp'))
       .map((dirent) => dirent.name);
     if (trashDir) {
@@ -382,7 +391,7 @@ export default function setupIPCs(
       await mkdir(fullPath, { recursive: true });
       await Promise.all(
         slpFilenames.map(async (filename) => {
-          const srcPath = path.join(currentDir.dir, filename);
+          const srcPath = path.join(currentDir, filename);
           const dstPath = path.join(fullPath, filename);
           return copyFile(srcPath, dstPath);
         }),
@@ -390,11 +399,13 @@ export default function setupIPCs(
     }
     await Promise.all(
       slpFilenames.map(async (filename) => {
-        const unlinkPath = path.join(currentDir.dir, filename);
+        const unlinkPath = path.join(currentDir, filename);
         return unlink(unlinkPath);
       }),
     );
-    return maybeEject(currentDir);
+    return undoSrcFullPath
+      ? Promise.resolve(false)
+      : maybeEject(replayDirs[replayDirs.length - 1]);
   });
 
   ipcMain.removeHandler('deleteSelectedReplays');
@@ -426,12 +437,14 @@ export default function setupIPCs(
   setOwnEnforcerSetting(enforcerSetting);
   ipcMain.removeHandler('getReplaysInDir');
   ipcMain.handle('getReplaysInDir', async () => {
-    if (replayDirs.length === 0) {
+    if (replayDirs.length === 0 && !undoSrcFullPath) {
       throw new Error();
     }
-    const retReplays = await getReplaysInDir(
-      replayDirs[replayDirs.length - 1].dir,
-    );
+
+    const replayDir = undoSrcFullPath
+      ? undoDstFullPath
+      : replayDirs[replayDirs.length - 1].dir;
+    const retReplays = await getReplaysInDir(replayDir);
     replayLoadCount += 1;
     const currentReplayLoadCount = replayLoadCount;
     if (
@@ -523,6 +536,109 @@ export default function setupIPCs(
   ipcMain.removeHandler('getReportedSubdirs');
   ipcMain.handle('getReportedSubdirs', () =>
     copyDir ? getReported(copyDir) : [],
+  );
+
+  ipcMain.removeHandler('getUndoSubdir');
+  ipcMain.handle('getUndoSubdir', () => path.basename(undoSrcFullPath));
+
+  ipcMain.removeHandler('setUndoSubdir');
+  ipcMain.handle(
+    'setUndoSubdir',
+    async (event: IpcMainInvokeEvent, newUndoSubdir: string) => {
+      if (newUndoSubdir === '') {
+        await rm(undoDstFullPath, { force: true, recursive: true });
+
+        undoSrcFullPath = '';
+        setImmediate(() => {
+          const newDir =
+            replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : null;
+          mainWindow.webContents.send(
+            'usbstorage',
+            newDir ? newDir.dir : '',
+            Boolean(newDir?.usbKey),
+          );
+        });
+        return '';
+      }
+
+      await mkdir(undoDstFullPath, { recursive: true });
+      const newUndoSrcFullPath = path.join(copyDir, newUndoSubdir);
+      if (newUndoSrcFullPath.endsWith('.zip')) {
+        try {
+          await new Promise<void>((resolve, reject) => {
+            unzip(
+              newUndoSrcFullPath,
+              { autoClose: true, lazyEntries: true },
+              (err, zipFile) => {
+                if (err) {
+                  reject(err);
+                }
+
+                zipFile.on('error', (zipFileError) => {
+                  reject(zipFileError);
+                });
+                zipFile.on('close', () => {
+                  resolve();
+                });
+                zipFile.on('entry', (entry) => {
+                  if (entry.fileName.endsWith('.slp')) {
+                    zipFile.openReadStream(
+                      entry,
+                      (readStreamErr, readStream) => {
+                        if (readStreamErr) {
+                          reject(readStreamErr);
+                        }
+
+                        readStream.on('error', (readStreamError) => {
+                          reject(readStreamError);
+                        });
+                        readStream.on('end', () => {
+                          zipFile.readEntry();
+                        });
+                        const dstSlpFullPath = path.join(
+                          undoDstFullPath,
+                          entry.fileName,
+                        );
+                        const writeStream = createWriteStream(dstSlpFullPath);
+                        readStream.pipe(writeStream);
+                      },
+                    );
+                  } else {
+                    zipFile.readEntry();
+                  }
+                });
+                zipFile.readEntry();
+              },
+            );
+          });
+        } catch (e: any) {
+          await rm(undoDstFullPath, { force: true, recursive: true });
+          throw e;
+        }
+      } else {
+        const undoSlpNames = (await readdir(newUndoSrcFullPath)).filter(
+          (name) => name.endsWith('.slp'),
+        );
+        try {
+          await Promise.all(
+            undoSlpNames.map(async (undoSlpName) => {
+              const srcSlpFullPath = path.join(newUndoSrcFullPath, undoSlpName);
+              const dstSlpFullPath = path.join(undoDstFullPath, undoSlpName);
+              return copyFile(srcSlpFullPath, dstSlpFullPath);
+            }),
+          );
+        } catch (e: any) {
+          await rm(undoDstFullPath, { force: true, recursive: true });
+          throw e;
+        }
+      }
+
+      undoSrcFullPath = newUndoSrcFullPath;
+      setImmediate(() => {
+        mainWindow.webContents.send('usbstorage', undoDstFullPath, false);
+      });
+      return undoDstFullPath;
+    },
   );
 
   ipcMain.removeHandler('getCopyDir');

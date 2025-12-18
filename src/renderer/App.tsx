@@ -40,6 +40,7 @@ import {
   ArrowDownward,
   ArrowUpward,
   Backup,
+  Close,
   DeleteForever,
   DeleteForeverOutlined,
   Edit,
@@ -212,6 +213,14 @@ function getParryggSlug(tournament: ParryggTournament.AsObject) {
   );
 }
 
+function applyAllReplaysSelected(allReplays: Replay[], selected: boolean) {
+  allReplays
+    .filter((replay) => replay.invalidReasons.length === 0)
+    .forEach((replay) => {
+      replay.selected = selected;
+    });
+}
+
 function Hello() {
   const [slpDownloadStatus, setSlpDownloadStatus] = useState<SlpDownloadStatus>(
     { status: 'idle' },
@@ -299,6 +308,7 @@ function Hello() {
     EMPTY_SELECTED_SET_CHAIN,
   );
   const [manualNames, setManualNames] = useState<string[]>([]);
+  const [undoSubdir, setUndoSubdir] = useState('');
   useEffect(() => {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
@@ -329,6 +339,7 @@ function Hello() {
       const selectedParryggTournamentPromise =
         window.electron.getCurrentParryggTournament();
       const manualNamesPromise = window.electron.getManualNames();
+      const undoSubdirPromise = window.electron.getUndoSubdir();
 
       // req network
       const latestAppVersionPromise = window.electron.getLatestVersion();
@@ -382,6 +393,7 @@ function Hello() {
         setParryggSlug(getParryggSlug(initSelectedParryggTournament));
       }
       setManualNames(await manualNamesPromise);
+      setUndoSubdir(await undoSubdirPromise);
 
       // req network
       const errorMessages: string[] = [];
@@ -551,12 +563,6 @@ function Hello() {
       hasRemainingReplays = true;
     }
   });
-  const applyAllReplaysSelected = (allReplays: Replay[], selected: boolean) =>
-    allReplays
-      .filter((replay) => replay.invalidReasons.length === 0)
-      .forEach((replay) => {
-        replay.selected = selected;
-      });
   const getNewBatchActives = (newReplays: Replay[]) => {
     const isPlayerArr: [boolean, boolean, boolean, boolean] =
       newReplays.length > 0
@@ -633,7 +639,8 @@ function Hello() {
         invalidReplays: newInvalidReplays,
         replayLoadCount: newReplayLoadCount,
       } = await window.electron.getReplaysInDir();
-      applyAllReplaysSelected(newReplays, allReplaysSelected);
+      setAllReplaysSelected(true);
+      applyAllReplaysSelected(newReplays, true);
       setBatchActives(
         getNewBatchActives(newReplays.filter((replay) => replay.selected)),
       );
@@ -706,7 +713,8 @@ function Hello() {
         setGuideBackdropOpen(false);
         setGuideState(GuideState.NONE);
       }
-      applyAllReplaysSelected(newReplays, allReplaysSelected);
+      setAllReplaysSelected(true);
+      applyAllReplaysSelected(newReplays, true);
       setBatchActives(
         getNewBatchActives(newReplays.filter((replay) => replay.selected)),
       );
@@ -730,7 +738,7 @@ function Hello() {
       setReplayRefs(vlerkMode ? newReplays.map(() => createRef()) : []);
       setGettingReplays(false);
     },
-    [allReplaysSelected, guideActive, mode, vlerkMode],
+    [guideActive, mode, vlerkMode],
   );
 
   const wouldDeleteCopyDir =
@@ -854,15 +862,18 @@ function Hello() {
       selectedSet.id,
     );
   }, [confirmedCopySettings, copyDirSet, selectedSet, tournamentSet]);
+
   useEffect(() => {
     window.electron.onUsb((e, newDir, newIsUsb) => {
-      setDir(newDir);
-      setIsUsb(newIsUsb);
-      setWasDeleted(false);
-      refreshReplays(true);
-      setEjected(false);
+      if (!undoSubdir) {
+        setDir(newDir);
+        setIsUsb(newIsUsb);
+        setWasDeleted(false);
+        refreshReplays(true);
+        setEjected(false);
+      }
     });
-  }, [refreshReplays]);
+  }, [refreshReplays, undoSubdir]);
 
   const availablePlayers: PlayerOverrides[] = [];
   selectedSet.entrant1Participants.forEach((participant) => {
@@ -1873,134 +1884,157 @@ function Hello() {
               <InputBase
                 disabled
                 size="small"
-                value={dir || 'Set replays folder...'}
+                value={
+                  undoSubdir
+                    ? `Fixing ${undoSubdir}`
+                    : dir || 'Set replays folder...'
+                }
                 style={{ flexGrow: 1 }}
               />
               {ejected && <Typography variant="body2">Ejected!</Typography>}
-              {dir && (
-                <Tooltip arrow title="Eject (if USB)">
-                  <IconButton
-                    disabled={ejecting}
-                    onClick={async () => {
-                      setEjecting(true);
-                      try {
-                        setEjected(await window.electron.maybeEject());
-                      } finally {
-                        setEjecting(false);
-                      }
-                    }}
-                  >
-                    <Eject />
-                  </IconButton>
-                </Tooltip>
-              )}
-              {dir &&
-                dirExists &&
-                !gettingReplays &&
-                (replays.length > 0 || invalidReplays.length > 0) &&
-                (isUsb ? (
-                  <>
-                    <Tooltip
-                      arrow
-                      title={
-                        wouldDeleteCopyDir
-                          ? 'Would delete copy folder'
-                          : 'Delete replays folder and eject'
-                      }
-                    >
-                      <div>
-                        <IconButton
-                          disabled={wouldDeleteCopyDir}
-                          onClick={() => setDirDeleteDialogOpen(true)}
-                        >
-                          <DeleteForeverOutlined />
-                        </IconButton>
-                      </div>
-                    </Tooltip>
-                    <Dialog
-                      open={dirDeleteDialogOpen}
-                      onClose={() => {
-                        setDirDeleteDialogOpen(false);
+              {undoSubdir &&
+                (gettingReplays ? (
+                  <CircularProgress size="24px" style={{ margin: '9px' }} />
+                ) : (
+                  <Tooltip arrow title="Cancel">
+                    <IconButton
+                      onClick={async () => {
+                        setDir(await window.electron.setUndoSubdir(''));
+                        setUndoSubdir('');
                       }}
                     >
-                      <DialogTitle>Delete Replays Folder?</DialogTitle>
-                      <DialogContent>
-                        <Alert severity="warning">
-                          {replays.length} replays{' '}
-                          {invalidReplays.length > 0
-                            ? `(and ${invalidReplays.length} invalid replays) `
-                            : ''}
-                          will be deleted! (And the drive will be ejected if
-                          applicable)
-                        </Alert>
-                      </DialogContent>
-                      <DialogActions>
-                        <Button
-                          disabled={dirDeleting}
-                          endIcon={
-                            dirDeleting ? (
-                              <CircularProgress size="24px" />
-                            ) : (
-                              <DeleteForever />
-                            )
-                          }
-                          onClick={async () => {
-                            try {
-                              await deleteDir();
-                              setGuideState(GuideState.NONE);
-                            } catch (e: any) {
-                              showErrorDialog([
-                                e instanceof Error ? e.message : e,
-                              ]);
-                            } finally {
-                              setDirDeleteDialogOpen(false);
-                            }
-                          }}
-                          variant="contained"
-                        >
-                          Delete
-                        </Button>
-                      </DialogActions>
-                    </Dialog>
-                  </>
-                ) : (
-                  <Tooltip
-                    arrow
-                    title={
-                      wouldDeleteCopyDir
-                        ? 'Would delete copy folder'
-                        : 'Delete selected replays'
-                    }
-                  >
-                    <div>
-                      <IconButton
-                        disabled={
-                          selectedReplays.length === 0 ||
-                          wouldDeleteCopyDir ||
-                          dirDeleting
-                        }
-                        onClick={() => deleteSelected()}
-                      >
-                        <DeleteForeverOutlined />
-                      </IconButton>
-                    </div>
+                      <Close />
+                    </IconButton>
                   </Tooltip>
                 ))}
-              {dir && !gettingReplays && (
-                <Tooltip arrow title="Refresh replays">
-                  <IconButton onClick={() => refreshReplays()}>
-                    <Refresh />
-                  </IconButton>
-                </Tooltip>
-              )}
-              {gettingReplays ? (
-                <CircularProgress size="24px" style={{ margin: '9px' }} />
-              ) : (
-                <Tooltip arrow title="Set replays folder">
-                  <IconButton onClick={chooseDir}>
-                    <FolderOpen />
-                  </IconButton>
-                </Tooltip>
+              {!undoSubdir && (
+                <>
+                  {dir && (
+                    <Tooltip arrow title="Eject (if USB)">
+                      <IconButton
+                        disabled={ejecting}
+                        onClick={async () => {
+                          setEjecting(true);
+                          try {
+                            setEjected(await window.electron.maybeEject());
+                          } finally {
+                            setEjecting(false);
+                          }
+                        }}
+                      >
+                        <Eject />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {dir &&
+                    dirExists &&
+                    !gettingReplays &&
+                    (replays.length > 0 || invalidReplays.length > 0) &&
+                    (isUsb ? (
+                      <>
+                        <Tooltip
+                          arrow
+                          title={
+                            wouldDeleteCopyDir
+                              ? 'Would delete copy folder'
+                              : 'Delete replays folder and eject'
+                          }
+                        >
+                          <div>
+                            <IconButton
+                              disabled={wouldDeleteCopyDir}
+                              onClick={() => setDirDeleteDialogOpen(true)}
+                            >
+                              <DeleteForeverOutlined />
+                            </IconButton>
+                          </div>
+                        </Tooltip>
+                        <Dialog
+                          open={dirDeleteDialogOpen}
+                          onClose={() => {
+                            setDirDeleteDialogOpen(false);
+                          }}
+                        >
+                          <DialogTitle>Delete Replays Folder?</DialogTitle>
+                          <DialogContent>
+                            <Alert severity="warning">
+                              {replays.length} replays{' '}
+                              {invalidReplays.length > 0
+                                ? `(and ${invalidReplays.length} invalid replays) `
+                                : ''}
+                              will be deleted! (And the drive will be ejected if
+                              applicable)
+                            </Alert>
+                          </DialogContent>
+                          <DialogActions>
+                            <Button
+                              disabled={dirDeleting}
+                              endIcon={
+                                dirDeleting ? (
+                                  <CircularProgress size="24px" />
+                                ) : (
+                                  <DeleteForever />
+                                )
+                              }
+                              onClick={async () => {
+                                try {
+                                  await deleteDir();
+                                  setGuideState(GuideState.NONE);
+                                } catch (e: any) {
+                                  showErrorDialog([
+                                    e instanceof Error ? e.message : e,
+                                  ]);
+                                } finally {
+                                  setDirDeleteDialogOpen(false);
+                                }
+                              }}
+                              variant="contained"
+                            >
+                              Delete
+                            </Button>
+                          </DialogActions>
+                        </Dialog>
+                      </>
+                    ) : (
+                      <Tooltip
+                        arrow
+                        title={
+                          wouldDeleteCopyDir
+                            ? 'Would delete copy folder'
+                            : 'Delete selected replays'
+                        }
+                      >
+                        <div>
+                          <IconButton
+                            disabled={
+                              selectedReplays.length === 0 ||
+                              wouldDeleteCopyDir ||
+                              dirDeleting
+                            }
+                            onClick={() => deleteSelected()}
+                          >
+                            <DeleteForeverOutlined />
+                          </IconButton>
+                        </div>
+                      </Tooltip>
+                    ))}
+                  {dir && !gettingReplays && (
+                    <Tooltip arrow title="Refresh replays">
+                      <IconButton onClick={() => refreshReplays()}>
+                        <Refresh />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {gettingReplays ? (
+                    <CircularProgress size="24px" style={{ margin: '9px' }} />
+                  ) : (
+                    <Tooltip arrow title="Set replays folder">
+                      <IconButton onClick={chooseDir}>
+                        <FolderOpen />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </>
               )}
             </Stack>
           </AppBarSection>
@@ -2927,7 +2961,24 @@ function Hello() {
             <List disablePadding>
               {reportedSubdirs.map((reportedSubdir) => (
                 <ListItem disablePadding key={reportedSubdir}>
-                  <ListItemButton disableGutters>
+                  <ListItemButton
+                    disableGutters
+                    onClick={async () => {
+                      try {
+                        setDir(
+                          await window.electron.setUndoSubdir(reportedSubdir),
+                        );
+                        setUndoSubdir(reportedSubdir);
+                        setUndoDialogOpen(false);
+                        setIsUsb(false);
+                        setWasDeleted(false);
+                        refreshReplays(true);
+                        setEjected(false);
+                      } catch (e: any) {
+                        showErrorDialog([e instanceof Error ? e.message : e]);
+                      }
+                    }}
+                  >
                     <ListItemText>{reportedSubdir}</ListItemText>
                   </ListItemButton>
                 </ListItem>
