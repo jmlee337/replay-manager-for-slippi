@@ -333,6 +333,7 @@ export default function CopyControls({
   setCopySettings,
   elevateSettings,
   vlerkMode,
+  undoSubdir,
 }: {
   dir: string;
   setDir: (dir: string) => void;
@@ -351,6 +352,7 @@ export default function CopyControls({
   setCopySettings: (newCopySettings: CopySettings) => void;
   elevateSettings: boolean;
   vlerkMode: boolean;
+  undoSubdir: string;
 }) {
   const [hosting, setHosting] = useState(false);
   const [copySettingsOpen, setCopySettingsOpen] = useState(false);
@@ -547,8 +549,13 @@ export default function CopyControls({
               >
                 <div>
                   <LabeledCheckbox
-                    checked={copySettings.writeStartTimes}
-                    disabled={hostFormat.copySettings !== undefined}
+                    checked={
+                      copySettings.writeStartTimes && undoSubdir.length === 0
+                    }
+                    disabled={
+                      hostFormat.copySettings !== undefined ||
+                      undoSubdir.length > 0
+                    }
                     label="Overwrite Start Times"
                     set={async (checked: boolean) => {
                       const newCopySettings = { ...copySettings };

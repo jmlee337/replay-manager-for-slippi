@@ -222,6 +222,7 @@ export default function SetControls({
   smuggleCostumeIndex,
   wouldDeleteCopyDir,
   replayLoadCount,
+  undoSubdir,
 }: {
   copyReplays: (
     updatedSetFields?: {
@@ -265,6 +266,7 @@ export default function SetControls({
   smuggleCostumeIndex: boolean;
   wouldDeleteCopyDir: boolean;
   replayLoadCount: number;
+  undoSubdir: string;
 }) {
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
@@ -477,13 +479,14 @@ export default function SetControls({
   }
 
   let reportCopyDeleteIntent = 'Report';
-  if (reportSettings.alsoCopy) {
+  if (reportSettings.alsoCopy || undoSubdir) {
     reportCopyDeleteIntent += ', Copy';
   }
   if (
-    reportSettings.alsoCopy &&
-    reportSettings.alsoDelete &&
-    deleteOverrideReason.length === 0
+    (reportSettings.alsoCopy &&
+      reportSettings.alsoDelete &&
+      deleteOverrideReason.length === 0) ||
+    undoSubdir
   ) {
     reportCopyDeleteIntent += ', Delete';
   }
@@ -491,11 +494,11 @@ export default function SetControls({
   let reportCopyDeleteButton = reportCopyDeleteIntent;
   if (enforceState.status === EnforceStatus.PENDING) {
     reportCopyDeleteButton = 'Checking with SLP Enforcer';
-  } else if (reportSettings.alsoCopy && copyDisabled) {
+  } else if ((reportSettings.alsoCopy || undoSubdir) && copyDisabled) {
     reportCopyDeleteButton = 'Copy destination not set';
-  } else if (reportSettings.alsoCopy && isCopying) {
+  } else if ((reportSettings.alsoCopy || undoSubdir) && isCopying) {
     reportCopyDeleteButton = 'Copying';
-  } else if (reportSettings.alsoDelete && isDeleting) {
+  } else if ((reportSettings.alsoDelete || undoSubdir) && isDeleting) {
     reportCopyDeleteButton = 'Deleting';
   } else if (reporting) {
     reportCopyDeleteButton = 'Reporting';
@@ -845,7 +848,8 @@ export default function SetControls({
           <Divider sx={{ marginTop: '8px' }} />
           <Stack justifyContent="flex-end">
             <LabeledCheckbox
-              checked={reportSettings.alsoCopy}
+              checked={reportSettings.alsoCopy || undoSubdir.length > 0}
+              disabled={undoSubdir.length > 0}
               label="Copy replays after reporting"
               labelPlacement="start"
               set={(checked: boolean) => {
@@ -855,9 +859,11 @@ export default function SetControls({
               }}
             />
             <LabeledCheckbox
-              checked={reportSettings.alsoDelete}
+              checked={reportSettings.alsoDelete || undoSubdir.length > 0}
               disabled={
-                !reportSettings.alsoCopy || deleteOverrideReason.length > 0
+                !reportSettings.alsoCopy ||
+                deleteOverrideReason.length > 0 ||
+                undoSubdir.length > 0
               }
               label={
                 deleteOverrideReason.length > 0
@@ -928,7 +934,7 @@ export default function SetControls({
                 } else if (mode === Mode.PARRYGG) {
                   updatedSet = await reportParryggSet(parryggMatchResult, set);
                 }
-                if (reportSettings.alsoCopy) {
+                if (reportSettings.alsoCopy || undoSubdir) {
                   const entrantIdToDisplayNameAndCheckNames = new Map<
                     Id,
                     { checkNames: Map<string, boolean>; displayName: string }
@@ -987,9 +993,10 @@ export default function SetControls({
                   );
                 }
                 if (
-                  reportSettings.alsoCopy &&
-                  reportSettings.alsoDelete &&
-                  deleteOverrideReason.length === 0
+                  (reportSettings.alsoCopy &&
+                    reportSettings.alsoDelete &&
+                    deleteOverrideReason.length === 0) ||
+                  undoSubdir
                 ) {
                   await deleteReplays();
                 }

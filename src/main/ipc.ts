@@ -550,16 +550,9 @@ export default function setupIPCs(
         await rm(undoDstFullPath, { force: true, recursive: true });
 
         undoSrcFullPath = '';
-        setImmediate(() => {
-          const newDir =
-            replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : null;
-          mainWindow.webContents.send(
-            'usbstorage',
-            newDir ? newDir.dir : '',
-            Boolean(newDir?.usbKey),
-          );
-        });
-        return '';
+        return replayDirs.length > 0
+          ? replayDirs[replayDirs.length - 1].dir
+          : '';
       }
 
       await mkdir(undoDstFullPath, { recursive: true });
@@ -604,12 +597,22 @@ export default function setupIPCs(
       }
 
       undoSrcFullPath = newUndoSrcFullPath;
-      setImmediate(() => {
-        mainWindow.webContents.send('usbstorage', undoDstFullPath, false);
-      });
       return undoDstFullPath;
     },
   );
+
+  ipcMain.removeHandler('deleteUndoSrcDst');
+  ipcMain.handle('deleteUndoSrcDst', async () => {
+    if (!undoSrcFullPath) {
+      throw new Error('no undo subdir');
+    }
+
+    await rm(undoDstFullPath, { force: true, recursive: true });
+    await rm(undoSrcFullPath, { force: true, recursive: true });
+    undoSrcFullPath = '';
+
+    return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
+  });
 
   ipcMain.removeHandler('getCopyDir');
   ipcMain.handle('getCopyDir', () => copyDir);

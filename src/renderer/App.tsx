@@ -776,6 +776,20 @@ function Hello() {
       setDirDeleting(false);
     }
   };
+  const deleteUndo = async () => {
+    if (!dir || !undoSubdir || wouldDeleteCopyDir) {
+      return;
+    }
+
+    setDirDeleting(true);
+    try {
+      setDir(await window.electron.deleteUndoSrcDst());
+      setUndoSubdir('');
+      refreshReplays(true);
+    } finally {
+      setDirDeleting(false);
+    }
+  };
   const onPlayerOverride = () => {
     setReplays(Array.from(replays));
   };
@@ -1335,7 +1349,7 @@ function Hello() {
 
     let offsetMs = 0;
     let startDate = selectedReplays[0].startAt;
-    if (copySettings.writeStartTimes) {
+    if (copySettings.writeStartTimes && undoSubdir.length === 0) {
       const lastReplay = selectedReplays[selectedReplays.length - 1];
       const lastStartMs = lastReplay.startAt.getTime();
       const completedMs =
@@ -1580,9 +1594,10 @@ function Hello() {
       if (copySettings.writeFileNames) {
         fileNames = nameObjs.map((game, i) => {
           const { stageId, startAt } = selectedReplays[i];
-          const writeStartDate = copySettings.writeStartTimes
-            ? new Date(startAt.getTime() + offsetMs)
-            : startAt;
+          const writeStartDate =
+            copySettings.writeStartTimes && undoSubdir.length === 0
+              ? new Date(startAt.getTime() + offsetMs)
+              : startAt;
           const time = format(writeStartDate, 'HHmmss');
           const names = game.filter((nameObj) => nameObj.characterName);
           const playersOnly = names.map(nameObjToPlayerOnly).join(', ');
@@ -1778,7 +1793,7 @@ function Hello() {
     }
 
     let startTimes: string[] = [];
-    if (copySettings.writeStartTimes) {
+    if (copySettings.writeStartTimes && undoSubdir.length === 0) {
       startTimes = selectedReplays.map((replay) =>
         new Date(replay.startAt.getTime() + offsetMs).toISOString(),
       );
@@ -1901,6 +1916,7 @@ function Hello() {
                       onClick={async () => {
                         setDir(await window.electron.setUndoSubdir(''));
                         setUndoSubdir('');
+                        refreshReplays(true);
                       }}
                     >
                       <Close />
@@ -2397,6 +2413,7 @@ function Hello() {
               !confirmedCopySettings
             }
             vlerkMode={vlerkMode}
+            undoSubdir={undoSubdir}
           />
         </TopColumn>
         <TopColumn
@@ -2908,7 +2925,10 @@ function Hello() {
               <SetControls
                 mode={mode}
                 copyReplays={onCopy}
-                deleteReplays={isUsb ? deleteDir : deleteSelected}
+                deleteReplays={
+                  // eslint-disable-next-line no-nested-ternary
+                  undoSubdir ? deleteUndo : isUsb ? deleteDir : deleteSelected
+                }
                 reportChallongeSet={reportChallongeSet}
                 reportStartggSet={reportStartggSet}
                 reportParryggSet={reportParryggSet}
@@ -2942,6 +2962,7 @@ function Hello() {
                 smuggleCostumeIndex={smuggleCostumeIndex}
                 wouldDeleteCopyDir={wouldDeleteCopyDir}
                 replayLoadCount={replayLoadCount}
+                undoSubdir={undoSubdir}
               />
             </Stack>
           </Stack>
