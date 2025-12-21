@@ -242,6 +242,7 @@ function Hello() {
 
   // settings
   const [mode, setMode] = useState<Mode>(Mode.STARTGG);
+  const [doublesTeamFormat, setDoublesTeamFormat] = useState(false);
   const [enforcerSetting, setEnforcerSetting] = useState(EnforcerSetting.NONE);
   const [vlerkMode, setVlerkMode] = useState(false);
   const [vlerkModeExternalId, setVlerkModeExternalId] = useState(-1);
@@ -316,6 +317,7 @@ function Hello() {
       const modePromise = window.electron.getMode();
       const useLANPromise = window.electron.getUseLAN();
       const enforcerSettingPromise = window.electron.getEnforcerSetting();
+      const doublesTeamFormatPromise = window.electron.getDoublesTeamFormat();
       const vlerkModePromise = window.electron.getVlerkMode();
       const guidedModePromise = window.electron.getGuidedMode();
       const fileNameFormatPromise = window.electron.getFileNameFormat();
@@ -350,6 +352,7 @@ function Hello() {
       setAppVersion(await appVersionPromise);
       setMode(await modePromise);
       setUseLAN(await useLANPromise);
+      setDoublesTeamFormat(await doublesTeamFormatPromise);
       setEnforcerSetting(await enforcerSettingPromise);
       setFileNameFormat(await fileNameFormatPromise);
       setFolderNameFormat(await folderNameFormatPromise);
@@ -1542,16 +1545,17 @@ function Hello() {
           }
         });
 
+        const playersSeparator = doublesTeamFormat ? ', ' : ' + ';
         const playersOnly = `${entrant1CombinedNameObjs
           .map(combinedNameObjToPlayerOnly)
-          .join(' + ')} vs ${entrant2CombinedNameObjs
+          .join(playersSeparator)} vs ${entrant2CombinedNameObjs
           .map(combinedNameObjToPlayerOnly)
-          .join(' + ')}`;
+          .join(playersSeparator)}`;
         const playersChars = `${entrant1CombinedNameObjs
           .map(combinedNameObjToPlayerChar)
-          .join(' + ')} vs ${entrant2CombinedNameObjs
+          .join(playersSeparator)} vs ${entrant2CombinedNameObjs
           .map(combinedNameObjToPlayerChar)
-          .join(' + ')}`;
+          .join(playersSeparator)}`;
         const singlesChars =
           combinedNameObjs.length === 4 ? playersOnly : playersChars;
         subdir = String(folderNameFormat);
@@ -1603,10 +1607,43 @@ function Hello() {
               : startAt;
           const time = format(writeStartDate, 'HHmmss');
           const names = game.filter((nameObj) => nameObj.characterName);
-          const playersOnly = names.map(nameObjToPlayerOnly).join(', ');
-          const playersChars = names.map(nameObjToPlayerChar).join(', ');
-          const singlesChars =
-            nameObjs.length === 4 ? playersOnly : playersChars;
+          let playersOnly: string;
+          let playersChars: string;
+
+          // For doubles, use team vs team format matching the folder name
+          if (names.length === 4 && selectedReplays[i].isTeams) {
+            // Group players by entrant for team vs team format
+            const entrant1Names: NameObj[] = [];
+            const entrant2Names: NameObj[] = [];
+
+            names.forEach((nameObj) => {
+              const isEntrant1 = entrant1CombinedNameObjs.some(
+                (cbn) => cbn.participantId === nameObj.participantId,
+              );
+              if (isEntrant1) {
+                entrant1Names.push(nameObj);
+              } else {
+                entrant2Names.push(nameObj);
+              }
+            });
+
+            playersOnly = `${entrant1Names
+              .map(nameObjToPlayerOnly)
+              .join(', ')} vs ${entrant2Names
+              .map(nameObjToPlayerOnly)
+              .join(', ')}`;
+            playersChars = `${entrant1Names
+              .map(nameObjToPlayerChar)
+              .join(', ')} vs ${entrant2Names
+              .map(nameObjToPlayerChar)
+              .join(', ')}`;
+          } else {
+            // For singles, use the original format
+            playersOnly = names.map(nameObjToPlayerOnly).join(', ');
+            playersChars = names.map(nameObjToPlayerChar).join(', ');
+          }
+
+          const singlesChars = names.length === 4 ? playersOnly : playersChars;
 
           let fileName = `{ordinal}${fileNameFormat}`;
           fileName = fileName.replace(
@@ -2961,6 +2998,8 @@ function Hello() {
                   guideBackdropOpen &&
                   guideState === GuideState.PLAYERS
                 }
+                doublesTeamFormat={doublesTeamFormat}
+                setDoublesTeamFormat={setDoublesTeamFormat}
                 enforcerVersion={ENFORCER_VERSION}
                 enforcerSetting={enforcerSetting}
                 smuggleCostumeIndex={smuggleCostumeIndex}

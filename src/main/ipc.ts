@@ -1367,6 +1367,22 @@ export default function setupIPCs(
     }
   });
 
+  ipcMain.removeHandler('getDoublesTeamFormat');
+  ipcMain.handle('getDoublesTeamFormat', () => {
+    if (store.has('doublesTeamFormat')) {
+      return store.get('doublesTeamFormat') as boolean;
+    }
+    store.set('doublesTeamFormat', false);
+    return false;
+  });
+  ipcMain.removeHandler('setDoublesTeamFormat');
+  ipcMain.handle(
+    'setDoublesTeamFormat',
+    (event, newDoublesTeamFormat: boolean) => {
+      store.set('doublesTeamFormat', newDoublesTeamFormat);
+    },
+  );
+
   ipcMain.removeHandler('getEnforcerSetting');
   ipcMain.handle('getEnforcerSetting', () => enforcerSetting);
 
