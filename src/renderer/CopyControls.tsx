@@ -29,6 +29,7 @@ import {
   WebSocketServerStatus,
   CopyHostOrClient,
   CopyHostFormat,
+  GuideState,
 } from '../common/types';
 import ErrorDialog from './ErrorDialog';
 import LabeledCheckbox from './LabeledCheckbox';
@@ -335,6 +336,9 @@ export default function CopyControls({
   vlerkMode,
   undoSubdir,
   hideCopyButton,
+  setConfirmedCopySettings,
+  guideState,
+  setGuideBackdropOpen,
 }: {
   dir: string;
   setDir: (dir: string) => void;
@@ -355,9 +359,12 @@ export default function CopyControls({
   vlerkMode: boolean;
   undoSubdir: string;
   hideCopyButton: boolean;
+  setConfirmedCopySettings: (confirmedCopySettings: boolean) => void;
+  guideState: GuideState;
+  setGuideBackdropOpen: (backdropOpen: boolean) => void;
 }) {
   const [hosting, setHosting] = useState(false);
-  const [copySettingsOpen, setCopySettingsOpen] = useState(false);
+  const [copySettingsOpen, setCopySettingsOpen] = useState(elevateSettings);
   const [copyToastOpen, setCopyToastOpen] = useState(false);
 
   useEffect(() => {
@@ -469,7 +476,7 @@ export default function CopyControls({
               elevateSettings
                 ? {
                     backgroundColor: 'white',
-                    zIndex: (theme) => theme.zIndex.drawer + 2,
+                    zIndex: (theme) => theme.zIndex.modal + 1,
                   }
                 : undefined
             }
@@ -480,6 +487,8 @@ export default function CopyControls({
             open={copySettingsOpen}
             onClose={() => {
               setCopySettingsOpen(false);
+              setConfirmedCopySettings(true);
+              setGuideBackdropOpen(guideState !== GuideState.NONE);
             }}
           >
             <DialogTitle>Copy Settings</DialogTitle>

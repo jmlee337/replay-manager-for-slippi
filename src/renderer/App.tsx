@@ -4,6 +4,7 @@ import {
   RefObject,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -310,6 +311,19 @@ function Hello() {
   );
   const [manualNames, setManualNames] = useState<string[]>([]);
   const [undoSubdir, setUndoSubdir] = useState('');
+  const tournamentSet = useMemo(
+    () =>
+      (mode === Mode.STARTGG && slug.length > 0) ||
+      (mode === Mode.CHALLONGE && challongeTournaments.size > 0) ||
+      (mode === Mode.PARRYGG && slug.length > 0) ||
+      (mode === Mode.MANUAL && manualNames.length > 0),
+    [challongeTournaments, manualNames.length, mode, slug],
+  );
+  const copyDirSet = useMemo(() => copyDir.length > 0, [copyDir]);
+  const guidedDialogOpen = useMemo(
+    () => guidedMode && (!tournamentSet || !copyDirSet),
+    [copyDirSet, guidedMode, tournamentSet],
+  );
   useEffect(() => {
     const inner = async () => {
       const appVersionPromise = window.electron.getVersion();
@@ -682,14 +696,7 @@ function Hello() {
 
   const [guideState, setGuideState] = useState(GuideState.NONE);
   const [guideBackdropOpen, setGuideBackdropOpen] = useState(false);
-  const [guidedDialogOpen, setGuidedDialogOpen] = useState(true);
   const [confirmedCopySettings, setConfirmedCopySettings] = useState(false);
-  const tournamentSet =
-    (mode === Mode.STARTGG && slug.length > 0) ||
-    (mode === Mode.CHALLONGE && challongeTournaments.size > 0) ||
-    (mode === Mode.PARRYGG && slug.length > 0) ||
-    (mode === Mode.MANUAL && manualNames.length > 0);
-  const copyDirSet = copyDir.length > 0;
   const guideActive =
     guidedMode && tournamentSet && copyDirSet && confirmedCopySettings;
   const refreshReplays = useCallback(
@@ -2410,7 +2417,6 @@ function Hello() {
             setCopySettings={setCopySettings}
             elevateSettings={
               guidedMode &&
-              guideBackdropOpen &&
               tournamentSet &&
               copyDirSet &&
               !confirmedCopySettings
@@ -2418,6 +2424,9 @@ function Hello() {
             vlerkMode={vlerkMode}
             undoSubdir={undoSubdir}
             hideCopyButton={hideCopyButton}
+            setConfirmedCopySettings={setConfirmedCopySettings}
+            guideState={guideState}
+            setGuideBackdropOpen={setGuideBackdropOpen}
           />
         </TopColumn>
         <TopColumn
@@ -2474,7 +2483,6 @@ function Hello() {
             {guidedMode ? (
               <GuidedDialog
                 open={guidedDialogOpen}
-                setOpen={setGuidedDialogOpen}
                 mode={mode}
                 gettingAdminedTournaments={gettingAdminedTournaments}
                 adminedTournaments={adminedTournaments}
@@ -2501,10 +2509,8 @@ function Hello() {
                 getChallongeTournament={getChallongeTournament}
                 manualNames={manualNames}
                 setManualNames={setManualNamesOuter}
-                copyDir={copyDir}
                 setCopyDir={setCopyDir}
                 confirmedCopySettings={confirmedCopySettings}
-                setConfirmedCopySettings={setConfirmedCopySettings}
                 state={guideState}
                 setState={setGuideState}
                 backdropOpen={guideBackdropOpen}
@@ -3087,6 +3093,7 @@ function Hello() {
           UNDO: window.electron.isMac
             ? ['command+z', 'command+Z']
             : ['ctrl+z', 'ctrl+Z'],
+          WALKTHROUGH: 'F1',
         }}
         handlers={{
           COPY: () => {
@@ -3114,6 +3121,12 @@ function Hello() {
             } finally {
               setGettingReportedSubdirs(false);
             }
+          },
+          WALKTHROUGH: () => {
+            setGuidedMode((old) => {
+              window.electron.setGuidedMode(!old);
+              return !old;
+            });
           },
         }}
       />

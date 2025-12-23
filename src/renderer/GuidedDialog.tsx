@@ -14,7 +14,6 @@ import ChallongeTournamentForm from './ChallongeTournamentForm';
 
 export default function GuidedDialog({
   open,
-  setOpen,
   mode,
   gettingAdminedTournaments,
   adminedTournaments,
@@ -27,17 +26,14 @@ export default function GuidedDialog({
   getChallongeTournament,
   manualNames,
   setManualNames,
-  copyDir,
   setCopyDir,
   confirmedCopySettings,
-  setConfirmedCopySettings,
   state,
   setState,
   backdropOpen,
   setBackdropOpen,
 }: {
   open: boolean;
-  setOpen: (open: boolean) => void;
   mode: Mode;
   gettingAdminedTournaments: boolean;
   adminedTournaments: AdminedTournament[];
@@ -53,10 +49,8 @@ export default function GuidedDialog({
   getChallongeTournament: (maybeSlug: string) => Promise<void>;
   manualNames: string[];
   setManualNames: (manualNames: string[]) => Promise<void>;
-  copyDir: string;
   setCopyDir: (copyDir: string) => void;
   confirmedCopySettings: boolean;
-  setConfirmedCopySettings: (confirmedCopySettings: boolean) => void;
   state: GuideState;
   setState: (state: GuideState) => void;
   backdropOpen: boolean;
@@ -71,45 +65,22 @@ export default function GuidedDialog({
         marginTop="8px"
         spacing="8px"
         sx={{
-          zIndex: (theme) =>
-            backdropOpen ? theme.zIndex.drawer + 2 : undefined,
+          zIndex: (theme) => {
+            if (open || !confirmedCopySettings) {
+              return theme.zIndex.modal + 1;
+            }
+            if (backdropOpen) {
+              return theme.zIndex.drawer + 2;
+            }
+            return undefined;
+          },
         }}
       >
         {(!tournamentSet || !copyDirSet) && (
-          <>
-            <Alert severity="error">Walkthrough mode not ready</Alert>
-            <Button
-              onClick={() => {
-                setOpen(true);
-              }}
-              variant="contained"
-            >
-              Set up
-            </Button>
-          </>
+          <Alert severity="error">Walkthrough mode not ready</Alert>
         )}
         {tournamentSet && copyDirSet && !confirmedCopySettings && (
-          <>
-            <Alert severity="warning">Confirm copy settings</Alert>
-            <Button
-              onClick={() => {
-                setConfirmedCopySettings(true);
-                setBackdropOpen(state !== GuideState.NONE);
-              }}
-              variant="contained"
-            >
-              Done!
-            </Button>
-            <Button
-              disabled={backdropOpen}
-              onClick={() => {
-                setBackdropOpen(true);
-              }}
-              variant="contained"
-            >
-              Highlight Step
-            </Button>
-          </>
+          <Alert severity="warning">Confirm copy settings</Alert>
         )}
         {tournamentSet &&
           copyDirSet &&
@@ -157,13 +128,7 @@ export default function GuidedDialog({
             </>
           )}
       </Stack>
-      <Dialog
-        open={open}
-        onClose={() => {
-          setOpen(false);
-          setBackdropOpen(true);
-        }}
-      >
+      <Dialog open={open}>
         {!tournamentSet && mode === Mode.STARTGG && (
           <StartggTournamentForm
             gettingAdminedTournaments={gettingAdminedTournaments}
@@ -172,12 +137,7 @@ export default function GuidedDialog({
             getAdminedTournaments={getAdminedTournaments}
             getTournament={getStartggTournament}
             setSlug={setStartggTournamentSlug}
-            close={() => {
-              if (copyDir) {
-                setOpen(false);
-                setBackdropOpen(true);
-              }
-            }}
+            close={() => {}}
           />
         )}
         {!tournamentSet && mode === Mode.CHALLONGE && (
@@ -187,22 +147,12 @@ export default function GuidedDialog({
             gettingTournament={gettingTournament}
             getAdminedTournaments={getAdminedTournaments}
             getTournament={getChallongeTournament}
-            close={() => {
-              if (copyDir) {
-                setOpen(false);
-                setBackdropOpen(true);
-              }
-            }}
+            close={() => {}}
           />
         )}
         {!tournamentSet && mode === Mode.MANUAL && (
           <ManualNamesForm
-            close={() => {
-              if (copyDir) {
-                setOpen(false);
-                setBackdropOpen(true);
-              }
-            }}
+            close={() => {}}
             manualNames={manualNames}
             setManualNames={setManualNames}
           />
@@ -218,8 +168,6 @@ export default function GuidedDialog({
                     const newCopyDir = await window.electron.chooseCopyDir();
                     if (newCopyDir) {
                       setCopyDir(newCopyDir);
-                      setOpen(false);
-                      setBackdropOpen(true);
                     }
                   }}
                   variant="contained"
