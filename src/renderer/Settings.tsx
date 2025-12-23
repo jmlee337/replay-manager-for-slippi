@@ -248,7 +248,6 @@ export default function Settings({
               </DialogContentText>
               <Stack alignItems="center" direction="row" gap="8px">
                 <TextField
-                  autoFocus
                   fullWidth
                   label="start.gg API key (Keep it private!)"
                   onChange={(event) => {
@@ -291,7 +290,6 @@ export default function Settings({
               </DialogContentText>
               <Stack alignItems="center" direction="row" gap="8px">
                 <TextField
-                  autoFocus
                   fullWidth
                   label="Challonge v1 API key (Keep it private!)"
                   onChange={(event) => {
@@ -329,7 +327,6 @@ export default function Settings({
               </DialogContentText>
               <Stack alignItems="center" direction="row" gap="8px">
                 <TextField
-                  autoFocus
                   fullWidth
                   label="parry.gg API key (Keep it private!)"
                   onChange={(event) => {

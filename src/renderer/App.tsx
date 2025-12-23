@@ -2741,6 +2741,18 @@ function Hello() {
                   >
                     {superKey} + Z: Fix reported set
                   </Typography>
+                  <Typography
+                    variant="caption"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      setGuidedMode((old) => {
+                        window.electron.setGuidedMode(!old);
+                        return !old;
+                      });
+                    }}
+                  >
+                    F1: Walkthrough Mode
+                  </Typography>
                 </Stack>
               </Stack>
             )}

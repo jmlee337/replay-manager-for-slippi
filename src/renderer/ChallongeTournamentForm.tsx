@@ -75,7 +75,6 @@ export default function ChallongeTournamentForm({
           onSubmit={getTournamentOnSubmit}
         >
           <TextField
-            autoFocus
             label="Tournament Slug"
             name="slug"
             placeholder="pwq179iw"

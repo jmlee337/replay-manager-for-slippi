@@ -80,7 +80,6 @@ export default function ParryggTournamentForm({
           onSubmit={getTournamentOnSubmit}
         >
           <TextField
-            autoFocus
             label="Tournament Slug"
             name="slug"
             placeholder="tournament-slug"

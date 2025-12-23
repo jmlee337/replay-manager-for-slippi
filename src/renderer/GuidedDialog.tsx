@@ -128,7 +128,7 @@ export default function GuidedDialog({
             </>
           )}
       </Stack>
-      <Dialog open={open}>
+      <Dialog open={open} style={{ marginBottom: '55px' }}>
         {!tournamentSet && mode === Mode.STARTGG && (
           <StartggTournamentForm
             gettingAdminedTournaments={gettingAdminedTournaments}

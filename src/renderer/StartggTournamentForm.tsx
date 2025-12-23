@@ -80,7 +80,6 @@ export default function StartggTournamentForm({
           onSubmit={getTournamentOnSubmit}
         >
           <TextField
-            autoFocus
             label="Tournament Slug"
             name="slug"
             placeholder="super-smash-con-2023"
