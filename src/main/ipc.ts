@@ -95,6 +95,7 @@ import {
 import {
   appendEnforcerResult,
   connectToHost,
+  deleteZip,
   disconnectFromHost,
   getCopyClients,
   getHost,
@@ -601,12 +602,20 @@ export default function setupIPCs(
     },
   );
 
+  // host delete
   ipcMain.removeHandler('deleteUndoSrcDst');
   ipcMain.handle('deleteUndoSrcDst', async () => {
     if (!undoSrcFullPath) {
       throw new Error('no undo subdir');
     }
 
+    if (undoSrcFullPath.endsWith('.zip') && getHost().address) {
+      try {
+        await deleteZip(path.basename(undoSrcFullPath, '.zip'));
+      } catch {
+        // just catch
+      }
+    }
     await rm(undoDstFullPath, { force: true, recursive: true });
     await rm(undoSrcFullPath, { force: true, recursive: true });
     undoSrcFullPath = '';
