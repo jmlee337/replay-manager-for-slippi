@@ -10,7 +10,7 @@ import {
 import { Box, Stack, Tooltip, Typography } from '@mui/material';
 import { useState } from 'react';
 import { NameWithHighlight, State, Station, Stream } from '../common/types';
-import { highlightColor } from '../common/constants';
+import { calledColor, highlightColor, startedColor } from '../common/constants';
 
 const EntrantNames = styled(Stack)`
   width: calc(100% - 22px);
@@ -78,7 +78,7 @@ function CallTimer({
       >
         <HourglassTop
           fontSize="small"
-          style={{ color: '#0d8225', padding: '9px 0' }}
+          style={{ color: startedColor, padding: '9px 0' }}
         />
       </Tooltip>
     );
@@ -94,7 +94,7 @@ function CallTimer({
       >
         <NotificationsActive
           fontSize="small"
-          style={{ color: '#f9a825', padding: '9px 0' }}
+          style={{ color: calledColor, padding: '9px 0' }}
         />
       </Tooltip>
     );

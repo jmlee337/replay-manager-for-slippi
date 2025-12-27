@@ -13,6 +13,7 @@ import {
   AppBar,
   Avatar,
   Backdrop,
+  Box,
   Button,
   Checkbox,
   CircularProgress,
@@ -96,10 +97,12 @@ import ErrorDialog from './ErrorDialog';
 import Settings from './Settings';
 import ManualReport from './ManualReport';
 import {
+  calledColor,
   characterColorIndexLength,
   characterNames,
   frameMsDivisor,
   stageNames,
+  startedColor,
 } from '../common/constants';
 import ManualBar from './ManualBar';
 import GuidedDialog from './GuidedDialog';
@@ -2754,29 +2757,36 @@ function Hello() {
                     alignItems="center"
                     justifyContent="center"
                     direction="row"
+                    gap="8px"
                   >
-                    <Typography lineHeight="20px" variant="caption">
+                    <Box width="16px" />
+                    <Typography noWrap lineHeight="20px" variant="caption">
                       {selectedSet.fullRoundText}
                       {(typeof selectedSet.id === 'string' ||
                         (Number.isInteger(selectedSet.id) &&
                           selectedSet.id > 0)) &&
                         ` (${selectedSet.id})`}
                     </Typography>
+                    {selectedSet.state === State.CALLED && (
+                      <Tooltip arrow placement="top" title="Called">
+                        <NotificationsActive
+                          fontSize="inherit"
+                          style={{ color: calledColor }}
+                        />
+                      </Tooltip>
+                    )}
                     {selectedSet.state === State.STARTED && (
-                      <>
-                        &nbsp;
-                        <Tooltip arrow placement="top" title="Started">
-                          <HourglassTop fontSize="inherit" />
-                        </Tooltip>
-                      </>
+                      <Tooltip arrow placement="top" title="Started">
+                        <HourglassTop
+                          fontSize="inherit"
+                          style={{ color: startedColor }}
+                        />
+                      </Tooltip>
                     )}
                     {selectedSet.state === State.COMPLETED && (
-                      <>
-                        &nbsp;
-                        <Tooltip arrow placement="top" title="Completed">
-                          <Backup fontSize="inherit" />
-                        </Tooltip>
-                      </>
+                      <Tooltip arrow placement="top" title="Completed">
+                        <Backup fontSize="inherit" />
+                      </Tooltip>
                     )}
                   </Stack>
                   <Tooltip arrow placement="top" title="Click or drag!">
