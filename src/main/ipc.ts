@@ -40,6 +40,7 @@ import {
   Output,
   Replay,
   ReportSettings,
+  SelectedSetChain,
   Set,
   StartggSet,
 } from '../common/types';
@@ -56,13 +57,12 @@ import {
   getCurrentTournament,
   getSelectedSet,
   setSelectedSetId,
-  getSelectedSetChain,
-  setSelectedSetChain,
   resetSet,
   assignStream,
   getStreamsAndStations,
   assignStation,
   getPoolsByWave,
+  getSelectedSetChain,
 } from './startgg';
 import { getReplaysInDir, getReportedSubdirs, writeReplays } from './replay';
 import {
@@ -85,12 +85,11 @@ import {
   getSelectedParryggSet,
   getCurrentParryggTournament,
   reportParryggSet,
-  setSelectedParryggSetChain,
   setSelectedParryggSetId,
   setSelectedParryggTournament,
   startParryggSet,
-  getSelectedParryggSetChain,
   getAdminedParryggTournaments,
+  getSelectedParryggSetChain,
 } from './parrygg';
 import {
   appendEnforcerResult,
@@ -124,23 +123,6 @@ type ReplayDir = {
 };
 
 let entrantsWindow: BrowserWindow | null = null;
-
-async function getRealSetId(sggApiKey: string, originalSet: Set) {
-  const updatedPhaseGroup = await getPhaseGroup(
-    sggApiKey,
-    assertInteger(getSelectedSetChain().phaseGroup!.id),
-  );
-  const candidateRealSets = updatedPhaseGroup.sets.pendingSets.filter(
-    (realSet) =>
-      realSet.entrant1Id === originalSet.entrant1Id &&
-      realSet.entrant2Id === originalSet.entrant2Id &&
-      realSet.round === originalSet.round,
-  );
-  if (candidateRealSets.length === 1) {
-    return assertInteger(candidateRealSets[0].id);
-  }
-  return null;
-}
 
 const protocolLoadFullPath = path.join(app.getPath('userData'), 'protocol');
 const undoDstFullPath = path.join(app.getPath('userData'), 'undo');
@@ -700,19 +682,36 @@ export default function setupIPCs(
   ipcMain.removeHandler('getCurrentTournament');
   ipcMain.handle('getCurrentTournament', getCurrentTournament);
 
+  let selectedEventId: Id = 0;
+  let selectedPhaseId: Id = 0;
+  let selectedPhaseGroupId: Id = 0;
   ipcMain.removeHandler('getSelectedSetChain');
-  ipcMain.handle('getSelectedSetChain', getSelectedSetChain);
+  ipcMain.handle('getSelectedSetChain', (): SelectedSetChain => {
+    if (mode === Mode.STARTGG) {
+      return getSelectedSetChain(
+        assertInteger(selectedEventId),
+        assertInteger(selectedPhaseId),
+        assertInteger(selectedPhaseGroupId),
+      );
+    }
+    if (mode === Mode.PARRYGG) {
+      return getSelectedParryggSetChain(
+        assertString(selectedEventId),
+        assertString(selectedPhaseId),
+        assertString(selectedPhaseGroupId),
+      );
+    }
+
+    return {};
+  });
 
   ipcMain.removeHandler('setSelectedSetChain');
   ipcMain.handle(
     'setSelectedSetChain',
-    (
-      event: IpcMainInvokeEvent,
-      eventId: number,
-      phaseId: number,
-      phaseGroupId: number,
-    ) => {
-      setSelectedSetChain(eventId, phaseId, phaseGroupId);
+    (event: IpcMainInvokeEvent, eventId: Id, phaseId: Id, phaseGroupId: Id) => {
+      selectedEventId = eventId;
+      selectedPhaseId = phaseId;
+      selectedPhaseGroupId = phaseGroupId;
     },
   );
 
@@ -778,6 +777,23 @@ export default function setupIPCs(
     },
   );
 
+  const getRealSetId = async (key: string, originalSet: Set) => {
+    const updatedPhaseGroup = await getPhaseGroup(
+      key,
+      assertInteger(selectedPhaseGroupId),
+    );
+    const candidateRealSets = updatedPhaseGroup.sets.pendingSets.filter(
+      (realSet) =>
+        realSet.entrant1Id === originalSet.entrant1Id &&
+        realSet.entrant2Id === originalSet.entrant2Id &&
+        realSet.round === originalSet.round,
+    );
+    if (candidateRealSets.length === 1) {
+      return assertInteger(candidateRealSets[0].id);
+    }
+    return null;
+  };
+
   ipcMain.removeHandler('getStreamsAndStations');
   ipcMain.handle('getStreamsAndStations', getStreamsAndStations);
 
@@ -806,10 +822,7 @@ export default function setupIPCs(
           throw e;
         }
       }
-      await getPhaseGroup(
-        sggApiKey,
-        assertInteger(getSelectedSetChain().phaseGroup!.id),
-      );
+      await getPhaseGroup(sggApiKey, assertInteger(selectedPhaseGroupId));
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -842,10 +855,7 @@ export default function setupIPCs(
           throw e;
         }
       }
-      await getPhaseGroup(
-        sggApiKey,
-        assertInteger(getSelectedSetChain().phaseGroup!.id),
-      );
+      await getPhaseGroup(sggApiKey, assertInteger(selectedPhaseGroupId));
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -862,10 +872,7 @@ export default function setupIPCs(
       }
 
       await resetSet(sggApiKey, setId);
-      await getPhaseGroup(
-        sggApiKey,
-        assertInteger(getSelectedSetChain().phaseGroup!.id),
-      );
+      await getPhaseGroup(sggApiKey, assertInteger(selectedPhaseGroupId));
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -898,10 +905,7 @@ export default function setupIPCs(
           throw e;
         }
       }
-      await getPhaseGroup(
-        sggApiKey,
-        assertInteger(getSelectedSetChain().phaseGroup!.id),
-      );
+      await getPhaseGroup(sggApiKey, assertInteger(selectedPhaseGroupId));
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -934,10 +938,7 @@ export default function setupIPCs(
           throw e;
         }
       }
-      await getPhaseGroup(
-        sggApiKey,
-        assertInteger(getSelectedSetChain().phaseGroup!.id),
-      );
+      await getPhaseGroup(sggApiKey, assertInteger(selectedPhaseGroupId));
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -959,7 +960,11 @@ export default function setupIPCs(
 
       let updatedSet: Set | undefined;
       try {
-        updatedSet = await reportSet(sggApiKey, set);
+        updatedSet = await reportSet(
+          sggApiKey,
+          set,
+          assertInteger(selectedPhaseGroupId),
+        );
       } catch (e: unknown) {
         if (e instanceof Error) {
           if (e.message === 'Cannot report completed set via API.') {
@@ -971,7 +976,11 @@ export default function setupIPCs(
             if (realSetId) {
               set.setId = realSetId;
               try {
-                updatedSet = await reportSet(sggApiKey, set);
+                updatedSet = await reportSet(
+                  sggApiKey,
+                  set,
+                  assertInteger(selectedPhaseGroupId),
+                );
               } catch (e2: unknown) {
                 if (
                   e2 instanceof Error &&
@@ -996,7 +1005,7 @@ export default function setupIPCs(
       }
       const updatedPhaseGroup = await getPhaseGroup(
         sggApiKey,
-        assertInteger(getSelectedSetChain().phaseGroup!.id),
+        assertInteger(selectedPhaseGroupId),
       );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
@@ -1024,10 +1033,7 @@ export default function setupIPCs(
       }
 
       const updatedSet = await updateSet(sggApiKey, set);
-      await getPhaseGroup(
-        sggApiKey,
-        assertInteger(getSelectedSetChain().phaseGroup!.id),
-      );
+      await getPhaseGroup(sggApiKey, assertInteger(selectedPhaseGroupId));
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
@@ -1164,19 +1170,6 @@ export default function setupIPCs(
     },
   );
 
-  ipcMain.removeHandler('setSelectedParryggSetChain');
-  ipcMain.handle(
-    'setSelectedParryggSetChain',
-    (
-      event: IpcMainInvokeEvent,
-      eventId: string,
-      phaseId: string,
-      bracketId: string,
-    ) => {
-      setSelectedParryggSetChain(eventId, phaseId, bracketId);
-    },
-  );
-
   ipcMain.removeHandler('getSelectedParryggSet');
   ipcMain.handle('getSelectedParryggSet', getSelectedParryggSet);
 
@@ -1263,7 +1256,7 @@ export default function setupIPCs(
       await startParryggSet(parryggApiKey, setId);
       await getParryggBracket(
         parryggApiKey,
-        assertString(getSelectedParryggSetChain().bracket!.id),
+        assertString(selectedPhaseGroupId),
       );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedParryggSet(),
@@ -1287,7 +1280,7 @@ export default function setupIPCs(
       const updatedSet = await reportParryggSet(parryggApiKey, setId, result);
       await getParryggBracket(
         parryggApiKey,
-        assertString(getSelectedParryggSetChain().bracket!.id),
+        assertString(selectedPhaseGroupId),
       );
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedParryggSet(),

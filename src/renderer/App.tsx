@@ -80,9 +80,7 @@ import {
   PlayerOverrides,
   Replay,
   ReportSettings,
-  SelectedEvent,
-  SelectedPhase,
-  SelectedPhaseGroup,
+  SelectedSetChain,
   Set,
   SlpDownloadStatus,
   StartggSet,
@@ -181,11 +179,7 @@ const EMPTY_SET: Set = {
   completedAtMs: 0,
 };
 
-const EMPTY_SELECTED_SET_CHAIN: {
-  event?: SelectedEvent;
-  phase?: SelectedPhase;
-  phaseGroup?: SelectedPhaseGroup;
-} = {
+const EMPTY_SELECTED_SET_CHAIN: SelectedSetChain = {
   event: undefined,
   phase: undefined,
   phaseGroup: undefined,
@@ -303,9 +297,6 @@ function Hello() {
   );
   const [selectedChallongeTournament, setSelectedChallongeTournament] =
     useState({ name: '', slug: '', tournamentType: '' });
-  const [selectedParryggSetChain, setSelectedParryggSetChain] = useState(
-    EMPTY_SELECTED_SET_CHAIN,
-  );
   const [manualNames, setManualNames] = useState<string[]>([]);
   const [undoSubdir, setUndoSubdir] = useState('');
   const tournamentSet = useMemo(
@@ -955,8 +946,8 @@ function Hello() {
       );
       if (parryggSlug !== maybeSlug) {
         setSelectedSet(EMPTY_SET);
-        setSelectedParryggSetChain(EMPTY_SELECTED_SET_CHAIN);
-        await window.electron.setSelectedParryggSetChain('', '', '');
+        setSelectedSetChain(EMPTY_SELECTED_SET_CHAIN);
+        await window.electron.setSelectedSetChain('', '', '');
       }
     } catch (e: any) {
       showErrorDialog([e.toString()]);
@@ -1578,19 +1569,23 @@ function Hello() {
           subdir = subdir.replace('{tournamentSlug}', startggTournament.slug);
         }
         if (mode === Mode.STARTGG || mode === Mode.PARRYGG) {
-          const selectedChain =
-            mode === Mode.STARTGG ? selectedSetChain : selectedParryggSetChain;
-          subdir = subdir.replace('{event}', selectedChain.event?.name ?? '');
-          subdir = subdir.replace('{phase}', selectedChain.phase?.name ?? '');
+          subdir = subdir.replace(
+            '{event}',
+            selectedSetChain.event?.name ?? '',
+          );
+          subdir = subdir.replace(
+            '{phase}',
+            selectedSetChain.phase?.name ?? '',
+          );
           subdir = subdir.replace(
             '{phaseGroup}',
-            selectedChain.phaseGroup?.name ?? '',
+            selectedSetChain.phaseGroup?.name ?? '',
           );
           let phaseOrEvent = '';
-          if (selectedChain.phase?.hasSiblings) {
-            phaseOrEvent = selectedChain.phase.name;
-          } else if (selectedChain.event) {
-            phaseOrEvent = selectedChain.event.name;
+          if (selectedSetChain.phase?.hasSiblings) {
+            phaseOrEvent = selectedSetChain.phase.name;
+          } else if (selectedSetChain.event) {
+            phaseOrEvent = selectedSetChain.event.name;
           }
           subdir = subdir.replace('{phaseOrEvent}', phaseOrEvent);
         }
@@ -1772,15 +1767,15 @@ function Hello() {
                     : selectedSet.stream,
                 },
               };
-            } else if (mode === Mode.PARRYGG && selectedParryggSetChain) {
+            } else if (mode === Mode.PARRYGG) {
               context.startgg = {
                 tournament: {
                   name: parryggTournament?.name || '',
                   location: parryggTournament?.venueAddress || '',
                 },
-                event: selectedParryggSetChain.event!,
-                phase: selectedParryggSetChain.phase!,
-                phaseGroup: selectedParryggSetChain.phaseGroup!,
+                event: selectedSetChain.event!,
+                phase: selectedSetChain.phase!,
+                phaseGroup: selectedSetChain.phaseGroup!,
                 set: {
                   id:
                     typeof setId === 'string' ||
@@ -1824,12 +1819,10 @@ function Hello() {
           .map((participant) => participant.displayName)
           .join('/')}`;
         let poolName = '';
-        if (mode === Mode.STARTGG) {
+        if (mode === Mode.STARTGG || mode === Mode.PARRYGG) {
           poolName = selectedSetChain.phaseGroup?.name ?? '';
         } else if (mode === Mode.CHALLONGE) {
           poolName = selectedChallongeTournament.name;
-        } else if (mode === Mode.PARRYGG && selectedParryggSetChain) {
-          poolName = selectedParryggSetChain.phaseGroup?.name ?? '';
         }
         await window.electron.appendEnforcerResult(
           violators
@@ -2448,8 +2441,6 @@ function Hello() {
             vlerkMode={vlerkMode}
             selectedSetChain={selectedSetChain}
             setSelectedSetChain={setSelectedSetChain}
-            selectedParryggSetChain={selectedParryggSetChain}
-            setSelectedParryggSetChain={setSelectedParryggSetChain}
             startggTournament={startggTournament}
             challongeTournaments={challongeTournaments}
             getChallongeTournament={getChallongeTournament}

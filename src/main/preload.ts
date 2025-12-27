@@ -12,9 +12,6 @@ import {
   Output,
   Replay,
   ReportSettings,
-  SelectedEvent,
-  SelectedPhase,
-  SelectedPhaseGroup,
   Set,
   SlpDownloadStatus,
   StartggSet,
@@ -28,6 +25,7 @@ import {
   EnforcePlayerFailure,
   Station,
   RendererWave,
+  SelectedSetChain,
 } from '../common/types';
 
 const electronHandler = {
@@ -145,15 +143,12 @@ const electronHandler = {
     ipcRenderer.invoke('setStartggKey', startggKey),
   getCurrentTournament: (): Promise<Tournament | undefined> =>
     ipcRenderer.invoke('getCurrentTournament'),
-  getSelectedSetChain: (): Promise<{
-    event?: SelectedEvent;
-    phase?: SelectedPhase;
-    phaseGroup?: SelectedPhaseGroup;
-  }> => ipcRenderer.invoke('getSelectedSetChain'),
+  getSelectedSetChain: (): Promise<SelectedSetChain> =>
+    ipcRenderer.invoke('getSelectedSetChain'),
   setSelectedSetChain: (
-    eventId: number,
-    phaseId: number,
-    phaseGroupId: number,
+    eventId: Id,
+    phaseId: Id,
+    phaseGroupId: Id,
   ): Promise<void> =>
     ipcRenderer.invoke('setSelectedSetChain', eventId, phaseId, phaseGroupId),
   getStartggTournament: (
@@ -217,22 +212,6 @@ const electronHandler = {
   > => ipcRenderer.invoke('getCurrentParryggTournament'),
   setSelectedParryggTournament: (slug: string): Promise<void> =>
     ipcRenderer.invoke('setSelectedParryggTournament', slug),
-  setSelectedParryggSetChain: (
-    eventId: string,
-    phaseId: string,
-    bracketId: string,
-  ): Promise<void> =>
-    ipcRenderer.invoke(
-      'setSelectedParryggSetChain',
-      eventId,
-      phaseId,
-      bracketId,
-    ),
-  getSelectedParryggSet: (): Promise<{
-    event?: SelectedEvent;
-    phase?: SelectedPhase;
-    phaseGroup?: SelectedPhaseGroup;
-  }> => ipcRenderer.invoke('getSelectedParryggSet'),
   setSelectedParryggSetId: (setId: string): Promise<void> =>
     ipcRenderer.invoke('setSelectedParryggSetId', setId),
   getParryggTournament: (slug: string, recursive?: boolean): Promise<void> =>

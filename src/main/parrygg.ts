@@ -31,13 +31,14 @@ import XMLHttpRequest from 'xhr2';
 import {
   ParryggBracket,
   AdminedTournament,
-  SelectedPhase,
   Set,
   State,
   Participant,
   Sets,
-  SelectedPhaseGroup,
   SelectedEvent,
+  SelectedPhase,
+  SelectedPhaseGroup,
+  SelectedSetChain,
 } from '../common/types';
 
 // XMLHttpRequest polyfill for grpcweb requests
@@ -55,9 +56,6 @@ const bracketIdToSets = new Map<string, Sets>();
 const setIdToSet = new Map<string, Set>();
 const setIdToOrdinal = new Map<string, number>();
 let currentTournament: Tournament.AsObject | undefined;
-let selectedEventId: string | undefined;
-let selectedPhaseId: string | undefined;
-let selectedBracketId: string | undefined;
 let selectedSetId: string | undefined;
 
 // Initialize parry.gg API clients
@@ -355,17 +353,17 @@ export function getCurrentParryggTournament(): Tournament.AsObject | undefined {
   return tournament;
 }
 
-export function getSelectedParryggSetChain(): {
-  event?: SelectedEvent;
-  phase?: SelectedPhase;
-  bracket?: SelectedPhaseGroup;
-} {
-  const selectedEvent = idToEvent.get(selectedEventId!);
-  const selectedPhase = idToPhase.get(selectedPhaseId!);
-  const selectedBracket = idToBracket.get(selectedBracketId!);
+export function getSelectedParryggSetChain(
+  selectedEventId: string,
+  selectedPhaseId: string,
+  selectedBracketId: string,
+): SelectedSetChain {
+  const selectedEvent = idToEvent.get(selectedEventId);
+  const selectedPhase = idToPhase.get(selectedPhaseId);
+  const selectedBracket = idToBracket.get(selectedBracketId);
   let event: SelectedEvent | undefined;
   let phase: SelectedPhase | undefined;
-  let bracket: SelectedPhaseGroup | undefined;
+  let phaseGroup: SelectedPhaseGroup | undefined;
   if (currentTournament) {
     if (selectedEvent) {
       event = {
@@ -380,14 +378,14 @@ export function getSelectedParryggSetChain(): {
       phase = {
         id: selectedPhase.id,
         name: selectedPhase.slug,
-        hasSiblings: eventIdToPhaseIds.get(selectedEventId!)!.length > 1,
+        hasSiblings: eventIdToPhaseIds.get(selectedEventId)!.length > 1,
       };
     }
     if (selectedBracket) {
-      bracket = {
+      phaseGroup = {
         id: selectedBracket.id,
         name: selectedBracket.slug,
-        hasSiblings: phaseIdToBracketIds.get(selectedPhaseId!)!.length > 1,
+        hasSiblings: phaseIdToBracketIds.get(selectedPhaseId)!.length > 1,
         bracketType: selectedBracket.type,
         waveId: null,
         winnersTargetPhaseId: null,
@@ -397,7 +395,7 @@ export function getSelectedParryggSetChain(): {
   return {
     event,
     phase,
-    bracket,
+    phaseGroup,
   };
 }
 
@@ -418,16 +416,6 @@ export function setSelectedParryggTournament(slug: string) {
   if (foundTournament) {
     currentTournament = foundTournament;
   }
-}
-
-export function setSelectedParryggSetChain(
-  eventId: string,
-  phaseId: string,
-  bracketId: string,
-) {
-  selectedEventId = eventId;
-  selectedPhaseId = phaseId;
-  selectedBracketId = bracketId;
 }
 
 export async function getParryggEvent(

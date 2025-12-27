@@ -254,6 +254,12 @@ export type SelectedPhaseGroup = {
   winnersTargetPhaseId: number | null;
 };
 
+export type SelectedSetChain = {
+  event?: SelectedEvent;
+  phase?: SelectedPhase;
+  phaseGroup?: SelectedPhaseGroup;
+};
+
 export type ContextSlot = {
   displayNames: string[];
   ports: number[];

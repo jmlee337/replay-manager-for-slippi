@@ -10,6 +10,7 @@ import {
   SelectedEvent,
   SelectedPhase,
   SelectedPhaseGroup,
+  SelectedSetChain,
   Set,
   Tournament,
 } from '../common/types';
@@ -32,8 +33,6 @@ export default function RightColumn({
   vlerkMode,
   selectedSetChain,
   setSelectedSetChain,
-  selectedParryggSetChain,
-  setSelectedParryggSetChain,
   startggTournament,
   challongeTournaments,
   getChallongeTournament,
@@ -48,26 +47,8 @@ export default function RightColumn({
   selectSet: (set: Set) => void;
   setGuideState: (guideState: GuideState) => void;
   vlerkMode: boolean;
-  selectedSetChain: {
-    event?: SelectedEvent;
-    phase?: SelectedPhase;
-    phaseGroup?: SelectedPhaseGroup;
-  };
-  setSelectedSetChain: (selectedSetChain: {
-    event?: SelectedEvent;
-    phase?: SelectedPhase;
-    phaseGroup?: SelectedPhaseGroup;
-  }) => void;
-  selectedParryggSetChain: {
-    event?: SelectedEvent;
-    phase?: SelectedPhase;
-    phaseGroup?: SelectedPhaseGroup;
-  };
-  setSelectedParryggSetChain: (selectedSetChain: {
-    event?: SelectedEvent;
-    phase?: SelectedPhase;
-    phaseGroup?: SelectedPhaseGroup;
-  }) => void;
+  selectedSetChain: SelectedSetChain;
+  setSelectedSetChain: (selectedSetChain: SelectedSetChain) => void;
   startggTournament: Tournament;
   challongeTournaments: Map<string, ChallongeTournament>;
   getChallongeTournament: (maybeSlug: string) => Promise<void>;
@@ -178,8 +159,8 @@ export default function RightColumn({
     event: SelectedEvent,
   ) => {
     selectSet(set);
-    setSelectedParryggSetChain(selectedParryggSetChain);
-    await window.electron.setSelectedParryggSetChain(
+    setSelectedSetChain({ event, phase, phaseGroup });
+    await window.electron.setSelectedSetChain(
       assertString(event.id),
       assertString(phase.id),
       assertString(phaseGroup.id),
@@ -242,14 +223,10 @@ export default function RightColumn({
           searchSubstr={searchSubstr}
           tournament={parryggTournament}
           vlerkMode={vlerkMode}
-          selectedEventId={assertStringOrUndefined(
-            selectedParryggSetChain?.event?.id,
-          )}
-          selectedPhaseId={assertStringOrUndefined(
-            selectedParryggSetChain?.phase?.id,
-          )}
+          selectedEventId={assertStringOrUndefined(selectedSetChain?.event?.id)}
+          selectedPhaseId={assertStringOrUndefined(selectedSetChain?.phase?.id)}
           selectedBracketId={assertStringOrUndefined(
-            selectedParryggSetChain?.phaseGroup?.id,
+            selectedSetChain?.phaseGroup?.id,
           )}
           getEvent={getParryggEvent}
           getPhase={getParryggPhase}

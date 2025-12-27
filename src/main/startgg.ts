@@ -6,9 +6,6 @@ import {
   Participant,
   Phase,
   PhaseGroup,
-  SelectedEvent,
-  SelectedPhase,
-  SelectedPhaseGroup,
   Set,
   Sets,
   StartggSet,
@@ -18,6 +15,7 @@ import {
   Tournament,
   RendererWave,
   RendererPool,
+  SelectedSetChain,
 } from '../common/types';
 
 let currentTournament: Tournament | undefined;
@@ -31,9 +29,6 @@ const phaseGroupIdToEntrants = new Map<number, Entrant[]>();
 const phaseGroupIdToSets = new Map<number, Sets>();
 const idToSet = new Map<Id, Set>();
 let selectedSetId: Id = 0;
-let selectedPhaseGroupId = 0;
-let selectedPhaseId = 0;
-let selectedEventId = 0;
 export function getCurrentTournament() {
   if (!currentTournament) {
     return undefined;
@@ -73,11 +68,11 @@ export function setSelectedSetId(id: Id) {
   selectedSetId = id;
 }
 
-export function getSelectedSetChain(): {
-  event?: SelectedEvent;
-  phase?: SelectedPhase;
-  phaseGroup?: SelectedPhaseGroup;
-} {
+export function getSelectedSetChain(
+  selectedEventId: number,
+  selectedPhaseId: number,
+  selectedPhaseGroupId: number,
+): SelectedSetChain {
   const event = idToEvent.get(selectedEventId);
   const phase = idToPhase.get(selectedPhaseId);
   const phaseGroup = idToPhaseGroup.get(selectedPhaseGroupId);
@@ -113,16 +108,6 @@ export function getSelectedSetChain(): {
           }
         : undefined,
   };
-}
-
-export function setSelectedSetChain(
-  eventId: number,
-  phaseId: number,
-  phaseGroupId: number,
-) {
-  selectedEventId = eventId;
-  selectedPhaseId = phaseId;
-  selectedPhaseGroupId = phaseGroupId;
 }
 
 async function wrappedFetch(
@@ -1196,7 +1181,11 @@ const REPORT_BRACKET_SET_MUTATION = `
     reportBracketSet(setId: $setId, isDQ: $isDQ, winnerId: $winnerId, gameData: $gameData) {${GQL_SET_INNER}}
   }
 `;
-export async function reportSet(key: string, set: StartggSet) {
+export async function reportSet(
+  key: string,
+  set: StartggSet,
+  selectedPhaseGroupId: number,
+) {
   const data = await fetchGql(key, REPORT_BRACKET_SET_MUTATION, set);
   const filteredSets = (data.reportBracketSet as any[]).filter(
     (bracketSet) => bracketSet.slots[0].entrant && bracketSet.slots[1].entrant,
