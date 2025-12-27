@@ -134,7 +134,6 @@ export type Event = {
   id: number;
   name: string;
   slug: string;
-  isOnline: boolean;
   state: State;
   phases: Phase[];
 };

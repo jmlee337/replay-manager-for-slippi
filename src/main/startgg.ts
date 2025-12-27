@@ -673,7 +673,6 @@ export async function getEvent(key: string, id: number, recursive: boolean) {
     id: event.id,
     name: event.name,
     slug: event.slug,
-    isOnline: event.isOnline,
     state: event.state,
     phases: [],
   });
@@ -750,18 +749,18 @@ export async function getTournament(
   (json.entities.event as any[])
     .filter((event: any) => {
       const isMelee = event.videogameId === 1;
+      const isOffline = !event.isOnline;
       const isSinglesOrDoubles =
         event.teamRosterSize === null ||
         (event.teamRosterSize.minPlayers === 2 &&
           event.teamRosterSize.maxPlayers === 2);
-      return isMelee && isSinglesOrDoubles;
+      return isMelee && isOffline && isSinglesOrDoubles;
     })
     .forEach((event: any) => {
       const newEvent: Event = {
         id: event.id,
         name: event.name,
         slug: event.slug,
-        isOnline: event.isOnline,
         state: event.state,
         phases: [],
       };

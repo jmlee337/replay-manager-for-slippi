@@ -12,7 +12,6 @@ import {
   KeyboardArrowDown,
   KeyboardArrowRight,
   KeyboardArrowUp,
-  PlayArrow,
   Refresh,
 } from '@mui/icons-material';
 import { useState } from 'react';
@@ -85,10 +84,6 @@ function PhaseGroupView({
   phaseGroup,
   initiallyOpen,
   ancestorsOpen,
-  isOnline,
-  eventId,
-  phaseId,
-  tournamentSlug,
   searchSubstr,
   vlerkMode,
   getPhaseGroup,
@@ -97,10 +92,6 @@ function PhaseGroupView({
   phaseGroup: PhaseGroup;
   initiallyOpen: boolean;
   ancestorsOpen: boolean;
-  isOnline: boolean;
-  eventId: number;
-  phaseId: number;
-  tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
   getPhaseGroup: (id: number) => Promise<void>;
@@ -160,25 +151,6 @@ function PhaseGroupView({
               {getting ? <CircularProgress size="24px" /> : <Refresh />}
             </IconButton>
           </Tooltip>
-          {phaseGroup.state === State.PENDING && (
-            <Box>
-              {isOnline && (
-                <Tooltip arrow title="Start pool on website">
-                  <IconButton
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      window.open(
-                        `//www.start.gg/admin/tournament/${tournamentSlug}/brackets/${eventId}/${phaseId}/${phaseGroup.id}`,
-                      );
-                    }}
-                    size="small"
-                  >
-                    <PlayArrow />
-                  </IconButton>
-                </Tooltip>
-              )}
-            </Box>
-          )}
         </ListItemButton>
         <Collapse in={open && ancestorsOpen} unmountOnExit>
           <div style={{ marginLeft: '-16px' }}>
@@ -248,9 +220,6 @@ function PhaseView({
   phase,
   initiallyOpen,
   ancestorsOpen,
-  isOnline,
-  eventId,
-  tournamentSlug,
   searchSubstr,
   vlerkMode,
   selectedPhaseGroupId,
@@ -261,9 +230,6 @@ function PhaseView({
   phase: Phase;
   initiallyOpen: boolean;
   ancestorsOpen: boolean;
-  isOnline: boolean;
-  eventId: number;
-  tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
   selectedPhaseGroupId: number | undefined;
@@ -318,10 +284,6 @@ function PhaseView({
                 phaseGroup.id === selectedPhaseGroupId
               }
               ancestorsOpen={ancestorsOpen && open}
-              isOnline={isOnline}
-              eventId={eventId}
-              phaseId={phase.id}
-              tournamentSlug={tournamentSlug}
               searchSubstr={searchSubstr}
               vlerkMode={vlerkMode}
               getPhaseGroup={getPhaseGroup}
@@ -346,7 +308,6 @@ function PhaseView({
 function EventView({
   event,
   initiallyOpen,
-  tournamentSlug,
   searchSubstr,
   vlerkMode,
   selectedPhaseId,
@@ -358,7 +319,6 @@ function EventView({
 }: {
   event: Event;
   initiallyOpen: boolean;
-  tournamentSlug: string;
   searchSubstr: string;
   vlerkMode: boolean;
   selectedPhaseId: number | undefined;
@@ -420,9 +380,6 @@ function EventView({
                 event.phases.length === 1 || phase.id === selectedPhaseId
               }
               ancestorsOpen={open}
-              isOnline={event.isOnline}
-              eventId={event.id}
-              tournamentSlug={tournamentSlug}
               searchSubstr={searchSubstr}
               vlerkMode={vlerkMode}
               selectedPhaseGroupId={selectedPhaseGroupId}
@@ -480,7 +437,6 @@ export default function StartggView({
           initiallyOpen={
             tournament.events.length === 1 || event.id === selectedEventId
           }
-          tournamentSlug={tournament.slug}
           searchSubstr={searchSubstr}
           vlerkMode={vlerkMode}
           selectedPhaseId={selectedPhaseId}
