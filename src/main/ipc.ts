@@ -4,7 +4,6 @@ import {
   clipboard,
   dialog,
   ipcMain,
-  IpcMainInvokeEvent,
   shell,
 } from 'electron';
 import Store from 'electron-store';
@@ -278,7 +277,7 @@ export default function setupIPCs(
   ipcMain.handle('getMode', () => mode);
 
   ipcMain.removeHandler('setMode');
-  ipcMain.handle('setMode', (event: IpcMainInvokeEvent, newMode: Mode) => {
+  ipcMain.handle('setMode', (event, newMode: Mode) => {
     store.set('mode', newMode);
     mode = newMode;
   });
@@ -395,7 +394,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('deleteSelectedReplays');
   ipcMain.handle(
     'deleteSelectedReplays',
-    async (event: IpcMainInvokeEvent, replayPaths: string[]) => {
+    async (event, replayPaths: string[]) => {
       if (trashDir) {
         const trashSubdir = format(new Date(), 'yyyy-MM-dd HHmmss');
         const fullPath = path.join(trashDir, trashSubdir);
@@ -462,7 +461,7 @@ export default function setupIPCs(
   ipcMain.handle(
     'writeReplays',
     async (
-      event: IpcMainInvokeEvent,
+      event,
       fileNames: string[],
       output: Output,
       replays: Replay[],
@@ -491,31 +490,28 @@ export default function setupIPCs(
   );
 
   ipcMain.removeHandler('appendEnforcerResult');
-  ipcMain.handle(
-    'appendEnforcerResult',
-    async (event: IpcMainInvokeEvent, str: string) => {
-      const host = getHost();
-      if (!host.address && !copyDir) {
-        throw new Error('must set copy dir');
-      }
+  ipcMain.handle('appendEnforcerResult', async (event, str: string) => {
+    const host = getHost();
+    if (!host.address && !copyDir) {
+      throw new Error('must set copy dir');
+    }
 
-      const promises = [];
-      if (host.address) {
-        promises.push(appendEnforcerResult(str));
-      }
-      if (copyDir) {
-        promises.push(appendFile(path.join(copyDir, 'enforcer.csv'), str));
-      }
-      const rejections = (await Promise.allSettled(promises)).filter(
-        (result) => result.status === 'rejected',
-      ) as PromiseRejectedResult[];
-      if (rejections.length > 0) {
-        throw new Error(
-          rejections.map((rejection) => rejection.reason).join(', '),
-        );
-      }
-    },
-  );
+    const promises = [];
+    if (host.address) {
+      promises.push(appendEnforcerResult(str));
+    }
+    if (copyDir) {
+      promises.push(appendFile(path.join(copyDir, 'enforcer.csv'), str));
+    }
+    const rejections = (await Promise.allSettled(promises)).filter(
+      (result) => result.status === 'rejected',
+    ) as PromiseRejectedResult[];
+    if (rejections.length > 0) {
+      throw new Error(
+        rejections.map((rejection) => rejection.reason).join(', '),
+      );
+    }
+  });
 
   ipcMain.removeHandler('getReportedSubdirs');
   ipcMain.handle('getReportedSubdirs', () =>
@@ -526,63 +522,58 @@ export default function setupIPCs(
   ipcMain.handle('getUndoSubdir', () => path.basename(undoSrcFullPath));
 
   ipcMain.removeHandler('setUndoSubdir');
-  ipcMain.handle(
-    'setUndoSubdir',
-    async (event: IpcMainInvokeEvent, newUndoSubdir: string) => {
-      if (newUndoSubdir === '') {
-        await rm(undoDstFullPath, { force: true, recursive: true });
+  ipcMain.handle('setUndoSubdir', async (event, newUndoSubdir: string) => {
+    if (newUndoSubdir === '') {
+      await rm(undoDstFullPath, { force: true, recursive: true });
 
-        undoSrcFullPath = '';
-        return replayDirs.length > 0
-          ? replayDirs[replayDirs.length - 1].dir
-          : '';
-      }
+      undoSrcFullPath = '';
+      return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
+    }
 
-      await mkdir(undoDstFullPath, { recursive: true });
-      const newUndoSrcFullPath = path.join(copyDir, newUndoSubdir);
-      if (newUndoSrcFullPath.endsWith('.zip')) {
+    await mkdir(undoDstFullPath, { recursive: true });
+    const newUndoSrcFullPath = path.join(copyDir, newUndoSubdir);
+    if (newUndoSrcFullPath.endsWith('.zip')) {
+      try {
+        const zip = await yauzl.open(newUndoSrcFullPath);
         try {
-          const zip = await yauzl.open(newUndoSrcFullPath);
-          try {
-            // eslint-disable-next-line no-restricted-syntax
-            for await (const entry of zip) {
-              if (entry.filename.endsWith('.slp')) {
-                const readStream = await entry.openReadStream();
-                const writeStream = createWriteStream(
-                  path.join(undoDstFullPath, entry.filename),
-                );
-                await pipeline(readStream, writeStream);
-              }
+          // eslint-disable-next-line no-restricted-syntax
+          for await (const entry of zip) {
+            if (entry.filename.endsWith('.slp')) {
+              const readStream = await entry.openReadStream();
+              const writeStream = createWriteStream(
+                path.join(undoDstFullPath, entry.filename),
+              );
+              await pipeline(readStream, writeStream);
             }
-          } finally {
-            zip.close();
           }
-        } catch (e: any) {
-          await rm(undoDstFullPath, { force: true, recursive: true });
-          throw e;
+        } finally {
+          zip.close();
         }
-      } else {
-        const undoSlpNames = (await readdir(newUndoSrcFullPath)).filter(
-          (name) => name.endsWith('.slp'),
-        );
-        try {
-          await Promise.all(
-            undoSlpNames.map(async (undoSlpName) => {
-              const srcSlpFullPath = path.join(newUndoSrcFullPath, undoSlpName);
-              const dstSlpFullPath = path.join(undoDstFullPath, undoSlpName);
-              return copyFile(srcSlpFullPath, dstSlpFullPath);
-            }),
-          );
-        } catch (e: any) {
-          await rm(undoDstFullPath, { force: true, recursive: true });
-          throw e;
-        }
+      } catch (e: any) {
+        await rm(undoDstFullPath, { force: true, recursive: true });
+        throw e;
       }
+    } else {
+      const undoSlpNames = (await readdir(newUndoSrcFullPath)).filter((name) =>
+        name.endsWith('.slp'),
+      );
+      try {
+        await Promise.all(
+          undoSlpNames.map(async (undoSlpName) => {
+            const srcSlpFullPath = path.join(newUndoSrcFullPath, undoSlpName);
+            const dstSlpFullPath = path.join(undoDstFullPath, undoSlpName);
+            return copyFile(srcSlpFullPath, dstSlpFullPath);
+          }),
+        );
+      } catch (e: any) {
+        await rm(undoDstFullPath, { force: true, recursive: true });
+        throw e;
+      }
+    }
 
-      undoSrcFullPath = newUndoSrcFullPath;
-      return undoDstFullPath;
-    },
-  );
+    undoSrcFullPath = newUndoSrcFullPath;
+    return undoDstFullPath;
+  });
 
   // host delete
   ipcMain.removeHandler('deleteUndoSrcDst');
@@ -671,13 +662,10 @@ export default function setupIPCs(
   ipcMain.handle('getStartggKey', () => sggApiKey);
 
   ipcMain.removeHandler('setStartggKey');
-  ipcMain.handle(
-    'setStartggKey',
-    (event: IpcMainInvokeEvent, newSggApiKey: string) => {
-      store.set('sggApiKey', newSggApiKey);
-      sggApiKey = newSggApiKey;
-    },
-  );
+  ipcMain.handle('setStartggKey', (event, newSggApiKey: string) => {
+    store.set('sggApiKey', newSggApiKey);
+    sggApiKey = newSggApiKey;
+  });
 
   ipcMain.removeHandler('getCurrentTournament');
   ipcMain.handle('getCurrentTournament', getCurrentTournament);
@@ -708,7 +696,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('setSelectedSetChain');
   ipcMain.handle(
     'setSelectedSetChain',
-    (event: IpcMainInvokeEvent, eventId: Id, phaseId: Id, phaseGroupId: Id) => {
+    (event, eventId: Id, phaseId: Id, phaseGroupId: Id) => {
       selectedEventId = eventId;
       selectedPhaseId = phaseId;
       selectedPhaseGroupId = phaseGroupId;
@@ -718,11 +706,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('getStartggTournament');
   ipcMain.handle(
     'getStartggTournament',
-    async (
-      event: IpcMainInvokeEvent,
-      slugOrShort: string,
-      recursive: boolean,
-    ) => {
+    async (event, slugOrShort: string, recursive: boolean) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
@@ -736,7 +720,7 @@ export default function setupIPCs(
   );
 
   ipcMain.removeHandler('getEvent');
-  ipcMain.handle('getEvent', async (e: IpcMainInvokeEvent, id: number) => {
+  ipcMain.handle('getEvent', async (ev, id: number) => {
     if (!sggApiKey) {
       throw new Error('Please set start.gg API key');
     }
@@ -749,7 +733,7 @@ export default function setupIPCs(
   });
 
   ipcMain.removeHandler('getPhase');
-  ipcMain.handle('getPhase', async (event: IpcMainInvokeEvent, id: number) => {
+  ipcMain.handle('getPhase', async (event, id: number) => {
     if (!sggApiKey) {
       throw new Error('Please set start.gg API key');
     }
@@ -762,20 +746,17 @@ export default function setupIPCs(
   });
 
   ipcMain.removeHandler('getPhaseGroup');
-  ipcMain.handle(
-    'getPhaseGroup',
-    async (event: IpcMainInvokeEvent, id: number) => {
-      if (!sggApiKey) {
-        throw new Error('Please set start.gg API key');
-      }
+  ipcMain.handle('getPhaseGroup', async (event, id: number) => {
+    if (!sggApiKey) {
+      throw new Error('Please set start.gg API key');
+    }
 
-      await getPhaseGroup(sggApiKey, id);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedSet(),
-        startggTournament: getCurrentTournament(),
-      });
-    },
-  );
+    await getPhaseGroup(sggApiKey, id);
+    mainWindow.webContents.send('tournament', {
+      selectedSet: getSelectedSet(),
+      startggTournament: getCurrentTournament(),
+    });
+  });
 
   const getRealSetId = async (key: string, originalSet: Set) => {
     const updatedPhaseGroup = await getPhaseGroup(
@@ -800,7 +781,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('assignStream');
   ipcMain.handle(
     'assignStream',
-    async (event: IpcMainInvokeEvent, originalSet: Set, streamId: number) => {
+    async (event, originalSet: Set, streamId: number) => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
@@ -864,93 +845,84 @@ export default function setupIPCs(
   );
 
   ipcMain.removeHandler('resetSet');
-  ipcMain.handle(
-    'resetSet',
-    async (event: IpcMainInvokeEvent, setId: number) => {
-      if (!sggApiKey) {
-        throw new Error('Please set start.gg API key');
-      }
+  ipcMain.handle('resetSet', async (event, setId: number) => {
+    if (!sggApiKey) {
+      throw new Error('Please set start.gg API key');
+    }
 
-      await resetSet(sggApiKey, setId);
-      await getPhaseGroup(sggApiKey, assertInteger(selectedPhaseGroupId));
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedSet(),
-        startggTournament: getCurrentTournament(),
-      });
-    },
-  );
+    await resetSet(sggApiKey, setId);
+    await getPhaseGroup(sggApiKey, assertInteger(selectedPhaseGroupId));
+    mainWindow.webContents.send('tournament', {
+      selectedSet: getSelectedSet(),
+      startggTournament: getCurrentTournament(),
+    });
+  });
 
   ipcMain.removeHandler('callSet');
-  ipcMain.handle(
-    'callSet',
-    async (event: IpcMainInvokeEvent, originalSet: Set) => {
-      if (!sggApiKey) {
-        throw new Error('Please set start.gg API key');
-      }
+  ipcMain.handle('callSet', async (event, originalSet: Set) => {
+    if (!sggApiKey) {
+      throw new Error('Please set start.gg API key');
+    }
 
-      try {
-        await callSet(sggApiKey, originalSet.id);
-      } catch (e: unknown) {
-        if (
-          e instanceof Error &&
-          e.message.startsWith('Set not found for id: preview')
-        ) {
-          const realSetId = await getRealSetId(sggApiKey, originalSet);
-          if (realSetId) {
-            await callSet(sggApiKey, realSetId);
-          } else {
-            throw e;
-          }
+    try {
+      await callSet(sggApiKey, originalSet.id);
+    } catch (e: unknown) {
+      if (
+        e instanceof Error &&
+        e.message.startsWith('Set not found for id: preview')
+      ) {
+        const realSetId = await getRealSetId(sggApiKey, originalSet);
+        if (realSetId) {
+          await callSet(sggApiKey, realSetId);
         } else {
           throw e;
         }
+      } else {
+        throw e;
       }
-      await getPhaseGroup(sggApiKey, assertInteger(selectedPhaseGroupId));
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedSet(),
-        startggTournament: getCurrentTournament(),
-      });
-    },
-  );
+    }
+    await getPhaseGroup(sggApiKey, assertInteger(selectedPhaseGroupId));
+    mainWindow.webContents.send('tournament', {
+      selectedSet: getSelectedSet(),
+      startggTournament: getCurrentTournament(),
+    });
+  });
 
   ipcMain.removeHandler('startSet');
-  ipcMain.handle(
-    'startSet',
-    async (event: IpcMainInvokeEvent, originalSet: Set) => {
-      if (!sggApiKey) {
-        throw new Error('Please set start.gg API key');
-      }
+  ipcMain.handle('startSet', async (event, originalSet: Set) => {
+    if (!sggApiKey) {
+      throw new Error('Please set start.gg API key');
+    }
 
-      try {
-        await startSet(sggApiKey, originalSet.id);
-      } catch (e: unknown) {
-        if (
-          e instanceof Error &&
-          e.message.startsWith('Set not found for id: preview')
-        ) {
-          const realSetId = await getRealSetId(sggApiKey, originalSet);
-          if (realSetId) {
-            await startSet(sggApiKey, realSetId);
-          } else {
-            throw e;
-          }
+    try {
+      await startSet(sggApiKey, originalSet.id);
+    } catch (e: unknown) {
+      if (
+        e instanceof Error &&
+        e.message.startsWith('Set not found for id: preview')
+      ) {
+        const realSetId = await getRealSetId(sggApiKey, originalSet);
+        if (realSetId) {
+          await startSet(sggApiKey, realSetId);
         } else {
           throw e;
         }
+      } else {
+        throw e;
       }
-      await getPhaseGroup(sggApiKey, assertInteger(selectedPhaseGroupId));
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedSet(),
-        startggTournament: getCurrentTournament(),
-      });
-    },
-  );
+    }
+    await getPhaseGroup(sggApiKey, assertInteger(selectedPhaseGroupId));
+    mainWindow.webContents.send('tournament', {
+      selectedSet: getSelectedSet(),
+      startggTournament: getCurrentTournament(),
+    });
+  });
 
   ipcMain.removeHandler('reportSet');
   ipcMain.handle(
     'reportSet',
     async (
-      event: IpcMainInvokeEvent,
+      event,
       set: StartggSet,
       originalSet: Set,
     ): Promise<Set | undefined> => {
@@ -1024,10 +996,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('updateSet');
   ipcMain.handle(
     'updateSet',
-    async (
-      event: IpcMainInvokeEvent,
-      set: StartggSet,
-    ): Promise<Set | undefined> => {
+    async (event, set: StartggSet): Promise<Set | undefined> => {
       if (!sggApiKey) {
         throw new Error('Please set start.gg API key');
       }
@@ -1058,13 +1027,10 @@ export default function setupIPCs(
   ipcMain.handle('getChallongeKey', () => challongeApiKey);
 
   ipcMain.removeHandler('setChallongeKey');
-  ipcMain.handle(
-    'setChallongeKey',
-    (event: IpcMainInvokeEvent, newChallongeKey: string) => {
-      store.set('challongeApiKey', newChallongeKey);
-      challongeApiKey = newChallongeKey;
-    },
-  );
+  ipcMain.handle('setChallongeKey', (event, newChallongeKey: string) => {
+    store.set('challongeApiKey', newChallongeKey);
+    challongeApiKey = newChallongeKey;
+  });
 
   let parryggApiKey = store.has('parryggApiKey')
     ? (store.get('parryggApiKey') as string)
@@ -1073,13 +1039,10 @@ export default function setupIPCs(
   ipcMain.handle('getParryggKey', () => parryggApiKey);
 
   ipcMain.removeHandler('setParryggKey');
-  ipcMain.handle(
-    'setParryggKey',
-    (event: IpcMainInvokeEvent, newParryggKey: string) => {
-      store.set('parryggApiKey', newParryggKey);
-      parryggApiKey = newParryggKey;
-    },
-  );
+  ipcMain.handle('setParryggKey', (event, newParryggKey: string) => {
+    store.set('parryggApiKey', newParryggKey);
+    parryggApiKey = newParryggKey;
+  });
 
   ipcMain.removeHandler('getCurrentChallongeTournaments');
   ipcMain.handle('getCurrentChallongeTournaments', getCurrentTournaments);
@@ -1088,33 +1051,27 @@ export default function setupIPCs(
   ipcMain.handle('getSelectedChallongeTournament', getSelectedTournament);
 
   ipcMain.removeHandler('setSelectedChallongeTournament');
-  ipcMain.handle(
-    'setSelectedChallongeTournament',
-    (event: IpcMainInvokeEvent, slug: string) => {
-      setSelectedTournament(slug);
-    },
-  );
+  ipcMain.handle('setSelectedChallongeTournament', (event, slug: string) => {
+    setSelectedTournament(slug);
+  });
 
   ipcMain.removeHandler('getChallongeTournament');
-  ipcMain.handle(
-    'getChallongeTournament',
-    async (event: IpcMainInvokeEvent, slug: string) => {
-      if (!challongeApiKey) {
-        throw new Error('Please set Challonge API key.');
-      }
+  ipcMain.handle('getChallongeTournament', async (event, slug: string) => {
+    if (!challongeApiKey) {
+      throw new Error('Please set Challonge API key.');
+    }
 
-      await getChallongeTournament(challongeApiKey, slug);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedChallongeSet(),
-        challongeTournaments: getCurrentTournaments(),
-      });
-    },
-  );
+    await getChallongeTournament(challongeApiKey, slug);
+    mainWindow.webContents.send('tournament', {
+      selectedSet: getSelectedChallongeSet(),
+      challongeTournaments: getCurrentTournaments(),
+    });
+  });
 
   ipcMain.removeHandler('startChallongeSet');
   ipcMain.handle(
     'startChallongeSet',
-    async (event: IpcMainInvokeEvent, slug: string, id: string) => {
+    async (event, slug: string, id: string) => {
       if (!challongeApiKey) {
         throw new Error('Please set Challonge API key.');
       }
@@ -1131,12 +1088,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('reportChallongeSet');
   ipcMain.handle(
     'reportChallongeSet',
-    async (
-      event: IpcMainInvokeEvent,
-      slug: string,
-      id: string,
-      items: ChallongeMatchItem[],
-    ) => {
+    async (event, slug: string, id: string, items: ChallongeMatchItem[]) => {
       if (!challongeApiKey) {
         throw new Error('Please set Challonge API key.');
       }
@@ -1163,28 +1115,22 @@ export default function setupIPCs(
   ipcMain.handle('getCurrentParryggTournament', getCurrentParryggTournament);
 
   ipcMain.removeHandler('setSelectedParryggTournament');
-  ipcMain.handle(
-    'setSelectedParryggTournament',
-    (event: IpcMainInvokeEvent, slug: string) => {
-      setSelectedParryggTournament(slug);
-    },
-  );
+  ipcMain.handle('setSelectedParryggTournament', (event, slug: string) => {
+    setSelectedParryggTournament(slug);
+  });
 
   ipcMain.removeHandler('getSelectedParryggSet');
   ipcMain.handle('getSelectedParryggSet', getSelectedParryggSet);
 
   ipcMain.removeHandler('setSelectedParryggSetId');
-  ipcMain.handle(
-    'setSelectedParryggSetId',
-    (event: IpcMainInvokeEvent, setId: string) => {
-      setSelectedParryggSetId(setId);
-    },
-  );
+  ipcMain.handle('setSelectedParryggSetId', (event, setId: string) => {
+    setSelectedParryggSetId(setId);
+  });
 
   ipcMain.removeHandler('getParryggTournament');
   ipcMain.handle(
     'getParryggTournament',
-    async (event: IpcMainInvokeEvent, slug: string, recursive?: boolean) => {
+    async (event, slug: string, recursive?: boolean) => {
       if (!parryggApiKey) {
         throw new Error('Please set parry.gg API key.');
       }
@@ -1198,78 +1144,63 @@ export default function setupIPCs(
   );
 
   ipcMain.removeHandler('getParryggEvent');
-  ipcMain.handle(
-    'getParryggEvent',
-    async (event: IpcMainInvokeEvent, eventId: string) => {
-      if (!parryggApiKey) {
-        throw new Error('Please set parry.gg API key.');
-      }
+  ipcMain.handle('getParryggEvent', async (event, eventId: string) => {
+    if (!parryggApiKey) {
+      throw new Error('Please set parry.gg API key.');
+    }
 
-      await getParryggEvent(parryggApiKey, eventId);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedParryggSet(),
-        parryggTournament: getCurrentParryggTournament(),
-      });
-    },
-  );
+    await getParryggEvent(parryggApiKey, eventId);
+    mainWindow.webContents.send('tournament', {
+      selectedSet: getSelectedParryggSet(),
+      parryggTournament: getCurrentParryggTournament(),
+    });
+  });
 
   ipcMain.removeHandler('getParryggPhase');
-  ipcMain.handle(
-    'getParryggPhase',
-    async (event: IpcMainInvokeEvent, phaseId: string) => {
-      if (!parryggApiKey) {
-        throw new Error('Please set parry.gg API key.');
-      }
+  ipcMain.handle('getParryggPhase', async (event, phaseId: string) => {
+    if (!parryggApiKey) {
+      throw new Error('Please set parry.gg API key.');
+    }
 
-      await getParryggPhase(parryggApiKey, phaseId);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedParryggSet(),
-        parryggTournament: getCurrentParryggTournament(),
-      });
-    },
-  );
+    await getParryggPhase(parryggApiKey, phaseId);
+    mainWindow.webContents.send('tournament', {
+      selectedSet: getSelectedParryggSet(),
+      parryggTournament: getCurrentParryggTournament(),
+    });
+  });
 
   ipcMain.removeHandler('getParryggBracket');
-  ipcMain.handle(
-    'getParryggBracket',
-    async (event: IpcMainInvokeEvent, bracketId: string) => {
-      if (!parryggApiKey) {
-        throw new Error('Please set parry.gg API key.');
-      }
+  ipcMain.handle('getParryggBracket', async (event, bracketId: string) => {
+    if (!parryggApiKey) {
+      throw new Error('Please set parry.gg API key.');
+    }
 
-      await getParryggBracket(parryggApiKey, bracketId);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedParryggSet(),
-        parryggTournament: getCurrentParryggTournament(),
-      });
-    },
-  );
+    await getParryggBracket(parryggApiKey, bracketId);
+    mainWindow.webContents.send('tournament', {
+      selectedSet: getSelectedParryggSet(),
+      parryggTournament: getCurrentParryggTournament(),
+    });
+  });
 
   ipcMain.removeHandler('startParryggSet');
-  ipcMain.handle(
-    'startParryggSet',
-    async (event: IpcMainInvokeEvent, setId: string) => {
-      if (!parryggApiKey) {
-        throw new Error('Please set parry.gg API key.');
-      }
+  ipcMain.handle('startParryggSet', async (event, setId: string) => {
+    if (!parryggApiKey) {
+      throw new Error('Please set parry.gg API key.');
+    }
 
-      await startParryggSet(parryggApiKey, setId);
-      await getParryggBracket(
-        parryggApiKey,
-        assertString(selectedPhaseGroupId),
-      );
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedParryggSet(),
-        parryggTournament: getCurrentParryggTournament(),
-      });
-    },
-  );
+    await startParryggSet(parryggApiKey, setId);
+    await getParryggBracket(parryggApiKey, assertString(selectedPhaseGroupId));
+    mainWindow.webContents.send('tournament', {
+      selectedSet: getSelectedParryggSet(),
+      parryggTournament: getCurrentParryggTournament(),
+    });
+  });
 
   ipcMain.removeHandler('reportParryggSet');
   ipcMain.handle(
     'reportParryggSet',
     async (
-      event: IpcMainInvokeEvent,
+      event,
       slug: string,
       setId: string,
       result: MatchResult.AsObject,
@@ -1319,21 +1250,18 @@ export default function setupIPCs(
   });
 
   ipcMain.removeHandler('setSelectedSetId');
-  ipcMain.handle(
-    'setSelectedSetId',
-    (event: IpcMainInvokeEvent, selectedSetId: Id) => {
-      if (!selectedSetId) {
-        return;
-      }
-      if (mode === Mode.STARTGG) {
-        setSelectedSetId(selectedSetId);
-      } else if (mode === Mode.CHALLONGE) {
-        setSelectedChallongeSetId(assertString(selectedSetId));
-      } else if (mode === Mode.PARRYGG) {
-        setSelectedParryggSetId(assertString(selectedSetId));
-      }
-    },
-  );
+  ipcMain.handle('setSelectedSetId', (event, selectedSetId: Id) => {
+    if (!selectedSetId) {
+      return;
+    }
+    if (mode === Mode.STARTGG) {
+      setSelectedSetId(selectedSetId);
+    } else if (mode === Mode.CHALLONGE) {
+      setSelectedChallongeSetId(assertString(selectedSetId));
+    } else if (mode === Mode.PARRYGG) {
+      setSelectedParryggSetId(assertString(selectedSetId));
+    }
+  });
 
   let manualNames = store.has('manualNames')
     ? (store.get('manualNames') as string[])
@@ -1342,13 +1270,10 @@ export default function setupIPCs(
   ipcMain.handle('getManualNames', () => manualNames);
 
   ipcMain.removeHandler('setManualNames');
-  ipcMain.handle(
-    'setManualNames',
-    (event: IpcMainInvokeEvent, newManualNames: string[]) => {
-      store.set('manualNames', newManualNames);
-      manualNames = newManualNames;
-    },
-  );
+  ipcMain.handle('setManualNames', (event, newManualNames: string[]) => {
+    store.set('manualNames', newManualNames);
+    manualNames = newManualNames;
+  });
 
   ipcMain.removeHandler('getUseLAN');
   ipcMain.handle('getUseLAN', () => {
@@ -1404,19 +1329,16 @@ export default function setupIPCs(
   ipcMain.handle('getFileNameFormat', () => fileNameFormat);
 
   ipcMain.removeHandler('setFileNameFormat');
-  ipcMain.handle(
-    'setFileNameFormat',
-    (event: IpcMainInvokeEvent, newFileNameFormat: string) => {
-      if (!newFileNameFormat) {
-        throw new Error('File name format cannot be empty.');
-      }
-      if (fileNameFormat !== newFileNameFormat) {
-        store.set('fileNameFormat', newFileNameFormat);
-        fileNameFormat = newFileNameFormat;
-        setOwnFileNameFormat(fileNameFormat);
-      }
-    },
-  );
+  ipcMain.handle('setFileNameFormat', (event, newFileNameFormat: string) => {
+    if (!newFileNameFormat) {
+      throw new Error('File name format cannot be empty.');
+    }
+    if (fileNameFormat !== newFileNameFormat) {
+      store.set('fileNameFormat', newFileNameFormat);
+      fileNameFormat = newFileNameFormat;
+      setOwnFileNameFormat(fileNameFormat);
+    }
+  });
 
   ipcMain.removeHandler('resetFileNameFormat');
   ipcMain.handle('resetFileNameFormat', () => {
@@ -1453,7 +1375,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('setFolderNameFormat');
   ipcMain.handle(
     'setFolderNameFormat',
-    (event: IpcMainInvokeEvent, newFolderNameFormat: string) => {
+    (event, newFolderNameFormat: string) => {
       if (!newFolderNameFormat) {
         throw new Error('Folder name format cannot be empty.');
       }
@@ -1479,12 +1401,9 @@ export default function setupIPCs(
   ipcMain.handle('getHideCopyButton', () => store.get('hideCopyButton', true));
 
   ipcMain.removeHandler('setHideCopyButton');
-  ipcMain.handle(
-    'setHideCopyButton',
-    (event: IpcMainInvokeEvent, hideCopyButton: boolean) => {
-      store.set('hideCopyButton', hideCopyButton);
-    },
-  );
+  ipcMain.handle('setHideCopyButton', (event, hideCopyButton: boolean) => {
+    store.set('hideCopyButton', hideCopyButton);
+  });
 
   let copySettings = store.get('copySettings', {
     output: Output.ZIP,
@@ -1498,14 +1417,11 @@ export default function setupIPCs(
   ipcMain.handle('getCopySettings', () => copySettings);
 
   ipcMain.removeHandler('setCopySettings');
-  ipcMain.handle(
-    'setCopySettings',
-    (event: IpcMainInvokeEvent, newCopySettings: CopySettings) => {
-      store.set('copySettings', newCopySettings);
-      copySettings = newCopySettings;
-      setOwnCopySettings(copySettings);
-    },
-  );
+  ipcMain.handle('setCopySettings', (event, newCopySettings: CopySettings) => {
+    store.set('copySettings', newCopySettings);
+    copySettings = newCopySettings;
+    setOwnCopySettings(copySettings);
+  });
 
   ipcMain.removeHandler('getReportSettings');
   ipcMain.handle('getReportSettings', () => {
@@ -1523,7 +1439,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('setReportSettings');
   ipcMain.handle(
     'setReportSettings',
-    (event: IpcMainInvokeEvent, newReportSettings: ReportSettings) => {
+    (event, newReportSettings: ReportSettings) => {
       store.set('reportSettings', newReportSettings);
     },
   );
@@ -1535,13 +1451,10 @@ export default function setupIPCs(
   ipcMain.handle('getVlerkMode', () => vlerkMode);
 
   ipcMain.removeHandler('setVlerkMode');
-  ipcMain.handle(
-    'setVlerkMode',
-    (event: IpcMainInvokeEvent, newVlerkMode: boolean) => {
-      store.set('vlerkMode', newVlerkMode);
-      vlerkMode = newVlerkMode;
-    },
-  );
+  ipcMain.handle('setVlerkMode', (event, newVlerkMode: boolean) => {
+    store.set('vlerkMode', newVlerkMode);
+    vlerkMode = newVlerkMode;
+  });
 
   let guidedMode = store.has('guidedMode')
     ? (store.get('guidedMode') as boolean)
@@ -1550,13 +1463,10 @@ export default function setupIPCs(
   ipcMain.handle('getGuidedMode', () => guidedMode);
 
   ipcMain.removeHandler('setGuidedMode');
-  ipcMain.handle(
-    'setGuidedMode',
-    (event: IpcMainInvokeEvent, newGuidedMode: boolean) => {
-      store.set('guidedMode', newGuidedMode);
-      guidedMode = newGuidedMode;
-    },
-  );
+  ipcMain.handle('setGuidedMode', (event, newGuidedMode: boolean) => {
+    store.set('guidedMode', newGuidedMode);
+    guidedMode = newGuidedMode;
+  });
 
   let smuggleCostumeIndex = store.get('smuggleCostumeIndex', true);
   setOwnSmuggleCostumeIndex(smuggleCostumeIndex);
@@ -1566,7 +1476,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('setSmuggleCostumeIndex');
   ipcMain.handle(
     'setSmuggleCostumeIndex',
-    (event: IpcMainInvokeEvent, newSmuggleCostumeIndex: boolean) => {
+    (event, newSmuggleCostumeIndex: boolean) => {
       store.set('smuggleCostumeIndex', newSmuggleCostumeIndex);
       smuggleCostumeIndex = newSmuggleCostumeIndex;
       setOwnSmuggleCostumeIndex(smuggleCostumeIndex);
@@ -1574,12 +1484,9 @@ export default function setupIPCs(
   );
 
   ipcMain.removeHandler('copyToClipboard');
-  ipcMain.handle(
-    'copyToClipboard',
-    (event: IpcMainInvokeEvent, text: string) => {
-      clipboard.writeText(text);
-    },
-  );
+  ipcMain.handle('copyToClipboard', (event, text: string) => {
+    clipboard.writeText(text);
+  });
 
   ipcMain.removeHandler('getVersion');
   ipcMain.handle('getVersion', () => app.getVersion());
