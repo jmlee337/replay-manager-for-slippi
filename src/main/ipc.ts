@@ -716,9 +716,9 @@ export default function setupIPCs(
     },
   );
 
-  ipcMain.removeHandler('getTournament');
+  ipcMain.removeHandler('getStartggTournament');
   ipcMain.handle(
-    'getTournament',
+    'getStartggTournament',
     async (
       event: IpcMainInvokeEvent,
       slugOrShort: string,
@@ -728,12 +728,11 @@ export default function setupIPCs(
         throw new Error('Please set start.gg API key');
       }
 
-      const slug = await getTournament(sggApiKey, slugOrShort, recursive);
+      await getTournament(sggApiKey, slugOrShort, recursive);
       mainWindow.webContents.send('tournament', {
         selectedSet: getSelectedSet(),
         startggTournament: getCurrentTournament(),
       });
-      return slug;
     },
   );
 

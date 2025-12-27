@@ -22,15 +22,13 @@ export default function ParryggTournamentForm({
   gettingTournament,
   getAdminedTournaments,
   getTournament,
-  setSlug,
   close,
 }: {
   gettingAdminedTournaments: boolean;
   adminedTournaments: AdminedTournament[];
   gettingTournament: boolean;
   getAdminedTournaments: () => Promise<void>;
-  getTournament: (maybeSlug: string, initial?: boolean) => Promise<string>;
-  setSlug: (slug: string) => void;
+  getTournament: (maybeSlug: string, initial?: boolean) => Promise<void>;
   close: () => void;
 }) {
   const getTournamentOnSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -41,11 +39,8 @@ export default function ParryggTournamentForm({
     event.preventDefault();
     event.stopPropagation();
     if (slugOrShort) {
-      const slugActual = await getTournament(slugOrShort, true);
-      if (slugActual) {
-        setSlug(slugActual);
-        close();
-      }
+      await getTournament(slugOrShort, true);
+      close();
     }
   };
 
@@ -107,10 +102,8 @@ export default function ParryggTournamentForm({
             <ListItemButton
               key={adminedTournament.slug}
               onClick={async () => {
-                if (await getTournament(adminedTournament.slug, true)) {
-                  setSlug(adminedTournament.slug);
-                  close();
-                }
+                await getTournament(adminedTournament.slug, true);
+                close();
               }}
             >
               <ListItemText

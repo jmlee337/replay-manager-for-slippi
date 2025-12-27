@@ -853,8 +853,6 @@ export async function getTournament(
   } else if (eventIds.length === 1) {
     await getEvent(key, eventIds[0], recursive);
   }
-
-  return slug;
 }
 
 export function getStreamsAndStations() {

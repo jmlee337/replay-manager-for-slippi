@@ -206,14 +206,6 @@ function hasTimeSkew(replays: Replay[]) {
   return false;
 }
 
-function getParryggSlug(tournament: ParryggTournament.AsObject) {
-  return (
-    tournament.slugsList.find(
-      (slug) => slug.type === SlugType.SLUG_TYPE_PRIMARY,
-    )?.slug || ''
-  );
-}
-
 function applyAllReplaysSelected(allReplays: Replay[], selected: boolean) {
   allReplays
     .filter((replay) => replay.invalidReasons.length === 0)
@@ -291,8 +283,7 @@ function Hello() {
   const [selectedSetChain, setSelectedSetChain] = useState(
     EMPTY_SELECTED_SET_CHAIN,
   );
-  const [slug, setSlug] = useState('');
-  const [tournament, setTournament] = useState<Tournament>({
+  const [startggTournament, setStartggTournament] = useState<Tournament>({
     slug: '',
     name: '',
     location: '',
@@ -303,7 +294,13 @@ function Hello() {
   );
   const [parryggTournament, setParryggTournament] =
     useState<ParryggTournament.AsObject>();
-  const [parryggSlug, setParryggSlug] = useState('');
+  const parryggSlug = useMemo(
+    () =>
+      parryggTournament?.slugsList.find(
+        (slug) => slug.type === SlugType.SLUG_TYPE_PRIMARY,
+      )?.slug || '',
+    [parryggTournament],
+  );
   const [selectedChallongeTournament, setSelectedChallongeTournament] =
     useState({ name: '', slug: '', tournamentType: '' });
   const [selectedParryggSetChain, setSelectedParryggSetChain] = useState(
@@ -313,11 +310,17 @@ function Hello() {
   const [undoSubdir, setUndoSubdir] = useState('');
   const tournamentSet = useMemo(
     () =>
-      (mode === Mode.STARTGG && slug.length > 0) ||
+      (mode === Mode.STARTGG && startggTournament.slug.length > 0) ||
       (mode === Mode.CHALLONGE && challongeTournaments.size > 0) ||
-      (mode === Mode.PARRYGG && slug.length > 0) ||
+      (mode === Mode.PARRYGG && parryggSlug.length > 0) ||
       (mode === Mode.MANUAL && manualNames.length > 0),
-    [challongeTournaments, manualNames.length, mode, slug],
+    [
+      challongeTournaments,
+      manualNames.length,
+      mode,
+      parryggSlug,
+      startggTournament,
+    ],
   );
   const copyDirSet = useMemo(() => copyDir.length > 0, [copyDir]);
   const guidedDialogOpen = useMemo(
@@ -383,8 +386,7 @@ function Hello() {
       setHostFormat(await hostFormatPromise);
       const currentTournament = await tournamentPromise;
       if (currentTournament) {
-        setSlug(currentTournament.slug);
-        setTournament(currentTournament);
+        setStartggTournament(currentTournament);
       }
       const initSelectedSet = await selectedSetPromise;
       if (initSelectedSet) {
@@ -407,7 +409,6 @@ function Hello() {
         await selectedParryggTournamentPromise;
       if (initSelectedParryggTournament) {
         setParryggTournament(initSelectedParryggTournament);
-        setParryggSlug(getParryggSlug(initSelectedParryggTournament));
       }
       setManualNames(await manualNamesPromise);
       setUndoSubdir(await undoSubdirPromise);
@@ -867,7 +868,7 @@ function Hello() {
           if (tournamentSet && copyDirSet && confirmedCopySettings) {
             setGuideBackdropOpen(false);
           }
-          setTournament(newTournament);
+          setStartggTournament(newTournament);
         }
         if (newChallongeTournaments) {
           if (tournamentSet && copyDirSet && confirmedCopySettings) {
@@ -880,7 +881,6 @@ function Hello() {
             setGuideBackdropOpen(false);
           }
           setParryggTournament(newParryggTournament);
-          setParryggSlug(getParryggSlug(newParryggTournament));
         }
       },
       selectedSet.id,
@@ -944,7 +944,7 @@ function Hello() {
     initial: boolean = false,
   ) => {
     if (!maybeSlug) {
-      return '';
+      return;
     }
 
     setGettingTournament(true);
@@ -953,15 +953,13 @@ function Hello() {
         maybeSlug,
         initial && vlerkMode,
       );
-      if (slug !== maybeSlug) {
+      if (parryggSlug !== maybeSlug) {
         setSelectedSet(EMPTY_SET);
         setSelectedParryggSetChain(EMPTY_SELECTED_SET_CHAIN);
         await window.electron.setSelectedParryggSetChain('', '', '');
       }
-      return maybeSlug;
     } catch (e: any) {
       showErrorDialog([e.toString()]);
-      return '';
     } finally {
       setGettingTournament(false);
     }
@@ -1173,26 +1171,27 @@ function Hello() {
     );
   };
 
-  const getTournament = async (maybeSlug: string, initial: boolean = false) => {
+  const getStartggTournament = async (
+    maybeSlug: string,
+    initial: boolean = false,
+  ) => {
     if (!maybeSlug) {
-      return '';
+      return;
     }
 
     setGettingTournament(true);
     try {
-      const actualSlug = await window.electron.getTournament(
+      await window.electron.getStartggTournament(
         maybeSlug,
         initial && vlerkMode,
       );
-      if (slug !== maybeSlug) {
+      if (startggTournament.slug !== maybeSlug) {
         setSelectedSet(EMPTY_SET);
         setSelectedSetChain(EMPTY_SELECTED_SET_CHAIN);
         await window.electron.setSelectedSetChain(0, 0, 0);
       }
-      return actualSlug;
     } catch (e: any) {
       showErrorDialog([e.toString()]);
-      return '';
     } finally {
       setGettingTournament(false);
     }
@@ -1575,8 +1574,8 @@ function Hello() {
           );
           subdir = subdir.replace('{tournamentSlug}', parryggSlug || '');
         } else {
-          subdir = subdir.replace('{tournamentName}', tournament.name);
-          subdir = subdir.replace('{tournamentSlug}', tournament.slug);
+          subdir = subdir.replace('{tournamentName}', startggTournament.name);
+          subdir = subdir.replace('{tournamentSlug}', startggTournament.slug);
         }
         if (mode === Mode.STARTGG || mode === Mode.PARRYGG) {
           const selectedChain =
@@ -1736,8 +1735,8 @@ function Hello() {
             if (mode === Mode.STARTGG) {
               context.startgg = {
                 tournament: {
-                  name: tournament.name,
-                  location: tournament.location,
+                  name: startggTournament.name,
+                  location: startggTournament.location,
                 },
                 event: selectedSetChain.event!,
                 phase: selectedSetChain.phase!,
@@ -2075,14 +2074,16 @@ function Hello() {
                 <InputBase
                   disabled
                   size="small"
-                  value={slug || 'Set start.gg tournament...'}
+                  value={startggTournament.slug || 'Set start.gg tournament...'}
                   style={{ flexGrow: 1 }}
                 />
                 <Tooltip arrow title="Refresh tournament and all descendants">
                   <div>
                     <IconButton
                       disabled={gettingTournament}
-                      onClick={() => getTournament(slug)}
+                      onClick={() =>
+                        getStartggTournament(startggTournament.slug)
+                      }
                     >
                       {gettingTournament ? (
                         <CircularProgress size="24px" />
@@ -2125,8 +2126,7 @@ function Hello() {
                       }
                       setGettingAdminedTournaments(false);
                     }}
-                    getTournament={getTournament}
-                    setSlug={setSlug}
+                    getTournament={getStartggTournament}
                     close={() => {
                       setSlugDialogOpen(false);
                     }}
@@ -2188,14 +2188,14 @@ function Hello() {
                 <InputBase
                   disabled
                   size="small"
-                  value={slug || 'Set parry.gg tournament...'}
+                  value={parryggSlug || 'Set parry.gg tournament...'}
                   style={{ flexGrow: 1 }}
                 />
                 <Tooltip arrow title="Refresh tournament and all descendants">
                   <div>
                     <IconButton
                       disabled={gettingTournament}
-                      onClick={() => getParryggTournament(slug)}
+                      onClick={() => getParryggTournament(parryggSlug)}
                     >
                       {gettingTournament ? (
                         <CircularProgress size="24px" />
@@ -2239,7 +2239,6 @@ function Hello() {
                       setGettingAdminedTournaments(false);
                     }}
                     getTournament={getParryggTournament}
-                    setSlug={setParryggSlug}
                     close={() => {
                       setParryggSlugDialogOpen(false);
                     }}
@@ -2451,7 +2450,7 @@ function Hello() {
             setSelectedSetChain={setSelectedSetChain}
             selectedParryggSetChain={selectedParryggSetChain}
             setSelectedParryggSetChain={setSelectedParryggSetChain}
-            startggTournament={tournament}
+            startggTournament={startggTournament}
             challongeTournaments={challongeTournaments}
             getChallongeTournament={getChallongeTournament}
             setSelectedChallongeTournament={setSelectedChallongeTournament}
@@ -2504,8 +2503,7 @@ function Hello() {
                 gettingTournament={gettingTournament}
                 tournamentSet={tournamentSet}
                 copyDirSet={copyDirSet}
-                setStartggTournamentSlug={setSlug}
-                getStartggTournament={getTournament}
+                getStartggTournament={getStartggTournament}
                 getChallongeTournament={getChallongeTournament}
                 manualNames={manualNames}
                 setManualNames={setManualNamesOuter}

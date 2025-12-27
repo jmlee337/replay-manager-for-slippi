@@ -21,7 +21,6 @@ export default function GuidedDialog({
   gettingTournament,
   tournamentSet,
   copyDirSet,
-  setStartggTournamentSlug,
   getStartggTournament,
   getChallongeTournament,
   manualNames,
@@ -41,11 +40,7 @@ export default function GuidedDialog({
   gettingTournament: boolean;
   tournamentSet: boolean;
   copyDirSet: boolean;
-  setStartggTournamentSlug: (startggTournamentSlug: string) => void;
-  getStartggTournament: (
-    maybeSlug: string,
-    initial?: boolean,
-  ) => Promise<string>;
+  getStartggTournament: (maybeSlug: string, initial?: boolean) => Promise<void>;
   getChallongeTournament: (maybeSlug: string) => Promise<void>;
   manualNames: string[];
   setManualNames: (manualNames: string[]) => Promise<void>;
@@ -136,7 +131,6 @@ export default function GuidedDialog({
             gettingTournament={gettingTournament}
             getAdminedTournaments={getAdminedTournaments}
             getTournament={getStartggTournament}
-            setSlug={setStartggTournamentSlug}
             close={() => {}}
           />
         )}
