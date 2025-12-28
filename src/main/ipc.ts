@@ -119,8 +119,10 @@ import {
   connectToOfflineMode,
   getCurrentOfflineModeTournament,
   getOfflineModeStatus,
+  getSelectedOfflineModeSet,
   getSelectedOfflineModeSetChain,
   initOfflineMode,
+  setSelectedOfflineModeSetId,
 } from './offlinemode';
 
 type ReplayDir = {
@@ -1276,6 +1278,9 @@ export default function setupIPCs(
     if (mode === Mode.PARRYGG) {
       return getSelectedParryggSet();
     }
+    if (mode === Mode.OFFLINE_MODE) {
+      return getSelectedOfflineModeSet();
+    }
     return undefined;
   });
 
@@ -1290,6 +1295,8 @@ export default function setupIPCs(
       setSelectedChallongeSetId(assertString(selectedSetId));
     } else if (mode === Mode.PARRYGG) {
       setSelectedParryggSetId(assertString(selectedSetId));
+    } else if (mode === Mode.OFFLINE_MODE) {
+      setSelectedOfflineModeSetId(assertInteger(selectedSetId));
     }
   });
 

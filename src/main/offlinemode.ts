@@ -25,12 +25,16 @@ const INITIAL_TOURNAMENT: RendererOfflineModeTournament = {
 
 let address = '';
 let error = '';
+const idToSet = new Map<number, Set>();
+let selectedSetId = 0;
 let tournament = INITIAL_TOURNAMENT;
 let mainWindow: BrowserWindow | undefined;
 export function initOfflineMode(initMainWindow: BrowserWindow) {
   mainWindow = initMainWindow;
   address = '';
   error = '';
+  idToSet.clear();
+  selectedSetId = 0;
   tournament = INITIAL_TOURNAMENT;
 }
 
@@ -55,6 +59,14 @@ export function getOfflineModeStatus() {
 
 export function getCurrentOfflineModeTournament() {
   return tournament;
+}
+
+export function setSelectedOfflineModeSetId(id: number) {
+  selectedSetId = id;
+}
+
+export function getSelectedOfflineModeSet() {
+  return idToSet.get(selectedSetId);
 }
 
 export function getSelectedOfflineModeSetChain(
@@ -116,7 +128,7 @@ function toParticipant(participant: OfflineModeParticipant): Participant {
   };
 }
 
-function toSet(set: OfflineModeSet): Set {
+function toSet(set: OfflineModeSet): Omit<Set, 'id'> & { id: number } {
   if (set.entrant1Id === null) {
     throw new Error(`entrant1Id null in set: ${set.id}`);
   }
@@ -163,6 +175,8 @@ function cleanup() {
 
   setTournament(INITIAL_TOURNAMENT);
   setStatus('', '');
+  idToSet.clear();
+  selectedSetId = 0;
 }
 export function connectToOfflineMode(port: number) {
   if (websocket) {
@@ -186,6 +200,7 @@ export function connectToOfflineMode(port: number) {
       try {
         const message = JSON.parse(data.toString());
         if (message.op === 'tournament-update-event') {
+          idToSet.clear();
           const newTournament = message.tournament as OfflineModeTournament;
           setTournament({
             ...newTournament,
@@ -202,6 +217,7 @@ export function connectToOfflineMode(port: number) {
                       offlineModeSet.entrant2Id
                     ) {
                       const set = toSet(offlineModeSet);
+                      idToSet.set(set.id, set);
                       if (set.state === State.COMPLETED) {
                         completedSets.push(set);
                       } else {
