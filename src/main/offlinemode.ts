@@ -128,6 +128,8 @@ function toParticipant(participant: OfflineModeParticipant): Participant {
   };
 }
 
+// TODO: set these on report
+const reportedSetIds = new Map<number, boolean>();
 function toSet(set: OfflineModeSet): Omit<Set, 'id'> & { id: number } {
   if (set.entrant1Id === null) {
     throw new Error(`entrant1Id null in set: ${set.id}`);
@@ -162,7 +164,7 @@ function toSet(set: OfflineModeSet): Omit<Set, 'id'> & { id: number } {
         }
       : null,
     ordinal: set.ordinal,
-    wasReported: false, // TODO?
+    wasReported: reportedSetIds.has(set.id),
     updatedAtMs: 0, // TODO
     completedAtMs: 0, // TODO
   };

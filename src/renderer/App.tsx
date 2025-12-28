@@ -1857,8 +1857,7 @@ function Hello() {
               context.startgg = {
                 tournament: {
                   name: offlineModeTournament.name,
-                  // TODO
-                  location: '',
+                  location: '', // TODO
                 },
                 event: selectedSetChain.event!,
                 phase: selectedSetChain.phase!,
