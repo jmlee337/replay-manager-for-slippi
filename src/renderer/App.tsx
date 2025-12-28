@@ -1561,15 +1561,24 @@ function Hello() {
         subdir = subdir.replace('{roundLong}', roundLong);
         subdir = subdir.replace('{games}', selectedReplays.length.toString(10));
         // do last in case tournament/event/phase/phase group names contain template strings LOL
-        if (mode === Mode.PARRYGG) {
+        if (mode === Mode.STARTGG) {
+          subdir = subdir.replace('{tournamentName}', startggTournament.name);
+          subdir = subdir.replace('{tournamentSlug}', startggTournament.slug);
+        } else if (mode === Mode.CHALLONGE) {
+          subdir = subdir.replace(
+            '{tournamentName}',
+            selectedChallongeTournament.name,
+          );
+          subdir = subdir.replace(
+            '{tournamentSlug}',
+            selectedChallongeTournament.slug,
+          );
+        } else if (mode === Mode.PARRYGG) {
           subdir = subdir.replace(
             '{tournamentName}',
             parryggTournament?.name || '',
           );
           subdir = subdir.replace('{tournamentSlug}', parryggSlug || '');
-        } else {
-          subdir = subdir.replace('{tournamentName}', startggTournament.name);
-          subdir = subdir.replace('{tournamentSlug}', startggTournament.slug);
         }
         if (mode === Mode.STARTGG || mode === Mode.PARRYGG) {
           subdir = subdir.replace(
