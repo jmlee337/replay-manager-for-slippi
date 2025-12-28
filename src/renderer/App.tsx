@@ -77,6 +77,7 @@ import {
   Id,
   InvalidReplay,
   Mode,
+  OfflineModeStatus,
   Output,
   PlayerOverrides,
   RendererOfflineModeTournament,
@@ -302,10 +303,12 @@ function Hello() {
       )?.slug || '',
     [parryggTournament],
   );
-  const [offlineModeStatus, setOfflineModeStatus] = useState({
-    address: '',
-    error: '',
-  });
+  const [offlineModeStatus, setOfflineModeStatus] = useState<OfflineModeStatus>(
+    {
+      address: '',
+      error: '',
+    },
+  );
   const [offlineModeTournament, setOfflineModeTournament] =
     useState<RendererOfflineModeTournament>({
       id: 0,
@@ -2592,6 +2595,7 @@ function Hello() {
                 getStartggTournament={getStartggTournament}
                 getChallongeTournament={getChallongeTournament}
                 getParryggTournament={getParryggTournament}
+                offlineModeStatus={offlineModeStatus}
                 manualNames={manualNames}
                 setManualNames={setManualNamesOuter}
                 setCopyDir={setCopyDir}

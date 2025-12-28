@@ -27,6 +27,7 @@ import {
   RendererWave,
   RendererOfflineModeTournament,
   SelectedSetChain,
+  OfflineModeStatus,
 } from '../common/types';
 
 const electronHandler = {
@@ -231,7 +232,7 @@ const electronHandler = {
     result: MatchResult.AsObject,
   ): Promise<Set> =>
     ipcRenderer.invoke('reportParryggSet', slug, setId, result),
-  getOfflineModeStatus: (): Promise<{ address: string; error: string }> =>
+  getOfflineModeStatus: (): Promise<OfflineModeStatus> =>
     ipcRenderer.invoke('getOfflineModeStatus'),
   getCurrentOfflineModeTournament: (): Promise<RendererOfflineModeTournament> =>
     ipcRenderer.invoke('getCurrentOfflineModeTournament'),
@@ -301,7 +302,7 @@ const electronHandler = {
   onOfflineModeStatus: (
     callback: (
       event: IpcRendererEvent,
-      offlineModeStatus: { address: string; error: string },
+      offlineModeStatus: OfflineModeStatus,
     ) => void,
   ) => {
     ipcRenderer.removeAllListeners('offlineModeStatus');

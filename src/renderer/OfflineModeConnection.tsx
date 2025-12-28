@@ -12,33 +12,87 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material';
-import { useEffect, useMemo, useState } from 'react';
-import { RendererOfflineModeTournament } from '../common/types';
+import { useEffect, useState } from 'react';
+import {
+  OfflineModeStatus,
+  RendererOfflineModeTournament,
+} from '../common/types';
+
+function toLabel(offlineModeStatus: OfflineModeStatus) {
+  return offlineModeStatus.address
+    ? 'Offline Mode connected'
+    : 'Connect to Offline Mode';
+}
+
+export function OfflineModeConnectionDialogContent({
+  offlineModeStatus,
+}: {
+  offlineModeStatus: OfflineModeStatus;
+}) {
+  const [port, setPort] = useState(50000);
+  const [connecting, setConnecting] = useState(false);
+
+  return (
+    <>
+      <DialogTitle>{toLabel(offlineModeStatus)}</DialogTitle>
+      <DialogContent>
+        {offlineModeStatus.address ? (
+          <DialogContentText>{offlineModeStatus.address}</DialogContentText>
+        ) : (
+          <>
+            <Stack direction="row" alignItems="center" spacing="8px">
+              <TextField
+                disabled={connecting}
+                label="Port"
+                name="port"
+                onChange={(event) => {
+                  setPort(Number.parseInt(event.target.value, 10));
+                }}
+                size="small"
+                slotProps={{ htmlInput: { min: 1024, max: 65536 } }}
+                type="number"
+                value={port}
+                variant="filled"
+              />
+              <Button
+                disabled={connecting}
+                onClick={async () => {
+                  try {
+                    setConnecting(true);
+                    await window.electron.connectToOfflineMode(port);
+                  } finally {
+                    setConnecting(false);
+                  }
+                }}
+                variant="contained"
+              >
+                Connect
+              </Button>
+            </Stack>
+            {offlineModeStatus.error && (
+              <Alert severity="error">{offlineModeStatus.error}</Alert>
+            )}
+          </>
+        )}
+      </DialogContent>
+    </>
+  );
+}
 
 export default function OfflineModeConnection({
   offlineModeStatus,
   offlineModeTournament,
 }: {
-  offlineModeStatus: { address: string; error: string };
+  offlineModeStatus: OfflineModeStatus;
   offlineModeTournament: RendererOfflineModeTournament;
 }) {
   const [open, setOpen] = useState(false);
-  const [port, setPort] = useState(50000);
-  const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
     if (offlineModeStatus.address) {
       setOpen(false);
     }
   }, [offlineModeStatus]);
-
-  const label = useMemo(
-    () =>
-      offlineModeStatus.address
-        ? 'Offline Mode connected'
-        : 'Connect to Offline Mode',
-    [offlineModeStatus],
-  );
 
   return (
     <Stack direction="row">
@@ -52,7 +106,7 @@ export default function OfflineModeConnection({
         }
         style={{ flexGrow: 1 }}
       />
-      <Tooltip arrow title={label}>
+      <Tooltip arrow title={toLabel(offlineModeStatus)}>
         <IconButton onClick={() => setOpen(true)}>
           <Cable />
         </IconButton>
@@ -63,47 +117,9 @@ export default function OfflineModeConnection({
           setOpen(false);
         }}
       >
-        <DialogTitle>{label}</DialogTitle>
-        <DialogContent>
-          {offlineModeStatus.address ? (
-            <DialogContentText>{offlineModeStatus.address}</DialogContentText>
-          ) : (
-            <>
-              <Stack direction="row" alignItems="center" spacing="8px">
-                <TextField
-                  disabled={connecting}
-                  label="Port"
-                  name="port"
-                  onChange={(event) => {
-                    setPort(Number.parseInt(event.target.value, 10));
-                  }}
-                  size="small"
-                  slotProps={{ htmlInput: { min: 1024, max: 65536 } }}
-                  type="number"
-                  value={port}
-                  variant="filled"
-                />
-                <Button
-                  disabled={connecting}
-                  onClick={async () => {
-                    try {
-                      setConnecting(true);
-                      await window.electron.connectToOfflineMode(port);
-                    } finally {
-                      setConnecting(false);
-                    }
-                  }}
-                  variant="contained"
-                >
-                  Connect
-                </Button>
-              </Stack>
-              {offlineModeStatus.error && (
-                <Alert severity="error">{offlineModeStatus.error}</Alert>
-              )}
-            </>
-          )}
-        </DialogContent>
+        <OfflineModeConnectionDialogContent
+          offlineModeStatus={offlineModeStatus}
+        />
       </Dialog>
     </Stack>
   );

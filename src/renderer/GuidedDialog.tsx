@@ -7,11 +7,17 @@ import {
   Stack,
 } from '@mui/material';
 import { FolderOpen } from '@mui/icons-material';
-import { AdminedTournament, GuideState, Mode } from '../common/types';
+import {
+  AdminedTournament,
+  GuideState,
+  Mode,
+  OfflineModeStatus,
+} from '../common/types';
 import ManualNamesForm from './ManualNamesForm';
 import StartggTournamentForm from './StartggTournamentForm';
 import ChallongeTournamentForm from './ChallongeTournamentForm';
 import ParryggTournamentForm from './ParryggTournamentForm';
+import { OfflineModeConnectionDialogContent } from './OfflineModeConnection';
 
 export default function GuidedDialog({
   open,
@@ -25,6 +31,7 @@ export default function GuidedDialog({
   getStartggTournament,
   getChallongeTournament,
   getParryggTournament,
+  offlineModeStatus,
   manualNames,
   setManualNames,
   setCopyDir,
@@ -45,6 +52,7 @@ export default function GuidedDialog({
   getStartggTournament: (maybeSlug: string, initial?: boolean) => Promise<void>;
   getChallongeTournament: (maybeSlug: string) => Promise<void>;
   getParryggTournament: (maybeSlug: string) => Promise<void>;
+  offlineModeStatus: OfflineModeStatus;
   manualNames: string[];
   setManualNames: (manualNames: string[]) => Promise<void>;
   setCopyDir: (copyDir: string) => void;
@@ -155,6 +163,11 @@ export default function GuidedDialog({
             getAdminedTournaments={getAdminedTournaments}
             getTournament={getParryggTournament}
             close={() => {}}
+          />
+        )}
+        {!tournamentSet && mode === Mode.OFFLINE_MODE && (
+          <OfflineModeConnectionDialogContent
+            offlineModeStatus={offlineModeStatus}
           />
         )}
         {!tournamentSet && mode === Mode.MANUAL && (

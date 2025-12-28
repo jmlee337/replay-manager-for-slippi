@@ -508,3 +508,8 @@ export type RendererOfflineModeTournament = Omit<
 > & {
   events: RendererOfflineModeEvent[];
 };
+
+export type OfflineModeStatus = {
+  address: string;
+  error: string;
+};
