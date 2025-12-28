@@ -2508,6 +2508,7 @@ function Hello() {
                 copyDirSet={copyDirSet}
                 getStartggTournament={getStartggTournament}
                 getChallongeTournament={getChallongeTournament}
+                getParryggTournament={getParryggTournament}
                 manualNames={manualNames}
                 setManualNames={setManualNamesOuter}
                 setCopyDir={setCopyDir}

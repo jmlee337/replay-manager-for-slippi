@@ -11,6 +11,7 @@ import { AdminedTournament, GuideState, Mode } from '../common/types';
 import ManualNamesForm from './ManualNamesForm';
 import StartggTournamentForm from './StartggTournamentForm';
 import ChallongeTournamentForm from './ChallongeTournamentForm';
+import ParryggTournamentForm from './ParryggTournamentForm';
 
 export default function GuidedDialog({
   open,
@@ -23,6 +24,7 @@ export default function GuidedDialog({
   copyDirSet,
   getStartggTournament,
   getChallongeTournament,
+  getParryggTournament,
   manualNames,
   setManualNames,
   setCopyDir,
@@ -42,6 +44,7 @@ export default function GuidedDialog({
   copyDirSet: boolean;
   getStartggTournament: (maybeSlug: string, initial?: boolean) => Promise<void>;
   getChallongeTournament: (maybeSlug: string) => Promise<void>;
+  getParryggTournament: (maybeSlug: string) => Promise<void>;
   manualNames: string[];
   setManualNames: (manualNames: string[]) => Promise<void>;
   setCopyDir: (copyDir: string) => void;
@@ -141,6 +144,16 @@ export default function GuidedDialog({
             gettingTournament={gettingTournament}
             getAdminedTournaments={getAdminedTournaments}
             getTournament={getChallongeTournament}
+            close={() => {}}
+          />
+        )}
+        {!tournamentSet && mode === Mode.PARRYGG && (
+          <ParryggTournamentForm
+            gettingAdminedTournaments={gettingAdminedTournaments}
+            adminedTournaments={adminedTournaments}
+            gettingTournament={gettingTournament}
+            getAdminedTournaments={getAdminedTournaments}
+            getTournament={getParryggTournament}
             close={() => {}}
           />
         )}
