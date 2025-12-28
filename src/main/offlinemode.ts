@@ -17,6 +17,7 @@ const INITIAL_TOURNAMENT: RendererOfflineModeTournament = {
   id: 0,
   name: '',
   slug: '',
+  location: '',
   events: [],
   participants: [],
   stations: [],
@@ -113,7 +114,7 @@ export function getSelectedOfflineModeSetChain(
           bracketType: selectedPool.bracketType,
           hasSiblings: selectedPhase!.pools.length > 1,
           waveId: selectedPool.waveId,
-          winnersTargetPhaseId: null, // TODO
+          winnersTargetPhaseId: selectedPool.winnersTargetPhaseId,
         }
       : undefined,
   };
@@ -165,8 +166,8 @@ function toSet(set: OfflineModeSet): Omit<Set, 'id'> & { id: number } {
       : null,
     ordinal: set.ordinal,
     wasReported: reportedSetIds.has(set.id),
-    updatedAtMs: 0, // TODO
-    completedAtMs: 0, // TODO
+    updatedAtMs: set.updatedAt * 1000,
+    completedAtMs: set.completedAt ? set.completedAt * 1000 : 0,
   };
 }
 

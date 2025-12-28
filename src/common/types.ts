@@ -453,6 +453,8 @@ export type OfflineModeSet = {
   entrant2PrereqStr: string | null;
   entrant2Score: number | null;
   winnerId: number | null;
+  updatedAt: number;
+  completedAt: number | null;
   station: OfflineModeStation | null;
   stream: OfflineModeStream | null;
   hasStageData: 1 | null;
@@ -464,6 +466,7 @@ export type OfflineModePool = {
   name: string;
   bracketType: number;
   waveId: number | null;
+  winnersTargetPhaseId: number | null;
   sets: OfflineModeSet[];
 };
 
@@ -487,6 +490,7 @@ export type OfflineModeTournament = {
   id: number;
   name: string;
   slug: string;
+  location: string;
   events: OfflineModeEvent[];
   participants: OfflineModeParticipant[];
   stations: OfflineModeStation[];

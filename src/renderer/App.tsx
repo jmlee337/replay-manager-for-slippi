@@ -314,6 +314,7 @@ function Hello() {
       id: 0,
       name: '',
       slug: '',
+      location: '',
       events: [],
       participants: [],
       stations: [],
@@ -1857,7 +1858,7 @@ function Hello() {
               context.startgg = {
                 tournament: {
                   name: offlineModeTournament.name,
-                  location: '', // TODO
+                  location: offlineModeTournament.location,
                 },
                 event: selectedSetChain.event!,
                 phase: selectedSetChain.phase!,

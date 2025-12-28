@@ -222,7 +222,7 @@ function PhaseView({
                   bracketType: pool.bracketType,
                   hasSiblings: phase.pools.length > 1,
                   waveId: pool.waveId,
-                  winnersTargetPhaseId: null, // TODO
+                  winnersTargetPhaseId: pool.winnersTargetPhaseId,
                 })
               }
             />
