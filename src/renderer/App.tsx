@@ -1614,6 +1614,15 @@ function Hello() {
             parryggTournament?.name || '',
           );
           subdir = subdir.replace('{tournamentSlug}', parryggSlug || '');
+        } else if (mode === Mode.OFFLINE_MODE) {
+          subdir = subdir.replace(
+            '{tournamentName}',
+            offlineModeTournament.name,
+          );
+          subdir = subdir.replace(
+            '{tournamentSlug}',
+            offlineModeTournament.slug,
+          );
         }
         if (
           mode === Mode.STARTGG ||
