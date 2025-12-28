@@ -12,7 +12,7 @@ import {
   TextField,
   Tooltip,
 } from '@mui/material';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { RendererOfflineModeTournament } from '../common/types';
 
 export default function OfflineModeConnection({
@@ -25,6 +25,12 @@ export default function OfflineModeConnection({
   const [open, setOpen] = useState(false);
   const [port, setPort] = useState(50000);
   const [connecting, setConnecting] = useState(false);
+
+  useEffect(() => {
+    if (offlineModeStatus.address) {
+      setOpen(false);
+    }
+  }, [offlineModeStatus]);
 
   const label = useMemo(
     () =>
