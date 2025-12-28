@@ -227,6 +227,10 @@ export default function Settings({
                 <LabeledRadioButton label="start.gg" value={Mode.STARTGG} />
                 <LabeledRadioButton label="Challonge" value={Mode.CHALLONGE} />
                 <LabeledRadioButton label="parry.gg" value={Mode.PARRYGG} />
+                <LabeledRadioButton
+                  label="Offline Mode"
+                  value={Mode.OFFLINE_MODE}
+                />
                 <LabeledRadioButton label="Manual" value={Mode.MANUAL} />
               </RadioGroup>
             </FormControl>

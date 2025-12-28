@@ -7,6 +7,7 @@ import {
   GuideState,
   Mode,
   PlayerOverrides,
+  RendererOfflineModeTournament,
   SelectedEvent,
   SelectedPhase,
   SelectedPhaseGroup,
@@ -24,6 +25,7 @@ import {
   assertString,
   assertStringOrUndefined,
 } from '../common/asserts';
+import OfflineModeView from './OfflineModeView';
 
 export default function RightColumn({
   mode,
@@ -38,6 +40,7 @@ export default function RightColumn({
   getChallongeTournament,
   setSelectedChallongeTournament,
   parryggTournament,
+  offlineModeTournament,
   manualNames,
   selectedChipData,
   setSelectedChipData,
@@ -58,6 +61,7 @@ export default function RightColumn({
     tournamentType: string;
   }) => void;
   parryggTournament: ParryggTournament.AsObject | undefined;
+  offlineModeTournament: RendererOfflineModeTournament;
   manualNames: string[];
   selectedChipData: PlayerOverrides;
   setSelectedChipData: (selectedChipData: PlayerOverrides) => void;
@@ -166,6 +170,20 @@ export default function RightColumn({
       assertString(phaseGroup.id),
     );
   };
+  const selectOfflineModeSet = async (
+    set: Set,
+    phaseGroup: SelectedPhaseGroup,
+    phase: SelectedPhase,
+    event: SelectedEvent,
+  ) => {
+    selectSet(set);
+    setSelectedSetChain({ event, phase, phaseGroup });
+    await window.electron.setSelectedSetChain(
+      event.id,
+      phase.id,
+      phaseGroup.id,
+    );
+  };
 
   return (
     <>
@@ -238,6 +256,29 @@ export default function RightColumn({
             event: SelectedEvent,
           ) => {
             await selectParryggSet(set, bracket, phase, event);
+            if (guideState !== GuideState.NONE) {
+              setGuideState(GuideState.REPLAYS);
+            }
+          }}
+        />
+      )}
+      {mode === Mode.OFFLINE_MODE && (
+        <OfflineModeView
+          searchSubstr={searchSubstr}
+          offlineModeTournament={offlineModeTournament}
+          vlerkMode={vlerkMode}
+          selectedEventId={assertIntegerOrUndefined(selectedSetChain.event?.id)}
+          selectedPhaseId={assertIntegerOrUndefined(selectedSetChain.phase?.id)}
+          selectedPhaseGroupId={assertIntegerOrUndefined(
+            selectedSetChain.phaseGroup?.id,
+          )}
+          selectSet={async (
+            set: Set,
+            phaseGroup: SelectedPhaseGroup,
+            phase: SelectedPhase,
+            event: SelectedEvent,
+          ) => {
+            await selectOfflineModeSet(set, phaseGroup, phase, event);
             if (guideState !== GuideState.NONE) {
               setGuideState(GuideState.REPLAYS);
             }

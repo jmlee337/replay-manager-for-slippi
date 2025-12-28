@@ -25,6 +25,7 @@ import {
   EnforcePlayerFailure,
   Station,
   RendererWave,
+  RendererOfflineModeTournament,
   SelectedSetChain,
 } from '../common/types';
 
@@ -230,6 +231,12 @@ const electronHandler = {
     result: MatchResult.AsObject,
   ): Promise<Set> =>
     ipcRenderer.invoke('reportParryggSet', slug, setId, result),
+  getOfflineModeStatus: (): Promise<{ address: string; error: string }> =>
+    ipcRenderer.invoke('getOfflineModeStatus'),
+  getCurrentOfflineModeTournament: (): Promise<RendererOfflineModeTournament> =>
+    ipcRenderer.invoke('getCurrentOfflineModeTournament'),
+  connectToOfflineMode: (port: number): Promise<void> =>
+    ipcRenderer.invoke('connectToOfflineMode', port),
   getTournaments: (): Promise<AdminedTournament[]> =>
     ipcRenderer.invoke('getTournaments'),
   getManualNames: (): Promise<string[]> => ipcRenderer.invoke('getManualNames'),
@@ -291,6 +298,15 @@ const electronHandler = {
     ipcRenderer.removeAllListeners('enforceState');
     ipcRenderer.on('enforceState', callback);
   },
+  onOfflineModeStatus: (
+    callback: (
+      event: IpcRendererEvent,
+      offlineModeStatus: { address: string; error: string },
+    ) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('offlineModeStatus');
+    ipcRenderer.on('offlineModeStatus', callback);
+  },
   onTournament: (
     callback: (
       event: IpcRendererEvent,
@@ -299,6 +315,7 @@ const electronHandler = {
         startggTournament?: Tournament;
         challongeTournaments?: Map<string, ChallongeTournament>;
         parryggTournament?: ParryggTournament.AsObject;
+        offlineModeTournament?: RendererOfflineModeTournament;
       },
     ) => void,
     selectedSetId: Id,

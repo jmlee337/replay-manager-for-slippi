@@ -115,6 +115,13 @@ import {
 } from './host';
 import { assertInteger, assertString } from '../common/asserts';
 import { resolveHtmlPath } from './util';
+import {
+  connectToOfflineMode,
+  getCurrentOfflineModeTournament,
+  getOfflineModeStatus,
+  getSelectedOfflineModeSetChain,
+  initOfflineMode,
+} from './offlinemode';
 
 type ReplayDir = {
   dir: string;
@@ -135,6 +142,8 @@ export default function setupIPCs(
     copySettings: CopySettings;
     hideCopyButton: boolean;
   }>();
+  initOfflineMode(mainWindow);
+
   let replayDirs: ReplayDir[] = [];
   const knownUsbs = new Map<string, boolean>();
   // Helper to add a new replay directory and notify renderer
@@ -689,6 +698,13 @@ export default function setupIPCs(
         assertString(selectedPhaseGroupId),
       );
     }
+    if (mode === Mode.OFFLINE_MODE) {
+      return getSelectedOfflineModeSetChain(
+        assertInteger(selectedEventId),
+        assertInteger(selectedPhaseId),
+        assertInteger(selectedPhaseGroupId),
+      );
+    }
 
     return {};
   });
@@ -1219,6 +1235,20 @@ export default function setupIPCs(
       });
       return updatedSet;
     },
+  );
+
+  ipcMain.removeHandler('getOfflineModeStatus');
+  ipcMain.handle('getOfflineModeStatus', getOfflineModeStatus);
+
+  ipcMain.removeHandler('getCurrentOfflineModeTournament');
+  ipcMain.handle(
+    'getCurrentOfflineModeTournament',
+    getCurrentOfflineModeTournament,
+  );
+
+  ipcMain.removeHandler('connectToOfflineMode');
+  ipcMain.handle('connectToOfflineMode', (event, port: number) =>
+    connectToOfflineMode(port),
   );
 
   ipcMain.removeHandler('getTournaments');

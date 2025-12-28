@@ -342,6 +342,7 @@ export enum Mode {
   STARTGG = 'start.gg',
   CHALLONGE = 'challonge',
   PARRYGG = 'parry.gg',
+  OFFLINE_MODE = 'offline mode',
 }
 
 export type NameWithHighlight = {
@@ -402,3 +403,108 @@ export type SlpDownloadStatus =
   | { status: 'success' };
 
 export type ParryggBracket = ParryggBracketPb.AsObject & { sets?: Sets };
+
+// Offline Mode
+export enum OfflineModeSyncState {
+  SYNCED,
+  QUEUED,
+  LOCAL,
+}
+
+export type OfflineModeStation = {
+  id: number;
+  number: number;
+};
+
+export type OfflineModeStream = {
+  id: number;
+  streamName: string;
+  streamSource: string;
+};
+
+export type OfflineModeParticipant = {
+  id: number;
+  connectCode: string;
+  discordId: string;
+  discordUsername: string;
+  gamerTag: string;
+  prefix: string;
+  pronouns: string;
+  userSlug: string;
+};
+
+export type OfflineModeSet = {
+  id: number;
+  setId: number | string;
+  ordinal: number;
+  fullRoundText: string;
+  shortRoundText: string;
+  identifier: string;
+  round: number;
+  state: number;
+  entrant1Id: number | null;
+  entrant1Name: string | null;
+  entrant1Participants: OfflineModeParticipant[];
+  entrant1PrereqStr: string | null;
+  entrant1Score: number | null;
+  entrant2Id: number | null;
+  entrant2Name: string | null;
+  entrant2Participants: OfflineModeParticipant[];
+  entrant2PrereqStr: string | null;
+  entrant2Score: number | null;
+  winnerId: number | null;
+  station: OfflineModeStation | null;
+  stream: OfflineModeStream | null;
+  hasStageData: 1 | null;
+  syncState: OfflineModeSyncState;
+};
+
+export type OfflineModePool = {
+  id: number;
+  name: string;
+  bracketType: number;
+  waveId: number | null;
+  sets: OfflineModeSet[];
+};
+
+export type OfflineModePhase = {
+  id: number;
+  name: string;
+  pools: OfflineModePool[];
+  phaseOrder: number;
+};
+
+export type OfflineModeEvent = {
+  id: number;
+  name: string;
+  slug: string;
+  isOnline: boolean;
+  isLoaded: boolean;
+  phases: OfflineModePhase[];
+};
+
+export type OfflineModeTournament = {
+  id: number;
+  name: string;
+  slug: string;
+  events: OfflineModeEvent[];
+  participants: OfflineModeParticipant[];
+  stations: OfflineModeStation[];
+  streams: OfflineModeStream[];
+};
+
+export type RendererOfflineModePool = Omit<OfflineModePool, 'sets'> & {
+  sets: Sets;
+};
+export type RendererOfflineModePhase = Omit<OfflineModePhase, 'pools'> & {
+  pools: RendererOfflineModePool[];
+};
+export type RendererOfflineModeEvent = Omit<OfflineModeEvent, 'phases'> & {
+  phases: RendererOfflineModePhase[];
+};
+export type RendererOfflineModeTournament = Omit<
+  OfflineModeTournament,
+  'events'
+> & {
+  events: RendererOfflineModeEvent[];
+};

@@ -79,6 +79,7 @@ import {
   Mode,
   Output,
   PlayerOverrides,
+  RendererOfflineModeTournament,
   Replay,
   ReportSettings,
   SelectedSetChain,
@@ -116,6 +117,7 @@ import RightColumn from './RightColumn';
 import { WindowEvent } from './setWindowEventListener';
 import SlpDownloadModal from './SlpDownloadModal';
 import { assertString } from '../common/asserts';
+import OfflineModeConnection from './OfflineModeConnection';
 
 const ENFORCER_VERSION = '1.4.4';
 
@@ -289,6 +291,8 @@ function Hello() {
   const [challongeTournaments, setChallongeTournaments] = useState(
     new Map<string, ChallongeTournament>(),
   );
+  const [selectedChallongeTournament, setSelectedChallongeTournament] =
+    useState({ name: '', slug: '', tournamentType: '' });
   const [parryggTournament, setParryggTournament] =
     useState<ParryggTournament.AsObject>();
   const parryggSlug = useMemo(
@@ -298,8 +302,20 @@ function Hello() {
       )?.slug || '',
     [parryggTournament],
   );
-  const [selectedChallongeTournament, setSelectedChallongeTournament] =
-    useState({ name: '', slug: '', tournamentType: '' });
+  const [offlineModeStatus, setOfflineModeStatus] = useState({
+    address: '',
+    error: '',
+  });
+  const [offlineModeTournament, setOfflineModeTournament] =
+    useState<RendererOfflineModeTournament>({
+      id: 0,
+      name: '',
+      slug: '',
+      events: [],
+      participants: [],
+      stations: [],
+      streams: [],
+    });
   const [manualNames, setManualNames] = useState<string[]>([]);
   const [undoSubdir, setUndoSubdir] = useState('');
   const tournamentSet = useMemo(
@@ -307,11 +323,15 @@ function Hello() {
       (mode === Mode.STARTGG && startggTournament.slug.length > 0) ||
       (mode === Mode.CHALLONGE && challongeTournaments.size > 0) ||
       (mode === Mode.PARRYGG && parryggSlug.length > 0) ||
+      (mode === Mode.OFFLINE_MODE &&
+        offlineModeStatus.address.length > 0 &&
+        offlineModeStatus.error.length === 0) ||
       (mode === Mode.MANUAL && manualNames.length > 0),
     [
       challongeTournaments,
       manualNames.length,
       mode,
+      offlineModeStatus,
       parryggSlug,
       startggTournament,
     ],
@@ -351,6 +371,9 @@ function Hello() {
         window.electron.getSelectedChallongeTournament();
       const selectedParryggTournamentPromise =
         window.electron.getCurrentParryggTournament();
+      const offlineModeStatusPromise = window.electron.getOfflineModeStatus();
+      const offlineModeTournamentPromise =
+        window.electron.getCurrentOfflineModeTournament();
       const manualNamesPromise = window.electron.getManualNames();
       const undoSubdirPromise = window.electron.getUndoSubdir();
 
@@ -404,6 +427,8 @@ function Hello() {
       if (initSelectedParryggTournament) {
         setParryggTournament(initSelectedParryggTournament);
       }
+      setOfflineModeStatus(await offlineModeStatusPromise);
+      setOfflineModeTournament(await offlineModeTournamentPromise);
       setManualNames(await manualNamesPromise);
       setUndoSubdir(await undoSubdirPromise);
 
@@ -468,6 +493,9 @@ function Hello() {
         setSmuggleCostumeIndex(newHostFormat.smuggleCostumeIndex);
       }
       setHostFormat(newHostFormat);
+    });
+    window.electron.onOfflineModeStatus((event, newOfflineModeStatus) => {
+      setOfflineModeStatus(newOfflineModeStatus);
     });
   }, []);
 
@@ -853,6 +881,7 @@ function Hello() {
           startggTournament: newTournament,
           challongeTournaments: newChallongeTournaments,
           parryggTournament: newParryggTournament,
+          offlineModeTournament: newOfflineModeTournament,
         },
       ) => {
         if (newSelectedSet) {
@@ -875,6 +904,12 @@ function Hello() {
             setGuideBackdropOpen(false);
           }
           setParryggTournament(newParryggTournament);
+        }
+        if (newOfflineModeTournament) {
+          if (tournamentSet && copyDirSet && confirmedCopySettings) {
+            setGuideBackdropOpen(false);
+          }
+          setOfflineModeTournament(newOfflineModeTournament);
         }
       },
       selectedSet.id,
@@ -1580,7 +1615,11 @@ function Hello() {
           );
           subdir = subdir.replace('{tournamentSlug}', parryggSlug || '');
         }
-        if (mode === Mode.STARTGG || mode === Mode.PARRYGG) {
+        if (
+          mode === Mode.STARTGG ||
+          mode === Mode.PARRYGG ||
+          mode === Mode.OFFLINE_MODE
+        ) {
           subdir = subdir.replace(
             '{event}',
             selectedSetChain.event?.name ?? '',
@@ -1802,6 +1841,30 @@ function Hello() {
                     : selectedSet.stream,
                 },
               };
+            } else if (mode === Mode.OFFLINE_MODE) {
+              context.startgg = {
+                tournament: {
+                  name: offlineModeTournament.name,
+                  // TODO
+                  location: '',
+                },
+                event: selectedSetChain.event!,
+                phase: selectedSetChain.phase!,
+                phaseGroup: selectedSetChain.phaseGroup!,
+                set: {
+                  id:
+                    typeof setId === 'string' ||
+                    (Number.isInteger(setId) && setId > 0)
+                      ? setId
+                      : undefined,
+                  fullRoundText: selectedSet.fullRoundText,
+                  ordinal: selectedSet.ordinal,
+                  round: selectedSet.round,
+                  stream: updatedSetFields
+                    ? updatedSetFields.stream
+                    : selectedSet.stream,
+                },
+              };
             }
           }
         }
@@ -1831,7 +1894,11 @@ function Hello() {
           .map((participant) => participant.displayName)
           .join('/')}`;
         let poolName = '';
-        if (mode === Mode.STARTGG || mode === Mode.PARRYGG) {
+        if (
+          mode === Mode.STARTGG ||
+          mode === Mode.PARRYGG ||
+          mode === Mode.OFFLINE_MODE
+        ) {
           poolName = selectedSetChain.phaseGroup?.name ?? '';
         } else if (mode === Mode.CHALLONGE) {
           poolName = selectedChallongeTournament.name;
@@ -2251,6 +2318,12 @@ function Hello() {
                 </Dialog>
               </Stack>
             )}
+            {mode === Mode.OFFLINE_MODE && (
+              <OfflineModeConnection
+                offlineModeStatus={offlineModeStatus}
+                offlineModeTournament={offlineModeTournament}
+              />
+            )}
             {mode === Mode.MANUAL && (
               <ManualBar
                 manualDialogOpen={manualDialogOpen}
@@ -2458,6 +2531,7 @@ function Hello() {
             getChallongeTournament={getChallongeTournament}
             setSelectedChallongeTournament={setSelectedChallongeTournament}
             parryggTournament={parryggTournament}
+            offlineModeTournament={offlineModeTournament}
             manualNames={manualNames}
             selectedChipData={selectedChipData}
             setSelectedChipData={setSelectedChipData}
