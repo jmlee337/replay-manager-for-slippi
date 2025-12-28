@@ -293,6 +293,19 @@ export default function setupIPCs(
     mode = newMode;
   });
 
+  let selectedEventId: Id;
+  let selectedPhaseId: Id;
+  let selectedPhaseGroupId: Id;
+  if (mode === Mode.PARRYGG) {
+    selectedEventId = '';
+    selectedPhaseId = '';
+    selectedPhaseGroupId = '';
+  } else {
+    selectedEventId = 0;
+    selectedPhaseId = 0;
+    selectedPhaseGroupId = 0;
+  }
+
   let undoSrcFullPath = '';
   ipcMain.removeHandler('getReplaysDir');
   ipcMain.handle('getReplaysDir', () => {
@@ -681,9 +694,6 @@ export default function setupIPCs(
   ipcMain.removeHandler('getCurrentTournament');
   ipcMain.handle('getCurrentTournament', getCurrentTournament);
 
-  let selectedEventId: Id = 0;
-  let selectedPhaseId: Id = 0;
-  let selectedPhaseGroupId: Id = 0;
   ipcMain.removeHandler('getSelectedSetChain');
   ipcMain.handle('getSelectedSetChain', (): SelectedSetChain => {
     if (mode === Mode.STARTGG) {
