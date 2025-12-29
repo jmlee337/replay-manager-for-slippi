@@ -150,7 +150,10 @@ function toSet(set: OfflineModeSet): Omit<Set, 'id'> & { id: number } {
     entrant2Id: set.entrant2Id,
     entrant2Participants: set.entrant2Participants.map(toParticipant),
     entrant2Score: set.entrant2Score,
-    gameScores: [], // TODO
+    gameScores: set.games.map((game) => ({
+      entrant1Score: game.entrant1Score,
+      entrant2Score: game.entrant2Score,
+    })),
     stream: set.stream
       ? {
           id: set.stream.id,

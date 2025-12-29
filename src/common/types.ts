@@ -422,6 +422,12 @@ export type OfflineModeStream = {
   streamSource: string;
 };
 
+export type OfflineModeGame = {
+  entrant1Score: number | null;
+  entrant2Score: number | null;
+  stageId: number | null;
+};
+
 export type OfflineModeParticipant = {
   id: number;
   connectCode: string;
@@ -452,12 +458,12 @@ export type OfflineModeSet = {
   entrant2Participants: OfflineModeParticipant[];
   entrant2PrereqStr: string | null;
   entrant2Score: number | null;
+  games: OfflineModeGame[];
   winnerId: number | null;
   updatedAt: number;
   completedAt: number | null;
   station: OfflineModeStation | null;
   stream: OfflineModeStream | null;
-  hasStageData: 1 | null;
   syncState: OfflineModeSyncState;
 };
 
