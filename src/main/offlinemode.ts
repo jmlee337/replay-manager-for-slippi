@@ -10,6 +10,7 @@ import {
   RendererOfflineModeTournament,
   SelectedSetChain,
   Set,
+  StartggGame,
   State,
 } from '../common/types';
 
@@ -129,7 +130,6 @@ function toParticipant(participant: OfflineModeParticipant): Participant {
   };
 }
 
-// TODO: set these on report
 const reportedSetIds = new Map<number, boolean>();
 function toSet(set: OfflineModeSet): Omit<Set, 'id'> & { id: number } {
   if (set.entrant1Id === null) {
@@ -174,13 +174,14 @@ function toSet(set: OfflineModeSet): Omit<Set, 'id'> & { id: number } {
   };
 }
 
+let nextNum = 1;
 let websocket: WebSocket | null = null;
 function cleanup() {
   websocket?.removeAllListeners();
   websocket = null;
 
+  nextNum = 1;
   setTournament(INITIAL_TOURNAMENT);
-  setStatus('', '');
   idToSet.clear();
   selectedSetId = 0;
 }
@@ -207,41 +208,229 @@ export function connectToOfflineMode(port: number) {
         const message = JSON.parse(data.toString());
         if (message.op === 'tournament-update-event') {
           idToSet.clear();
-          const newTournament = message.tournament as OfflineModeTournament;
-          setTournament({
-            ...newTournament,
-            events: newTournament.events.map((event) => ({
-              ...event,
-              phases: event.phases.map((phase) => ({
-                ...phase,
-                pools: phase.pools.map((pool) => {
-                  const completedSets: Set[] = [];
-                  const pendingSets: Set[] = [];
-                  pool.sets.forEach((offlineModeSet) => {
-                    if (
-                      offlineModeSet.entrant1Id &&
-                      offlineModeSet.entrant2Id
-                    ) {
-                      const set = toSet(offlineModeSet);
-                      idToSet.set(set.id, set);
-                      if (set.state === State.COMPLETED) {
-                        completedSets.push(set);
-                      } else {
-                        pendingSets.push(set);
+          if (message.tournament) {
+            const newTournament = message.tournament as OfflineModeTournament;
+            setTournament({
+              ...newTournament,
+              events: newTournament.events.map((event) => ({
+                ...event,
+                phases: event.phases.map((phase) => ({
+                  ...phase,
+                  pools: phase.pools.map((pool) => {
+                    const completedSets: Set[] = [];
+                    const pendingSets: Set[] = [];
+                    pool.sets.forEach((offlineModeSet) => {
+                      if (
+                        offlineModeSet.entrant1Id &&
+                        offlineModeSet.entrant2Id
+                      ) {
+                        const set = toSet(offlineModeSet);
+                        idToSet.set(set.id, set);
+                        if (set.state === State.COMPLETED) {
+                          completedSets.push(set);
+                        } else {
+                          pendingSets.push(set);
+                        }
                       }
-                    }
-                  });
-                  return {
-                    ...pool,
-                    sets: { completedSets, pendingSets },
-                  };
-                }),
+                    });
+                    return {
+                      ...pool,
+                      sets: { completedSets, pendingSets },
+                    };
+                  }),
+                })),
               })),
-            })),
-          });
+            });
+          } else {
+            setTournament(INITIAL_TOURNAMENT);
+          }
         }
       } catch {
         // just catch
       }
     });
+}
+
+type Request = {
+  num: number;
+  id: number;
+} & (
+  | {
+      op: 'reset-set-request' | 'call-set-request' | 'start-set-request';
+    }
+  | {
+      op: 'assign-set-station-request';
+      stationId: number;
+    }
+  | {
+      op: 'assign-set-stream-request';
+      streamId: number;
+    }
+  | {
+      op: 'report-set-request';
+      winnerId: number;
+      isDQ: boolean;
+      gameData: StartggGame[];
+    }
+);
+
+type ResponseOp =
+  | 'reset-set-response'
+  | 'call-set-response'
+  | 'start-set-response'
+  | 'assign-set-station-response'
+  | 'assign-set-stream-response'
+  | 'report-set-response';
+
+type Response = {
+  num: number;
+  op: ResponseOp;
+  err?: string;
+  data?: {
+    set: OfflineModeSet;
+  };
+};
+
+function getExpectedResponseOp(request: Request): ResponseOp {
+  switch (request.op) {
+    case 'reset-set-request':
+      return 'reset-set-response';
+    case 'call-set-request':
+      return 'call-set-response';
+    case 'start-set-request':
+      return 'start-set-response';
+    case 'assign-set-station-request':
+      return 'assign-set-station-response';
+    case 'assign-set-stream-request':
+      return 'assign-set-stream-response';
+    case 'report-set-request':
+      return 'report-set-response';
+    default:
+      throw new Error('unreachable');
+  }
+}
+
+async function sendRequest(request: Request) {
+  const expectedOp = getExpectedResponseOp(request);
+  return new Promise<OfflineModeSet>((resolve, reject) => {
+    if (websocket === null) {
+      reject(new Error('offline mode not connected'));
+      return;
+    }
+
+    const listener = (data: WebSocket.RawData) => {
+      try {
+        const message = JSON.parse(data.toString()) as Response;
+        if (message.num === request.num && message.op === expectedOp) {
+          websocket?.removeListener('message', listener);
+          if (message.err) {
+            reject(new Error(message.err));
+          } else if (!message.data) {
+            reject(new Error('no data'));
+          } else {
+            resolve(message.data.set);
+          }
+        }
+      } catch {
+        // just catch
+      }
+    };
+    websocket.addListener('message', listener);
+    websocket.send(JSON.stringify(request));
+  });
+}
+
+export async function resetOfflineModeSet(id: number): Promise<Set> {
+  const num = nextNum;
+  nextNum += 1;
+
+  const resetSetRequest: Request = {
+    num,
+    op: 'reset-set-request',
+    id,
+  };
+  const updatedSet = await sendRequest(resetSetRequest);
+  return toSet(updatedSet);
+}
+
+export async function callOfflineModeSet(id: number): Promise<Set> {
+  const num = nextNum;
+  nextNum += 1;
+
+  const callSetRequest: Request = {
+    num,
+    op: 'call-set-request',
+    id,
+  };
+  const updatedSet = await sendRequest(callSetRequest);
+  return toSet(updatedSet);
+}
+
+export async function startOfflineModeSet(id: number): Promise<Set> {
+  const num = nextNum;
+  nextNum += 1;
+
+  const startSetRequest: Request = {
+    num,
+    op: 'start-set-request',
+    id,
+  };
+  const updatedSet = await sendRequest(startSetRequest);
+  return toSet(updatedSet);
+}
+
+export async function assignOfflineModeSetStation(
+  id: number,
+  stationId: number,
+): Promise<Set> {
+  const num = nextNum;
+  nextNum += 1;
+
+  const assignSetStationRequest: Request = {
+    num,
+    op: 'assign-set-station-request',
+    id,
+    stationId,
+  };
+  const updatedSet = await sendRequest(assignSetStationRequest);
+  return toSet(updatedSet);
+}
+
+export async function assignOfflineModeSetStream(
+  id: number,
+  streamId: number,
+): Promise<Set> {
+  const num = nextNum;
+  nextNum += 1;
+
+  const assignSetStreamRequest: Request = {
+    num,
+    op: 'assign-set-stream-request',
+    id,
+    streamId,
+  };
+  const updatedSet = await sendRequest(assignSetStreamRequest);
+  return toSet(updatedSet);
+}
+
+export async function reportOfflineModeSet(
+  id: number,
+  winnerId: number,
+  isDQ: boolean,
+  gameData: StartggGame[],
+): Promise<Set> {
+  const num = nextNum;
+  nextNum += 1;
+
+  const reportSetRequest: Request = {
+    num,
+    op: 'report-set-request',
+    id,
+    winnerId,
+    isDQ,
+    gameData,
+  };
+  const updatedSet = await sendRequest(reportSetRequest);
+  reportedSetIds.set(updatedSet.id, true);
+  return toSet(updatedSet);
 }

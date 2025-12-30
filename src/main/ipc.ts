@@ -116,13 +116,19 @@ import {
 import { assertInteger, assertString } from '../common/asserts';
 import { resolveHtmlPath } from './util';
 import {
+  assignOfflineModeSetStation,
+  assignOfflineModeSetStream,
+  callOfflineModeSet,
   connectToOfflineMode,
   getCurrentOfflineModeTournament,
   getOfflineModeStatus,
   getSelectedOfflineModeSet,
   getSelectedOfflineModeSetChain,
   initOfflineMode,
+  reportOfflineModeSet,
+  resetOfflineModeSet,
   setSelectedOfflineModeSetId,
+  startOfflineModeSet,
 } from './offlinemode';
 
 type ReplayDir = {
@@ -1116,9 +1122,13 @@ export default function setupIPCs(
   ipcMain.removeHandler('reportChallongeSet');
   ipcMain.handle(
     'reportChallongeSet',
-    async (event, slug: string, id: string, items: ChallongeMatchItem[]) => {
+    async (event, id: string, items: ChallongeMatchItem[]) => {
       if (!challongeApiKey) {
         throw new Error('Please set Challonge API key.');
+      }
+      const slug = getSelectedTournament()?.slug;
+      if (!slug) {
+        throw new Error('unreachable, no selected challonge tournament');
       }
 
       const updatedSet = await reportChallongeSet(
@@ -1227,12 +1237,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('reportParryggSet');
   ipcMain.handle(
     'reportParryggSet',
-    async (
-      event,
-      slug: string,
-      setId: string,
-      result: MatchResult.AsObject,
-    ) => {
+    async (event, setId: string, result: MatchResult.AsObject) => {
       if (!parryggApiKey) {
         throw new Error('Please set parry.gg API key.');
       }
@@ -1261,6 +1266,45 @@ export default function setupIPCs(
   ipcMain.removeHandler('connectToOfflineMode');
   ipcMain.handle('connectToOfflineMode', (event, port: number) =>
     connectToOfflineMode(port),
+  );
+
+  ipcMain.removeHandler('resetOfflineModeSet');
+  ipcMain.handle('resetOfflineModeSet', (event, id: number) =>
+    resetOfflineModeSet(id),
+  );
+
+  ipcMain.removeHandler('callOfflineModeSet');
+  ipcMain.handle('callOfflineModeSet', (event, id: number) =>
+    callOfflineModeSet(id),
+  );
+
+  ipcMain.removeHandler('startOfflineModeSet');
+  ipcMain.handle('startOfflineModeSet', (event, id: number) =>
+    startOfflineModeSet(id),
+  );
+
+  ipcMain.removeHandler('assignOfflineModeSetStation');
+  ipcMain.handle(
+    'assignOfflineModeSetStation',
+    (event, id: number, stationId: number) =>
+      assignOfflineModeSetStation(id, stationId),
+  );
+
+  ipcMain.removeHandler('assignOfflineModeSetStream');
+  ipcMain.handle(
+    'assignOfflineModeSetStream',
+    (event, id: number, streamId: number) =>
+      assignOfflineModeSetStream(id, streamId),
+  );
+
+  ipcMain.removeHandler('reportOfflineModeSet');
+  ipcMain.handle('reportOfflineModeSet', (event, set: StartggSet) =>
+    reportOfflineModeSet(
+      assertInteger(set.setId),
+      assertInteger(set.winnerId),
+      set.isDQ,
+      set.gameData,
+    ),
   );
 
   ipcMain.removeHandler('getTournaments');

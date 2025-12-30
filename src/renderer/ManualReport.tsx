@@ -74,6 +74,7 @@ export default function ManualReport({
   reportChallongeSet,
   reportStartggSet,
   reportParryggSet,
+  reportOfflineModeSet,
   selectedSet,
 }: {
   mode: Mode;
@@ -89,6 +90,7 @@ export default function ManualReport({
     result: MatchResult.AsObject,
     originalSet: Set,
   ) => Promise<Set | undefined>;
+  reportOfflineModeSet: (set: StartggSet) => Promise<Set>;
   selectedSet: Set;
 }) {
   const [open, setOpen] = useState(false);
@@ -144,7 +146,11 @@ export default function ManualReport({
   const [reportErrorOpen, setReportErrorOpen] = useState(false);
 
   let winnerId: Id = 0;
-  if (mode === Mode.STARTGG || mode === Mode.PARRYGG) {
+  if (
+    mode === Mode.STARTGG ||
+    mode === Mode.PARRYGG ||
+    mode === Mode.OFFLINE_MODE
+  ) {
     if (entrant1Win || entrant2Dq) {
       winnerId = selectedSet.entrant1Id;
     } else if (entrant2Win || entrant1Dq) {
@@ -157,20 +163,16 @@ export default function ManualReport({
       winnerId = selectedSet.entrant2Id;
     }
   }
-  const gameData =
-    mode === Mode.STARTGG
-      ? createStartggGameData(
-          entrant1Score,
-          entrant2Score,
-          selectedSet.entrant1Id,
-          selectedSet.entrant2Id,
-        )
-      : [];
   const getStartggSet = () => ({
     setId: selectedSet.id,
     winnerId: assertInteger(winnerId),
     isDQ: entrant1Dq || entrant2Dq,
-    gameData,
+    gameData: createStartggGameData(
+      entrant1Score,
+      entrant2Score,
+      selectedSet.entrant1Id,
+      selectedSet.entrant2Id,
+    ),
   });
   const challongeMatchItems: ChallongeMatchItem[] = [
     {
@@ -266,7 +268,9 @@ export default function ManualReport({
                 )}
               </EntrantNames>
               <Stack direction="row" spacing="8px">
-                {(mode === Mode.STARTGG || mode === Mode.PARRYGG) && (
+                {(mode === Mode.STARTGG ||
+                  mode === Mode.PARRYGG ||
+                  mode === Mode.OFFLINE_MODE) && (
                   <>
                     <ThinButton
                       color="secondary"
@@ -355,7 +359,7 @@ export default function ManualReport({
                     >
                       3
                     </ThinButton>
-                    {mode === Mode.STARTGG && (
+                    {(mode === Mode.STARTGG || mode === Mode.OFFLINE_MODE) && (
                       <ThinButton
                         color="secondary"
                         variant={entrant1Win ? 'contained' : 'outlined'}
@@ -434,7 +438,9 @@ export default function ManualReport({
                 )}
               </EntrantNames>
               <Stack direction="row" spacing="8px">
-                {(mode === Mode.STARTGG || mode === Mode.PARRYGG) && (
+                {(mode === Mode.STARTGG ||
+                  mode === Mode.PARRYGG ||
+                  mode === Mode.OFFLINE_MODE) && (
                   <>
                     <ThinButton
                       color="secondary"
@@ -523,7 +529,7 @@ export default function ManualReport({
                     >
                       3
                     </ThinButton>
-                    {mode === Mode.STARTGG && (
+                    {(mode === Mode.STARTGG || mode === Mode.OFFLINE_MODE) && (
                       <ThinButton
                         color="secondary"
                         variant={entrant2Win ? 'contained' : 'outlined'}
@@ -607,6 +613,8 @@ export default function ManualReport({
                   );
                 } else if (mode === Mode.PARRYGG) {
                   await reportParryggSet(parryggSetResult, selectedSet);
+                } else if (mode === Mode.OFFLINE_MODE) {
+                  await reportOfflineModeSet(getStartggSet());
                 }
                 resetFormToZero();
                 setOpen(false);

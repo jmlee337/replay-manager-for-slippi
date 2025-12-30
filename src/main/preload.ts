@@ -197,11 +197,8 @@ const electronHandler = {
     ipcRenderer.invoke('getChallongeTournament', slug),
   startChallongeSet: (slug: string, id: string): Promise<void> =>
     ipcRenderer.invoke('startChallongeSet', slug, id),
-  reportChallongeSet: (
-    slug: string,
-    id: string,
-    items: ChallongeMatchItem[],
-  ): Promise<Set> => ipcRenderer.invoke('reportChallongeSet', slug, id, items),
+  reportChallongeSet: (id: string, items: ChallongeMatchItem[]): Promise<Set> =>
+    ipcRenderer.invoke('reportChallongeSet', id, items),
 
   getParryggKey: (): Promise<string> => ipcRenderer.invoke('getParryggKey'),
   setParryggKey: (parryggKey: string): Promise<void> =>
@@ -227,17 +224,27 @@ const electronHandler = {
   startParryggSet: (setId: string): Promise<void> =>
     ipcRenderer.invoke('startParryggSet', setId),
   reportParryggSet: (
-    slug: string,
     setId: string,
     result: MatchResult.AsObject,
-  ): Promise<Set> =>
-    ipcRenderer.invoke('reportParryggSet', slug, setId, result),
+  ): Promise<Set> => ipcRenderer.invoke('reportParryggSet', setId, result),
   getOfflineModeStatus: (): Promise<OfflineModeStatus> =>
     ipcRenderer.invoke('getOfflineModeStatus'),
   getCurrentOfflineModeTournament: (): Promise<RendererOfflineModeTournament> =>
     ipcRenderer.invoke('getCurrentOfflineModeTournament'),
   connectToOfflineMode: (port: number): Promise<void> =>
     ipcRenderer.invoke('connectToOfflineMode', port),
+  resetOfflineModeSet: (id: number): Promise<Set> =>
+    ipcRenderer.invoke('resetOfflineModeSet', id),
+  callOfflineModeSet: (id: number): Promise<Set> =>
+    ipcRenderer.invoke('callOfflineModeSet', id),
+  startOfflineModeSet: (id: number): Promise<Set> =>
+    ipcRenderer.invoke('startOfflineModeSet', id),
+  assignOfflineModeSetStation: (id: number, stationId: number): Promise<Set> =>
+    ipcRenderer.invoke('assignOfflineModeSetStation', id, stationId),
+  assignOfflineModeSetStream: (id: number, streamId: number): Promise<Set> =>
+    ipcRenderer.invoke('assignOfflineModeSetStream', id, streamId),
+  reportOfflineModeSet: (set: StartggSet): Promise<Set> =>
+    ipcRenderer.invoke('reportOfflineModeSet', set),
   getTournaments: (): Promise<AdminedTournament[]> =>
     ipcRenderer.invoke('getTournaments'),
   getManualNames: (): Promise<string[]> => ipcRenderer.invoke('getManualNames'),

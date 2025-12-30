@@ -584,9 +584,9 @@ function Hello() {
     ]);
   };
   const [dq, setDq] = useState({ displayName: '', entrantId: 0 });
-  const resetDq = () => {
+  const resetDq = useCallback(() => {
     setDq({ displayName: '', entrantId: 0 });
-  };
+  }, []);
 
   // Replay list
   const [allReplaysSelected, setAllReplaysSelected] = useState(true);
@@ -1313,39 +1313,47 @@ function Hello() {
     }
   };
 
-  const reportStartggSet = async (set: StartggSet, originalSet: Set) => {
-    const updatedSet =
-      originalSet.state === State.COMPLETED
-        ? await window.electron.updateSet(set)
-        : await window.electron.reportSet(set, originalSet);
-    resetDq();
-    return updatedSet;
-  };
-  const reportChallongeSet = async (
-    matchId: string,
-    items: ChallongeMatchItem[],
-  ) => {
-    const updatedSet = await window.electron.reportChallongeSet(
-      selectedChallongeTournament.slug,
-      matchId,
-      items,
-    );
-    resetDq();
-    return updatedSet;
-  };
-
-  const reportParryggSet = async (
-    result: MatchResult.AsObject,
-    originalSet: Set,
-  ) => {
-    const updatedSet = await window.electron.reportParryggSet(
-      parryggSlug,
-      assertString(originalSet.id),
-      result,
-    );
-    resetDq();
-    return updatedSet;
-  };
+  const reportStartggSet = useCallback(
+    async (set: StartggSet, originalSet: Set) => {
+      const updatedSet =
+        originalSet.state === State.COMPLETED
+          ? await window.electron.updateSet(set)
+          : await window.electron.reportSet(set, originalSet);
+      resetDq();
+      return updatedSet;
+    },
+    [resetDq],
+  );
+  const reportChallongeSet = useCallback(
+    async (matchId: string, items: ChallongeMatchItem[]) => {
+      const updatedSet = await window.electron.reportChallongeSet(
+        matchId,
+        items,
+      );
+      resetDq();
+      return updatedSet;
+    },
+    [resetDq],
+  );
+  const reportParryggSet = useCallback(
+    async (result: MatchResult.AsObject, originalSet: Set) => {
+      const updatedSet = await window.electron.reportParryggSet(
+        assertString(originalSet.id),
+        result,
+      );
+      resetDq();
+      return updatedSet;
+    },
+    [resetDq],
+  );
+  const reportOfflineModeSet = useCallback(
+    async (set: StartggSet) => {
+      const updatedSet = await window.electron.reportOfflineModeSet(set);
+      resetDq();
+      return updatedSet;
+    },
+    [resetDq],
+  );
 
   // copy
   type NameObj = {
@@ -3039,6 +3047,7 @@ function Hello() {
                 reportChallongeSet={reportChallongeSet}
                 reportStartggSet={reportStartggSet}
                 reportParryggSet={reportParryggSet}
+                reportOfflineModeSet={reportOfflineModeSet}
                 selectedSet={selectedSet}
               />
               <SetControls
@@ -3051,6 +3060,7 @@ function Hello() {
                 reportChallongeSet={reportChallongeSet}
                 reportStartggSet={reportStartggSet}
                 reportParryggSet={reportParryggSet}
+                reportOfflineModeSet={reportOfflineModeSet}
                 setReportSettings={async (
                   newReportSettings: ReportSettings,
                 ) => {

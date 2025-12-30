@@ -205,6 +205,7 @@ export default function SetControls({
   reportChallongeSet,
   reportStartggSet,
   reportParryggSet,
+  reportOfflineModeSet,
   setReportSettings,
   resetGuide,
   mode,
@@ -249,6 +250,7 @@ export default function SetControls({
     result: MatchResult.AsObject,
     originalSet: Set,
   ) => Promise<Set | undefined>;
+  reportOfflineModeSet: (set: StartggSet) => Promise<Set>;
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
   resetGuide: () => void;
   mode: Mode;
@@ -510,7 +512,7 @@ export default function SetControls({
         <ReportButton
           elevate={elevate}
           onClick={() => {
-            if (mode === Mode.STARTGG) {
+            if (mode === Mode.STARTGG || mode === Mode.OFFLINE_MODE) {
               setStartggSet(getStartggSet());
             } else if (mode === Mode.CHALLONGE) {
               setChallongeMatchItems(getChallongeMatchItems());
@@ -553,6 +555,7 @@ export default function SetControls({
           Report set on {mode === Mode.STARTGG && 'start.gg'}
           {mode === Mode.CHALLONGE && 'Challonge'}
           {mode === Mode.PARRYGG && 'parry.gg'}
+          {mode === Mode.OFFLINE_MODE && 'Offline Mode'}
         </DialogTitle>
         <DialogContent sx={{ width: '500px' }}>
           <Stack>
@@ -604,7 +607,7 @@ export default function SetControls({
           </Stack>
           <Divider sx={{ marginTop: '16px' }} />
           <Stack flexGrow={1}>
-            {mode === Mode.STARTGG &&
+            {(mode === Mode.STARTGG || mode === Mode.OFFLINE_MODE) &&
               startggSet.gameData.map((gameData) => (
                 <Stack key={gameData.gameNum} marginTop="8px">
                   {gameData.stageId && (
@@ -933,6 +936,8 @@ export default function SetControls({
                   );
                 } else if (mode === Mode.PARRYGG) {
                   updatedSet = await reportParryggSet(parryggMatchResult, set);
+                } else if (mode === Mode.OFFLINE_MODE) {
+                  updatedSet = await reportOfflineModeSet(startggSet);
                 }
                 if (reportSettings.alsoCopy || undoSubdir) {
                   const entrantIdToDisplayNameAndCheckNames = new Map<
