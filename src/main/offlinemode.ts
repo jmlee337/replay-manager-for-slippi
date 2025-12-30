@@ -39,6 +39,13 @@ export function initOfflineMode(initMainWindow: BrowserWindow) {
   selectedSetId = 0;
   tournament = INITIAL_TOURNAMENT;
 }
+export function setSelectedOfflineModeSetId(id: number) {
+  selectedSetId = id;
+}
+
+export function getSelectedOfflineModeSet() {
+  return idToSet.get(selectedSetId);
+}
 
 function setStatus(newAddress: string, newError?: string) {
   address = newAddress;
@@ -51,6 +58,7 @@ function setStatus(newAddress: string, newError?: string) {
 function setTournament(newTournament: RendererOfflineModeTournament) {
   tournament = newTournament;
   mainWindow?.webContents.send('tournament', {
+    selectedSet: getSelectedOfflineModeSet(),
     offlineModeTournament: tournament,
   });
 }
@@ -61,14 +69,6 @@ export function getOfflineModeStatus() {
 
 export function getCurrentOfflineModeTournament() {
   return tournament;
-}
-
-export function setSelectedOfflineModeSetId(id: number) {
-  selectedSetId = id;
-}
-
-export function getSelectedOfflineModeSet() {
-  return idToSet.get(selectedSetId);
 }
 
 export function getSelectedOfflineModeSetChain(
