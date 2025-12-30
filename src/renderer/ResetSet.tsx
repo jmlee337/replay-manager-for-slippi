@@ -13,6 +13,7 @@ import {
 import { useState } from 'react';
 import { Mode, Set, State } from '../common/types';
 import SetView from './SetView';
+import { assertInteger } from '../common/asserts';
 
 export default function ResetSet({
   mode,
@@ -37,7 +38,7 @@ export default function ResetSet({
               (selectedSet.id as number) <= 0 ||
               selectedSet.state === State.PENDING ||
               resetting ||
-              mode !== Mode.STARTGG
+              (mode !== Mode.STARTGG && mode !== Mode.OFFLINE_MODE)
             }
             size="small"
             onClick={() => setConfirmOpen(true)}
@@ -84,7 +85,11 @@ export default function ResetSet({
               setResetting(true);
               try {
                 if (mode === Mode.STARTGG) {
-                  await window.electron.resetSet(selectedSet.id as number);
+                  await window.electron.resetSet(assertInteger(selectedSet.id));
+                } else if (mode === Mode.OFFLINE_MODE) {
+                  await window.electron.resetOfflineModeSet(
+                    assertInteger(selectedSet.id),
+                  );
                 }
                 setConfirmOpen(false);
               } catch (e: any) {

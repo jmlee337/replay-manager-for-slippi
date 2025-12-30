@@ -28,6 +28,7 @@ import {
   RendererOfflineModeTournament,
   SelectedSetChain,
   OfflineModeStatus,
+  StartggGame,
 } from '../common/types';
 
 const electronHandler = {
@@ -243,8 +244,13 @@ const electronHandler = {
     ipcRenderer.invoke('assignOfflineModeSetStation', id, stationId),
   assignOfflineModeSetStream: (id: number, streamId: number): Promise<Set> =>
     ipcRenderer.invoke('assignOfflineModeSetStream', id, streamId),
-  reportOfflineModeSet: (set: StartggSet): Promise<Set> =>
-    ipcRenderer.invoke('reportOfflineModeSet', set),
+  reportOfflineModeSet: (
+    id: number,
+    winnerId: number,
+    isDQ: boolean,
+    gameData: StartggGame[],
+  ): Promise<Set> =>
+    ipcRenderer.invoke('reportOfflineModeSet', id, winnerId, isDQ, gameData),
   getTournaments: (): Promise<AdminedTournament[]> =>
     ipcRenderer.invoke('getTournaments'),
   getManualNames: (): Promise<string[]> => ipcRenderer.invoke('getManualNames'),

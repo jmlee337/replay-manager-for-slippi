@@ -240,6 +240,11 @@ export function connectToOfflineMode(port: number) {
                   }),
                 })),
               })),
+              streams: newTournament.streams.map((stream) => ({
+                id: stream.id,
+                domain: stream.streamSource.toLowerCase(),
+                path: stream.streamName,
+              })),
             });
           } else {
             setTournament(INITIAL_TOURNAMENT);

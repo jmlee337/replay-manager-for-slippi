@@ -514,9 +514,10 @@ export type RendererOfflineModeEvent = Omit<OfflineModeEvent, 'phases'> & {
 };
 export type RendererOfflineModeTournament = Omit<
   OfflineModeTournament,
-  'events'
+  'events' | 'streams'
 > & {
   events: RendererOfflineModeEvent[];
+  streams: Stream[];
 };
 
 export type OfflineModeStatus = {

@@ -117,7 +117,7 @@ import getCharacterIcon from './getCharacterIcon';
 import RightColumn from './RightColumn';
 import { WindowEvent } from './setWindowEventListener';
 import SlpDownloadModal from './SlpDownloadModal';
-import { assertString } from '../common/asserts';
+import { assertInteger, assertString } from '../common/asserts';
 import OfflineModeConnection from './OfflineModeConnection';
 
 const ENFORCER_VERSION = '1.4.4';
@@ -1284,6 +1284,8 @@ function Hello() {
     try {
       if (mode === Mode.STARTGG) {
         await window.electron.callSet(originalSet);
+      } else if (mode === Mode.OFFLINE_MODE) {
+        await window.electron.callOfflineModeSet(assertInteger(originalSet.id));
       }
     } catch (e: any) {
       showErrorDialog([e.toString()]);
@@ -1305,6 +1307,10 @@ function Hello() {
         );
       } else if (mode === Mode.PARRYGG) {
         await window.electron.startParryggSet(assertString(originalSet.id));
+      } else if (mode === Mode.OFFLINE_MODE) {
+        await window.electron.startOfflineModeSet(
+          assertInteger(originalSet.id),
+        );
       }
     } catch (e: any) {
       showErrorDialog([e.toString()]);
@@ -1348,7 +1354,12 @@ function Hello() {
   );
   const reportOfflineModeSet = useCallback(
     async (set: StartggSet) => {
-      const updatedSet = await window.electron.reportOfflineModeSet(set);
+      const updatedSet = await window.electron.reportOfflineModeSet(
+        assertInteger(set.setId),
+        assertInteger(set.winnerId),
+        set.isDQ,
+        set.gameData,
+      );
       resetDq();
       return updatedSet;
     },
@@ -2990,9 +3001,14 @@ function Hello() {
               )}
             </Stack>
             <Stack direction="row" justifyContent="flex-end" paddingTop="8px">
-              <AssignStream mode={mode} selectedSet={selectedSet} />
+              <AssignStream
+                mode={mode}
+                selectedSet={selectedSet}
+                offlineModeStreams={offlineModeTournament.streams}
+                offlineModeStations={offlineModeTournament.stations}
+              />
               <ResetSet mode={mode} selectedSet={selectedSet} />
-              {mode === Mode.STARTGG && (
+              {(mode === Mode.STARTGG || mode === Mode.OFFLINE_MODE) && (
                 <Tooltip arrow title="Mark set called">
                   <div>
                     <IconButton

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Button,
   CircularProgress,
@@ -16,17 +16,51 @@ import {
 import { Tv } from '@mui/icons-material';
 import { Mode, Set, State, Station, Stream } from '../common/types';
 import SetView from './SetView';
+import { assertInteger } from '../common/asserts';
+
+function getCombinedStreamName(stream: Stream) {
+  let prefix = '';
+  if (stream.domain === 'twitch') {
+    prefix = 'ttv/';
+  } else if (stream.domain === 'youtube') {
+    prefix = 'yt/';
+  }
+  return prefix + stream.path;
+}
 
 export default function AssignStream({
   mode,
   selectedSet,
+  offlineModeStreams,
+  offlineModeStations,
 }: {
   mode: Mode;
   selectedSet: Set;
+  offlineModeStreams: Stream[];
+  offlineModeStations: Station[];
 }) {
+  const [startggStreams, setStartggStreams] = useState<Stream[]>([]);
+  const [startggStations, setStartggStations] = useState<Station[]>([]);
+  const streams = useMemo(() => {
+    if (mode === Mode.STARTGG) {
+      return startggStreams;
+    }
+    if (mode === Mode.OFFLINE_MODE) {
+      return offlineModeStreams;
+    }
+    return [];
+  }, [mode, offlineModeStreams, startggStreams]);
+  const stations = useMemo(() => {
+    if (mode === Mode.STARTGG) {
+      return startggStations;
+    }
+    if (mode === Mode.OFFLINE_MODE) {
+      return offlineModeStations;
+    }
+    return [];
+  }, [mode, offlineModeStations, startggStations]);
+
   const [chooseOpen, setChooseOpen] = useState(false);
-  const [streams, setStreams] = useState<Stream[]>([]);
-  const [stations, setStations] = useState<Station[]>([]);
   const [gettingStreamsAndStations, setGettingStreamsAndStations] =
     useState(false);
 
@@ -39,6 +73,11 @@ export default function AssignStream({
     try {
       if (mode === Mode.STARTGG) {
         await window.electron.assignStream(selectedSet, streamId);
+      } else if (mode === Mode.OFFLINE_MODE) {
+        await window.electron.assignOfflineModeSetStream(
+          assertInteger(selectedSet.id),
+          streamId,
+        );
       }
       setChooseOpen(false);
     } catch (e: any) {
@@ -53,6 +92,11 @@ export default function AssignStream({
     try {
       if (mode === Mode.STARTGG) {
         await window.electron.assignStation(selectedSet, stationId);
+      } else if (mode === Mode.OFFLINE_MODE) {
+        await window.electron.assignOfflineModeSetStation(
+          assertInteger(selectedSet.id),
+          stationId,
+        );
       }
       setChooseOpen(false);
     } catch (e: any) {
@@ -73,17 +117,20 @@ export default function AssignStream({
               !(
                 typeof selectedSet.id === 'string' ||
                 (Number.isInteger(selectedSet.id) && selectedSet.id > 0)
-              ) || mode !== Mode.STARTGG
+              ) ||
+              (mode !== Mode.STARTGG && mode !== Mode.OFFLINE_MODE)
             }
             size="small"
             onClick={async () => {
               setChooseOpen(true);
-              setGettingStreamsAndStations(true);
-              const streamsAndStations =
-                await window.electron.getStreamsAndStations();
-              setStreams(streamsAndStations.streams);
-              setStations(streamsAndStations.stations);
-              setGettingStreamsAndStations(false);
+              if (mode === Mode.STARTGG) {
+                setGettingStreamsAndStations(true);
+                const streamsAndStations =
+                  await window.electron.getStreamsAndStations();
+                setStartggStreams(streamsAndStations.streams);
+                setStartggStations(streamsAndStations.stations);
+                setGettingStreamsAndStations(false);
+              }
             }}
           >
             <Tv />
@@ -125,7 +172,7 @@ export default function AssignStream({
                       onClick={() => assignStream(0)}
                     >
                       <ListItemText>
-                        Remove from {selectedSet.stream.path}
+                        Remove from {getCombinedStreamName(selectedSet.stream)}
                       </ListItemText>
                     </ListItemButton>
                   )}
@@ -139,7 +186,9 @@ export default function AssignStream({
                           disableGutters
                           onClick={() => assignStream(stream.id)}
                         >
-                          <ListItemText>{stream.path}</ListItemText>
+                          <ListItemText>
+                            {getCombinedStreamName(stream)}
+                          </ListItemText>
                         </ListItemButton>
                       ))}
                   </List>

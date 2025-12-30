@@ -41,6 +41,7 @@ import {
   ReportSettings,
   SelectedSetChain,
   Set,
+  StartggGame,
   StartggSet,
 } from '../common/types';
 import {
@@ -1298,13 +1299,15 @@ export default function setupIPCs(
   );
 
   ipcMain.removeHandler('reportOfflineModeSet');
-  ipcMain.handle('reportOfflineModeSet', (event, set: StartggSet) =>
-    reportOfflineModeSet(
-      assertInteger(set.setId),
-      assertInteger(set.winnerId),
-      set.isDQ,
-      set.gameData,
-    ),
+  ipcMain.handle(
+    'reportOfflineModeSet',
+    (
+      event,
+      id: number,
+      winnerId: number,
+      isDQ: boolean,
+      gameData: StartggGame[],
+    ) => reportOfflineModeSet(id, winnerId, isDQ, gameData),
   );
 
   ipcMain.removeHandler('getTournaments');
