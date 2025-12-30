@@ -120,6 +120,7 @@ import {
   assignOfflineModeSetStream,
   callOfflineModeSet,
   connectToOfflineMode,
+  disconnectFromOfflineMode,
   getCurrentOfflineModeTournament,
   getOfflineModeStatus,
   getSelectedOfflineModeSet,
@@ -295,6 +296,9 @@ export default function setupIPCs(
 
   ipcMain.removeHandler('setMode');
   ipcMain.handle('setMode', (event, newMode: Mode) => {
+    if (mode !== newMode && mode === Mode.OFFLINE_MODE) {
+      disconnectFromOfflineMode();
+    }
     store.set('mode', newMode);
     mode = newMode;
   });

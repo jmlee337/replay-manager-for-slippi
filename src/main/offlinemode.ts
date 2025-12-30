@@ -174,16 +174,22 @@ function toSet(set: OfflineModeSet): Omit<Set, 'id'> & { id: number } {
   };
 }
 
-let nextNum = 1;
 let websocket: WebSocket | null = null;
+export function disconnectFromOfflineMode() {
+  if (websocket) {
+    websocket.close();
+  }
+}
+
+let nextNum = 1;
 function cleanup() {
   websocket?.removeAllListeners();
   websocket = null;
 
   nextNum = 1;
-  setTournament(INITIAL_TOURNAMENT);
   idToSet.clear();
   selectedSetId = 0;
+  setTournament(INITIAL_TOURNAMENT);
 }
 export function connectToOfflineMode(port: number) {
   if (websocket) {
