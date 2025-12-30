@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   Button,
   CircularProgress,
@@ -11,9 +11,10 @@ import {
   List,
   ListItemButton,
   ListItemText,
+  Stack,
   Tooltip,
 } from '@mui/material';
-import { Tv } from '@mui/icons-material';
+import { Refresh, Tv } from '@mui/icons-material';
 import { Mode, Set, State, Station, Stream } from '../common/types';
 import SetView from './SetView';
 import { assertInteger } from '../common/asserts';
@@ -31,39 +32,17 @@ function getCombinedStreamName(stream: Stream) {
 export default function AssignStream({
   mode,
   selectedSet,
-  offlineModeStreams,
-  offlineModeStations,
+  streams,
+  stations,
+  refreshStartggTournament,
 }: {
   mode: Mode;
   selectedSet: Set;
-  offlineModeStreams: Stream[];
-  offlineModeStations: Station[];
+  streams: Stream[];
+  stations: Station[];
+  refreshStartggTournament: () => Promise<void>;
 }) {
-  const [startggStreams, setStartggStreams] = useState<Stream[]>([]);
-  const [startggStations, setStartggStations] = useState<Station[]>([]);
-  const streams = useMemo(() => {
-    if (mode === Mode.STARTGG) {
-      return startggStreams;
-    }
-    if (mode === Mode.OFFLINE_MODE) {
-      return offlineModeStreams;
-    }
-    return [];
-  }, [mode, offlineModeStreams, startggStreams]);
-  const stations = useMemo(() => {
-    if (mode === Mode.STARTGG) {
-      return startggStations;
-    }
-    if (mode === Mode.OFFLINE_MODE) {
-      return offlineModeStations;
-    }
-    return [];
-  }, [mode, offlineModeStations, startggStations]);
-
   const [chooseOpen, setChooseOpen] = useState(false);
-  const [gettingStreamsAndStations, setGettingStreamsAndStations] =
-    useState(false);
-
   const [errorOpen, setErrorOpen] = useState(false);
   const [error, setError] = useState('');
 
@@ -107,6 +86,9 @@ export default function AssignStream({
     }
   };
 
+  const [refreshingStartggTournament, setRefreshingStartggTournament] =
+    useState(false);
+
   return (
     <>
       <Tooltip arrow title="Assign set to stream or station">
@@ -123,14 +105,6 @@ export default function AssignStream({
             size="small"
             onClick={async () => {
               setChooseOpen(true);
-              if (mode === Mode.STARTGG) {
-                setGettingStreamsAndStations(true);
-                const streamsAndStations =
-                  await window.electron.getStreamsAndStations();
-                setStartggStreams(streamsAndStations.streams);
-                setStartggStations(streamsAndStations.stations);
-                setGettingStreamsAndStations(false);
-              }
             }}
           >
             <Tv />
@@ -138,7 +112,35 @@ export default function AssignStream({
         </div>
       </Tooltip>
       <Dialog open={chooseOpen} onClose={() => setChooseOpen(false)}>
-        <DialogTitle>Assign Set to Stream or Station</DialogTitle>
+        <Stack
+          alignItems="center"
+          direction="row"
+          justifyContent="space-between"
+          marginRight="24px"
+        >
+          <DialogTitle>Assign Set to Stream or Station</DialogTitle>
+          {mode === Mode.STARTGG && (
+            <Tooltip title="Refresh">
+              <IconButton
+                disabled={refreshingStartggTournament}
+                onClick={async () => {
+                  try {
+                    setRefreshingStartggTournament(true);
+                    await refreshStartggTournament();
+                  } finally {
+                    setRefreshingStartggTournament(false);
+                  }
+                }}
+              >
+                {refreshingStartggTournament ? (
+                  <CircularProgress size="24px" />
+                ) : (
+                  <Refresh />
+                )}
+              </IconButton>
+            </Tooltip>
+          )}
+        </Stack>
         <DialogContent style={{ maxWidth: '500px' }}>
           <SetView
             entrant1Names={selectedSet.entrant1Participants.map(
@@ -158,76 +160,66 @@ export default function AssignStream({
             wasReported={false}
             updatedAtMs={selectedSet.updatedAtMs}
           />
-          {gettingStreamsAndStations ? (
-            <CircularProgress size="24px" />
-          ) : (
+          {streams.length > 0 && (
             <>
-              {streams.length > 0 && (
-                <>
-                  {selectedSet.stream && (
+              {selectedSet.stream && (
+                <ListItemButton
+                  disabled={assigning}
+                  disableGutters
+                  style={{ marginTop: '8px' }}
+                  onClick={() => assignStream(0)}
+                >
+                  <ListItemText>
+                    Remove from {getCombinedStreamName(selectedSet.stream)}
+                  </ListItemText>
+                </ListItemButton>
+              )}
+              <List disablePadding>
+                {streams
+                  .filter((stream) => stream.id !== selectedSet.stream?.id)
+                  .map((stream) => (
                     <ListItemButton
                       disabled={assigning}
+                      key={stream.id}
                       disableGutters
-                      style={{ marginTop: '8px' }}
-                      onClick={() => assignStream(0)}
+                      onClick={() => assignStream(stream.id)}
                     >
                       <ListItemText>
-                        Remove from {getCombinedStreamName(selectedSet.stream)}
+                        {getCombinedStreamName(stream)}
                       </ListItemText>
                     </ListItemButton>
-                  )}
-                  <List disablePadding>
-                    {streams
-                      .filter((stream) => stream.id !== selectedSet.stream?.id)
-                      .map((stream) => (
-                        <ListItemButton
-                          disabled={assigning}
-                          key={stream.id}
-                          disableGutters
-                          onClick={() => assignStream(stream.id)}
-                        >
-                          <ListItemText>
-                            {getCombinedStreamName(stream)}
-                          </ListItemText>
-                        </ListItemButton>
-                      ))}
-                  </List>
-                </>
+                  ))}
+              </List>
+            </>
+          )}
+          {stations.length > 0 && (
+            <>
+              {selectedSet.station && (
+                <ListItemText style={{ padding: '12px 0', margin: '8px 0 0' }}>
+                  Assigned to station {selectedSet.station.number}
+                </ListItemText>
               )}
-              {stations.length > 0 && (
-                <>
-                  {selectedSet.station && (
-                    <ListItemText
-                      style={{ padding: '12px 0', margin: '8px 0 0' }}
+              <List
+                disablePadding
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                }}
+              >
+                {stations
+                  .filter((station) => station.id !== selectedSet.station?.id)
+                  .map((station) => (
+                    <ListItemButton
+                      disabled={assigning}
+                      key={station.id}
+                      style={{ flexGrow: 0 }}
+                      onClick={() => assignStation(station.id)}
                     >
-                      Assigned to station {selectedSet.station.number}
-                    </ListItemText>
-                  )}
-                  <List
-                    disablePadding
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    {stations
-                      .filter(
-                        (station) => station.id !== selectedSet.station?.id,
-                      )
-                      .map((station) => (
-                        <ListItemButton
-                          disabled={assigning}
-                          key={station.id}
-                          style={{ flexGrow: 0 }}
-                          onClick={() => assignStation(station.id)}
-                        >
-                          <ListItemText>{station.number}</ListItemText>
-                        </ListItemButton>
-                      ))}
-                  </List>
-                </>
-              )}
+                      <ListItemText>{station.number}</ListItemText>
+                    </ListItemButton>
+                  ))}
+              </List>
             </>
           )}
         </DialogContent>

@@ -143,6 +143,8 @@ export type Tournament = {
   name: string;
   location: string;
   events: Event[];
+  stations: Station[];
+  streams: Stream[];
 };
 
 export type RendererPool = {

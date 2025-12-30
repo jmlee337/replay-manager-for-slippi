@@ -288,6 +288,8 @@ function Hello() {
     name: '',
     location: '',
     events: [],
+    stations: [],
+    streams: [],
   });
   const [challongeTournaments, setChallongeTournaments] = useState(
     new Map<string, ChallongeTournament>(),
@@ -461,6 +463,25 @@ function Hello() {
     };
     inner();
   }, []);
+
+  const stations = useMemo(() => {
+    if (mode === Mode.STARTGG) {
+      return startggTournament.stations;
+    }
+    if (mode === Mode.OFFLINE_MODE) {
+      return offlineModeTournament.stations;
+    }
+    return [];
+  }, [mode, offlineModeTournament.stations, startggTournament.stations]);
+  const streams = useMemo(() => {
+    if (mode === Mode.STARTGG) {
+      return startggTournament.streams;
+    }
+    if (mode === Mode.OFFLINE_MODE) {
+      return offlineModeTournament.streams;
+    }
+    return [];
+  }, [mode, offlineModeTournament.streams, startggTournament.streams]);
 
   useEffect(() => {
     window.electron.onCopyHost(async (event, newHost) => {
@@ -3004,8 +3025,11 @@ function Hello() {
               <AssignStream
                 mode={mode}
                 selectedSet={selectedSet}
-                offlineModeStreams={offlineModeTournament.streams}
-                offlineModeStations={offlineModeTournament.stations}
+                stations={stations}
+                streams={streams}
+                refreshStartggTournament={() =>
+                  getStartggTournament(startggTournament.slug)
+                }
               />
               <ResetSet mode={mode} selectedSet={selectedSet} />
               {(mode === Mode.STARTGG || mode === Mode.OFFLINE_MODE) && (

@@ -59,7 +59,6 @@ import {
   setSelectedSetId,
   resetSet,
   assignStream,
-  getStreamsAndStations,
   assignStation,
   getPoolsByWave,
   getSelectedSetChain,
@@ -809,9 +808,6 @@ export default function setupIPCs(
     }
     return null;
   };
-
-  ipcMain.removeHandler('getStreamsAndStations');
-  ipcMain.handle('getStreamsAndStations', getStreamsAndStations);
 
   ipcMain.removeHandler('assignStream');
   ipcMain.handle(

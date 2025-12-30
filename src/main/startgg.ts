@@ -823,7 +823,21 @@ export async function getTournament(
     });
   }
 
-  currentTournament = { name, slug, location, events: [] };
+  currentTournament = {
+    name,
+    slug,
+    location,
+    events: [],
+    stations: Array.from(idToStation.values()).sort(
+      (a, b) => a.number - b.number,
+    ),
+    streams: Array.from(idToStream.values()).sort((a, b) => {
+      if (a.domain === b.domain) {
+        return a.path.localeCompare(b.path);
+      }
+      return a.domain.localeCompare(b.domain);
+    }),
+  };
   tournamentSlugToEventIds.set(slug, eventIds);
   if (recursive) {
     await Promise.all(
@@ -838,17 +852,6 @@ export async function getTournament(
   } else if (eventIds.length === 1) {
     await getEvent(key, eventIds[0], recursive);
   }
-}
-
-export function getStreamsAndStations() {
-  return {
-    streams: Array.from(idToStream.values()).sort((a, b) =>
-      a.path.localeCompare(b.path),
-    ),
-    stations: Array.from(idToStation.values()).sort(
-      (a, b) => a.number - b.number,
-    ),
-  };
 }
 
 export async function getPoolsByWave(key: string) {

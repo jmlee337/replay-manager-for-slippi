@@ -21,9 +21,7 @@ import {
   EnforceState,
   EnforcerSetting,
   CopyHostFormat,
-  Stream,
   EnforcePlayerFailure,
-  Station,
   RendererWave,
   RendererOfflineModeTournament,
   SelectedSetChain,
@@ -163,10 +161,6 @@ const electronHandler = {
   getPhase: (id: number): Promise<void> => ipcRenderer.invoke('getPhase', id),
   getPhaseGroup: (id: number): Promise<void> =>
     ipcRenderer.invoke('getPhaseGroup', id),
-  getStreamsAndStations: (): Promise<{
-    streams: Stream[];
-    stations: Station[];
-  }> => ipcRenderer.invoke('getStreamsAndStations'),
   assignStream: (originalSet: Set, streamId: number): Promise<void> =>
     ipcRenderer.invoke('assignStream', originalSet, streamId),
   assignStation: (originalSet: Set, stationId: number): Promise<void> =>
