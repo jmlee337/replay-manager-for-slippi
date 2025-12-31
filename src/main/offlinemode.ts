@@ -219,12 +219,7 @@ export function connectToOfflineMode(port: number) {
             setTournament({
               ...newTournament,
               events: newTournament.events
-                .filter(
-                  (event) =>
-                    event.isLoaded &&
-                    event.videogameId === 1 &&
-                    !event.isOnline,
-                )
+                .filter((event) => event.videogameId === 1 && !event.isOnline)
                 .map((event) => ({
                   ...event,
                   phases: event.phases.map((phase) => ({

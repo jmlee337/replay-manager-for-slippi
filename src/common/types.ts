@@ -491,7 +491,7 @@ export type OfflineModeEvent = {
   slug: string;
   isOnline: boolean;
   videogameId: number;
-  isLoaded: boolean;
+  isLoaded: true;
   phases: OfflineModePhase[];
 };
 
