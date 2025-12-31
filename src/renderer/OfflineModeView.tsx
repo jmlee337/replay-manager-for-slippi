@@ -322,34 +322,32 @@ export default function OfflineModeView({
 }) {
   return (
     <Box bgcolor="white">
-      {offlineModeTournament.events
-        .filter((event) => event.isLoaded && !event.isOnline)
-        .map((event) => (
-          <EventView
-            key={event.id}
-            event={event}
-            initiallyOpen={
-              offlineModeTournament.events.length === 1 ||
-              event.id === selectedEventId
-            }
-            searchSubstr={searchSubstr}
-            vlerkMode={vlerkMode}
-            selectedPhaseId={selectedPhaseId}
-            selectedPhaseGroupId={selectedPhaseGroupId}
-            selectSet={(
-              set: Set,
-              phaseGroup: SelectedPhaseGroup,
-              phase: SelectedPhase,
-            ) =>
-              selectSet(set, phaseGroup, phase, {
-                id: event.id,
-                name: event.name,
-                slug: event.slug,
-                hasSiblings: offlineModeTournament.events.length > 1,
-              })
-            }
-          />
-        ))}
+      {offlineModeTournament.events.map((event) => (
+        <EventView
+          key={event.id}
+          event={event}
+          initiallyOpen={
+            offlineModeTournament.events.length === 1 ||
+            event.id === selectedEventId
+          }
+          searchSubstr={searchSubstr}
+          vlerkMode={vlerkMode}
+          selectedPhaseId={selectedPhaseId}
+          selectedPhaseGroupId={selectedPhaseGroupId}
+          selectSet={(
+            set: Set,
+            phaseGroup: SelectedPhaseGroup,
+            phase: SelectedPhase,
+          ) =>
+            selectSet(set, phaseGroup, phase, {
+              id: event.id,
+              name: event.name,
+              slug: event.slug,
+              hasSiblings: offlineModeTournament.events.length > 1,
+            })
+          }
+        />
+      ))}
     </Box>
   );
 }

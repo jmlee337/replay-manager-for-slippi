@@ -218,34 +218,41 @@ export function connectToOfflineMode(port: number) {
             const newTournament = message.tournament as OfflineModeTournament;
             setTournament({
               ...newTournament,
-              events: newTournament.events.map((event) => ({
-                ...event,
-                phases: event.phases.map((phase) => ({
-                  ...phase,
-                  pools: phase.pools.map((pool) => {
-                    const completedSets: Set[] = [];
-                    const pendingSets: Set[] = [];
-                    pool.sets.forEach((offlineModeSet) => {
-                      if (
-                        offlineModeSet.entrant1Id &&
-                        offlineModeSet.entrant2Id
-                      ) {
-                        const set = toSet(offlineModeSet);
-                        idToSet.set(set.id, set);
-                        if (set.state === State.COMPLETED) {
-                          completedSets.push(set);
-                        } else {
-                          pendingSets.push(set);
+              events: newTournament.events
+                .filter(
+                  (event) =>
+                    event.isLoaded &&
+                    event.videogameId === 1 &&
+                    !event.isOnline,
+                )
+                .map((event) => ({
+                  ...event,
+                  phases: event.phases.map((phase) => ({
+                    ...phase,
+                    pools: phase.pools.map((pool) => {
+                      const completedSets: Set[] = [];
+                      const pendingSets: Set[] = [];
+                      pool.sets.forEach((offlineModeSet) => {
+                        if (
+                          offlineModeSet.entrant1Id &&
+                          offlineModeSet.entrant2Id
+                        ) {
+                          const set = toSet(offlineModeSet);
+                          idToSet.set(set.id, set);
+                          if (set.state === State.COMPLETED) {
+                            completedSets.push(set);
+                          } else {
+                            pendingSets.push(set);
+                          }
                         }
-                      }
-                    });
-                    return {
-                      ...pool,
-                      sets: { completedSets, pendingSets },
-                    };
-                  }),
+                      });
+                      return {
+                        ...pool,
+                        sets: { completedSets, pendingSets },
+                      };
+                    }),
+                  })),
                 })),
-              })),
               streams: newTournament.streams.map((stream) => ({
                 id: stream.id,
                 domain: stream.streamSource.toLowerCase(),
