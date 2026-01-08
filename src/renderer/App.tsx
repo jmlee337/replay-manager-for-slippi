@@ -223,7 +223,7 @@ function Hello() {
     const handler = (_event: any, status: SlpDownloadStatus) => {
       setSlpDownloadStatus(status);
     };
-    window.electron?.onSlpDownloadStatus?.(handler);
+    window.electron.onSlpDownloadStatus(handler);
   }, []);
 
   const [errors, setErrors] = useState<string[]>([]);
