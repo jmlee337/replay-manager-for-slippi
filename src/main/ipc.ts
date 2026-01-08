@@ -1047,12 +1047,15 @@ export default function setupIPCs(
   );
 
   ipcMain.removeHandler('getPoolsByWave');
-  ipcMain.handle('getPoolsByWave', () => {
-    if (!sggApiKey) {
-      throw new Error('Please set start.gg API key');
-    }
+  ipcMain.handle('getPoolsByWave', async () => {
+    if (mode === Mode.STARTGG) {
+      if (!sggApiKey) {
+        throw new Error('Please set start.gg API key');
+      }
 
-    return getPoolsByWave(sggApiKey);
+      return getPoolsByWave(sggApiKey);
+    }
+    return [];
   });
 
   let challongeApiKey = store.has('challongeApiKey')
