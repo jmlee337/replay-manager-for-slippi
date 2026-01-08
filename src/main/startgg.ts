@@ -449,6 +449,24 @@ export async function getPhaseGroup(
 
         const entrant1Participants = entrantIdToParticipants.get(entrant1Id)!;
         const entrant2Participants = entrantIdToParticipants.get(entrant2Id)!;
+        let { entrant1Score } = set;
+        let { entrant2Score } = set;
+        let gameScores = [];
+        if (Array.isArray(set.games) && (set.games as any[]).length > 0) {
+          entrant1Score = 0;
+          entrant2Score = 0;
+          gameScores = set.games.map((game: any) => {
+            if (game.winnerId === game.entrant1Id) {
+              entrant1Score += 1;
+            } else if (game.winnerId === game.entrant2Id) {
+              entrant2Score += 1;
+            }
+            return {
+              entrant1Score: game.entrant1P1Stocks,
+              entrant2Score: game.entrant2P1Stocks,
+            };
+          });
+        }
         const stream =
           streamId === null ? null : idToStream.get(streamId) || null;
         const station =
@@ -461,16 +479,11 @@ export async function getPhaseGroup(
           winnerId: set.winnerId,
           entrant1Id,
           entrant1Participants,
-          entrant1Score: set.entrant1Score,
+          entrant1Score,
           entrant2Id,
           entrant2Participants,
-          entrant2Score: set.entrant2Score,
-          gameScores: Array.isArray(set.games)
-            ? set.games.map((game: any) => ({
-                entrant1Score: game.entrant1P1Stocks,
-                entrant2Score: game.entrant2P1Stocks,
-              }))
-            : [],
+          entrant2Score,
+          gameScores,
           stream,
           station,
           ordinal,
@@ -991,7 +1004,7 @@ const GQL_SET_INNER = `
     standing {
       stats {
         score {
-          displayValue
+          value
         }
       }
     }
@@ -1058,10 +1071,6 @@ function gqlSetToSet(set: any): Set {
       entrant2Participants[0],
     ];
   }
-  const entrant1DisplayValue =
-    (slot1.standing?.stats?.score?.displayValue as string) || null;
-  const entrant2DisplayValue =
-    (slot2.standing?.stats?.score?.displayValue as string) || null;
   return {
     id: set.id,
     state: set.state,
@@ -1071,14 +1080,10 @@ function gqlSetToSet(set: any): Set {
     winnerId: set.winnerId,
     entrant1Id: slot1.entrant.id,
     entrant1Participants,
-    entrant1Score: entrant1DisplayValue
-      ? Number.parseInt(entrant1DisplayValue, 10)
-      : null,
+    entrant1Score: slot1.standing?.stats?.score?.value ?? null,
     entrant2Id: slot2.entrant.id,
     entrant2Participants,
-    entrant2Score: entrant2DisplayValue
-      ? Number.parseInt(entrant2DisplayValue, 10)
-      : null,
+    entrant2Score: slot2.standing?.stats?.score?.value ?? null,
     gameScores: Array.isArray(set.games)
       ? set.games.map((game: any) => ({
           entrant1Score: game.entrant1Score ?? 0,
