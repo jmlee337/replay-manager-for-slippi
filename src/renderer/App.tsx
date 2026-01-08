@@ -2807,15 +2807,17 @@ function Hello() {
                   </Stack>
                 )}
                 <Stack>
-                  <Typography
-                    variant="caption"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => {
-                      window.electron.openEntrantsWindow();
-                    }}
-                  >
-                    {superKey} + E: View Pool Entrants
-                  </Typography>
+                  {mode === Mode.STARTGG && (
+                    <Typography
+                      variant="caption"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => {
+                        window.electron.openEntrantsWindow();
+                      }}
+                    >
+                      {superKey} + E: View Pool Entrants
+                    </Typography>
+                  )}
                   <Typography
                     variant="caption"
                     style={{ cursor: 'pointer' }}
