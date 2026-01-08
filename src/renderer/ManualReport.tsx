@@ -275,6 +275,7 @@ export default function ManualReport({
                     <ThinButton
                       color="secondary"
                       variant={entrant1Dq ? 'contained' : 'outlined'}
+                      disabled={selectedSet.state === State.COMPLETED}
                       onClick={() => {
                         resetFormToZero();
                         setEntrant1Dq(true);
@@ -286,6 +287,10 @@ export default function ManualReport({
                     <ThinButton
                       color="secondary"
                       variant={entrant1Score === 0 ? 'contained' : 'outlined'}
+                      disabled={
+                        selectedSet.state === State.COMPLETED &&
+                        selectedSet.winnerId === selectedSet.entrant1Id
+                      }
                       onClick={() => {
                         setEntrant1Score(0);
                         if (entrant2Score > 0) {
@@ -302,6 +307,13 @@ export default function ManualReport({
                     <ThinButton
                       color="secondary"
                       variant={entrant1Score === 1 ? 'contained' : 'outlined'}
+                      disabled={
+                        selectedSet.state === State.COMPLETED &&
+                        ((selectedSet.winnerId === selectedSet.entrant1Id &&
+                          entrant2Score >= 1) ||
+                          (selectedSet.winnerId === selectedSet.entrant2Id &&
+                            entrant2Score <= 1))
+                      }
                       onClick={() => {
                         setEntrant1Dq(false);
                         setEntrant2Dq(false);
@@ -323,6 +335,13 @@ export default function ManualReport({
                     <ThinButton
                       color="secondary"
                       variant={entrant1Score === 2 ? 'contained' : 'outlined'}
+                      disabled={
+                        selectedSet.state === State.COMPLETED &&
+                        ((selectedSet.winnerId === selectedSet.entrant1Id &&
+                          entrant2Score >= 2) ||
+                          (selectedSet.winnerId === selectedSet.entrant2Id &&
+                            entrant2Score <= 2))
+                      }
                       onClick={() => {
                         setEntrant1Dq(false);
                         setEntrant2Dq(false);
@@ -344,6 +363,10 @@ export default function ManualReport({
                     <ThinButton
                       color="secondary"
                       variant={entrant1Score === 3 ? 'contained' : 'outlined'}
+                      disabled={
+                        selectedSet.state === State.COMPLETED &&
+                        selectedSet.winnerId === selectedSet.entrant2Id
+                      }
                       onClick={() => {
                         setEntrant1Dq(false);
                         setEntrant2Dq(false);
@@ -363,6 +386,7 @@ export default function ManualReport({
                       <ThinButton
                         color="secondary"
                         variant={entrant1Win ? 'contained' : 'outlined'}
+                        disabled={selectedSet.state === State.COMPLETED}
                         onClick={() => {
                           resetFormToZero();
                           setEntrant1Win(true);
@@ -445,6 +469,7 @@ export default function ManualReport({
                     <ThinButton
                       color="secondary"
                       variant={entrant2Dq ? 'contained' : 'outlined'}
+                      disabled={selectedSet.state === State.COMPLETED}
                       onClick={() => {
                         resetFormToZero();
                         setEntrant2Dq(true);
@@ -456,6 +481,10 @@ export default function ManualReport({
                     <ThinButton
                       color="secondary"
                       variant={entrant2Score === 0 ? 'contained' : 'outlined'}
+                      disabled={
+                        selectedSet.state === State.COMPLETED &&
+                        selectedSet.winnerId === selectedSet.entrant2Id
+                      }
                       onClick={() => {
                         setEntrant2Score(0);
                         if (entrant1Score > 0) {
@@ -472,6 +501,13 @@ export default function ManualReport({
                     <ThinButton
                       color="secondary"
                       variant={entrant2Score === 1 ? 'contained' : 'outlined'}
+                      disabled={
+                        selectedSet.state === State.COMPLETED &&
+                        ((selectedSet.winnerId === selectedSet.entrant2Id &&
+                          entrant1Score >= 1) ||
+                          (selectedSet.winnerId === selectedSet.entrant1Id &&
+                            entrant1Score <= 1))
+                      }
                       onClick={() => {
                         setEntrant1Dq(false);
                         setEntrant2Dq(false);
@@ -493,6 +529,13 @@ export default function ManualReport({
                     <ThinButton
                       color="secondary"
                       variant={entrant2Score === 2 ? 'contained' : 'outlined'}
+                      disabled={
+                        selectedSet.state === State.COMPLETED &&
+                        ((selectedSet.winnerId === selectedSet.entrant2Id &&
+                          entrant1Score >= 2) ||
+                          (selectedSet.winnerId === selectedSet.entrant1Id &&
+                            entrant1Score <= 2))
+                      }
                       onClick={() => {
                         setEntrant1Dq(false);
                         setEntrant2Dq(false);
@@ -514,6 +557,10 @@ export default function ManualReport({
                     <ThinButton
                       color="secondary"
                       variant={entrant2Score === 3 ? 'contained' : 'outlined'}
+                      disabled={
+                        selectedSet.state === State.COMPLETED &&
+                        selectedSet.winnerId === selectedSet.entrant1Id
+                      }
                       onClick={() => {
                         setEntrant1Dq(false);
                         setEntrant2Dq(false);
@@ -533,6 +580,7 @@ export default function ManualReport({
                       <ThinButton
                         color="secondary"
                         variant={entrant2Win ? 'contained' : 'outlined'}
+                        disabled={selectedSet.state === State.COMPLETED}
                         onClick={() => {
                           resetFormToZero();
                           setEntrant1Dq(false);
