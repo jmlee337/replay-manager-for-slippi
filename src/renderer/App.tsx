@@ -152,6 +152,7 @@ const AppBarSection = styled(Stack)`
 
 const EMPTY_SET: Set = {
   id: 0,
+  sggId: null,
   state: State.PENDING,
   round: 0,
   fullRoundText: '',
@@ -1418,6 +1419,7 @@ function Hello() {
   const onCopy = async (
     updatedSetFields?: {
       id: Id;
+      sggId: number | null;
       completedAtMs: number;
       stream: Stream | null;
     },
@@ -1830,6 +1832,9 @@ function Hello() {
           };
 
           const setId = updatedSetFields ? updatedSetFields.id : selectedSet.id;
+          const sggId = updatedSetFields
+            ? updatedSetFields.sggId
+            : selectedSet.sggId;
           if (setId) {
             if (mode === Mode.STARTGG) {
               context.startgg = {
@@ -1841,11 +1846,8 @@ function Hello() {
                 phase: selectedSetChain.phase!,
                 phaseGroup: selectedSetChain.phaseGroup!,
                 set: {
-                  id:
-                    typeof setId === 'string' ||
-                    (Number.isInteger(setId) && setId > 0)
-                      ? setId
-                      : undefined,
+                  id: sggId,
+                  internalId: setId,
                   fullRoundText: selectedSet.fullRoundText,
                   ordinal: selectedSet.ordinal,
                   round: selectedSet.round,
@@ -1881,11 +1883,8 @@ function Hello() {
                 phase: selectedSetChain.phase!,
                 phaseGroup: selectedSetChain.phaseGroup!,
                 set: {
-                  id:
-                    typeof setId === 'string' ||
-                    (Number.isInteger(setId) && setId > 0)
-                      ? setId
-                      : undefined,
+                  id: sggId,
+                  internalId: setId,
                   fullRoundText: selectedSet.fullRoundText,
                   ordinal: selectedSet.ordinal,
                   round: selectedSet.round,
@@ -1904,11 +1903,8 @@ function Hello() {
                 phase: selectedSetChain.phase!,
                 phaseGroup: selectedSetChain.phaseGroup!,
                 set: {
-                  id:
-                    typeof setId === 'string' ||
-                    (Number.isInteger(setId) && setId > 0)
-                      ? setId
-                      : undefined,
+                  id: sggId,
+                  internalId: setId,
                   fullRoundText: selectedSet.fullRoundText,
                   ordinal: selectedSet.ordinal,
                   round: selectedSet.round,

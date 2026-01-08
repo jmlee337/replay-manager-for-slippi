@@ -228,6 +228,7 @@ export default function SetControls({
   copyReplays: (
     updatedSetFields?: {
       id: Id;
+      sggId: number | null;
       completedAtMs: number;
       stream: Stream | null;
     },
@@ -984,6 +985,7 @@ export default function SetControls({
                     updatedSet
                       ? {
                           id: updatedSet.id,
+                          sggId: updatedSet.sggId,
                           completedAtMs: updatedSet.completedAtMs,
                           stream: updatedSet.stream,
                         }

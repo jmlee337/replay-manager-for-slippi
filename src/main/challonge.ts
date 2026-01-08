@@ -131,6 +131,7 @@ const toSet = (
 
   return {
     id: match.id,
+    sggId: null,
     state,
     round,
     fullRoundText,
@@ -334,6 +335,7 @@ export async function startChallongeSet(
   const fullRoundPrefix = round > 0 ? 'Winners Round' : 'Losers Round';
   idToSet.set(matchId, {
     id: match.id,
+    sggId: null,
     state: State.STARTED,
     round,
     fullRoundText: `${fullRoundPrefix} ${Math.abs(round)}`,

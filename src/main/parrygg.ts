@@ -207,6 +207,7 @@ export function convertParryggSetToSet(set: Match.AsObject): Set {
 
   return {
     id: set.id,
+    sggId: null,
     state: getSetState(set),
     round: set.round,
     fullRoundText: `Round ${set.round}${

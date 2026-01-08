@@ -79,6 +79,7 @@ export type GameScore = {
 
 export type Set = {
   id: Id;
+  sggId: number | null;
   state: State;
   round: number;
   fullRoundText: string;
@@ -301,7 +302,10 @@ export type Context = {
     phase: SelectedPhase;
     phaseGroup: SelectedPhaseGroup;
     set: {
-      id?: Id;
+      // start.gg 'real' id if available
+      id: number | null;
+      // actual service (which may not be start.gg) id
+      internalId: Id;
       fullRoundText: string;
       ordinal: number | null;
       round: number;

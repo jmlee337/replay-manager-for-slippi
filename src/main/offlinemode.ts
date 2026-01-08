@@ -140,6 +140,12 @@ function toSet(set: OfflineModeSet): Omit<Set, 'id'> & { id: number } {
   }
   return {
     id: set.id,
+    sggId:
+      typeof set.setId === 'number' &&
+      Number.isInteger(set.setId) &&
+      set.setId > 0
+        ? set.setId
+        : null,
     state: set.state,
     round: set.round,
     fullRoundText: set.fullRoundText,

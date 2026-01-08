@@ -473,6 +473,10 @@ export async function getPhaseGroup(
           stationId === null ? null : idToStation.get(stationId) || null;
         newSet = {
           id: setId,
+          sggId:
+            typeof setId === 'number' && Number.isInteger(setId) && setId > 0
+              ? setId
+              : null,
           state: set.state,
           round: set.round,
           fullRoundText: set.fullRoundText,
@@ -1073,6 +1077,10 @@ function gqlSetToSet(set: any): Set {
   }
   return {
     id: set.id,
+    sggId:
+      typeof set.id === 'number' && Number.isInteger(set.id) && set.id > 0
+        ? set.id
+        : null,
     state: set.state,
     round:
       set.fullRoundText === 'Grand Final Reset' ? set.round + 1 : set.round,

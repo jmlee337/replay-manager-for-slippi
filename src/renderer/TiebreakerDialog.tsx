@@ -63,6 +63,7 @@ export default function TiebreakerDialog({
                   } else {
                     selectSet({
                       id: -1,
+                      sggId: null,
                       state: State.PENDING,
                       round: Number.MAX_SAFE_INTEGER,
                       fullRoundText: 'Tie-Breaker',
