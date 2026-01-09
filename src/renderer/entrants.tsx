@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AppBar,
   CircularProgress,
@@ -13,27 +13,39 @@ import {
 } from '@mui/material';
 import { createRoot } from 'react-dom/client';
 import { Refresh } from '@mui/icons-material';
-import { RendererPool, RendererWave } from '../common/types';
+import { RendererPool, RendererWave, Seed } from '../common/types';
+
+function SeedListItemContents({ seed }: { seed: Seed }) {
+  let ret: any = '\xa0';
+  if (seed.entrant) {
+    ret = seed.entrant.participants
+      .map((participant) => participant.displayName)
+      .join(' / ');
+  } else if (seed.placeholder) {
+    ret = <span style={{ fontStyle: 'italic' }}>{seed.placeholder}</span>;
+  }
+  return ret;
+}
 
 function Pool({ pool }: { pool: RendererPool }) {
   return (
     <Stack width="200px">
       <Typography variant="caption">{pool.name}</Typography>
       <List>
-        {pool.entrants.map((entrant) => (
+        {pool.seeds.map((seed) => (
           <ListItemText
-            key={entrant.id}
-            primaryTypographyProps={{
-              style: {
-                overflowX: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+            key={seed.id}
+            slotProps={{
+              primary: {
+                style: {
+                  overflowX: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                },
               },
             }}
           >
-            {entrant.participants
-              .map((participant) => participant.displayName)
-              .join(' + ')}
+            <SeedListItemContents seed={seed} />
           </ListItemText>
         ))}
       </List>

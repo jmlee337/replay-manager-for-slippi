@@ -104,6 +104,14 @@ export type Sets = {
   completedSets: Set[];
 };
 
+export type Seed = {
+  id: number;
+  seedNum: number;
+  groupSeedNum: number;
+  placeholder: string | null;
+  entrant: Entrant | null;
+};
+
 export type PhaseGroup = {
   id: number;
   /**
@@ -116,7 +124,7 @@ export type PhaseGroup = {
    * https://developer.start.gg/reference/brackettype.doc
    */
   bracketType: number;
-  entrants: Entrant[];
+  seeds: Seed[];
   name: string;
   sets: Sets;
   state: State;
@@ -151,7 +159,7 @@ export type Tournament = {
 export type RendererPool = {
   id: number;
   name: string;
-  entrants: Entrant[];
+  seeds: Seed[];
 };
 
 export type RendererWave = {

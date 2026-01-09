@@ -1,6 +1,5 @@
 import {
   AdminedTournament,
-  Entrant,
   Event,
   Id,
   Participant,
@@ -16,6 +15,7 @@ import {
   RendererWave,
   RendererPool,
   SelectedSetChain,
+  Seed,
 } from '../common/types';
 
 let currentTournament: Tournament | undefined;
@@ -25,7 +25,7 @@ const eventIdToPhaseIds = new Map<number, number[]>();
 const idToPhase = new Map<number, Phase>();
 const phaseIdToPhaseGroupIds = new Map<number, number[]>();
 const idToPhaseGroup = new Map<number, PhaseGroup>();
-const phaseGroupIdToEntrants = new Map<number, Entrant[]>();
+const phaseGroupIdToSeeds = new Map<number, Seed[]>();
 const phaseGroupIdToSets = new Map<number, Sets>();
 const idToSet = new Map<Id, Set>();
 let selectedSetId: Id = 0;
@@ -44,7 +44,7 @@ export function getCurrentTournament() {
         phase.phaseGroups = (phaseIdToPhaseGroupIds.get(phaseId) || []).map(
           (groupId) => {
             const group: PhaseGroup = { ...idToPhaseGroup.get(groupId)! };
-            group.entrants = phaseGroupIdToEntrants.get(groupId) || [];
+            group.seeds = phaseGroupIdToSeeds.get(groupId) || [];
             group.sets = phaseGroupIdToSets.get(groupId) || {
               completedSets: [],
               pendingSets: [],
@@ -237,13 +237,17 @@ export async function getPhaseGroup(
     bracketType === 4 || // SWISS
     bracketType === 6; // CUSTOM_SCHEDULE
 
-  const { seeds } = json.entities;
-  const entrants: Entrant[] = [];
-  if (!isBracketTypeValid || !Array.isArray(seeds) || seeds.length === 0) {
+  const apiSeeds = json.entities.seeds;
+  const seeds: Seed[] = [];
+  if (
+    !isBracketTypeValid ||
+    !Array.isArray(apiSeeds) ||
+    apiSeeds.length === 0
+  ) {
     return {
       id,
       bracketType,
-      entrants,
+      seeds,
       name: displayIdentifier,
       state,
       sets: { completedSets: [], pendingSets: [] },
@@ -258,11 +262,18 @@ export async function getPhaseGroup(
     participantId: number;
     playerId: number;
   }[] = [];
-  seeds
+  apiSeeds
     .sort((a, b) => a.groupSeedNum - b.groupSeedNum)
     .forEach((seed) => {
       const { entrantId } = seed;
       if (!Number.isInteger(entrantId)) {
+        seeds.push({
+          id: seed.id,
+          seedNum: seed.seedNum,
+          groupSeedNum: seed.groupSeedNum,
+          placeholder: null,
+          entrant: null,
+        });
         return;
       }
 
@@ -299,9 +310,15 @@ export async function getPhaseGroup(
               participants[0],
             ];
           }
-          entrants.push({
-            id: entrantId,
-            participants,
+          seeds.push({
+            id: seed.id,
+            seedNum: seed.seedNum,
+            groupSeedNum: seed.groupSeedNum,
+            placeholder: null,
+            entrant: {
+              id: entrantId,
+              participants,
+            },
           });
           entrantIdToParticipants.set(entrantId, participants);
         }
@@ -569,19 +586,19 @@ export async function getPhaseGroup(
   idToPhaseGroup.set(id, {
     id,
     bracketType,
-    entrants,
+    seeds,
     name: displayIdentifier,
     state,
     sets: { completedSets: [], pendingSets: [] },
     waveId,
     winnersTargetPhaseId,
   });
-  phaseGroupIdToEntrants.set(id, entrants);
+  phaseGroupIdToSeeds.set(id, seeds);
   phaseGroupIdToSets.set(id, { completedSets, pendingSets });
   return {
     id,
     bracketType,
-    entrants,
+    seeds,
     name: displayIdentifier,
     state,
     sets: { completedSets, pendingSets },
@@ -605,7 +622,7 @@ export async function getPhase(key: string, id: number, recursive: boolean) {
       const newPhaseGroup: PhaseGroup = {
         id: group.id,
         bracketType: group.groupTypeId,
-        entrants: [],
+        seeds: [],
         name: group.displayIdentifier,
         sets: {
           pendingSets: [],
@@ -906,7 +923,7 @@ export async function getPoolsByWave(key: string) {
               } else {
                 noWavePools.push({
                   id: phaseGroup.id,
-                  entrants: phaseGroup.entrants,
+                  seeds: phaseGroup.seeds,
                   name:
                     phaseGroupIds.length > 1
                       ? `${parentName}, ${phaseGroup.name}`

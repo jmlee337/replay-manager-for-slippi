@@ -205,7 +205,9 @@ function PhaseGroupView({
               phaseGroup.sets.completedSets.length > 0 &&
               phaseGroup.sets.pendingSets.length === 0 && (
                 <TiebreakerDialog
-                  entrants={phaseGroup.entrants}
+                  entrants={phaseGroup.seeds
+                    .filter((seed) => seed.entrant)
+                    .map((seed) => seed.entrant!)}
                   selectSet={(set: Set) => selectSet(set)}
                 />
               )}
