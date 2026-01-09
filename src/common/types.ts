@@ -481,12 +481,24 @@ export type OfflineModeSet = {
   syncState: OfflineModeSyncState;
 };
 
+export type OfflineModeSeed = {
+  id: number;
+  seedNum: number;
+  groupSeedNum: number;
+  placeholder: string | null;
+  entrant: {
+    id: number;
+    participants: OfflineModeParticipant[];
+  } | null;
+};
+
 export type OfflineModePool = {
   id: number;
   name: string;
   bracketType: number;
   waveId: number | null;
   winnersTargetPhaseId: number | null;
+  seeds: OfflineModeSeed[];
   sets: OfflineModeSet[];
 };
 

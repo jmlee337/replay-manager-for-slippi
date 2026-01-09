@@ -8,6 +8,8 @@ import {
   RendererOfflineModePhase,
   RendererOfflineModePool,
   RendererOfflineModeTournament,
+  RendererPool,
+  RendererWave,
   SelectedSetChain,
   Set,
   StartggGame,
@@ -128,6 +130,114 @@ function toParticipant(participant: OfflineModeParticipant): Participant {
     prefix: participant.prefix,
     pronouns: participant.pronouns,
   };
+}
+
+export function getOfflineModePoolsByWave(): RendererWave[] {
+  const waveIdToPools = new Map<number, RendererPool[]>();
+  const noWavePools: (RendererPool & {
+    eventId: number;
+    phaseId: number;
+    winnersTargetPhaseId: number | null;
+  })[] = [];
+  // eslint-disable-next-line no-restricted-syntax
+  for (const event of tournament.events) {
+    // eslint-disable-next-line no-restricted-syntax
+    for (const phase of event.phases) {
+      const parentName = event.phases.length > 1 ? phase.name : event.name;
+      // eslint-disable-next-line no-restricted-syntax
+      for (const pool of phase.pools) {
+        const rendererPool: RendererPool = {
+          id: pool.id,
+          name: pool.name,
+          seeds: pool.seeds.map((seed) => ({
+            id: seed.id,
+            seedNum: seed.seedNum,
+            groupSeedNum: seed.groupSeedNum,
+            placeholder: seed.placeholder,
+            entrant: seed.entrant
+              ? {
+                  id: seed.entrant.id,
+                  participants: seed.entrant.participants.map(toParticipant),
+                }
+              : null,
+          })),
+        };
+        if (pool.waveId) {
+          const wavePools = waveIdToPools.get(pool.waveId) ?? [];
+          wavePools.push(rendererPool);
+          waveIdToPools.set(pool.waveId, wavePools);
+        } else {
+          noWavePools.push({
+            ...rendererPool,
+            name:
+              phase.pools.length > 1
+                ? `${parentName}, ${pool.name}`
+                : parentName,
+            eventId: event.id,
+            phaseId: phase.id,
+            winnersTargetPhaseId: pool.winnersTargetPhaseId,
+          });
+        }
+      }
+    }
+  }
+
+  noWavePools.sort((a, b) => {
+    if (a.eventId !== b.eventId) {
+      return a.eventId - b.eventId;
+    }
+
+    if (a.winnersTargetPhaseId !== null && b.winnersTargetPhaseId === null) {
+      return -1;
+    }
+    if (a.winnersTargetPhaseId === null && b.winnersTargetPhaseId !== null) {
+      return 1;
+    }
+    if (
+      a.winnersTargetPhaseId !== null &&
+      b.winnersTargetPhaseId !== null &&
+      a.winnersTargetPhaseId !== b.winnersTargetPhaseId
+    ) {
+      if (a.winnersTargetPhaseId === b.phaseId) {
+        return -1;
+      }
+      if (a.phaseId === b.winnersTargetPhaseId) {
+        return 1;
+      }
+      return a.winnersTargetPhaseId - b.winnersTargetPhaseId;
+    }
+
+    if (a.phaseId !== b.phaseId) {
+      return a.phaseId - b.phaseId;
+    }
+
+    return a.name.length === b.name.length
+      ? a.name.localeCompare(b.name)
+      : a.name.length - b.name.length;
+  });
+
+  Array.from(waveIdToPools.values()).forEach((phaseGroups) =>
+    phaseGroups.sort((a, b) =>
+      a.name.length === b.name.length
+        ? a.name.localeCompare(b.name)
+        : a.name.length - b.name.length,
+    ),
+  );
+
+  return [
+    ...Array.from(waveIdToPools.keys())
+      .sort((a, b) => a - b)
+      .map(
+        (waveId): RendererWave => ({
+          id: waveId,
+          pools: waveIdToPools.get(waveId)!,
+        }),
+      ),
+    {
+      id: 0,
+      pools: noWavePools,
+    },
+  ];
 }
 
 const reportedSetIds = new Map<number, boolean>();

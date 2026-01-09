@@ -122,6 +122,7 @@ import {
   connectToOfflineMode,
   disconnectFromOfflineMode,
   getCurrentOfflineModeTournament,
+  getOfflineModePoolsByWave,
   getOfflineModeStatus,
   getSelectedOfflineModeSet,
   getSelectedOfflineModeSetChain,
@@ -1054,6 +1055,9 @@ export default function setupIPCs(
       }
 
       return getPoolsByWave(sggApiKey);
+    }
+    if (mode === Mode.OFFLINE_MODE) {
+      return getOfflineModePoolsByWave();
     }
     return [];
   });
