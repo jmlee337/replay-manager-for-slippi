@@ -454,7 +454,7 @@ export default function Settings({
                 setUseLAN(checked);
               }}
             />
-            {mode === Mode.STARTGG && (
+            {(mode === Mode.STARTGG || mode === Mode.OFFLINE_MODE) && (
               <LabeledCheckbox
                 disabled={hostFormat.smuggleCostumeIndex !== undefined}
                 checked={smuggleCostumeIndex}
