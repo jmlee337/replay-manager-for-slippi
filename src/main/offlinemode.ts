@@ -2,6 +2,7 @@ import { BrowserWindow } from 'electron';
 import WebSocket from 'ws';
 import {
   OfflineModeParticipant,
+  OfflineModeSeed,
   OfflineModeSet,
   OfflineModeTournament,
   Participant,
@@ -133,23 +134,29 @@ function toParticipant(participant: OfflineModeParticipant): Participant {
 }
 
 export function getOfflineModePoolsByWave(): RendererWave[] {
+  const poolIdToSeeds = new Map<number, OfflineModeSeed[]>();
   const waveIdToPools = new Map<number, RendererPool[]>();
   const noWavePools: (RendererPool & {
     eventId: number;
     phaseId: number;
     winnersTargetPhaseId: number | null;
   })[] = [];
-  // eslint-disable-next-line no-restricted-syntax
-  for (const event of tournament.events) {
-    // eslint-disable-next-line no-restricted-syntax
-    for (const phase of event.phases) {
+  tournament.events.forEach((event) => {
+    event.phases.forEach((phase) => {
       const parentName = event.phases.length > 1 ? phase.name : event.name;
-      // eslint-disable-next-line no-restricted-syntax
-      for (const pool of phase.pools) {
+      phase.seeds.forEach((seed) => {
+        let seeds = poolIdToSeeds.get(seed.poolId);
+        if (!seeds) {
+          seeds = [];
+          poolIdToSeeds.set(seed.poolId, seeds);
+        }
+        seeds.push(seed);
+      });
+      phase.pools.forEach((pool) => {
         const rendererPool: RendererPool = {
           id: pool.id,
           name: pool.name,
-          seeds: pool.seeds.map((seed) => ({
+          seeds: (poolIdToSeeds.get(pool.id) ?? []).map((seed) => ({
             id: seed.id,
             seedNum: seed.seedNum,
             groupSeedNum: seed.groupSeedNum,
@@ -163,9 +170,12 @@ export function getOfflineModePoolsByWave(): RendererWave[] {
           })),
         };
         if (pool.waveId) {
-          const wavePools = waveIdToPools.get(pool.waveId) ?? [];
-          wavePools.push(rendererPool);
-          waveIdToPools.set(pool.waveId, wavePools);
+          let pools = waveIdToPools.get(pool.waveId);
+          if (!pools) {
+            pools = [];
+            waveIdToPools.set(pool.waveId, pools);
+          }
+          pools.push(rendererPool);
         } else {
           noWavePools.push({
             ...rendererPool,
@@ -178,9 +188,9 @@ export function getOfflineModePoolsByWave(): RendererWave[] {
             winnersTargetPhaseId: pool.winnersTargetPhaseId,
           });
         }
-      }
-    }
-  }
+      });
+    });
+  });
 
   noWavePools.sort((a, b) => {
     if (a.eventId !== b.eventId) {

@@ -483,6 +483,7 @@ export type OfflineModeSet = {
 
 export type OfflineModeSeed = {
   id: number;
+  poolId: number;
   seedNum: number;
   groupSeedNum: number;
   placeholder: string | null;
@@ -498,7 +499,6 @@ export type OfflineModePool = {
   bracketType: number;
   waveId: number | null;
   winnersTargetPhaseId: number | null;
-  seeds: OfflineModeSeed[];
   sets: OfflineModeSet[];
 };
 
@@ -507,6 +507,7 @@ export type OfflineModePhase = {
   name: string;
   pools: OfflineModePool[];
   phaseOrder: number;
+  seeds: OfflineModeSeed[];
 };
 
 export type OfflineModeEvent = {
