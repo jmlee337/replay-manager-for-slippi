@@ -84,6 +84,41 @@ async function getLastFrame(
   return lastFrame;
 }
 
+function unsetWinnerIfTie(players: Player[]) {
+  const realPlayers = players.filter(
+    (player) => player.playerType === 0 || player.playerType === 1,
+  );
+  if (realPlayers.length < 2) {
+    return;
+  }
+
+  if (
+    realPlayers.every(
+      (player) => player.stocksRemaining !== -1 && player.finalPercent !== -1,
+    )
+  ) {
+    const { stocksRemaining } = realPlayers[0];
+    const finalPercent = Math.trunc(realPlayers[0].finalPercent);
+    let tie = true;
+    for (let i = 1; i < realPlayers.length; i += 1) {
+      const player = realPlayers[i];
+      if (
+        player.stocksRemaining !== stocksRemaining ||
+        (stocksRemaining !== 0 &&
+          Math.trunc(player.finalPercent) !== finalPercent)
+      ) {
+        tie = false;
+        break;
+      }
+    }
+    if (tie) {
+      players.forEach((player) => {
+        player.isWinner = false;
+      });
+    }
+  }
+}
+
 export async function getReplaysInDir(
   dir: string,
 ): Promise<{ replays: Replay[]; invalidReplays: InvalidReplay[] }> {
@@ -217,6 +252,7 @@ export async function getReplaysInDir(
             playerType: gameStart[offset + 1],
             port: i + 1,
             stocksRemaining: -1,
+            finalPercent: -1,
             teamId,
           } as Player;
           if (players[i].playerType === 0 || players[i].playerType === 1) {
@@ -297,32 +333,52 @@ export async function getReplaysInDir(
         if (replayLength > 0) {
           const gameEndOffset = metadataOffset - gameEndSize;
           const frameBookendOffset = gameEndOffset - frameBookendSize;
-          const postFrameUpdateOffset =
-            frameBookendOffset - postFrameUpdateSize;
 
-          // last frame stocks
-          await Promise.all(
-            [...Array(numPlayers).keys()].map(async (i) => {
-              const currentOffset =
-                postFrameUpdateOffset - postFrameUpdateSize * i;
+          // last frame bookend
+          const frameBookend = Buffer.alloc(frameBookendSize);
+          const frameBookendRes = await fileHandle.read(
+            frameBookend,
+            0,
+            frameBookendSize,
+            frameBookendOffset,
+          );
+          if (
+            frameBookendRes.bytesRead === frameBookendSize &&
+            frameBookend[0] === 0x3c
+          ) {
+            const lastFrameNum = frameBookend.readInt32BE(0x1);
+
+            // last post frame update
+            let postFrameUpdatesSeen = 0;
+            let currentPostFrameUpdateOffset =
+              frameBookendOffset - postFrameUpdateSize;
+            while (postFrameUpdatesSeen < numPlayers) {
               const postFrameUpdate = Buffer.alloc(postFrameUpdateSize);
+              // eslint-disable-next-line no-await-in-loop
               const postFrameUpdateRes = await fileHandle.read(
                 postFrameUpdate,
                 0,
                 postFrameUpdateSize,
-                currentOffset,
+                currentPostFrameUpdateOffset,
               );
               if (
                 postFrameUpdateRes.bytesRead !== postFrameUpdateSize ||
-                postFrameUpdate[0] !== 0x38
+                postFrameUpdate[0] !== 0x38 ||
+                postFrameUpdate.readInt32BE(0x1) !== lastFrameNum
               ) {
-                return;
+                break;
               }
-              // eslint-disable-next-line prefer-destructuring
-              players[postFrameUpdate[5]].stocksRemaining =
-                postFrameUpdate[0x21];
-            }),
-          );
+              if (postFrameUpdate[0x6] === 0) {
+                // eslint-disable-next-line prefer-destructuring
+                players[postFrameUpdate[0x5]].stocksRemaining =
+                  postFrameUpdate[0x21];
+                players[postFrameUpdate[0x5]].finalPercent =
+                  postFrameUpdate.readFloatBE(0x16);
+                postFrameUpdatesSeen += 1;
+              }
+              currentPostFrameUpdateOffset -= postFrameUpdateSize;
+            }
+          }
 
           // game end
           const gameEnd = Buffer.alloc(gameEndSize);
@@ -384,6 +440,7 @@ export async function getReplaysInDir(
             for (let i = 0; i < 4; i += 1) {
               players[i].isWinner = gameEnd[i + 3] === 0;
             }
+            unsetWinnerIfTie(players);
           }
 
           // metadata
