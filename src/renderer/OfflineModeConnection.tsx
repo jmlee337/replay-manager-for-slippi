@@ -30,7 +30,6 @@ export function OfflineModeConnectionDialogContent({
   offlineModeStatus: OfflineModeStatus;
 }) {
   const [port, setPort] = useState(50000);
-  const [connecting, setConnecting] = useState(false);
 
   return (
     <>
@@ -42,7 +41,6 @@ export function OfflineModeConnectionDialogContent({
           <>
             <Stack direction="row" alignItems="center" spacing="8px">
               <TextField
-                disabled={connecting}
                 label="Port"
                 name="port"
                 onChange={(event) => {
@@ -55,14 +53,8 @@ export function OfflineModeConnectionDialogContent({
                 variant="filled"
               />
               <Button
-                disabled={connecting}
                 onClick={async () => {
-                  try {
-                    setConnecting(true);
-                    await window.electron.connectToOfflineMode(port);
-                  } finally {
-                    setConnecting(false);
-                  }
+                  await window.electron.connectToOfflineMode(port);
                 }}
                 variant="contained"
               >

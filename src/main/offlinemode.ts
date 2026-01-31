@@ -52,7 +52,7 @@ export function getSelectedOfflineModeSet() {
 
 function setStatus(newAddress: string, newError?: string) {
   address = newAddress;
-  if (newError) {
+  if (newError !== undefined) {
     error = newError;
   }
   mainWindow?.webContents.send('offlineModeStatus', { address, error });
