@@ -56,10 +56,10 @@ const chipStyle = {
 export function SkewReplay({ replay }: { replay: Replay }) {
   const time = format(replay.startAt, 'h:mmaaa');
   const dateShort = format(replay.startAt, 'yyyy MMM dd');
-  const duration = format(
-    new Date((replay.lastFrame + 124) / frameMsDivisor),
-    "m'm'ss's'",
-  );
+  const duration =
+    replay.lastFrame > -124
+      ? format(new Date((replay.lastFrame + 124) / frameMsDivisor), "m'm'ss's'")
+      : '?m??s';
   const shortStageName =
     shortStageNames.get(replay.stageId) || replay.stageId.toString();
   return (
@@ -154,10 +154,13 @@ const ReplayListItem = forwardRef(
 
     const dateShort = format(replay.startAt, 'yyyy MMM dd');
     const time = format(replay.startAt, 'h:mmaaa');
-    const duration = format(
-      new Date((replay.lastFrame + 124) / frameMsDivisor),
-      "m'm'ss's'",
-    );
+    const duration =
+      replay.lastFrame > -124
+        ? format(
+            new Date((replay.lastFrame + 124) / frameMsDivisor),
+            "m'm'ss's'",
+          )
+        : '?m??s';
     const stageName =
       stageNames.get(replay.stageId) || replay.stageId.toString();
 

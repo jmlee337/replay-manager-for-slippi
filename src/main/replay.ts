@@ -3,7 +3,6 @@ import {
   mkdir,
   open,
   readdir,
-  FileHandle,
   writeFile,
   access,
   stat,
@@ -43,46 +42,6 @@ function filenameToDateAndTime(fileName: string, birthtimeMs: number) {
 const RAW_HEADER_START = Buffer.from([
   0x7b, 0x55, 0x03, 0x72, 0x61, 0x77, 0x5b, 0x24, 0x55, 0x23, 0x6c,
 ]);
-
-async function getLastFrame(
-  start: number,
-  end: number,
-  fileHandle: FileHandle,
-  payloadSizes: Map<number, number>,
-) {
-  let lastFrame = -124;
-  let offset = start;
-  while (offset < end) {
-    const eventCode = Buffer.alloc(1);
-    // eslint-disable-next-line no-await-in-loop
-    const eventCodeReadRes = await fileHandle.read(eventCode, 0, 1, offset);
-    if (eventCodeReadRes.bytesRead !== 1) {
-      break;
-    }
-    const eventLength = payloadSizes.get(eventCode[0]);
-    if (!eventLength) {
-      break;
-    }
-    // Frame Bookend -> Latest Finalized Frame available from 3.7.0.
-    // We enforce version >= 3.13.0 so this should always be available.
-    if (eventCode[0] === 0x3c) {
-      const frameNumberBuf = Buffer.alloc(4);
-      // eslint-disable-next-line no-await-in-loop
-      const frameNumberReadRes = await fileHandle.read(
-        frameNumberBuf,
-        0,
-        4,
-        offset + 5,
-      );
-      if (frameNumberReadRes.bytesRead !== 4) {
-        break;
-      }
-      lastFrame = frameNumberBuf.readUint32BE();
-    }
-    offset = offset + 1 + eventLength;
-  }
-  return lastFrame;
-}
 
 function unsetWinnerIfTie(players: Player[]) {
   const realPlayers = players.filter(
@@ -330,6 +289,7 @@ export async function getReplaysInDir(
 
         const stats = await fileHandle.stat();
         const fileSize = stats.size;
+        let lastFrame = -124;
         if (replayLength > 0) {
           const gameEndOffset = metadataOffset - gameEndSize;
           const frameBookendOffset = gameEndOffset - frameBookendSize;
@@ -346,7 +306,7 @@ export async function getReplaysInDir(
             frameBookendRes.bytesRead === frameBookendSize &&
             frameBookend[0] === 0x3c
           ) {
-            const lastFrameNum = frameBookend.readInt32BE(0x1);
+            lastFrame = frameBookend.readInt32BE(0x1);
 
             // last post frame update
             let postFrameUpdatesSeen = 0;
@@ -364,7 +324,7 @@ export async function getReplaysInDir(
               if (
                 postFrameUpdateRes.bytesRead !== postFrameUpdateSize ||
                 postFrameUpdate[0] !== 0x38 ||
-                postFrameUpdate.readInt32BE(0x1) !== lastFrameNum
+                postFrameUpdate.readInt32BE(0x1) !== lastFrame
               ) {
                 break;
               }
@@ -390,12 +350,6 @@ export async function getReplaysInDir(
           );
           if (gameEndRes.bytesRead !== gameEndSize || gameEnd[0] !== 0x39) {
             invalidReasons.push('Game end event not found.');
-            const lastFrame = await getLastFrame(
-              17 + payloadsSize + gameStartSize, // start
-              replayLength + 15, // end
-              fileHandle,
-              payloadSizes,
-            );
             return {
               fileName,
               filePath,
@@ -406,7 +360,7 @@ export async function getReplaysInDir(
               selected: false,
               stageId,
               startAt: filenameToDateAndTime(fileName, stats.birthtimeMs),
-              timeout: lastFrame === gameTimerSeconds * 60,
+              timeout: false,
             };
           }
           if (gameEnd[1] !== 1 && gameEnd[1] !== 2 && gameEnd[1] !== 3) {
@@ -447,12 +401,6 @@ export async function getReplaysInDir(
           const metadataLength = fileSize - metadataOffset;
           if (metadataLength <= 0) {
             invalidReasons.push('Metadata not present.');
-            const lastFrame = await getLastFrame(
-              17 + payloadsSize + gameStartSize, // start
-              replayLength + 15, // end
-              fileHandle,
-              payloadSizes,
-            );
             return {
               fileName,
               filePath,
@@ -476,12 +424,6 @@ export async function getReplaysInDir(
           );
           if (metadataReadRes.bytesRead !== metadataLength) {
             invalidReasons.push('Metadata corrupted.');
-            const lastFrame = await getLastFrame(
-              17 + payloadsSize + gameStartSize, // start
-              replayLength + 15, // end
-              fileHandle,
-              payloadSizes,
-            );
             return {
               fileName,
               filePath,
@@ -499,14 +441,14 @@ export async function getReplaysInDir(
           const concatBuffer = Buffer.from(new Uint8Array([0x7b]));
           const metadataUbjson = Buffer.concat([concatBuffer, metadata]);
           const obj = decode(metadataUbjson);
-          let { lastFrame } = obj.metadata;
+          if (lastFrame === -124) {
+            ({ lastFrame } = obj.metadata);
+          }
           if (!Number.isInteger(lastFrame)) {
-            lastFrame = getLastFrame(
-              17 + payloadsSize + gameStartSize, // start
-              replayLength + 15, // end
-              fileHandle,
-              payloadSizes,
-            );
+            lastFrame = -124;
+          }
+          if (lastFrame === -124) {
+            invalidReasons.push('Unknown game duration');
           } else if (lastFrame <= 3476 /* 3600 - 124 */) {
             invalidReasons.push('Game duration less than 1 minute.');
           } else if (lastFrame === 3600 && gameEnd[1] === 1) {
@@ -533,12 +475,6 @@ export async function getReplaysInDir(
         // if we reach this point, the file is incomplete.
         // try to derive lastFrame and startAt
         invalidReasons.push('Incomplete file.');
-        const lastFrame = await getLastFrame(
-          17 + payloadsSize + gameStartSize, // start
-          fileSize, // end
-          fileHandle,
-          payloadSizes,
-        );
         return {
           fileName,
           filePath,
@@ -549,7 +485,7 @@ export async function getReplaysInDir(
           selected: false,
           stageId,
           startAt: filenameToDateAndTime(fileName, stats.birthtimeMs),
-          timeout: lastFrame === gameTimerSeconds * 60,
+          timeout: false,
         };
       } catch (e: any) {
         const invalidReason = e instanceof Error ? e.message : e;
