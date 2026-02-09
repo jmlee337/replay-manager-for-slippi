@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: There is a technical issue with Replay Manager for Slippi.
+about: There is a technical issue with Replay Reporter for Slippi.
 labels: 'bug'
 ---
 
@@ -45,5 +45,5 @@ labels: 'bug'
 
 <!--- Include as many relevant details about the environment you experienced the bug in -->
 
-- replay-manager-for-slippi version or branch :
+- Replay Reporter for Slippi version or branch :
 - Operating System and version :

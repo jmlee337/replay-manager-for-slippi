@@ -205,7 +205,7 @@ function HostsDialog({ host }: { host: CopyHostOrClient }) {
         }}
         fullWidth
       >
-        <DialogTitle>Searching LAN for host Replay Manager...</DialogTitle>
+        <DialogTitle>Searching LAN for host Replay Reporter...</DialogTitle>
         <DialogContent>
           <form
             style={{

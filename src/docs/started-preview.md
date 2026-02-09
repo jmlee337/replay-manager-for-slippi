@@ -1,7 +1,8 @@
 # Started Pool with Preview Sets
+
 If you've been directed to this page, your start.gg pool may be bugged.
 
-You can verify this by seeing that despite the pool being shown as started in Replay Manager and various places on start.gg (and possibly even having sets reported), no `Reset Bracket` button is available on the pool's reporting page:  
+You can verify this by seeing that despite the pool being shown as started in Replay Reporter and various places on start.gg (and possibly even having sets reported), no `Reset Bracket` button is available on the pool's reporting page:  
 ![image](https://github.com/user-attachments/assets/ab0a1050-78d0-41c5-8dfd-dc056393fe9b)
 
 One known fix is to reset the whole phase from the `Bracket Setup` page:  

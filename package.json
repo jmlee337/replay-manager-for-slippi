@@ -185,7 +185,7 @@
     "webpack-merge": "^5.9.0"
   },
   "build": {
-    "productName": "ReplayManagerForSlippi",
+    "productName": "ReplayReporterForSlippi",
     "appId": "org.jmlee337.ReplayManagerForSlippi",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",

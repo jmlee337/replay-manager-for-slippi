@@ -205,7 +205,7 @@ export default function Settings({
         >
           <DialogTitle>Settings</DialogTitle>
           <Typography variant="caption">
-            Replay Manager for Slippi version {appVersion}
+            Replay Reporter for Slippi version {appVersion}
           </Typography>
         </Stack>
         <DialogContent sx={{ pt: 0 }}>
