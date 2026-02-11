@@ -2,6 +2,7 @@ import {
   ListChecks,
   SlippiGame,
   getCoordListFromGame,
+  isBoxController,
   isSlpMinVersion,
 } from 'slp-enforcer';
 import { EnforcePlayerFailure } from '../common/types';
@@ -59,7 +60,14 @@ window.onload = () => {
                     }
                   }
                   if (playerFailure.checkNames.length > 0) {
-                    playerFailures.push(playerFailure);
+                    // suppress known box sdi false positive
+                    if (
+                      playerFailure.checkNames.length > 1 ||
+                      playerFailure.checkNames[0] !== 'Illegal SDI' ||
+                      !isBoxController(mainStickCoords)
+                    ) {
+                      playerFailures.push(playerFailure);
+                    }
                   }
                 }
               }
