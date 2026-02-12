@@ -20,6 +20,7 @@ import {
 import { ForwardedRef, forwardRef, RefObject, useCallback } from 'react';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
+import { UTCDate } from '@date-fns/utc';
 import { Id, PlayerOverrides, Replay } from '../common/types';
 import {
   characterNames,
@@ -58,7 +59,10 @@ export function SkewReplay({ replay }: { replay: Replay }) {
   const dateShort = format(replay.startAt, 'yyyy MMM dd');
   const duration =
     replay.lastFrame > -124
-      ? format(new Date((replay.lastFrame + 124) / frameMsDivisor), "m'm'ss's'")
+      ? format(
+          new UTCDate((replay.lastFrame + 124) / frameMsDivisor),
+          "m'm'ss's'",
+        )
       : '?m??s';
   const shortStageName =
     shortStageNames.get(replay.stageId) || replay.stageId.toString();
@@ -157,7 +161,7 @@ const ReplayListItem = forwardRef(
     const duration =
       replay.lastFrame > -124
         ? format(
-            new Date((replay.lastFrame + 124) / frameMsDivisor),
+            new UTCDate((replay.lastFrame + 124) / frameMsDivisor),
             "m'm'ss's'",
           )
         : '?m??s';
