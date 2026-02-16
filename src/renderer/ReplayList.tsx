@@ -17,7 +17,7 @@ import {
   EmojiEvents,
   HideSource,
 } from '@mui/icons-material';
-import { ForwardedRef, forwardRef, RefObject, useCallback } from 'react';
+import { ForwardedRef, forwardRef, RefObject, useCallback, JSX } from 'react';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { UTCDate } from '@date-fns/utc';
@@ -174,43 +174,96 @@ const ReplayListItem = forwardRef(
         player.playerOverrides.displayName ||
         (player.playerType === 0 && player.displayName) ||
         '';
-      const trophy =
-        (player.isWinner && !replay.timeout && (
-          <Tooltip arrow placement="top" title="Winner">
-            <EmojiEvents style={{ marginLeft: '-4px' }} />
-          </Tooltip>
-        )) ||
-        (player.isWinner && replay.timeout && (
-          <Tooltip arrow placement="top" title="Unset as winner (timeout)">
-            <IconButton
+      let trophy: JSX.Element | undefined;
+      if (displayName) {
+        if (player.isWinner) {
+          if (replay.timeout) {
+            trophy = (
+              <Tooltip arrow placement="top" title="Unset as winner (timeout)">
+                <IconButton
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    player.isWinner = false;
+                    onOverride();
+                  }}
+                  style={{ color: '#000', margin: '-8px -8px -8px -12px' }}
+                >
+                  <EmojiEvents />
+                </IconButton>
+              </Tooltip>
+            );
+          } else {
+            trophy = (
+              <Tooltip arrow placement="top" title="Winner">
+                <EmojiEvents style={{ marginLeft: '-4px' }} />
+              </Tooltip>
+            );
+          }
+        } else if (player.playerType === 0 || player.playerType === 1) {
+          trophy = (
+            <Tooltip arrow placement="top" title="Set as winner">
+              <IconButton
+                onClick={(event) => {
+                  event.stopPropagation();
+                  replay.players.forEach((innerPlayer) => {
+                    innerPlayer.isWinner = false;
+                  });
+                  player.isWinner = true;
+                  onOverride();
+                }}
+                style={{ color: '#000', margin: '-8px -8px -8px -12px' }}
+              >
+                <EmojiEventsOutlined />
+              </IconButton>
+            </Tooltip>
+          );
+        }
+      } else if (player.isWinner) {
+        if (replay.timeout) {
+          trophy = (
+            <Stack
+              direction="row"
+              typography="caption"
+              style={{ cursor: 'pointer', alignItems: 'center' }}
               onClick={(event) => {
                 event.stopPropagation();
                 player.isWinner = false;
                 onOverride();
               }}
-              style={{ color: '#000', margin: '-8px -8px -8px -12px' }}
             >
-              <EmojiEvents />
-            </IconButton>
-          </Tooltip>
-        )) ||
-        ((player.playerType === 0 || player.playerType === 1) && (
-          <Tooltip arrow placement="top" title="Set as winner">
-            <IconButton
-              onClick={(event) => {
-                event.stopPropagation();
-                replay.players.forEach((innerPlayer) => {
-                  innerPlayer.isWinner = false;
-                });
-                player.isWinner = true;
-                onOverride();
-              }}
-              style={{ color: '#000', margin: '-8px -8px -8px -12px' }}
+              <EmojiEvents style={{ marginLeft: '-4px' }} /> Unset as winner
+            </Stack>
+          );
+        } else {
+          trophy = (
+            <Stack
+              direction="row"
+              typography="caption"
+              style={{ alignItems: 'center' }}
             >
-              <EmojiEventsOutlined />
-            </IconButton>
-          </Tooltip>
-        ));
+              <EmojiEvents style={{ marginLeft: '-4px' }} /> Winner
+            </Stack>
+          );
+        }
+      } else if (player.playerType === 0 || player.playerType === 1) {
+        trophy = (
+          <Stack
+            direction="row"
+            typography="caption"
+            style={{ cursor: 'pointer', alignItems: 'center' }}
+            onClick={(event) => {
+              event.stopPropagation();
+              replay.players.forEach((innerPlayer) => {
+                innerPlayer.isWinner = false;
+              });
+              player.isWinner = true;
+              onOverride();
+            }}
+          >
+            <EmojiEventsOutlined style={{ marginLeft: '-4px' }} /> Set as winner
+          </Stack>
+        );
+      }
       return (
         <QuarterSegment key={key}>
           {trophy}
@@ -380,7 +433,10 @@ const ReplayListItem = forwardRef(
           <Stack direction="row" sx={{ typography: 'caption' }}>
             <QuarterSegment>{time}</QuarterSegment>
             <QuarterSegment>{stageName}</QuarterSegment>
-            <QuarterSegment>{duration}</QuarterSegment>
+            <QuarterSegment>
+              {duration}
+              {replay.timeout && ' (timeout)'}
+            </QuarterSegment>
           </Stack>
           <Stack direction="row" sx={{ typography: 'caption' }}>
             <QuarterSegment>{dateShort}</QuarterSegment>
