@@ -180,29 +180,71 @@ const ReplayListItem = forwardRef(
           if (replay.timeout) {
             trophy = (
               <Tooltip arrow placement="top" title="Unset as winner (timeout)">
-                <IconButton
+                <Stack
+                  direction="row"
+                  typography="caption"
+                  style={{
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    textWrap: 'nowrap',
+                    backgroundColor: elevateNames ? 'white' : undefined,
+                  }}
+                  sx={{
+                    zIndex: (theme) =>
+                      elevateNames ? theme.zIndex.drawer + 2 : undefined,
+                  }}
                   onClick={(event) => {
                     event.stopPropagation();
                     player.isWinner = false;
                     onOverride();
                   }}
-                  style={{ color: '#000', margin: '-8px -8px -8px -12px' }}
                 >
                   <EmojiEvents />
-                </IconButton>
+                  {` ${displayName.slice(0, 15)}`}
+                </Stack>
               </Tooltip>
             );
           } else {
             trophy = (
               <Tooltip arrow placement="top" title="Winner">
-                <EmojiEvents style={{ marginLeft: '-4px' }} />
+                <Stack
+                  direction="row"
+                  typography="caption"
+                  style={{
+                    alignItems: 'center',
+                    overflow: 'hidden',
+                    textWrap: 'nowrap',
+                    backgroundColor: elevateNames ? 'white' : undefined,
+                  }}
+                  sx={{
+                    zIndex: (theme) =>
+                      elevateNames ? theme.zIndex.drawer + 2 : undefined,
+                  }}
+                >
+                  <EmojiEvents />
+                  {` ${displayName.slice(0, 15)}`}
+                </Stack>
               </Tooltip>
             );
           }
         } else if (player.playerType === 0 || player.playerType === 1) {
           trophy = (
             <Tooltip arrow placement="top" title="Set as winner">
-              <IconButton
+              <Stack
+                direction="row"
+                typography="caption"
+                style={{
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  overflow: 'hidden',
+                  textWrap: 'nowrap',
+                  backgroundColor: elevateNames ? 'white' : undefined,
+                }}
+                sx={{
+                  zIndex: (theme) =>
+                    elevateNames ? theme.zIndex.drawer + 2 : undefined,
+                }}
                 onClick={(event) => {
                   event.stopPropagation();
                   replay.players.forEach((innerPlayer) => {
@@ -211,10 +253,10 @@ const ReplayListItem = forwardRef(
                   player.isWinner = true;
                   onOverride();
                 }}
-                style={{ color: '#000', margin: '-8px -8px -8px -12px' }}
               >
                 <EmojiEventsOutlined />
-              </IconButton>
+                {` ${displayName.slice(0, 15)}`}
+              </Stack>
             </Tooltip>
           );
         }
@@ -224,14 +266,22 @@ const ReplayListItem = forwardRef(
             <Stack
               direction="row"
               typography="caption"
-              style={{ cursor: 'pointer', alignItems: 'center' }}
+              style={{
+                alignItems: 'center',
+                cursor: 'pointer',
+                backgroundColor: elevateNames ? 'white' : undefined,
+              }}
+              sx={{
+                zIndex: (theme) =>
+                  elevateNames ? theme.zIndex.drawer + 2 : undefined,
+              }}
               onClick={(event) => {
                 event.stopPropagation();
                 player.isWinner = false;
                 onOverride();
               }}
             >
-              <EmojiEvents style={{ marginLeft: '-4px' }} /> Unset as winner
+              <EmojiEvents /> Unset as winner
             </Stack>
           );
         } else {
@@ -239,9 +289,16 @@ const ReplayListItem = forwardRef(
             <Stack
               direction="row"
               typography="caption"
-              style={{ alignItems: 'center' }}
+              style={{
+                alignItems: 'center',
+                backgroundColor: elevateNames ? 'white' : undefined,
+              }}
+              sx={{
+                zIndex: (theme) =>
+                  elevateNames ? theme.zIndex.drawer + 2 : undefined,
+              }}
             >
-              <EmojiEvents style={{ marginLeft: '-4px' }} /> Winner
+              <EmojiEvents /> Winner
             </Stack>
           );
         }
@@ -250,7 +307,15 @@ const ReplayListItem = forwardRef(
           <Stack
             direction="row"
             typography="caption"
-            style={{ cursor: 'pointer', alignItems: 'center' }}
+            style={{
+              alignItems: 'center',
+              cursor: 'pointer',
+              backgroundColor: elevateNames ? 'white' : undefined,
+            }}
+            sx={{
+              zIndex: (theme) =>
+                elevateNames ? theme.zIndex.drawer + 2 : undefined,
+            }}
             onClick={(event) => {
               event.stopPropagation();
               replay.players.forEach((innerPlayer) => {
@@ -260,29 +325,11 @@ const ReplayListItem = forwardRef(
               onOverride();
             }}
           >
-            <EmojiEventsOutlined style={{ marginLeft: '-4px' }} /> Set as winner
+            <EmojiEventsOutlined /> Set as winner
           </Stack>
         );
       }
-      return (
-        <QuarterSegment key={key}>
-          {trophy}
-          <Box
-            bgcolor={
-              displayName.length > 0 && elevateNames ? 'white' : undefined
-            }
-            flexGrow={1}
-            sx={{
-              zIndex: (theme) =>
-                displayName.length > 0 && elevateNames
-                  ? theme.zIndex.drawer + 2
-                  : undefined,
-            }}
-          >
-            {displayName.slice(0, 15)}
-          </Box>
-        </QuarterSegment>
-      );
+      return <QuarterSegment key={key}>{trophy}</QuarterSegment>;
     });
 
     const playerChips = replay.players.map((player) => {
