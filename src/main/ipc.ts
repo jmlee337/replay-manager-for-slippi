@@ -481,10 +481,19 @@ export default function setupIPCs(
       enforcerWindow.webContents.send(
         'enforcer',
         await Promise.all(
-          retReplays.replays.map(async (replay) => ({
-            fileName: replay.fileName,
-            buffer: (await readFile(replay.filePath)).buffer,
-          })),
+          retReplays.replays
+            .filter((replay) => replay.lastFrame > -124)
+            .map(async (replay) => {
+              const buffer = await readFile(replay.filePath);
+              return {
+                fileName: replay.fileName,
+                array: new Uint8Array(
+                  buffer.buffer,
+                  buffer.byteOffset,
+                  buffer.byteLength,
+                ),
+              };
+            }),
         ),
         currentReplayLoadCount,
       );
