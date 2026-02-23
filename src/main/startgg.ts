@@ -267,11 +267,14 @@ export async function getPhaseGroup(
     .forEach((seed) => {
       const { entrantId } = seed;
       if (!Number.isInteger(entrantId)) {
+        const placeholderEntrant = Object.values<any>(
+          seed.mutations.entrants,
+        ).find((entrant) => entrant.isPlaceholder);
         seeds.push({
           id: seed.id,
           seedNum: seed.seedNum,
           groupSeedNum: seed.groupSeedNum,
-          placeholder: null,
+          placeholder: placeholderEntrant ? placeholderEntrant.name : null,
           entrant: null,
         });
         return;
@@ -314,7 +317,7 @@ export async function getPhaseGroup(
             id: seed.id,
             seedNum: seed.seedNum,
             groupSeedNum: seed.groupSeedNum,
-            placeholder: null,
+            placeholder: null, // this is fine cuz there's an entrant
             entrant: {
               id: entrantId,
               participants,
