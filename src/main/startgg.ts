@@ -219,7 +219,7 @@ export async function getPhaseGroup(
   id: number,
 ): Promise<PhaseGroup> {
   const response = await wrappedFetch(
-    `https://api.start.gg/phase_group/${id}?expand[]=sets&expand[]=entrants&expand[]=seeds`,
+    `https://api.start.gg/phase_group/${id}?expand[]=sets&expand[]=entrants&expand[]=seeds&bustCache=true`,
   );
   const json = await response.json();
   const phaseGroup = json.entities.groups;
