@@ -448,7 +448,7 @@ export async function getReplaysInDir(
             lastFrame = -124;
           }
           if (lastFrame === -124) {
-            invalidReasons.push('Unknown game duration');
+            invalidReasons.push('Unknown game duration.');
           } else if (lastFrame <= 3476 /* 3600 - 124 */) {
             invalidReasons.push('Game duration less than 1 minute.');
           } else if (lastFrame === 3600 && gameEnd[1] === 1) {
@@ -473,8 +473,8 @@ export async function getReplaysInDir(
         }
 
         // if we reach this point, the file is incomplete.
-        // try to derive lastFrame and startAt
-        invalidReasons.push('Incomplete file.');
+        // try to derive startAt
+        invalidReasons.push('Incomplete file (may freeze playback).');
         return {
           fileName,
           filePath,
@@ -600,6 +600,9 @@ export async function writeReplays(
     throw new Error(
       `${startTimes.length} start times, ${replays.length} replays`,
     );
+  }
+  if (replays.some((replay) => replay.lastFrame < -123)) {
+    throw new Error(`cannot copy incomplete replays`);
   }
 
   const replayBuffers: ReplayBuffer[] = [];
@@ -793,13 +796,16 @@ export async function writeReplays(
           bufs.push(START_AT_PREFIX);
           bufs.push(startAtBuf);
         }
-        if (replay.lastFrame) {
-          const lastFrameBuf = Buffer.alloc(4);
-          lastFrameBuf.writeUint32BE(replay.lastFrame);
-          bufs.push(LAST_FRAME_PREFIX);
-          bufs.push(lastFrameBuf);
-        }
+
+        // last frame
+        const lastFrameBuf = Buffer.alloc(4);
+        lastFrameBuf.writeUint32BE(replay.lastFrame);
+        bufs.push(LAST_FRAME_PREFIX);
+        bufs.push(lastFrameBuf);
+
+        // played on
         bufs.push(PLAYED_ON);
+
         const bufsLength = bufs.reduce((acc, buf) => acc + buf.length, 0);
         const metadata = Buffer.concat(bufs, bufsLength);
         if (output === Output.ZIP) {

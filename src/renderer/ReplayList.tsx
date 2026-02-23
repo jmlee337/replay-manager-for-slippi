@@ -458,6 +458,7 @@ const ReplayListItem = forwardRef(
 
     const replayListItemInner = (
       <ListItemButton
+        disabled={replay.lastFrame < -123}
         disableGutters
         ref={ref}
         style={
@@ -497,7 +498,7 @@ const ReplayListItem = forwardRef(
       replayListItemInner
     ) : (
       <Tooltip arrow title={replay.invalidReasons.join(' ')}>
-        {replayListItemInner}
+        <div>{replayListItemInner}</div>
       </Tooltip>
     );
   },
