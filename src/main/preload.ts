@@ -359,7 +359,7 @@ const electronHandler = {
   onEnforcer: (
     callback: (
       event: IpcRendererEvent,
-      replays: { fileName: string; buffer: ArrayBuffer }[],
+      replays: { fileName: string; array: Uint8Array }[],
       replayLoadCount: number,
     ) => void,
   ) => {
