@@ -109,7 +109,7 @@
     "react-timer-hook": "^4.0.5",
     "sanitize-filename": "^1.6.3",
     "semver": "^7.7.3",
-    "slp-enforcer": "^2.2.0",
+    "slp-enforcer": "^2.3.0",
     "xhr2": "^0.2.1",
     "yazl": "^2.5.1"
   },

@@ -1,4 +1,4 @@
-import { init, SlpGame, AllCheckResults, GameSettings } from 'slp-enforcer';
+import { init, SlpGame, PlayerAnalysis, GameSettings } from 'slp-enforcer';
 import { EnforcePlayerFailure } from '../common/types';
 
 window.onload = async () => {
@@ -28,35 +28,40 @@ window.onload = async () => {
                       checkNames: [],
                       port,
                     };
-                    const allCheckResults = slpGame.analyzeReplay(
-                      port - 1,
-                    ) as AllCheckResults;
-                    if (allCheckResults.crouch_uptilt.result) {
+                    const playerAnalysis: PlayerAnalysis =
+                      slpGame.analyzePlayer(port - 1);
+                    if (playerAnalysis.crouch_uptilt?.result) {
                       playerFailure.checkNames.push('Fast Crouch Uptilt');
                     }
-                    if (allCheckResults.disallowed_cstick.result) {
+                    if (playerAnalysis.disallowed_cstick?.result) {
                       playerFailure.checkNames.push(
                         'Disallowed Analog C-Stick Values',
                       );
                     }
-                    if (allCheckResults.goomwave.result) {
+                    if (playerAnalysis.goomwave?.result) {
                       playerFailure.checkNames.push('GoomWave Clamping');
                     }
-                    if (allCheckResults.sdi.result) {
+                    if (playerAnalysis.sdi?.result) {
                       playerFailure.checkNames.push('Illegal SDI');
                     }
-                    if (allCheckResults.travel_time.result) {
+                    if (playerAnalysis.travel_time?.result) {
                       playerFailure.checkNames.push('Box Travel Time');
                     }
-                    if (allCheckResults.uptilt_rounding.result) {
+                    if (playerAnalysis.uptilt_rounding?.result) {
                       playerFailure.checkNames.push('Uptilt Rounding');
+                    }
+                    if (
+                      playerAnalysis.input_fuzzing &&
+                      !playerAnalysis.input_fuzzing.pass
+                    ) {
+                      playerFailure.checkNames.push('Input Fuzzing');
                     }
                     if (playerFailure.checkNames.length > 0) {
                       // suppress known box sdi false positive
                       if (
                         playerFailure.checkNames.length > 1 ||
                         playerFailure.checkNames[0] !== 'Illegal SDI' ||
-                        !slpGame.isBoxController(port - 1)
+                        playerAnalysis.controller_type === 'Analog'
                       ) {
                         playerFailures.push(playerFailure);
                       }
