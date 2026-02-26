@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron';
 import WebSocket from 'ws';
+import { createHash } from 'crypto';
 import {
   OfflineModeParticipant,
   OfflineModeSeed,
@@ -300,6 +301,16 @@ function toSet(set: OfflineModeSet): Omit<Set, 'id'> & { id: number } {
   };
 }
 
+let offlineModePassword = '';
+export function setOfflineModePassword(newOfflineModePassword: string) {
+  offlineModePassword = newOfflineModePassword;
+}
+
+type AuthIdentify = {
+  op: 'auth-identify';
+  authentication: string;
+};
+
 let websocket: WebSocket | null = null;
 export function disconnectFromOfflineMode() {
   if (websocket) {
@@ -323,7 +334,7 @@ export function connectToOfflineMode(port: number) {
   }
 
   const tryAddress = `ws://127.0.01:${port}`;
-  websocket = new WebSocket(tryAddress, 'bracket-protocol')
+  websocket = new WebSocket(tryAddress, 'admin-protocol')
     .on('open', () => {
       setStatus(tryAddress, '');
     })
@@ -338,7 +349,28 @@ export function connectToOfflineMode(port: number) {
     .on('message', (data) => {
       try {
         const message = JSON.parse(data.toString());
-        if (message.op === 'tournament-update-event') {
+        if (message.op === 'auth-hello') {
+          if (
+            typeof message.challenge === 'string' &&
+            typeof message.salt === 'string'
+          ) {
+            const secret = createHash('sha256')
+              .update(offlineModePassword)
+              .update(message.salt)
+              .digest()
+              .toString('base64url');
+            const authentication = createHash('sha256')
+              .update(secret)
+              .update(message.challenge)
+              .digest()
+              .toString('base64url');
+            const authIdentify: AuthIdentify = {
+              op: 'auth-identify',
+              authentication,
+            };
+            websocket?.send(JSON.stringify(authIdentify));
+          }
+        } else if (message.op === 'tournament-update-event') {
           idToSet.clear();
           if (message.tournament) {
             const newTournament = message.tournament as OfflineModeTournament;

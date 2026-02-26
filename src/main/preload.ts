@@ -30,6 +30,10 @@ import {
 } from '../common/types';
 
 const electronHandler = {
+  getOfflineModePassword: (): Promise<string> =>
+    ipcRenderer.invoke('getOfflineModePassword'),
+  setOfflineModePassword: (offlineModePassword: string): Promise<void> =>
+    ipcRenderer.invoke('setOfflineModePassword', offlineModePassword),
   onSlpDownloadStatus: (
     callback: (event: IpcRendererEvent, status: SlpDownloadStatus) => void,
   ) => {

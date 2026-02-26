@@ -129,6 +129,7 @@ import {
   initOfflineMode,
   reportOfflineModeSet,
   resetOfflineModeSet,
+  setOfflineModePassword,
   setSelectedOfflineModeSetId,
   startOfflineModeSet,
 } from './offlinemode';
@@ -151,8 +152,24 @@ export default function setupIPCs(
   const store = new Store<{
     copySettings: CopySettings;
     hideCopyButton: boolean;
+    offlineModePassword: string;
   }>();
   initOfflineMode(mainWindow);
+
+  let offlineModePassword = store.get('offlineModePassword', '');
+  setOfflineModePassword(offlineModePassword);
+  ipcMain.removeHandler('getOfflineModePassword');
+  ipcMain.handle('getOfflineModePassword', () => offlineModePassword);
+
+  ipcMain.removeHandler('setOfflineModePassword');
+  ipcMain.handle(
+    'setOfflineModePassword',
+    (event, newOfflineModePassword: string) => {
+      offlineModePassword = newOfflineModePassword;
+      store.set('offlineModePassword', offlineModePassword);
+      setOfflineModePassword(offlineModePassword);
+    },
+  );
 
   let replayDirs: ReplayDir[] = [];
   const knownUsbs = new Map<string, boolean>();

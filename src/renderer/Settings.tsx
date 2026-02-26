@@ -104,14 +104,18 @@ export default function Settings({
   const [startggApiKey, setStartggApiKey] = useState('');
   const [challongeApiKey, setChallongeApiKey] = useState('');
   const [parryggApiKey, setParryggApiKey] = useState('');
+  const [offlineModePassword, setOfflineModePassword] = useState('');
   useEffect(() => {
     (async () => {
       const startggKeyPromise = window.electron.getStartggKey();
       const challongeKeyPromise = window.electron.getChallongeKey();
       const parryggKeyPromise = window.electron.getParryggKey();
+      const offlineModePasswordPromise =
+        window.electron.getOfflineModePassword();
       setStartggApiKey(await startggKeyPromise);
       setChallongeApiKey(await challongeKeyPromise);
       setParryggApiKey(await parryggKeyPromise);
+      setOfflineModePassword(await offlineModePasswordPromise);
       setGotSettings(true);
     })();
   }, []);
@@ -134,6 +138,7 @@ export default function Settings({
     ((mode === Mode.STARTGG && !startggApiKey) ||
       (mode === Mode.CHALLONGE && !challongeApiKey) ||
       (mode === Mode.PARRYGG && !parryggApiKey) ||
+      (mode === Mode.OFFLINE_MODE && !offlineModePassword) ||
       needUpdate)
   ) {
     setOpen(true);
@@ -170,6 +175,7 @@ export default function Settings({
               window.electron.setChallongeKey(challongeApiKey),
               window.electron.setStartggKey(startggApiKey),
               window.electron.setParryggKey(parryggApiKey),
+              window.electron.setOfflineModePassword(offlineModePassword),
               window.electron.setFileNameFormat(fileNameFormat),
               window.electron.setFolderNameFormat(folderNameFormat),
             ]);
@@ -356,6 +362,33 @@ export default function Settings({
                 </Button>
               </Stack>
             </>
+          )}
+          {mode === Mode.OFFLINE_MODE && (
+            <Stack alignItems="center" direction="row" gap="8px">
+              <TextField
+                fullWidth
+                label="Offline Mode password"
+                onChange={(event) => {
+                  setOfflineModePassword(event.target.value);
+                }}
+                size="small"
+                type="password"
+                value={offlineModePassword}
+                variant="standard"
+              />
+              <Button
+                disabled={copied}
+                endIcon={copied ? undefined : <ContentCopy />}
+                onClick={async () => {
+                  await window.electron.copyToClipboard(offlineModePassword);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 5000);
+                }}
+                variant="contained"
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </Button>
+            </Stack>
           )}
           <Stack>
             <LabeledCheckbox
