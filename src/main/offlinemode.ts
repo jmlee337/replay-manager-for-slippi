@@ -17,6 +17,7 @@ import {
   StartggGame,
   State,
 } from '../common/types';
+import { getComputerName } from './util';
 
 const INITIAL_TOURNAMENT: RendererOfflineModeTournament = {
   id: 0,
@@ -311,6 +312,37 @@ type AuthIdentify = {
   authentication: string;
 };
 
+type Request = {
+  num: number;
+} & (
+  | {
+      op: 'reset-set-request' | 'call-set-request' | 'start-set-request';
+      id: number;
+    }
+  | {
+      op: 'assign-set-station-request';
+      id: number;
+      stationId: number;
+    }
+  | {
+      op: 'assign-set-stream-request';
+      id: number;
+      streamId: number;
+    }
+  | {
+      op: 'report-set-request';
+      id: number;
+      winnerId: number;
+      isDQ: boolean;
+      gameData: StartggGame[];
+    }
+  | {
+      op: 'client-id-request';
+      computerName: string;
+      clientName: string;
+    }
+);
+
 let websocket: WebSocket | null = null;
 export function disconnectFromOfflineMode() {
   if (websocket) {
@@ -335,9 +367,6 @@ export function connectToOfflineMode(port: number) {
 
   const tryAddress = `ws://127.0.01:${port}`;
   websocket = new WebSocket(tryAddress, 'admin-protocol')
-    .on('open', () => {
-      setStatus(tryAddress, '');
-    })
     .on('error', (err) => {
       cleanup();
       setStatus('', err.message);
@@ -370,6 +399,18 @@ export function connectToOfflineMode(port: number) {
             };
             websocket?.send(JSON.stringify(authIdentify));
           }
+        } else if (message.op === 'auth-success-event') {
+          setStatus(tryAddress, '');
+
+          const num = nextNum;
+          nextNum += 1;
+          const clientIdRequest: Request = {
+            op: 'client-id-request',
+            num,
+            computerName: getComputerName(),
+            clientName: 'Replay Reporter for Slippi',
+          };
+          websocket?.send(JSON.stringify(clientIdRequest));
         } else if (message.op === 'tournament-update-event') {
           idToSet.clear();
           if (message.tournament) {
@@ -421,29 +462,6 @@ export function connectToOfflineMode(port: number) {
       }
     });
 }
-
-type Request = {
-  num: number;
-  id: number;
-} & (
-  | {
-      op: 'reset-set-request' | 'call-set-request' | 'start-set-request';
-    }
-  | {
-      op: 'assign-set-station-request';
-      stationId: number;
-    }
-  | {
-      op: 'assign-set-stream-request';
-      streamId: number;
-    }
-  | {
-      op: 'report-set-request';
-      winnerId: number;
-      isDQ: boolean;
-      gameData: StartggGame[];
-    }
-);
 
 type ResponseOp =
   | 'reset-set-response'

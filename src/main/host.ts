@@ -1,7 +1,5 @@
 import { BrowserWindow } from 'electron';
 import { createSocket, Socket } from 'dgram';
-import os from 'node:os';
-import { execSync } from 'node:child_process';
 import { WebSocketServer, WebSocket, MessageEvent } from 'ws';
 import { access, appendFile, rm, writeFile } from 'fs/promises';
 import path from 'node:path';
@@ -13,6 +11,7 @@ import {
   EnforcerSetting,
   CopyHostFormat,
 } from '../common/types';
+import { getComputerName } from './util';
 
 const PORT = 52455;
 
@@ -55,23 +54,6 @@ type HostResponse = {
   ordinal: number;
   error: string;
 };
-
-function getComputerName() {
-  switch (process.platform) {
-    case 'win32':
-      return execSync('hostname').toString().trim() || os.hostname();
-    case 'darwin':
-      return (
-        execSync('scutil --get ComputerName').toString().trim() || os.hostname()
-      );
-    case 'linux':
-      return (
-        execSync('hostnamectl --pretty').toString().trim() || os.hostname()
-      );
-    default:
-      return os.hostname();
-  }
-}
 
 let mainWindow: BrowserWindow | null = null;
 export function setMainWindow(newMainWindow: BrowserWindow) {
