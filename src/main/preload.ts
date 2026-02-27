@@ -231,6 +231,8 @@ const electronHandler = {
     ipcRenderer.invoke('getOfflineModeStatus'),
   getCurrentOfflineModeTournament: (): Promise<RendererOfflineModeTournament> =>
     ipcRenderer.invoke('getCurrentOfflineModeTournament'),
+  listenForOfflineMode: (): Promise<void> =>
+    ipcRenderer.invoke('listenForOfflineMode'),
   connectToOfflineMode: (
     address: string,
     family: Family,
@@ -323,6 +325,20 @@ const electronHandler = {
   ) => {
     ipcRenderer.removeAllListeners('offlineModeStatus');
     ipcRenderer.on('offlineModeStatus', callback);
+  },
+  onRemoteOfflineMode: (
+    callback: (
+      event: IpcRendererEvent,
+      remoteOfflineModes: {
+        address: string;
+        computerName: string;
+        family: Family;
+        port: number;
+      }[],
+    ) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('remoteOfflineMode');
+    ipcRenderer.on('remoteOfflineMode', callback);
   },
   onTournament: (
     callback: (

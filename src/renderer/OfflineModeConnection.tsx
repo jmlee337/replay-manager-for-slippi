@@ -2,11 +2,15 @@ import { Cable, ContentCopy } from '@mui/icons-material';
 import {
   Alert,
   Button,
+  CircularProgress,
   Dialog,
   DialogContent,
   DialogTitle,
   IconButton,
   InputBase,
+  List,
+  ListItemButton,
+  ListItemText,
   Stack,
   TextField,
   ToggleButton,
@@ -28,8 +32,10 @@ function toLabel(offlineModeStatus: OfflineModeStatus) {
 
 export function OfflineModeConnectionDialogContent({
   offlineModeStatus,
+  listenError,
 }: {
   offlineModeStatus: OfflineModeStatus;
+  listenError: string;
 }) {
   const [address, setAddress] = useState('127.0.0.1');
   const [family, setFamily] = useState<Family>('IPv4');
@@ -37,6 +43,15 @@ export function OfflineModeConnectionDialogContent({
 
   const [addressCopied, setAddressCopied] = useState(false);
   const [portCopied, setPortCopied] = useState(false);
+
+  const [remoteOfflineModes, setRemoteOfflineModes] = useState<
+    { address: string; computerName: string; family: Family; port: number }[]
+  >([]);
+  useEffect(() => {
+    window.electron.onRemoteOfflineMode((event, newRemoteOfflineModes) => {
+      setRemoteOfflineModes(newRemoteOfflineModes);
+    });
+  }, []);
 
   return (
     <>
@@ -127,8 +142,8 @@ export function OfflineModeConnectionDialogContent({
               />
               <Button
                 disabled={!address || !port}
-                onClick={async () => {
-                  await window.electron.connectToOfflineMode(
+                onClick={() => {
+                  window.electron.connectToOfflineMode(
                     address,
                     family,
                     Number.parseInt(port, 10),
@@ -139,6 +154,42 @@ export function OfflineModeConnectionDialogContent({
                 Connect
               </Button>
             </Stack>
+            {listenError ? (
+              <Alert severity="error">{listenError}</Alert>
+            ) : (
+              <>
+                {remoteOfflineModes.length === 0 && (
+                  <Stack direction="row" justifyContent="center" margin="8px 0">
+                    <CircularProgress />
+                  </Stack>
+                )}
+                {remoteOfflineModes.length > 0 && (
+                  <List>
+                    {remoteOfflineModes.map((remoteOfflineMode) => (
+                      <ListItemButton
+                        key={`${remoteOfflineMode.address}${remoteOfflineMode.port}`}
+                        onClick={() => {
+                          window.electron.connectToOfflineMode(
+                            remoteOfflineMode.address,
+                            remoteOfflineMode.family,
+                            remoteOfflineMode.port,
+                          );
+                        }}
+                      >
+                        <ListItemText>
+                          {remoteOfflineMode.family === 'IPv4'
+                            ? remoteOfflineMode.address
+                            : `[${remoteOfflineMode.address}]`}
+                          :{remoteOfflineMode.port}
+                          {remoteOfflineMode.computerName &&
+                            ` - ${remoteOfflineMode.computerName}`}
+                        </ListItemText>
+                      </ListItemButton>
+                    ))}
+                  </List>
+                )}
+              </>
+            )}
             {offlineModeStatus.error && (
               <Alert severity="error">{offlineModeStatus.error}</Alert>
             )}
@@ -157,6 +208,7 @@ export default function OfflineModeConnection({
   offlineModeTournament: RendererOfflineModeTournament;
 }) {
   const [open, setOpen] = useState(false);
+  const [listenError, setListenError] = useState('');
 
   useEffect(() => {
     if (offlineModeStatus.address) {
@@ -177,7 +229,19 @@ export default function OfflineModeConnection({
         style={{ flexGrow: 1 }}
       />
       <Tooltip arrow title={toLabel(offlineModeStatus)}>
-        <IconButton onClick={() => setOpen(true)}>
+        <IconButton
+          onClick={async () => {
+            setOpen(true);
+            if (!offlineModeStatus.address) {
+              try {
+                await window.electron.listenForOfflineMode();
+                setListenError('');
+              } catch (e: any) {
+                setListenError(e instanceof Error ? e.message : e.toString());
+              }
+            }
+          }}
+        >
           <Cable />
         </IconButton>
       </Tooltip>
@@ -190,6 +254,7 @@ export default function OfflineModeConnection({
       >
         <OfflineModeConnectionDialogContent
           offlineModeStatus={offlineModeStatus}
+          listenError={listenError}
         />
       </Dialog>
     </Stack>

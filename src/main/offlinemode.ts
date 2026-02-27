@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron';
 import WebSocket from 'ws';
 import { createHash } from 'crypto';
+import { createSocket, RemoteInfo, Socket } from 'dgram';
 import {
   Family,
   OfflineModeParticipant,
@@ -324,6 +325,123 @@ export function setOfflineModePassword(newOfflineModePassword: string) {
   offlineModePassword = newOfflineModePassword;
 }
 
+const addressToInfo = new Map<
+  string,
+  { computerName: string; family: Family; port: number }
+>();
+function sendRemoteOfflineMode() {
+  mainWindow?.webContents.send(
+    'remoteOfflineMode',
+    Array.from(addressToInfo).map(
+      ([
+        remoteAddress,
+        {
+          computerName: remoteComputerName,
+          family: remoteFamily,
+          port: remotePort,
+        },
+      ]) => ({
+        address: remoteAddress,
+        computerName: remoteComputerName,
+        family: remoteFamily,
+        port: remotePort,
+      }),
+    ),
+  );
+}
+function handleSocketMessage(msg: Buffer, rinfo: RemoteInfo) {
+  try {
+    const json = JSON.parse(msg.toString());
+    const { computerName } = json;
+    if (
+      Number.isInteger(json.port) &&
+      json.port >= 1024 &&
+      json.port <= 65536
+    ) {
+      // ipv6 link local addresses may include an interface number eg. %en0
+      // which will not be recognized as a valid URL. Convert these to the
+      // ipv6 loopback address.
+      let remoteAddress = rinfo.address;
+      if (
+        rinfo.family === 'IPv6' &&
+        Array.from(remoteAddress.slice(0, 3), (char) =>
+          parseInt(char, 16).toString(2),
+        )
+          .join('')
+          .startsWith('1111111010')
+      ) {
+        remoteAddress = '::1';
+      }
+
+      addressToInfo.set(remoteAddress, {
+        computerName: typeof computerName === 'string' ? computerName : '',
+        family: rinfo.family,
+        port: json.port,
+      });
+      sendRemoteOfflineMode();
+    }
+  } catch {
+    // just catch
+  }
+}
+
+const LISTEN_PORT = 52456;
+let v4Socket: Socket | null = null;
+let v6Socket: Socket | null = null;
+export async function listenForOfflineMode() {
+  if (!v4Socket) {
+    v4Socket = createSocket('udp4');
+    v4Socket.on('message', handleSocketMessage);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        v4Socket!.on('error', (err) => {
+          reject(err);
+        });
+        v4Socket!.bind(LISTEN_PORT, () => {
+          v4Socket!.removeAllListeners('error');
+          resolve();
+        });
+      });
+    } catch (e: any) {
+      v4Socket = null;
+      throw e;
+    }
+  }
+  if (!v6Socket) {
+    v6Socket = createSocket('udp6');
+    v6Socket.on('message', handleSocketMessage);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        v6Socket!.on('error', (err) => {
+          reject(err);
+        });
+        v6Socket!.bind(LISTEN_PORT, () => {
+          v6Socket!.removeAllListeners('error');
+          resolve();
+        });
+      });
+    } catch (e: any) {
+      v6Socket = null;
+      throw e;
+    }
+  }
+}
+
+export async function deafenForOfflineMode() {
+  if (v4Socket) {
+    v4Socket.removeAllListeners();
+    v4Socket.close();
+    v4Socket = null;
+  }
+  if (v6Socket) {
+    v6Socket.removeAllListeners();
+    v6Socket.close();
+    v6Socket = null;
+  }
+  addressToInfo.clear();
+  sendRemoteOfflineMode();
+}
+
 type AuthIdentify = {
   op: 'auth-identify';
   authentication: string;
@@ -376,6 +494,8 @@ function cleanup() {
   idToSet.clear();
   selectedSetId = 0;
   setTournament(INITIAL_TOURNAMENT);
+  address = '';
+  port = 0;
 }
 export function connectToOfflineMode(
   newAddress: string,
@@ -424,6 +544,7 @@ export function connectToOfflineMode(
           }
         } else if (message.op === 'auth-success-event') {
           setStatus(newAddress, newFamily, newPort, '');
+          deafenForOfflineMode();
 
           const num = nextNum;
           nextNum += 1;

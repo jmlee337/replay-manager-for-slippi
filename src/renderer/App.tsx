@@ -309,6 +309,8 @@ function Hello() {
   const [offlineModeStatus, setOfflineModeStatus] = useState<OfflineModeStatus>(
     {
       address: '',
+      family: 'IPv4',
+      port: 0,
       error: '',
     },
   );

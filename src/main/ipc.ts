@@ -121,6 +121,7 @@ import {
   assignOfflineModeSetStream,
   callOfflineModeSet,
   connectToOfflineMode,
+  deafenForOfflineMode,
   disconnectFromOfflineMode,
   getCurrentOfflineModeTournament,
   getOfflineModePoolsByWave,
@@ -128,6 +129,7 @@ import {
   getSelectedOfflineModeSet,
   getSelectedOfflineModeSetChain,
   initOfflineMode,
+  listenForOfflineMode,
   reportOfflineModeSet,
   resetOfflineModeSet,
   setOfflineModePassword,
@@ -317,6 +319,7 @@ export default function setupIPCs(
   ipcMain.handle('setMode', (event, newMode: Mode) => {
     if (mode !== newMode && mode === Mode.OFFLINE_MODE) {
       disconnectFromOfflineMode();
+      deafenForOfflineMode();
     }
     store.set('mode', newMode);
     mode = newMode;
@@ -1297,6 +1300,9 @@ export default function setupIPCs(
     'getCurrentOfflineModeTournament',
     getCurrentOfflineModeTournament,
   );
+
+  ipcMain.removeHandler('listenForOfflineMode');
+  ipcMain.handle('listenForOfflineMode', () => listenForOfflineMode());
 
   ipcMain.removeHandler('connectToOfflineMode');
   ipcMain.handle(
