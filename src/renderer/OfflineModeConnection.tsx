@@ -31,9 +31,9 @@ export function OfflineModeConnectionDialogContent({
 }: {
   offlineModeStatus: OfflineModeStatus;
 }) {
-  const [address, setAddress] = useState('');
-  const [family, setFamily] = useState<Family>('IPv6');
-  const [port, setPort] = useState('');
+  const [address, setAddress] = useState('127.0.0.1');
+  const [family, setFamily] = useState<Family>('IPv4');
+  const [port, setPort] = useState('50000');
 
   const [addressCopied, setAddressCopied] = useState(false);
   const [portCopied, setPortCopied] = useState(false);
