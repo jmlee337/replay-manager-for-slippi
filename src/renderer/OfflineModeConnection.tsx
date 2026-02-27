@@ -37,13 +37,7 @@ export function OfflineModeConnectionDialogContent({
   offlineModeStatus: OfflineModeStatus;
   listenError: string;
 }) {
-  const [address, setAddress] = useState('127.0.0.1');
-  const [family, setFamily] = useState<Family>('IPv4');
-  const [port, setPort] = useState('50000');
-
-  const [addressCopied, setAddressCopied] = useState(false);
-  const [portCopied, setPortCopied] = useState(false);
-
+  const [offlineModePassword, setOfflineModePassword] = useState('');
   const [remoteOfflineModes, setRemoteOfflineModes] = useState<
     { address: string; computerName: string; family: Family; port: number }[]
   >([]);
@@ -51,12 +45,51 @@ export function OfflineModeConnectionDialogContent({
     window.electron.onRemoteOfflineMode((event, newRemoteOfflineModes) => {
       setRemoteOfflineModes(newRemoteOfflineModes);
     });
+    (async () => {
+      const offlineModePasswordPromise =
+        window.electron.getOfflineModePassword();
+      setOfflineModePassword(await offlineModePasswordPromise);
+    })();
   }, []);
+
+  const [address, setAddress] = useState('127.0.0.1');
+  const [family, setFamily] = useState<Family>('IPv4');
+  const [port, setPort] = useState('50000');
+
+  const [passwordCopied, setPasswordCopied] = useState(false);
+  const [addressCopied, setAddressCopied] = useState(false);
+  const [portCopied, setPortCopied] = useState(false);
 
   return (
     <>
       <DialogTitle>{toLabel(offlineModeStatus)}</DialogTitle>
       <DialogContent>
+        <Stack alignItems="center" direction="row" gap="8px" marginBottom="8px">
+          <TextField
+            fullWidth
+            disabled={Boolean(offlineModeStatus.address)}
+            label="Offline Mode password"
+            onChange={(event) => {
+              setOfflineModePassword(event.target.value);
+            }}
+            size="small"
+            type="password"
+            value={offlineModePassword}
+            variant="standard"
+          />
+          <Button
+            disabled={passwordCopied}
+            endIcon={passwordCopied ? undefined : <ContentCopy />}
+            onClick={async () => {
+              await window.electron.copyToClipboard(offlineModePassword);
+              setPasswordCopied(true);
+              setTimeout(() => setPasswordCopied(false), 5000);
+            }}
+            variant="contained"
+          >
+            {passwordCopied ? 'Copied!' : 'Copy'}
+          </Button>
+        </Stack>
         {offlineModeStatus.address ? (
           <>
             <Stack direction="row" alignItems="center" spacing="8px">
@@ -126,6 +159,7 @@ export function OfflineModeConnectionDialogContent({
                   setAddress(event.target.value);
                 }}
                 size="small"
+                style={{ flexGrow: 1 }}
                 value={address}
                 variant="standard"
               />
@@ -142,7 +176,10 @@ export function OfflineModeConnectionDialogContent({
               />
               <Button
                 disabled={!address || !port}
-                onClick={() => {
+                onClick={async () => {
+                  await window.electron.setOfflineModePassword(
+                    offlineModePassword,
+                  );
                   window.electron.connectToOfflineMode(
                     address,
                     family,
@@ -168,7 +205,10 @@ export function OfflineModeConnectionDialogContent({
                     {remoteOfflineModes.map((remoteOfflineMode) => (
                       <ListItemButton
                         key={`${remoteOfflineMode.address}${remoteOfflineMode.port}`}
-                        onClick={() => {
+                        onClick={async () => {
+                          await window.electron.setOfflineModePassword(
+                            offlineModePassword,
+                          );
                           window.electron.connectToOfflineMode(
                             remoteOfflineMode.address,
                             remoteOfflineMode.family,
