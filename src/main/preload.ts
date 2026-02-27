@@ -229,6 +229,15 @@ const electronHandler = {
   ): Promise<Set> => ipcRenderer.invoke('reportParryggSet', setId, result),
   getOfflineModeStatus: (): Promise<OfflineModeStatus> =>
     ipcRenderer.invoke('getOfflineModeStatus'),
+  getRemoteOfflineModes: (): Promise<{
+    remoteOfflineModes: {
+      address: string;
+      computerName: string;
+      family: Family;
+      port: number;
+    }[];
+    listenError: string;
+  }> => ipcRenderer.invoke('getRemoteOfflineModes'),
   getCurrentOfflineModeTournament: (): Promise<RendererOfflineModeTournament> =>
     ipcRenderer.invoke('getCurrentOfflineModeTournament'),
   listenForOfflineMode: (): Promise<void> =>
@@ -335,6 +344,7 @@ const electronHandler = {
         family: Family;
         port: number;
       }[],
+      listenError: string,
     ) => void,
   ) => {
     ipcRenderer.removeAllListeners('remoteOfflineMode');

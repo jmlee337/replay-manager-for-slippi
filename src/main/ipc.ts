@@ -126,6 +126,7 @@ import {
   getCurrentOfflineModeTournament,
   getOfflineModePoolsByWave,
   getOfflineModeStatus,
+  getRemoteOfflineModes,
   getSelectedOfflineModeSet,
   getSelectedOfflineModeSetChain,
   initOfflineMode,
@@ -312,6 +313,9 @@ export default function setupIPCs(
   detectUsb.startListening();
 
   let mode = store.has('mode') ? (store.get('mode') as Mode) : Mode.STARTGG;
+  if (mode === Mode.OFFLINE_MODE) {
+    listenForOfflineMode();
+  }
   ipcMain.removeHandler('getMode');
   ipcMain.handle('getMode', () => mode);
 
@@ -1294,6 +1298,9 @@ export default function setupIPCs(
 
   ipcMain.removeHandler('getOfflineModeStatus');
   ipcMain.handle('getOfflineModeStatus', getOfflineModeStatus);
+
+  ipcMain.removeHandler('getRemoteOfflineModes');
+  ipcMain.handle('getRemoteOfflineModes', getRemoteOfflineModes);
 
   ipcMain.removeHandler('getCurrentOfflineModeTournament');
   ipcMain.handle(

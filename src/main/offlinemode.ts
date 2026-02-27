@@ -329,10 +329,10 @@ const addressToInfo = new Map<
   string,
   { computerName: string; family: Family; port: number }
 >();
-function sendRemoteOfflineMode() {
-  mainWindow?.webContents.send(
-    'remoteOfflineMode',
-    Array.from(addressToInfo).map(
+let listenError = '';
+export function getRemoteOfflineModes() {
+  return {
+    remoteOfflineModes: Array.from(addressToInfo).map(
       ([
         remoteAddress,
         {
@@ -347,6 +347,15 @@ function sendRemoteOfflineMode() {
         port: remotePort,
       }),
     ),
+    listenError,
+  };
+}
+function sendRemoteOfflineMode() {
+  const { remoteOfflineModes } = getRemoteOfflineModes();
+  mainWindow?.webContents.send(
+    'remoteOfflineMode',
+    remoteOfflineModes,
+    listenError,
   );
 }
 function handleSocketMessage(msg: Buffer, rinfo: RemoteInfo) {
@@ -388,6 +397,21 @@ function handleSocketMessage(msg: Buffer, rinfo: RemoteInfo) {
 const LISTEN_PORT = 52456;
 let v4Socket: Socket | null = null;
 let v6Socket: Socket | null = null;
+export async function deafenForOfflineMode() {
+  if (v4Socket) {
+    v4Socket.removeAllListeners();
+    v4Socket.close();
+    v4Socket = null;
+  }
+  if (v6Socket) {
+    v6Socket.removeAllListeners();
+    v6Socket.close();
+    v6Socket = null;
+  }
+  addressToInfo.clear();
+  sendRemoteOfflineMode();
+}
+
 export async function listenForOfflineMode() {
   if (!v4Socket) {
     v4Socket = createSocket('udp4');
@@ -403,8 +427,9 @@ export async function listenForOfflineMode() {
         });
       });
     } catch (e: any) {
-      v4Socket = null;
-      throw e;
+      listenError = e.message;
+      deafenForOfflineMode();
+      return;
     }
   }
   if (!v6Socket) {
@@ -421,24 +446,12 @@ export async function listenForOfflineMode() {
         });
       });
     } catch (e: any) {
-      v6Socket = null;
-      throw e;
+      listenError = e.message;
+      deafenForOfflineMode();
+      return;
     }
   }
-}
-
-export async function deafenForOfflineMode() {
-  if (v4Socket) {
-    v4Socket.removeAllListeners();
-    v4Socket.close();
-    v4Socket = null;
-  }
-  if (v6Socket) {
-    v6Socket.removeAllListeners();
-    v6Socket.close();
-    v6Socket = null;
-  }
-  addressToInfo.clear();
+  listenError = '';
   sendRemoteOfflineMode();
 }
 

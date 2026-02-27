@@ -32,23 +32,30 @@ function toLabel(offlineModeStatus: OfflineModeStatus) {
 
 export function OfflineModeConnectionDialogContent({
   offlineModeStatus,
-  listenError,
 }: {
   offlineModeStatus: OfflineModeStatus;
-  listenError: string;
 }) {
   const [offlineModePassword, setOfflineModePassword] = useState('');
   const [remoteOfflineModes, setRemoteOfflineModes] = useState<
     { address: string; computerName: string; family: Family; port: number }[]
   >([]);
+  const [listenError, setListenError] = useState('');
   useEffect(() => {
-    window.electron.onRemoteOfflineMode((event, newRemoteOfflineModes) => {
-      setRemoteOfflineModes(newRemoteOfflineModes);
-    });
+    window.electron.onRemoteOfflineMode(
+      (event, newRemoteOfflineModes, newListenError) => {
+        setRemoteOfflineModes(newRemoteOfflineModes);
+        setListenError(newListenError);
+      },
+    );
     (async () => {
       const offlineModePasswordPromise =
         window.electron.getOfflineModePassword();
+      const remoteOfflineModesPromise = window.electron.getRemoteOfflineModes();
       setOfflineModePassword(await offlineModePasswordPromise);
+      setRemoteOfflineModes(
+        (await remoteOfflineModesPromise).remoteOfflineModes,
+      );
+      setListenError((await remoteOfflineModesPromise).listenError);
     })();
   }, []);
 
@@ -248,7 +255,6 @@ export default function OfflineModeConnection({
   offlineModeTournament: RendererOfflineModeTournament;
 }) {
   const [open, setOpen] = useState(false);
-  const [listenError, setListenError] = useState('');
 
   useEffect(() => {
     if (offlineModeStatus.address) {
@@ -270,15 +276,10 @@ export default function OfflineModeConnection({
       />
       <Tooltip arrow title={toLabel(offlineModeStatus)}>
         <IconButton
-          onClick={async () => {
+          onClick={() => {
             setOpen(true);
             if (!offlineModeStatus.address) {
-              try {
-                await window.electron.listenForOfflineMode();
-                setListenError('');
-              } catch (e: any) {
-                setListenError(e instanceof Error ? e.message : e.toString());
-              }
+              window.electron.listenForOfflineMode();
             }
           }}
         >
@@ -294,7 +295,6 @@ export default function OfflineModeConnection({
       >
         <OfflineModeConnectionDialogContent
           offlineModeStatus={offlineModeStatus}
-          listenError={listenError}
         />
       </Dialog>
     </Stack>
