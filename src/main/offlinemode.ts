@@ -497,6 +497,8 @@ function cleanup() {
   address = '';
   port = 0;
 }
+
+const UNAUTH_CODE = 4009;
 export function connectToOfflineMode(
   newAddress: string,
   newFamily: Family,
@@ -514,9 +516,13 @@ export function connectToOfflineMode(
       cleanup();
       setStatus('', 'IPv4', 0, err.message);
     })
-    .on('close', () => {
+    .on('close', (code) => {
       cleanup();
-      setStatus('', 'IPv4', 0);
+      if (code === UNAUTH_CODE) {
+        setStatus('', 'IPv4', 0, 'Incorrect Password');
+      } else {
+        setStatus('', 'IPv4', 0);
+      }
     })
     .on('message', (data) => {
       try {
