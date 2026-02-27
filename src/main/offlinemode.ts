@@ -2,9 +2,11 @@ import { BrowserWindow } from 'electron';
 import WebSocket from 'ws';
 import { createHash } from 'crypto';
 import {
+  Family,
   OfflineModeParticipant,
   OfflineModeSeed,
   OfflineModeSet,
+  OfflineModeStatus,
   OfflineModeTournament,
   Participant,
   RendererOfflineModePhase,
@@ -31,6 +33,8 @@ const INITIAL_TOURNAMENT: RendererOfflineModeTournament = {
 };
 
 let address = '';
+let family: Family = 'IPv4';
+let port = 0;
 let error = '';
 const idToSet = new Map<number, Set>();
 let selectedSetId = 0;
@@ -52,12 +56,25 @@ export function getSelectedOfflineModeSet() {
   return idToSet.get(selectedSetId);
 }
 
-function setStatus(newAddress: string, newError?: string) {
+function setStatus(
+  newAddress: string,
+  newFamily: Family,
+  newPort: number,
+  newError?: string,
+) {
   address = newAddress;
+  family = newFamily;
+  port = newPort;
   if (newError !== undefined) {
     error = newError;
   }
-  mainWindow?.webContents.send('offlineModeStatus', { address, error });
+  const offlineModeStatus: OfflineModeStatus = {
+    address,
+    family,
+    port,
+    error,
+  };
+  mainWindow?.webContents.send('offlineModeStatus', offlineModeStatus);
 }
 
 function setTournament(newTournament: RendererOfflineModeTournament) {
@@ -68,8 +85,8 @@ function setTournament(newTournament: RendererOfflineModeTournament) {
   });
 }
 
-export function getOfflineModeStatus() {
-  return { address, error };
+export function getOfflineModeStatus(): OfflineModeStatus {
+  return { address, family, port, error };
 }
 
 export function getCurrentOfflineModeTournament() {
@@ -360,20 +377,26 @@ function cleanup() {
   selectedSetId = 0;
   setTournament(INITIAL_TOURNAMENT);
 }
-export function connectToOfflineMode(port: number) {
+export function connectToOfflineMode(
+  newAddress: string,
+  newFamily: Family,
+  newPort: number,
+) {
   if (websocket) {
     return;
   }
 
-  const tryAddress = `ws://127.0.01:${port}`;
-  websocket = new WebSocket(tryAddress, 'admin-protocol')
+  websocket = new WebSocket(
+    `ws://${newFamily === 'IPv4' ? newAddress : `[${newAddress}]`}:${newPort}`,
+    'admin-protocol',
+  )
     .on('error', (err) => {
       cleanup();
-      setStatus('', err.message);
+      setStatus('', 'IPv4', 0, err.message);
     })
     .on('close', () => {
       cleanup();
-      setStatus('');
+      setStatus('', 'IPv4', 0);
     })
     .on('message', (data) => {
       try {
@@ -400,7 +423,7 @@ export function connectToOfflineMode(port: number) {
             websocket?.send(JSON.stringify(authIdentify));
           }
         } else if (message.op === 'auth-success-event') {
-          setStatus(tryAddress, '');
+          setStatus(newAddress, newFamily, newPort, '');
 
           const num = nextNum;
           nextNum += 1;

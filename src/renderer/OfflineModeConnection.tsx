@@ -1,19 +1,21 @@
-import { Cable } from '@mui/icons-material';
+import { Cable, ContentCopy } from '@mui/icons-material';
 import {
   Alert,
   Button,
   Dialog,
   DialogContent,
-  DialogContentText,
   DialogTitle,
   IconButton,
   InputBase,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import {
+  Family,
   OfflineModeStatus,
   RendererOfflineModeTournament,
 } from '../common/types';
@@ -29,32 +31,108 @@ export function OfflineModeConnectionDialogContent({
 }: {
   offlineModeStatus: OfflineModeStatus;
 }) {
-  const [port, setPort] = useState(50000);
+  const [address, setAddress] = useState('');
+  const [family, setFamily] = useState<Family>('IPv6');
+  const [port, setPort] = useState('');
+
+  const [addressCopied, setAddressCopied] = useState(false);
+  const [portCopied, setPortCopied] = useState(false);
 
   return (
     <>
       <DialogTitle>{toLabel(offlineModeStatus)}</DialogTitle>
       <DialogContent>
         {offlineModeStatus.address ? (
-          <DialogContentText>{offlineModeStatus.address}</DialogContentText>
-        ) : (
           <>
             <Stack direction="row" alignItems="center" spacing="8px">
               <TextField
-                label="Port"
-                name="port"
-                onChange={(event) => {
-                  setPort(Number.parseInt(event.target.value, 10));
-                }}
+                fullWidth
+                label={`Address (${offlineModeStatus.family})`}
                 size="small"
-                slotProps={{ htmlInput: { min: 1024, max: 65536 } }}
-                type="number"
-                value={port}
-                variant="filled"
+                value={offlineModeStatus.address}
+                variant="standard"
               />
               <Button
+                disabled={addressCopied}
+                endIcon={addressCopied ? undefined : <ContentCopy />}
                 onClick={async () => {
-                  await window.electron.connectToOfflineMode(port);
+                  await window.electron.copyToClipboard(
+                    offlineModeStatus.address,
+                  );
+                  setAddressCopied(true);
+                  setTimeout(() => setAddressCopied(false), 5000);
+                }}
+                variant="contained"
+              >
+                {addressCopied ? 'Copied!' : 'Copy'}
+              </Button>
+            </Stack>
+            <Stack direction="row" alignItems="center" spacing="8px">
+              <TextField
+                fullWidth
+                label="Port"
+                size="small"
+                value={offlineModeStatus.port}
+                variant="standard"
+              />
+              <Button
+                disabled={portCopied}
+                endIcon={portCopied ? undefined : <ContentCopy />}
+                onClick={async () => {
+                  await window.electron.copyToClipboard(
+                    `${offlineModeStatus.port}`,
+                  );
+                  setPortCopied(true);
+                  setTimeout(() => setPortCopied(false), 5000);
+                }}
+                variant="contained"
+              >
+                {portCopied ? 'Copied!' : 'Copy'}
+              </Button>
+            </Stack>
+          </>
+        ) : (
+          <>
+            <Stack direction="row" alignItems="center" spacing="8px">
+              <ToggleButtonGroup
+                exclusive
+                onChange={(event, newFamily) => {
+                  setFamily(newFamily);
+                }}
+                value={family}
+              >
+                <ToggleButton value="IPv4">IPv4</ToggleButton>
+                <ToggleButton value="IPv6">IPv6</ToggleButton>
+              </ToggleButtonGroup>
+              <TextField
+                autoFocus
+                label={`Address (${family})`}
+                onChange={(event) => {
+                  setAddress(event.target.value);
+                }}
+                size="small"
+                value={address}
+                variant="standard"
+              />
+              <TextField
+                label="Port"
+                onChange={(event) => {
+                  setPort(event.target.value);
+                }}
+                slotProps={{ htmlInput: { min: 1024, max: 65536 } }}
+                size="small"
+                type="number"
+                value={port}
+                variant="standard"
+              />
+              <Button
+                disabled={!address || !port}
+                onClick={async () => {
+                  await window.electron.connectToOfflineMode(
+                    address,
+                    family,
+                    Number.parseInt(port, 10),
+                  );
                 }}
                 variant="contained"
               >
@@ -104,6 +182,7 @@ export default function OfflineModeConnection({
         </IconButton>
       </Tooltip>
       <Dialog
+        fullWidth
         open={open}
         onClose={() => {
           setOpen(false);

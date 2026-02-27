@@ -27,6 +27,7 @@ import {
   SelectedSetChain,
   OfflineModeStatus,
   StartggGame,
+  Family,
 } from '../common/types';
 
 const electronHandler = {
@@ -230,8 +231,12 @@ const electronHandler = {
     ipcRenderer.invoke('getOfflineModeStatus'),
   getCurrentOfflineModeTournament: (): Promise<RendererOfflineModeTournament> =>
     ipcRenderer.invoke('getCurrentOfflineModeTournament'),
-  connectToOfflineMode: (port: number): Promise<void> =>
-    ipcRenderer.invoke('connectToOfflineMode', port),
+  connectToOfflineMode: (
+    address: string,
+    family: Family,
+    port: number,
+  ): Promise<void> =>
+    ipcRenderer.invoke('connectToOfflineMode', address, family, port),
   resetOfflineModeSet: (id: number): Promise<Set> =>
     ipcRenderer.invoke('resetOfflineModeSet', id),
   callOfflineModeSet: (id: number): Promise<Set> =>

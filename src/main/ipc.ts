@@ -34,6 +34,7 @@ import {
   EnforcerSetting,
   EnforceState,
   EnforceStatus,
+  Family,
   Id,
   Mode,
   Output,
@@ -1298,8 +1299,10 @@ export default function setupIPCs(
   );
 
   ipcMain.removeHandler('connectToOfflineMode');
-  ipcMain.handle('connectToOfflineMode', (event, port: number) =>
-    connectToOfflineMode(port),
+  ipcMain.handle(
+    'connectToOfflineMode',
+    (event, address: string, family: Family, port: number) =>
+      connectToOfflineMode(address, family, port),
   );
 
   ipcMain.removeHandler('resetOfflineModeSet');
