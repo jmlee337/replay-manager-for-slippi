@@ -521,109 +521,118 @@ export function connectToOfflineMode(
     return;
   }
 
-  websocket = new WebSocket(
-    `ws://${newFamily === 'IPv4' ? newAddress : `[${newAddress}]`}:${newPort}`,
-    'admin-protocol',
-  )
-    .on('error', (err) => {
-      cleanup();
-      setStatus('', 'IPv4', 0, err.message);
-    })
-    .on('close', (code) => {
-      cleanup();
-      if (code === UNAUTH_CODE) {
-        setStatus('', 'IPv4', 0, 'Incorrect Password');
-      } else {
-        setStatus('', 'IPv4', 0);
-      }
-    })
-    .on('message', (data) => {
-      try {
-        const message = JSON.parse(data.toString());
-        if (message.op === 'auth-hello') {
-          if (
-            typeof message.challenge === 'string' &&
-            typeof message.salt === 'string'
-          ) {
-            const secret = createHash('sha256')
-              .update(offlineModePassword)
-              .update(message.salt)
-              .digest()
-              .toString('base64url');
-            const authentication = createHash('sha256')
-              .update(secret)
-              .update(message.challenge)
-              .digest()
-              .toString('base64url');
-            const authIdentify: AuthIdentify = {
-              op: 'auth-identify',
-              authentication,
-            };
-            websocket?.send(JSON.stringify(authIdentify));
-          }
-        } else if (message.op === 'auth-success-event') {
-          setStatus(newAddress, newFamily, newPort, '');
-          deafenForOfflineMode();
-
-          const num = nextNum;
-          nextNum += 1;
-          const clientIdRequest: Request = {
-            op: 'client-id-request',
-            num,
-            computerName: getComputerName(),
-            clientName: 'Replay Reporter for Slippi',
-          };
-          websocket?.send(JSON.stringify(clientIdRequest));
-        } else if (message.op === 'tournament-update-event') {
-          idToSet.clear();
-          if (message.tournament) {
-            const newTournament = message.tournament as OfflineModeTournament;
-            setTournament({
-              ...newTournament,
-              events: newTournament.events
-                .filter((event) => event.videogameId === 1 && !event.isOnline)
-                .map((event) => ({
-                  ...event,
-                  phases: event.phases.map((phase) => ({
-                    ...phase,
-                    pools: phase.pools.map((pool) => {
-                      const completedSets: Set[] = [];
-                      const pendingSets: Set[] = [];
-                      pool.sets.forEach((offlineModeSet) => {
-                        if (
-                          offlineModeSet.entrant1Id &&
-                          offlineModeSet.entrant2Id
-                        ) {
-                          const set = toSet(offlineModeSet);
-                          idToSet.set(set.id, set);
-                          if (set.state === State.COMPLETED) {
-                            completedSets.push(set);
-                          } else {
-                            pendingSets.push(set);
-                          }
-                        }
-                      });
-                      return {
-                        ...pool,
-                        sets: { completedSets, pendingSets },
-                      };
-                    }),
-                  })),
-                })),
-              streams: newTournament.streams.map((stream) => ({
-                id: stream.id,
-                domain: stream.streamSource.toLowerCase(),
-                path: stream.streamName,
-              })),
-            });
-          } else {
-            setTournament(INITIAL_TOURNAMENT);
-          }
+  try {
+    websocket = new WebSocket(
+      `ws://${
+        newFamily === 'IPv4' ? newAddress : `[${newAddress}]`
+      }:${newPort}`,
+      'admin-protocol',
+      {
+        handshakeTimeout: 1000,
+      },
+    )
+      .on('error', (err) => {
+        cleanup();
+        setStatus('', 'IPv4', 0, err.message);
+      })
+      .on('close', (code) => {
+        cleanup();
+        if (code === UNAUTH_CODE) {
+          setStatus('', 'IPv4', 0, 'Incorrect Password');
+        } else {
+          setStatus('', 'IPv4', 0);
         }
-      } catch {
-        // just catch
-      }
-    });
+      })
+      .on('message', (data) => {
+        try {
+          const message = JSON.parse(data.toString());
+          if (message.op === 'auth-hello') {
+            if (
+              typeof message.challenge === 'string' &&
+              typeof message.salt === 'string'
+            ) {
+              const secret = createHash('sha256')
+                .update(offlineModePassword)
+                .update(message.salt)
+                .digest()
+                .toString('base64url');
+              const authentication = createHash('sha256')
+                .update(secret)
+                .update(message.challenge)
+                .digest()
+                .toString('base64url');
+              const authIdentify: AuthIdentify = {
+                op: 'auth-identify',
+                authentication,
+              };
+              websocket?.send(JSON.stringify(authIdentify));
+            }
+          } else if (message.op === 'auth-success-event') {
+            setStatus(newAddress, newFamily, newPort, '');
+            deafenForOfflineMode();
+
+            const num = nextNum;
+            nextNum += 1;
+            const clientIdRequest: Request = {
+              op: 'client-id-request',
+              num,
+              computerName: getComputerName(),
+              clientName: 'Replay Reporter for Slippi',
+            };
+            websocket?.send(JSON.stringify(clientIdRequest));
+          } else if (message.op === 'tournament-update-event') {
+            idToSet.clear();
+            if (message.tournament) {
+              const newTournament = message.tournament as OfflineModeTournament;
+              setTournament({
+                ...newTournament,
+                events: newTournament.events
+                  .filter((event) => event.videogameId === 1 && !event.isOnline)
+                  .map((event) => ({
+                    ...event,
+                    phases: event.phases.map((phase) => ({
+                      ...phase,
+                      pools: phase.pools.map((pool) => {
+                        const completedSets: Set[] = [];
+                        const pendingSets: Set[] = [];
+                        pool.sets.forEach((offlineModeSet) => {
+                          if (
+                            offlineModeSet.entrant1Id &&
+                            offlineModeSet.entrant2Id
+                          ) {
+                            const set = toSet(offlineModeSet);
+                            idToSet.set(set.id, set);
+                            if (set.state === State.COMPLETED) {
+                              completedSets.push(set);
+                            } else {
+                              pendingSets.push(set);
+                            }
+                          }
+                        });
+                        return {
+                          ...pool,
+                          sets: { completedSets, pendingSets },
+                        };
+                      }),
+                    })),
+                  })),
+                streams: newTournament.streams.map((stream) => ({
+                  id: stream.id,
+                  domain: stream.streamSource.toLowerCase(),
+                  path: stream.streamName,
+                })),
+              });
+            } else {
+              setTournament(INITIAL_TOURNAMENT);
+            }
+          }
+        } catch {
+          // just catch
+        }
+      });
+  } catch (e: any) {
+    setStatus('', 'IPv4', 0, e.message);
+  }
 }
 
 type ResponseOp =
