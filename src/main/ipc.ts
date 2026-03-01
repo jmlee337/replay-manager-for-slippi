@@ -34,7 +34,6 @@ import {
   EnforcerSetting,
   EnforceState,
   EnforceStatus,
-  Family,
   Id,
   Mode,
   Output,
@@ -126,7 +125,7 @@ import {
   getCurrentOfflineModeTournament,
   getOfflineModePoolsByWave,
   getOfflineModeStatus,
-  getRemoteOfflineModes,
+  getOfflineModeHosts,
   getSelectedOfflineModeSet,
   getSelectedOfflineModeSetChain,
   initOfflineMode,
@@ -1299,8 +1298,8 @@ export default function setupIPCs(
   ipcMain.removeHandler('getOfflineModeStatus');
   ipcMain.handle('getOfflineModeStatus', getOfflineModeStatus);
 
-  ipcMain.removeHandler('getRemoteOfflineModes');
-  ipcMain.handle('getRemoteOfflineModes', getRemoteOfflineModes);
+  ipcMain.removeHandler('getOfflineModeHosts');
+  ipcMain.handle('getOfflineModeHosts', getOfflineModeHosts);
 
   ipcMain.removeHandler('getCurrentOfflineModeTournament');
   ipcMain.handle(
@@ -1312,10 +1311,8 @@ export default function setupIPCs(
   ipcMain.handle('listenForOfflineMode', () => listenForOfflineMode());
 
   ipcMain.removeHandler('connectToOfflineMode');
-  ipcMain.handle(
-    'connectToOfflineMode',
-    (event, address: string, family: Family, port: number) =>
-      connectToOfflineMode(address, family, port),
+  ipcMain.handle('connectToOfflineMode', (event, addressOrHost: string) =>
+    connectToOfflineMode(addressOrHost),
   );
 
   ipcMain.removeHandler('resetOfflineModeSet');

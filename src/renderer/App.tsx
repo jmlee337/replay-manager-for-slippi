@@ -308,9 +308,7 @@ function Hello() {
   );
   const [offlineModeStatus, setOfflineModeStatus] = useState<OfflineModeStatus>(
     {
-      address: '',
-      family: 'IPv4',
-      port: 0,
+      addressOrHost: '',
       error: '',
     },
   );
@@ -333,7 +331,7 @@ function Hello() {
       (mode === Mode.CHALLONGE && challongeTournaments.size > 0) ||
       (mode === Mode.PARRYGG && parryggSlug.length > 0) ||
       (mode === Mode.OFFLINE_MODE &&
-        offlineModeStatus.address.length > 0 &&
+        offlineModeStatus.addressOrHost.length > 0 &&
         offlineModeStatus.error.length === 0) ||
       (mode === Mode.MANUAL && manualNames.length > 0),
     [

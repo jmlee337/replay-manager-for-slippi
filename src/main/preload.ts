@@ -27,7 +27,6 @@ import {
   SelectedSetChain,
   OfflineModeStatus,
   StartggGame,
-  Family,
 } from '../common/types';
 
 const electronHandler = {
@@ -229,25 +228,14 @@ const electronHandler = {
   ): Promise<Set> => ipcRenderer.invoke('reportParryggSet', setId, result),
   getOfflineModeStatus: (): Promise<OfflineModeStatus> =>
     ipcRenderer.invoke('getOfflineModeStatus'),
-  getRemoteOfflineModes: (): Promise<{
-    remoteOfflineModes: {
-      address: string;
-      computerName: string;
-      family: Family;
-      port: number;
-    }[];
-    listenError: string;
-  }> => ipcRenderer.invoke('getRemoteOfflineModes'),
+  getOfflineModeHosts: (): Promise<string[]> =>
+    ipcRenderer.invoke('getOfflineModeHosts'),
   getCurrentOfflineModeTournament: (): Promise<RendererOfflineModeTournament> =>
     ipcRenderer.invoke('getCurrentOfflineModeTournament'),
   listenForOfflineMode: (): Promise<void> =>
     ipcRenderer.invoke('listenForOfflineMode'),
-  connectToOfflineMode: (
-    address: string,
-    family: Family,
-    port: number,
-  ): Promise<void> =>
-    ipcRenderer.invoke('connectToOfflineMode', address, family, port),
+  connectToOfflineMode: (addressOrHost: string): Promise<void> =>
+    ipcRenderer.invoke('connectToOfflineMode', addressOrHost),
   resetOfflineModeSet: (id: number): Promise<Set> =>
     ipcRenderer.invoke('resetOfflineModeSet', id),
   callOfflineModeSet: (id: number): Promise<Set> =>
@@ -335,19 +323,10 @@ const electronHandler = {
     ipcRenderer.removeAllListeners('offlineModeStatus');
     ipcRenderer.on('offlineModeStatus', callback);
   },
-  onRemoteOfflineMode: (
-    callback: (
-      event: IpcRendererEvent,
-      remoteOfflineModes: {
-        address: string;
-        computerName: string;
-        family: Family;
-        port: number;
-      }[],
-      listenError: string,
-    ) => void,
+  onOfflineModeHosts: (
+    callback: (event: IpcRendererEvent, offlineModeHosts: string[]) => void,
   ) => {
-    ipcRenderer.removeAllListeners('remoteOfflineMode');
+    ipcRenderer.removeAllListeners('offlineModeHosts');
     ipcRenderer.on('remoteOfflineMode', callback);
   },
   onTournament: (

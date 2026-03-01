@@ -548,11 +548,7 @@ export type RendererOfflineModeTournament = Omit<
   streams: Stream[];
 };
 
-export type Family = 'IPv4' | 'IPv6';
-
 export type OfflineModeStatus = {
-  address: string;
-  family: Family;
-  port: number;
+  addressOrHost: string;
   error: string;
 };

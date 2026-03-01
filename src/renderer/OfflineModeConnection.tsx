@@ -13,19 +13,16 @@ import {
   ListItemText,
   Stack,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Tooltip,
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import {
-  Family,
   OfflineModeStatus,
   RendererOfflineModeTournament,
 } from '../common/types';
 
 function toLabel(offlineModeStatus: OfflineModeStatus) {
-  return offlineModeStatus.address
+  return offlineModeStatus.addressOrHost
     ? 'Offline Mode connected'
     : 'Connect to Offline Mode';
 }
@@ -36,36 +33,23 @@ export function OfflineModeConnectionDialogContent({
   offlineModeStatus: OfflineModeStatus;
 }) {
   const [offlineModePassword, setOfflineModePassword] = useState('');
-  const [remoteOfflineModes, setRemoteOfflineModes] = useState<
-    { address: string; computerName: string; family: Family; port: number }[]
-  >([]);
-  const [listenError, setListenError] = useState('');
+  const [offlineModeHosts, setOfflineModeHosts] = useState<string[]>([]);
   useEffect(() => {
-    window.electron.onRemoteOfflineMode(
-      (event, newRemoteOfflineModes, newListenError) => {
-        setRemoteOfflineModes(newRemoteOfflineModes);
-        setListenError(newListenError);
-      },
-    );
+    window.electron.onOfflineModeHosts((event, newOfflineModeHosts) => {
+      setOfflineModeHosts(newOfflineModeHosts);
+    });
     (async () => {
       const offlineModePasswordPromise =
         window.electron.getOfflineModePassword();
-      const remoteOfflineModesPromise = window.electron.getRemoteOfflineModes();
+      const offlineModeHostsPromise = window.electron.getOfflineModeHosts();
       setOfflineModePassword(await offlineModePasswordPromise);
-      setRemoteOfflineModes(
-        (await remoteOfflineModesPromise).remoteOfflineModes,
-      );
-      setListenError((await remoteOfflineModesPromise).listenError);
+      setOfflineModeHosts(await offlineModeHostsPromise);
     })();
   }, []);
 
-  const [address, setAddress] = useState('127.0.0.1');
-  const [family, setFamily] = useState<Family>('IPv4');
-  const [port, setPort] = useState('50000');
-
+  const [addressOrHost, setAddressOrHost] = useState('127.0.0.1');
   const [passwordCopied, setPasswordCopied] = useState(false);
   const [addressCopied, setAddressCopied] = useState(false);
-  const [portCopied, setPortCopied] = useState(false);
 
   return (
     <>
@@ -74,7 +58,7 @@ export function OfflineModeConnectionDialogContent({
         <Stack alignItems="center" direction="row" gap="8px" marginBottom="8px">
           <TextField
             fullWidth
-            disabled={Boolean(offlineModeStatus.address)}
+            disabled={Boolean(offlineModeStatus.addressOrHost)}
             label="Offline Mode password"
             onChange={(event) => {
               setOfflineModePassword(event.target.value);
@@ -97,145 +81,78 @@ export function OfflineModeConnectionDialogContent({
             {passwordCopied ? 'Copied!' : 'Copy'}
           </Button>
         </Stack>
-        {offlineModeStatus.address ? (
-          <>
-            <Stack direction="row" alignItems="center" spacing="8px">
-              <TextField
-                fullWidth
-                label={`Address (${offlineModeStatus.family})`}
-                size="small"
-                value={offlineModeStatus.address}
-                variant="standard"
-              />
-              <Button
-                disabled={addressCopied}
-                endIcon={addressCopied ? undefined : <ContentCopy />}
-                onClick={async () => {
-                  await window.electron.copyToClipboard(
-                    offlineModeStatus.address,
-                  );
-                  setAddressCopied(true);
-                  setTimeout(() => setAddressCopied(false), 5000);
-                }}
-                variant="contained"
-              >
-                {addressCopied ? 'Copied!' : 'Copy'}
-              </Button>
-            </Stack>
-            <Stack direction="row" alignItems="center" spacing="8px">
-              <TextField
-                fullWidth
-                label="Port"
-                size="small"
-                value={offlineModeStatus.port}
-                variant="standard"
-              />
-              <Button
-                disabled={portCopied}
-                endIcon={portCopied ? undefined : <ContentCopy />}
-                onClick={async () => {
-                  await window.electron.copyToClipboard(
-                    `${offlineModeStatus.port}`,
-                  );
-                  setPortCopied(true);
-                  setTimeout(() => setPortCopied(false), 5000);
-                }}
-                variant="contained"
-              >
-                {portCopied ? 'Copied!' : 'Copy'}
-              </Button>
-            </Stack>
-          </>
+        {offlineModeStatus.addressOrHost ? (
+          <Stack direction="row" alignItems="center" spacing="8px">
+            <TextField
+              fullWidth
+              label="Host"
+              size="small"
+              value={offlineModeStatus.addressOrHost}
+              variant="standard"
+            />
+            <Button
+              disabled={addressCopied}
+              endIcon={addressCopied ? undefined : <ContentCopy />}
+              onClick={async () => {
+                await window.electron.copyToClipboard(
+                  offlineModeStatus.addressOrHost,
+                );
+                setAddressCopied(true);
+                setTimeout(() => setAddressCopied(false), 5000);
+              }}
+              variant="contained"
+            >
+              {addressCopied ? 'Copied!' : 'Copy'}
+            </Button>
+          </Stack>
         ) : (
           <>
             <Stack direction="row" alignItems="center" spacing="8px">
-              <ToggleButtonGroup
-                exclusive
-                onChange={(event, newFamily) => {
-                  setFamily(newFamily);
-                }}
-                value={family}
-              >
-                <ToggleButton value="IPv4">IPv4</ToggleButton>
-                <ToggleButton value="IPv6">IPv6</ToggleButton>
-              </ToggleButtonGroup>
               <TextField
                 autoFocus
-                label={`Address (${family})`}
+                fullWidth
+                label="Host"
                 onChange={(event) => {
-                  setAddress(event.target.value);
+                  setAddressOrHost(event.target.value);
                 }}
                 size="small"
                 style={{ flexGrow: 1 }}
-                value={address}
-                variant="standard"
-              />
-              <TextField
-                label="Port"
-                onChange={(event) => {
-                  setPort(event.target.value);
-                }}
-                slotProps={{ htmlInput: { min: 1024, max: 65536 } }}
-                size="small"
-                type="number"
-                value={port}
+                value={addressOrHost}
                 variant="standard"
               />
               <Button
-                disabled={!address || !port}
+                disabled={!addressOrHost}
                 onClick={async () => {
                   await window.electron.setOfflineModePassword(
                     offlineModePassword,
                   );
-                  window.electron.connectToOfflineMode(
-                    address,
-                    family,
-                    Number.parseInt(port, 10),
-                  );
+                  window.electron.connectToOfflineMode(addressOrHost);
                 }}
                 variant="contained"
               >
                 Connect
               </Button>
             </Stack>
-            {listenError ? (
-              <Alert severity="error">{listenError}</Alert>
+            {offlineModeHosts.length === 0 ? (
+              <Stack direction="row" justifyContent="center" margin="8px 0">
+                <CircularProgress />
+              </Stack>
             ) : (
-              <>
-                {remoteOfflineModes.length === 0 && (
-                  <Stack direction="row" justifyContent="center" margin="8px 0">
-                    <CircularProgress />
-                  </Stack>
-                )}
-                {remoteOfflineModes.length > 0 && (
-                  <List>
-                    {remoteOfflineModes.map((remoteOfflineMode) => (
-                      <ListItemButton
-                        key={`${remoteOfflineMode.address}${remoteOfflineMode.port}`}
-                        onClick={async () => {
-                          await window.electron.setOfflineModePassword(
-                            offlineModePassword,
-                          );
-                          window.electron.connectToOfflineMode(
-                            remoteOfflineMode.address,
-                            remoteOfflineMode.family,
-                            remoteOfflineMode.port,
-                          );
-                        }}
-                      >
-                        <ListItemText>
-                          {remoteOfflineMode.family === 'IPv4'
-                            ? remoteOfflineMode.address
-                            : `[${remoteOfflineMode.address}]`}
-                          :{remoteOfflineMode.port}
-                          {remoteOfflineMode.computerName &&
-                            ` - ${remoteOfflineMode.computerName}`}
-                        </ListItemText>
-                      </ListItemButton>
-                    ))}
-                  </List>
-                )}
-              </>
+              <List>
+                {offlineModeHosts.map((offlineModeHost) => (
+                  <ListItemButton
+                    key={offlineModeHost}
+                    onClick={async () => {
+                      await window.electron.setOfflineModePassword(
+                        offlineModePassword,
+                      );
+                      window.electron.connectToOfflineMode(offlineModeHost);
+                    }}
+                  >
+                    <ListItemText>{offlineModeHost}</ListItemText>
+                  </ListItemButton>
+                ))}
+              </List>
             )}
             {offlineModeStatus.error && (
               <Alert severity="error">{offlineModeStatus.error}</Alert>
@@ -257,7 +174,7 @@ export default function OfflineModeConnection({
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (offlineModeStatus.address) {
+    if (offlineModeStatus.addressOrHost) {
       setOpen(false);
     }
   }, [offlineModeStatus]);
@@ -269,7 +186,7 @@ export default function OfflineModeConnection({
         size="small"
         value={
           offlineModeTournament.slug ||
-          offlineModeStatus.address ||
+          offlineModeStatus.addressOrHost ||
           (offlineModeStatus.error ? 'Error!' : 'Connect to Offline Mode...')
         }
         style={{ flexGrow: 1 }}
@@ -278,7 +195,7 @@ export default function OfflineModeConnection({
         <IconButton
           onClick={() => {
             setOpen(true);
-            if (!offlineModeStatus.address) {
+            if (!offlineModeStatus.addressOrHost) {
               window.electron.listenForOfflineMode();
             }
           }}
