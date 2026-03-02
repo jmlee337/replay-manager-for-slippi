@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron';
 import WebSocket from 'ws';
 import { createHash } from 'crypto';
-import bonjour from 'bonjour';
+import { Bonjour, Browser } from 'bonjour-service';
 import { parse } from 'ipaddr.js';
 import {
   OfflineModeParticipant,
@@ -39,7 +39,6 @@ const idToSet = new Map<number, Set>();
 let selectedSetId = 0;
 let tournament = INITIAL_TOURNAMENT;
 let mainWindow: BrowserWindow | undefined;
-let bonjourInstance: bonjour.Bonjour | null = null;
 export function initOfflineMode(initMainWindow: BrowserWindow) {
   mainWindow = initMainWindow;
   addressOrHost = '';
@@ -47,7 +46,6 @@ export function initOfflineMode(initMainWindow: BrowserWindow) {
   idToSet.clear();
   selectedSetId = 0;
   tournament = INITIAL_TOURNAMENT;
-  bonjourInstance = bonjour();
 }
 export function setSelectedOfflineModeSetId(id: number) {
   selectedSetId = id;
@@ -324,12 +322,17 @@ function sendOfflineModeHosts() {
   mainWindow?.webContents.send('offlineModeHosts', getOfflineModeHosts());
 }
 
-let browser: bonjour.Browser | null = null;
+let bonjour: Bonjour | null = null;
+let browser: Browser | null = null;
 export async function deafenForOfflineMode() {
   if (browser) {
     browser.removeAllListeners();
     browser.stop();
     browser = null;
+  }
+  if (bonjour) {
+    bonjour.destroy();
+    bonjour = null;
   }
   offlineModeHosts.clear();
   sendOfflineModeHosts();
@@ -337,20 +340,24 @@ export async function deafenForOfflineMode() {
 
 const offlineModeRegex = /^offlinemode(-[1-9]([0-9])*)?$/;
 export async function listenForOfflineMode() {
-  if (bonjourInstance && !browser) {
-    browser = bonjourInstance.find({ type: 'http' });
+  if (!bonjour) {
+    bonjour = new Bonjour();
+  }
+  if (!browser) {
+    browser = bonjour.find({ type: 'http' });
     browser.on('up', (service) => {
       if (offlineModeRegex.test(service.name)) {
         offlineModeHosts.set(service.host, true);
+        sendOfflineModeHosts();
       }
     });
     browser.on('down', (service) => {
       if (offlineModeRegex.test(service.name)) {
         offlineModeHosts.delete(service.host);
+        sendOfflineModeHosts();
       }
     });
   }
-  sendOfflineModeHosts();
 }
 
 type AuthIdentify = {

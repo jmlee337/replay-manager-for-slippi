@@ -327,7 +327,7 @@ const electronHandler = {
     callback: (event: IpcRendererEvent, offlineModeHosts: string[]) => void,
   ) => {
     ipcRenderer.removeAllListeners('offlineModeHosts');
-    ipcRenderer.on('remoteOfflineMode', callback);
+    ipcRenderer.on('offlineModeHosts', callback);
   },
   onTournament: (
     callback: (
