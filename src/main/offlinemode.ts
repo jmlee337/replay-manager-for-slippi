@@ -335,16 +335,17 @@ export async function deafenForOfflineMode() {
   sendOfflineModeHosts();
 }
 
+const offlineModeRegex = /^offlinemode(-[1-9]([0-9])*)?$/;
 export async function listenForOfflineMode() {
   if (bonjourInstance && !browser) {
     browser = bonjourInstance.find({ type: 'http' });
     browser.on('up', (service) => {
-      if (service.name === 'Offline Mode') {
+      if (offlineModeRegex.test(service.name)) {
         offlineModeHosts.set(service.host, true);
       }
     });
     browser.on('down', (service) => {
-      if (service.name === 'Offline Mode') {
+      if (offlineModeRegex.test(service.name)) {
         offlineModeHosts.delete(service.host);
       }
     });
