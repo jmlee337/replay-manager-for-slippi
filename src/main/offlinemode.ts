@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron';
 import WebSocket from 'ws';
 import { createHash } from 'crypto';
-import { Bonjour, Browser } from 'bonjour-service';
+import { DnsSd, DnsSdBrowse } from '@fugood/dns-sd';
 import { IPv4, IPv6, parse } from 'ipaddr.js';
 import { lookup } from 'dns';
 import {
@@ -324,40 +324,36 @@ function sendOfflineModeHosts() {
   mainWindow?.webContents.send('offlineModeHosts', getOfflineModeHosts());
 }
 
-let bonjour: Bonjour | null = null;
-let browser: Browser | null = null;
+let browser: DnsSdBrowse | null = null;
 export async function deafenForOfflineMode() {
   if (browser) {
     browser.removeAllListeners();
     browser.stop();
     browser = null;
   }
-  if (bonjour) {
-    bonjour.destroy();
-    bonjour = null;
-  }
   hostnameToAddresses.clear();
   sendOfflineModeHosts();
 }
 
 export async function listenForOfflineMode() {
-  if (!bonjour) {
-    bonjour = new Bonjour();
-  }
   if (!browser) {
-    browser = bonjour.find({ type: 'http' });
-    browser.on('up', (service) => {
-      if (service.txt.offlinemode) {
-        hostnameToAddresses.set(service.host, service.addresses ?? []);
-        sendOfflineModeHosts();
-      }
-    });
-    browser.on('down', (service) => {
-      if (service.txt.offlinemode) {
-        hostnameToAddresses.delete(service.host);
-        sendOfflineModeHosts();
-      }
-    });
+    browser = DnsSd.search('_http._tcp')
+      .on('serviceFound', (service) => {
+        if (service.txt?.offlinemode) {
+          hostnameToAddresses.set(
+            service.hostName.slice(0, -1),
+            service.addresses,
+          );
+          sendOfflineModeHosts();
+        }
+      })
+      .on('serviceLost', (service) => {
+        if (service.txt?.offlinemode) {
+          hostnameToAddresses.delete(service.hostName.slice(0, -1));
+          sendOfflineModeHosts();
+        }
+      });
+    console.log(DnsSd.getBackendInfo());
   }
 }
 
