@@ -206,7 +206,13 @@
       "hardenedRuntime": true,
       "entitlements": "assets/entitlements.mac.plist",
       "entitlementsInherit": "assets/entitlements.mac.plist",
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSLocalNetworkUsageDescription": "This app needs access to the local network",
+        "NSBonjourServices": [
+          "_http._tcp"
+        ]
+      }
     },
     "dmg": {
       "contents": [

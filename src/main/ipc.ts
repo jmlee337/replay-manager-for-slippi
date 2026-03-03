@@ -135,6 +135,7 @@ import {
   setOfflineModePassword,
   setSelectedOfflineModeSetId,
   startOfflineModeSet,
+  deafenForOfflineModeAndSend,
 } from './offlinemode';
 
 type ReplayDir = {
@@ -322,7 +323,7 @@ export default function setupIPCs(
   ipcMain.handle('setMode', (event, newMode: Mode) => {
     if (mode !== newMode && mode === Mode.OFFLINE_MODE) {
       disconnectFromOfflineMode();
-      deafenForOfflineMode();
+      deafenForOfflineModeAndSend();
     }
     store.set('mode', newMode);
     mode = newMode;
@@ -1719,6 +1720,7 @@ export default function setupIPCs(
 
   app.on('will-quit', (event) => {
     detectUsb.stopListening();
+    deafenForOfflineMode();
     if (undoSrcFullPath) {
       event.preventDefault();
       (async () => {

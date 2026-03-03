@@ -325,13 +325,16 @@ function sendOfflineModeHosts() {
 }
 
 let browser: DnsSdBrowse | null = null;
-export async function deafenForOfflineMode() {
+export function deafenForOfflineMode() {
   if (browser) {
     browser.removeAllListeners();
     browser.stop();
     browser = null;
   }
   hostnameToAddresses.clear();
+}
+export function deafenForOfflineModeAndSend() {
+  deafenForOfflineMode();
   sendOfflineModeHosts();
 }
 
@@ -353,7 +356,6 @@ export async function listenForOfflineMode() {
           sendOfflineModeHosts();
         }
       });
-    console.log(DnsSd.getBackendInfo());
   }
 }
 
@@ -452,11 +454,16 @@ export function connectToOfflineMode(newAddressOrHost: string) {
         );
         if (ipv6NonLinkLocalAddresses.length > 0) {
           if (options.all) {
-            callback(null, [
+            process.nextTick(callback, null, [
               { address: ipv6NonLinkLocalAddresses[0].toString(), family: 6 },
             ]);
           } else {
-            callback(null, ipv6NonLinkLocalAddresses[0].toString(), 6);
+            process.nextTick(
+              callback,
+              null,
+              ipv6NonLinkLocalAddresses[0].toString(),
+              6,
+            );
           }
           return;
         }
@@ -466,11 +473,11 @@ export function connectToOfflineMode(newAddressOrHost: string) {
         );
         if (ipv4Addresses.length > 0) {
           if (options.all) {
-            callback(null, [
+            process.nextTick(callback, null, [
               { address: ipv4Addresses[0].toString(), family: 6 },
             ]);
           } else {
-            callback(null, ipv4Addresses[0].toString(), 6);
+            process.nextTick(callback, null, ipv4Addresses[0].toString(), 6);
           }
           return;
         }
@@ -481,11 +488,16 @@ export function connectToOfflineMode(newAddressOrHost: string) {
         );
         if (ipv6LinkLocalAdresses.length > 0) {
           if (options.all) {
-            callback(null, [
+            process.nextTick(callback, null, [
               { address: ipv6LinkLocalAdresses[0].toString(), family: 6 },
             ]);
           } else {
-            callback(null, ipv6LinkLocalAdresses[0].toString(), 6);
+            process.nextTick(
+              callback,
+              null,
+              ipv6LinkLocalAdresses[0].toString(),
+              6,
+            );
           }
           return;
         }
