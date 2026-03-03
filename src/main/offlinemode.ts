@@ -2,7 +2,8 @@ import { BrowserWindow } from 'electron';
 import WebSocket from 'ws';
 import { createHash } from 'crypto';
 import { Bonjour, Browser } from 'bonjour-service';
-import { parse } from 'ipaddr.js';
+import { IPv4, IPv6, parse } from 'ipaddr.js';
+import { lookup } from 'dns';
 import {
   OfflineModeParticipant,
   OfflineModeSeed,
@@ -314,9 +315,10 @@ export function setOfflineModePassword(newOfflineModePassword: string) {
   offlineModePassword = newOfflineModePassword;
 }
 
-const offlineModeHosts = new Map<string, boolean>();
+// hostname to addresses
+const hostnameToAddresses = new Map<string, string[]>();
 export function getOfflineModeHosts() {
-  return Array.from(offlineModeHosts.keys());
+  return Array.from(hostnameToAddresses.keys());
 }
 function sendOfflineModeHosts() {
   mainWindow?.webContents.send('offlineModeHosts', getOfflineModeHosts());
@@ -334,7 +336,7 @@ export async function deafenForOfflineMode() {
     bonjour.destroy();
     bonjour = null;
   }
-  offlineModeHosts.clear();
+  hostnameToAddresses.clear();
   sendOfflineModeHosts();
 }
 
@@ -346,13 +348,13 @@ export async function listenForOfflineMode() {
     browser = bonjour.find({ type: 'http' });
     browser.on('up', (service) => {
       if (service.txt.offlinemode) {
-        offlineModeHosts.set(service.host, true);
+        hostnameToAddresses.set(service.host, service.addresses ?? []);
         sendOfflineModeHosts();
       }
     });
     browser.on('down', (service) => {
       if (service.txt.offlinemode) {
-        offlineModeHosts.delete(service.host);
+        hostnameToAddresses.delete(service.host);
         sendOfflineModeHosts();
       }
     });
@@ -432,6 +434,68 @@ export function connectToOfflineMode(newAddressOrHost: string) {
   try {
     websocket = new WebSocket(`ws://${host}`, 'admin-protocol', {
       handshakeTimeout: 1000,
+      lookup: (hostname, options, callback) => {
+        const addresses = hostnameToAddresses.get(hostname);
+        if (!addresses) {
+          lookup(hostname, options, callback);
+          return;
+        }
+
+        const ipaddrs: (IPv4 | IPv6)[] = [];
+        addresses.forEach((address) => {
+          try {
+            ipaddrs.push(parse(address));
+          } catch {
+            // just catch
+          }
+        });
+
+        const ipv6NonLinkLocalAddresses = ipaddrs.filter(
+          (ipaddr) =>
+            ipaddr.kind() === 'ipv6' && ipaddr.range() !== 'linkLocal',
+        );
+        if (ipv6NonLinkLocalAddresses.length > 0) {
+          if (options.all) {
+            callback(null, [
+              { address: ipv6NonLinkLocalAddresses[0].toString(), family: 6 },
+            ]);
+          } else {
+            callback(null, ipv6NonLinkLocalAddresses[0].toString(), 6);
+          }
+          return;
+        }
+
+        const ipv4Addresses = ipaddrs.filter(
+          (ipaddr) => ipaddr.kind() === 'ipv4',
+        );
+        if (ipv4Addresses.length > 0) {
+          if (options.all) {
+            callback(null, [
+              { address: ipv4Addresses[0].toString(), family: 6 },
+            ]);
+          } else {
+            callback(null, ipv4Addresses[0].toString(), 6);
+          }
+          return;
+        }
+
+        const ipv6LinkLocalAdresses = ipaddrs.filter(
+          (ipaddr) =>
+            ipaddr.kind() === 'ipv6' && ipaddr.range() === 'linkLocal',
+        );
+        if (ipv6LinkLocalAdresses.length > 0) {
+          if (options.all) {
+            callback(null, [
+              { address: ipv6LinkLocalAdresses[0].toString(), family: 6 },
+            ]);
+          } else {
+            callback(null, ipv6LinkLocalAdresses[0].toString(), 6);
+          }
+          return;
+        }
+
+        lookup(hostname, options, callback);
+      },
     })
       .on('error', (err) => {
         cleanup();
