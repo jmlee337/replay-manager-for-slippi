@@ -338,7 +338,6 @@ export async function deafenForOfflineMode() {
   sendOfflineModeHosts();
 }
 
-const offlineModeRegex = /^offlinemode(-[1-9]([0-9])*)?$/;
 export async function listenForOfflineMode() {
   if (!bonjour) {
     bonjour = new Bonjour();
@@ -346,13 +345,13 @@ export async function listenForOfflineMode() {
   if (!browser) {
     browser = bonjour.find({ type: 'http' });
     browser.on('up', (service) => {
-      if (offlineModeRegex.test(service.name)) {
+      if (service.txt.offlinemode) {
         offlineModeHosts.set(service.host, true);
         sendOfflineModeHosts();
       }
     });
     browser.on('down', (service) => {
-      if (offlineModeRegex.test(service.name)) {
+      if (service.txt.offlinemode) {
         offlineModeHosts.delete(service.host);
         sendOfflineModeHosts();
       }
