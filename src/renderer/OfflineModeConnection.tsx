@@ -55,84 +55,124 @@ export function OfflineModeConnectionDialogContent({
     <>
       <DialogTitle>{toLabel(offlineModeStatus)}</DialogTitle>
       <DialogContent>
-        <Stack alignItems="center" direction="row" gap="8px" marginBottom="8px">
-          <TextField
-            fullWidth
-            disabled={Boolean(offlineModeStatus.addressOrHost)}
-            label="Offline Mode password"
-            onChange={(event) => {
-              setOfflineModePassword(event.target.value);
-            }}
-            size="small"
-            type="password"
-            value={offlineModePassword}
-            variant="standard"
-          />
-          <Button
-            disabled={passwordCopied}
-            endIcon={passwordCopied ? undefined : <ContentCopy />}
-            onClick={async () => {
-              await window.electron.copyToClipboard(offlineModePassword);
-              setPasswordCopied(true);
-              setTimeout(() => setPasswordCopied(false), 5000);
-            }}
-            variant="contained"
-          >
-            {passwordCopied ? 'Copied!' : 'Copy'}
-          </Button>
-        </Stack>
         {offlineModeStatus.addressOrHost ? (
-          <Stack direction="row" alignItems="center" spacing="8px">
-            <TextField
-              fullWidth
-              label="Host"
-              size="small"
-              value={offlineModeStatus.addressOrHost}
-              variant="standard"
-            />
-            <Button
-              disabled={addressCopied}
-              endIcon={addressCopied ? undefined : <ContentCopy />}
-              onClick={async () => {
-                await window.electron.copyToClipboard(
-                  offlineModeStatus.addressOrHost,
-                );
-                setAddressCopied(true);
-                setTimeout(() => setAddressCopied(false), 5000);
-              }}
-              variant="contained"
-            >
-              {addressCopied ? 'Copied!' : 'Copy'}
-            </Button>
-          </Stack>
-        ) : (
           <>
-            <Stack direction="row" alignItems="center" spacing="8px">
+            <Stack
+              alignItems="center"
+              direction="row"
+              gap="8px"
+              marginBottom="8px"
+            >
               <TextField
-                autoFocus
                 fullWidth
-                label="Host"
-                onChange={(event) => {
-                  setAddressOrHost(event.target.value);
-                }}
+                disabled
+                label="Offline Mode password"
                 size="small"
-                style={{ flexGrow: 1 }}
-                value={addressOrHost}
+                type="password"
+                value={offlineModePassword}
                 variant="standard"
               />
               <Button
-                disabled={!addressOrHost}
+                disabled={passwordCopied}
+                endIcon={passwordCopied ? undefined : <ContentCopy />}
                 onClick={async () => {
-                  await window.electron.setOfflineModePassword(
-                    offlineModePassword,
-                  );
-                  window.electron.connectToOfflineMode(addressOrHost);
+                  await window.electron.copyToClipboard(offlineModePassword);
+                  setPasswordCopied(true);
+                  setTimeout(() => setPasswordCopied(false), 5000);
                 }}
                 variant="contained"
               >
-                Connect
+                {passwordCopied ? 'Copied!' : 'Copy'}
               </Button>
             </Stack>
+            <Stack direction="row" alignItems="center" spacing="8px">
+              <TextField
+                fullWidth
+                label="Host"
+                size="small"
+                value={offlineModeStatus.addressOrHost}
+                variant="standard"
+              />
+              <Button
+                disabled={addressCopied}
+                endIcon={addressCopied ? undefined : <ContentCopy />}
+                onClick={async () => {
+                  await window.electron.copyToClipboard(
+                    offlineModeStatus.addressOrHost,
+                  );
+                  setAddressCopied(true);
+                  setTimeout(() => setAddressCopied(false), 5000);
+                }}
+                variant="contained"
+              >
+                {addressCopied ? 'Copied!' : 'Copy'}
+              </Button>
+            </Stack>
+          </>
+        ) : (
+          <>
+            <form
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+              onSubmit={async (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                await window.electron.setOfflineModePassword(
+                  offlineModePassword,
+                );
+                window.electron.connectToOfflineMode(addressOrHost);
+              }}
+            >
+              <Stack alignItems="center" direction="row" gap="8px">
+                <TextField
+                  fullWidth
+                  label="Offline Mode password"
+                  onChange={(event) => {
+                    setOfflineModePassword(event.target.value);
+                  }}
+                  size="small"
+                  type="password"
+                  value={offlineModePassword}
+                  variant="standard"
+                />
+                <Button
+                  disabled={passwordCopied}
+                  endIcon={passwordCopied ? undefined : <ContentCopy />}
+                  onClick={async () => {
+                    await window.electron.copyToClipboard(offlineModePassword);
+                    setPasswordCopied(true);
+                    setTimeout(() => setPasswordCopied(false), 5000);
+                  }}
+                  variant="contained"
+                >
+                  {passwordCopied ? 'Copied!' : 'Copy'}
+                </Button>
+              </Stack>
+              <Stack alignItems="center" direction="row" gap="8px">
+                <TextField
+                  autoFocus
+                  fullWidth
+                  label="Host"
+                  onChange={(event) => {
+                    setAddressOrHost(event.target.value);
+                  }}
+                  size="small"
+                  style={{ flexGrow: 1 }}
+                  value={addressOrHost}
+                  variant="standard"
+                />
+                <Button
+                  disabled={!addressOrHost}
+                  type="submit"
+                  variant="contained"
+                >
+                  Connect
+                </Button>
+              </Stack>
+            </form>
             {offlineModeHosts.length === 0 ? (
               <Stack direction="row" justifyContent="center" margin="8px 0">
                 <CircularProgress />
