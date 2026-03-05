@@ -251,8 +251,12 @@ function updateBracketGlobalState(bracket: ParryggBracket): void {
 
   const convertedSets = filteredSets.map(convertParryggSetToSet);
   bracketIdToSets.set(bracket.id, {
-    pendingSets: convertedSets.filter((set) => set.state !== State.COMPLETED),
-    completedSets: convertedSets.filter((set) => set.state === State.COMPLETED),
+    pendingSets: convertedSets
+      .filter((set) => set.state !== State.COMPLETED)
+      .sort((a, b) => (a.ordinal ?? a.round) - (b.ordinal ?? b.round)),
+    completedSets: convertedSets
+      .filter((set) => set.state === State.COMPLETED)
+      .sort((a, b) => (b.ordinal ?? b.round) - (a.ordinal ?? a.round)),
   });
 
   filteredSets.forEach((set) => {
