@@ -10,7 +10,7 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Mode, Set, State } from '../common/types';
 import SetView from './SetView';
 import { assertInteger } from '../common/asserts';
@@ -27,6 +27,25 @@ export default function ResetSet({
   const [error, setError] = useState('');
   const [resetting, setResetting] = useState(false);
 
+  const reset = useCallback(async () => {
+    setResetting(true);
+    try {
+      if (mode === Mode.STARTGG) {
+        await window.electron.resetSet(assertInteger(selectedSet.id));
+      } else if (mode === Mode.OFFLINE_MODE) {
+        await window.electron.resetOfflineModeSet(
+          assertInteger(selectedSet.id),
+        );
+      }
+      setConfirmOpen(false);
+    } catch (e: any) {
+      setError(e.toString());
+      setErrorOpen(true);
+    } finally {
+      setResetting(false);
+    }
+  }, [mode, selectedSet.id]);
+
   return (
     <>
       <Tooltip arrow title="Reset set">
@@ -41,7 +60,16 @@ export default function ResetSet({
               (mode !== Mode.STARTGG && mode !== Mode.OFFLINE_MODE)
             }
             size="small"
-            onClick={() => setConfirmOpen(true)}
+            onClick={() => {
+              if (
+                selectedSet.state === State.CALLED ||
+                selectedSet.state === State.STARTED
+              ) {
+                reset();
+              } else {
+                setConfirmOpen(true);
+              }
+            }}
           >
             {resetting ? <CircularProgress size="24px" /> : <RestartAlt />}
           </IconButton>
@@ -81,24 +109,7 @@ export default function ResetSet({
             endIcon={
               resetting ? <CircularProgress size="24px" /> : <RestartAlt />
             }
-            onClick={async () => {
-              setResetting(true);
-              try {
-                if (mode === Mode.STARTGG) {
-                  await window.electron.resetSet(assertInteger(selectedSet.id));
-                } else if (mode === Mode.OFFLINE_MODE) {
-                  await window.electron.resetOfflineModeSet(
-                    assertInteger(selectedSet.id),
-                  );
-                }
-                setConfirmOpen(false);
-              } catch (e: any) {
-                setError(e.toString());
-                setErrorOpen(true);
-              } finally {
-                setResetting(false);
-              }
-            }}
+            onClick={reset}
             variant="contained"
           >
             Reset
