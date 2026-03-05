@@ -439,70 +439,63 @@ export function connectToOfflineMode(newAddressOrHost: string) {
           return;
         }
 
+        // decent-effort, respect family and all, ignore hints and verbatim
+        let family: 0 | 4 | 6 = 0;
+        if (options.family !== undefined) {
+          if (options.family === 'IPv4') {
+            family = 4;
+          } else if (options.family === 'IPv6') {
+            family = 6;
+          } else if (
+            options.family === 0 ||
+            options.family === 4 ||
+            options.family === 6
+          ) {
+            family = options.family;
+          } else {
+            throw new Error(`invalid family: ${options.family}`);
+          }
+        }
+        let all = false;
+        if (options.all) {
+          all = options.all;
+        }
+
         const ipaddrs: (IPv4 | IPv6)[] = [];
         addresses.forEach((address) => {
           try {
-            ipaddrs.push(parse(address));
+            const ipaddr = parse(address);
+            // to connect to an ipv6 link local address we need to know the network interface
+            // and we can't know that currently so filter them out.
+            if (ipaddr.kind() === 'ipv4' || ipaddr.range() !== 'linkLocal') {
+              ipaddrs.push(ipaddr);
+            }
           } catch {
             // just catch
           }
         });
-
-        const ipv6NonLinkLocalAddresses = ipaddrs.filter(
-          (ipaddr) =>
-            ipaddr.kind() === 'ipv6' && ipaddr.range() !== 'linkLocal',
-        );
-        if (ipv6NonLinkLocalAddresses.length > 0) {
-          if (options.all) {
-            process.nextTick(callback, null, [
-              { address: ipv6NonLinkLocalAddresses[0].toString(), family: 6 },
-            ]);
-          } else {
-            process.nextTick(
-              callback,
-              null,
-              ipv6NonLinkLocalAddresses[0].toString(),
-              6,
-            );
-          }
+        let retAddrs = ipaddrs.map((ipaddr) => ({
+          address: ipaddr.toString(),
+          family: ipaddr.kind() === 'ipv4' ? 4 : 6,
+        }));
+        if (family !== 0) {
+          retAddrs = retAddrs.filter((retAddr) => retAddr.family === family);
+        }
+        if (retAddrs.length === 0) {
+          lookup(hostname, options, callback);
           return;
         }
 
-        const ipv4Addresses = ipaddrs.filter(
-          (ipaddr) => ipaddr.kind() === 'ipv4',
-        );
-        if (ipv4Addresses.length > 0) {
-          if (options.all) {
-            process.nextTick(callback, null, [
-              { address: ipv4Addresses[0].toString(), family: 4 },
-            ]);
-          } else {
-            process.nextTick(callback, null, ipv4Addresses[0].toString(), 6);
-          }
-          return;
+        if (all) {
+          process.nextTick(callback, null, retAddrs);
+        } else {
+          process.nextTick(
+            callback,
+            null,
+            retAddrs[0].address,
+            retAddrs[0].family,
+          );
         }
-
-        const ipv6LinkLocalAdresses = ipaddrs.filter(
-          (ipaddr) =>
-            ipaddr.kind() === 'ipv6' && ipaddr.range() === 'linkLocal',
-        );
-        if (ipv6LinkLocalAdresses.length > 0) {
-          if (options.all) {
-            process.nextTick(callback, null, [
-              { address: ipv6LinkLocalAdresses[0].toString(), family: 6 },
-            ]);
-          } else {
-            process.nextTick(
-              callback,
-              null,
-              ipv6LinkLocalAdresses[0].toString(),
-              6,
-            );
-          }
-          return;
-        }
-
-        lookup(hostname, options, callback);
       },
     })
       .on('error', (err) => {
