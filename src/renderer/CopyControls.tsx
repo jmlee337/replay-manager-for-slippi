@@ -1,4 +1,10 @@
-import { BrowserUpdated, Close, FolderOpen, Router } from '@mui/icons-material';
+import {
+  BrowserUpdated,
+  Close,
+  ContentCopy,
+  FolderOpen,
+  Router,
+} from '@mui/icons-material';
 import {
   Alert,
   Button,
@@ -22,7 +28,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CopySettings,
   Output,
@@ -45,8 +51,22 @@ function ClientsDialog({
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState(WebSocketServerStatus.STOPPED);
   const [clients, setClients] = useState<CopyHostOrClient[]>([]);
-  const [selfAddress, setSelfAddress] = useState('');
-  const [selfName, setSelfName] = useState('');
+  const [v4Address, setV4Address] = useState('');
+  const [v6Address, setV6Address] = useState('');
+  const [port, setPort] = useState(0);
+  const [hostname, setHostname] = useState('');
+
+  const [v4Copied, setV4Copied] = useState(false);
+  const [v6Copied, setV6Copied] = useState(false);
+
+  const v4AddressAndPort = useMemo(
+    () => `${v4Address}:${port}`,
+    [v4Address, port],
+  );
+  const v6AddressAndPort = useMemo(
+    () => `[${v6Address}]:${port}`,
+    [v6Address, port],
+  );
 
   useEffect(() => {
     (async () => {
@@ -74,8 +94,12 @@ function ClientsDialog({
         disabled={disabled}
         endIcon={<BrowserUpdated />}
         onClick={async () => {
-          setSelfName(await window.electron.startHostServer());
-          setSelfAddress(await window.electron.startBroadcastingHost());
+          setHostname(await window.electron.startHostServer());
+          const startBroadcastingHostRet =
+            await window.electron.startBroadcastingHost();
+          setV4Address(startBroadcastingHostRet.v4Address);
+          setV6Address(startBroadcastingHostRet.v6Address);
+          setPort(startBroadcastingHostRet.port);
           setOpen(true);
         }}
       >
@@ -94,11 +118,52 @@ function ClientsDialog({
         }}
         fullWidth
       >
-        <DialogTitle>Hosting on LAN...</DialogTitle>
+        <DialogTitle>Hosting on LAN as {hostname}</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Hosting at {selfAddress} - {selfName}
-          </DialogContentText>
+          <Stack alignItems="center" direction="row" gap="8px">
+            <TextField
+              disabled={!v6Address}
+              fullWidth
+              label="Websocket Address (IPv6)"
+              size="small"
+              value={v6AddressAndPort}
+              variant="standard"
+            />
+            <Button
+              disabled={v6Copied || !v6Address}
+              endIcon={v6Copied ? undefined : <ContentCopy />}
+              onClick={async () => {
+                await window.electron.copyToClipboard(v6AddressAndPort);
+                setV6Copied(true);
+                setTimeout(() => setV6Copied(false), 5000);
+              }}
+              variant="contained"
+            >
+              {v6Copied ? 'Copied!' : 'Copy'}
+            </Button>
+          </Stack>
+          <Stack alignItems="center" direction="row" gap="8px">
+            <TextField
+              disabled={!v4Address}
+              fullWidth
+              label="Websocket Address (IPv4)"
+              size="small"
+              value={v4AddressAndPort}
+              variant="standard"
+            />
+            <Button
+              disabled={v4Copied || !v4Address}
+              endIcon={v4Copied ? undefined : <ContentCopy />}
+              onClick={async () => {
+                await window.electron.copyToClipboard(v4AddressAndPort);
+                setV4Copied(true);
+                setTimeout(() => setV4Copied(false), 5000);
+              }}
+              variant="contained"
+            >
+              {v4Copied ? 'Copied!' : 'Copy'}
+            </Button>
+          </Stack>
           <List>
             {clients.map(({ address, name }) => (
               <ListItem
@@ -157,6 +222,7 @@ function ClientsDialog({
             color="error"
             variant="contained"
             onClick={async () => {
+              await window.electron.stopBroadcastingHost();
               await window.electron.stopHostServer();
               setStopOpen(false);
               setOpen(false);
@@ -172,11 +238,11 @@ function ClientsDialog({
 
 function HostsDialog({ host }: { host: CopyHostOrClient }) {
   const [open, setOpen] = useState(false);
-  const [hosts, setHosts] = useState<CopyHostOrClient[]>([]);
+  const [copyHosts, setCopyHosts] = useState<string[]>([]);
   const [selfName, setSelfName] = useState('');
   useEffect(() => {
-    window.electron.onCopyHosts((event, newHosts) => {
-      setHosts(newHosts);
+    window.electron.onCopyHosts((event, newCopyHosts) => {
+      setCopyHosts(newCopyHosts);
     });
   }, []);
 
@@ -188,7 +254,7 @@ function HostsDialog({ host }: { host: CopyHostOrClient }) {
     <>
       <Button
         onClick={async () => {
-          setHosts([]);
+          setCopyHosts([]);
           setError('');
           setSelfName(await window.electron.startListeningForHosts());
           setOpen(true);
@@ -235,8 +301,8 @@ function HostsDialog({ host }: { host: CopyHostOrClient }) {
           >
             <TextField
               autoFocus
-              label="IP Address"
-              placeholder="192.168.0.106"
+              label="IP address and port"
+              placeholder="192.168.0.106:54673"
               size="small"
               variant="outlined"
               value={manualAddress}
@@ -278,9 +344,9 @@ function HostsDialog({ host }: { host: CopyHostOrClient }) {
                 </ListItemText>
               </ListItem>
             )}
-            {hosts.map(({ address, name }) => (
+            {copyHosts.map((copyHost) => (
               <ListItem
-                key={address}
+                key={copyHost}
                 disablePadding
                 style={{ margin: '0 -16px', width: 'calc(100% + 32px)' }}
               >
@@ -289,7 +355,7 @@ function HostsDialog({ host }: { host: CopyHostOrClient }) {
                     setConnecting(true);
                     await window.electron.stopListeningForHosts();
                     try {
-                      await window.electron.connectToHost(address);
+                      await window.electron.connectToHost(copyHost);
                       setOpen(false);
                     } catch (e: unknown) {
                       if (e instanceof Error) {
@@ -300,9 +366,7 @@ function HostsDialog({ host }: { host: CopyHostOrClient }) {
                     }
                   }}
                 >
-                  <ListItemText>
-                    {address} - {name}
-                  </ListItemText>
+                  <ListItemText>{copyHost}</ListItemText>
                 </ListItemButton>
               </ListItem>
             ))}

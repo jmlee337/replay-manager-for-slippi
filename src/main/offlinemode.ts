@@ -315,7 +315,6 @@ export function setOfflineModePassword(newOfflineModePassword: string) {
   offlineModePassword = newOfflineModePassword;
 }
 
-// hostname to addresses
 const hostnameToAddresses = new Map<string, string[]>();
 export function getOfflineModeHosts() {
   return Array.from(hostnameToAddresses.keys());
@@ -338,7 +337,7 @@ export function deafenForOfflineModeAndSend() {
   sendOfflineModeHosts();
 }
 
-export async function listenForOfflineMode() {
+export function listenForOfflineMode() {
   if (!browser) {
     browser = DnsSd.search('_http._tcp')
       .on('serviceFound', (service) => {

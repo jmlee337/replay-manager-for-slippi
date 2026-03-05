@@ -95,7 +95,7 @@ const electronHandler = {
   stopListeningForHosts: (): Promise<void> =>
     ipcRenderer.invoke('stopListeningForHosts'),
   onCopyHosts: (
-    callback: (event: IpcRendererEvent, hosts: CopyHostOrClient[]) => void,
+    callback: (event: IpcRendererEvent, copyHosts: string[]) => void,
   ) => {
     ipcRenderer.removeAllListeners('copyHosts');
     ipcRenderer.on('copyHosts', callback);
@@ -122,8 +122,11 @@ const electronHandler = {
     ipcRenderer.invoke('kickCopyClient', address),
   startHostServer: (): Promise<string> => ipcRenderer.invoke('startHostServer'),
   stopHostServer: (): Promise<void> => ipcRenderer.invoke('stopHostServer'),
-  startBroadcastingHost: (): Promise<string> =>
-    ipcRenderer.invoke('startBroadcastingHost'),
+  startBroadcastingHost: (): Promise<{
+    v4Address: string;
+    v6Address: string;
+    port: number;
+  }> => ipcRenderer.invoke('startBroadcastingHost'),
   stopBroadcastingHost: (): Promise<void> =>
     ipcRenderer.invoke('stopBroadcastingHost'),
   onCopyClients: (

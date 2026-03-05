@@ -1,9 +1,12 @@
 import { BrowserWindow } from 'electron';
-import { createSocket, Socket } from 'dgram';
+import { createSocket } from 'dgram';
 import { WebSocketServer, WebSocket, MessageEvent } from 'ws';
 import { access, appendFile, rm, writeFile } from 'fs/promises';
 import path from 'node:path';
 import { IncomingMessage } from 'http';
+import { CiaoService, getResponder, Responder } from '@homebridge/ciao';
+import DnsSd, { DnsSdAdvertisement, DnsSdBrowse } from '@fugood/dns-sd';
+import os from 'os';
 import {
   CopyHostOrClient,
   WebSocketServerStatus,
@@ -12,8 +15,6 @@ import {
   CopyHostFormat,
 } from '../common/types';
 import { getComputerName } from './util';
-
-const PORT = 52455;
 
 type HostMessage =
   | {
@@ -60,61 +61,51 @@ export function setMainWindow(newMainWindow: BrowserWindow) {
   mainWindow = newMainWindow;
 }
 
-const addressToName = new Map<string, string>();
-let listenSocket: Socket | null = null;
-export function startListening(): Promise<string> {
-  if (listenSocket) {
-    return Promise.resolve(getComputerName());
+const hostnames = new Map<string, { addresses: string[]; port: number }>();
+export function getCopyHosts() {
+  return Array.from(hostnames.entries()).map(
+    ([hostname, { port }]) => `${hostname}:${port}`,
+  );
+}
+function sendCopyHosts() {
+  mainWindow?.webContents.send('copyHosts', getCopyHosts());
+}
+
+let browser: DnsSdBrowse | null = null;
+export function startListening() {
+  if (!browser) {
+    browser = DnsSd.search('_http._tcp')
+      .on('serviceFound', (service) => {
+        if (service.txt?.replayreporter) {
+          hostnames.set(service.hostName.slice(0, -1), {
+            addresses: service.addresses,
+            port: service.port,
+          });
+          sendCopyHosts();
+        }
+      })
+      .on('serviceLost', (service) => {
+        if (service.txt?.replayreporter) {
+          hostnames.delete(service.hostName.slice(0, -1));
+          sendCopyHosts();
+        }
+      });
   }
 
-  addressToName.clear();
-  listenSocket = createSocket('udp4');
-  listenSocket.on('message', (msg, rinfo) => {
-    const name = msg.toString();
-    addressToName.set(rinfo.address, name);
-    mainWindow?.webContents.send(
-      'copyHosts',
-      Array.from(addressToName).map(
-        ([hostAddress, hostName]): CopyHostOrClient => ({
-          address: hostAddress,
-          name: hostName,
-        }),
-      ),
-    );
-  });
-  return new Promise((resolve, reject) => {
-    if (!listenSocket) {
-      reject();
-      return;
-    }
-
-    listenSocket.on('error', (e) => {
-      reject(e);
-    });
-    listenSocket.on('listening', () => {
-      if (!listenSocket) {
-        reject();
-        return;
-      }
-
-      resolve(getComputerName());
-    });
-    listenSocket.bind(PORT);
-  });
+  return getComputerName();
 }
 
 export function stopListening() {
-  return new Promise<void>((resolve) => {
-    if (!listenSocket) {
-      resolve();
-      return;
-    }
-
-    listenSocket.close(() => {
-      listenSocket = null;
-      resolve();
-    });
-  });
+  if (browser) {
+    browser.removeAllListeners();
+    browser.stop();
+    browser = null;
+  }
+  hostnames.clear();
+}
+export function stopListeningAndSend() {
+  stopListening();
+  sendCopyHosts();
 }
 
 let address = '';
@@ -144,11 +135,9 @@ function sendCopyHostFormat() {
 }
 
 export function connectToHost(newAddress: string) {
-  const newName = addressToName.get(newAddress) ?? '';
-
   if (webSocket) {
-    webSocket.onclose = () => {};
-    webSocket.close();
+    webSocket.removeAllListeners();
+    webSocket.terminate();
     address = '';
     name = '';
     hostFileNameFormat = '';
@@ -158,7 +147,7 @@ export function connectToHost(newAddress: string) {
     hostSmuggleCostumeIndex = undefined;
   }
 
-  webSocket = new WebSocket(`ws://${newAddress}:${PORT}`, {
+  webSocket = new WebSocket(`ws://${newAddress}`, {
     handshakeTimeout: 1000,
   });
   webSocket.addEventListener('message', (event) => {
@@ -198,7 +187,6 @@ export function connectToHost(newAddress: string) {
 
     webSocket.onopen = () => {
       address = newAddress;
-      name = newName;
       sendCopyHost();
 
       const request: HostRequest = {
@@ -461,7 +449,9 @@ export function setOwnSmuggleCostumeIndex(smuggleCostumeIndex: boolean) {
   updateAllClients();
 }
 
-let broadcastSocket: Socket | null = null;
+let advertisement: DnsSdAdvertisement | null = null;
+let responder: Responder | null = null;
+let ciaoService: CiaoService | null = null;
 let webSocketServer: WebSocketServer | null = null;
 const clientAddressToExpectedZip = new Map<
   string,
@@ -479,9 +469,9 @@ export function startHostServer(): Promise<string> {
   clientAddressToExpectedZip.clear();
   sendCopyClients();
   webSocketServer = new WebSocketServer({
-    port: PORT,
+    port: 0,
     verifyClient: ({ req }: { req: IncomingMessage }) =>
-      !!broadcastSocket &&
+      (advertisement || (responder && ciaoService)) &&
       req.socket.remoteAddress &&
       !clientAddressToNameAndWebSocket.has(req.socket.remoteAddress),
   });
@@ -651,7 +641,7 @@ export function startHostServer(): Promise<string> {
         webSocketServerStatus,
         '',
       );
-      resolve(getComputerName());
+      resolve(os.hostname());
     });
   });
 }
@@ -676,61 +666,105 @@ export function stopHostServer() {
   });
 }
 
-let timeout: NodeJS.Timeout | null = null;
-export function startBroadcasting() {
-  if (broadcastSocket) {
-    return Promise.resolve(broadcastSocket.address().address);
-  }
+export async function startBroadcasting() {
   if (!webSocketServer) {
-    return Promise.reject(new Error('must start hostServer first'));
+    throw new Error('must start hostServer first');
   }
+  const webSocketServerAddress = webSocketServer.address();
+  if (typeof webSocketServerAddress === 'string') {
+    throw new Error('unreachable');
+  }
+  const { port } = webSocketServerAddress;
 
-  return new Promise<string>((resolve, reject) => {
-    broadcastSocket = createSocket('udp4');
-    broadcastSocket.on('error', (e) => {
-      reject(e);
-    });
-    broadcastSocket.on('listening', () => {
-      if (!broadcastSocket) {
-        reject();
-        return;
-      }
-
-      broadcastSocket.setBroadcast(true);
-      const selfName = getComputerName();
-      const broadcast = () => {
-        if (broadcastSocket) {
-          broadcastSocket.send(selfName, PORT, '255.255.255.255');
-          timeout = setTimeout(() => {
-            broadcast();
-          }, 1000);
+  let v4Address = '';
+  const udp4Socket = createSocket('udp4');
+  try {
+    await new Promise<void>((resolve, reject) => {
+      udp4Socket.connect(53, '8.8.8.8', () => {
+        try {
+          v4Address = udp4Socket.address().address;
+          udp4Socket.close();
+          resolve();
+        } catch {
+          udp4Socket.close();
+          reject();
         }
-      };
-      broadcast();
-      const checkSocket = createSocket('udp4');
-      checkSocket.connect(53, '8.8.8.8', () => {
-        const resolveAddress = checkSocket.address().address;
-        checkSocket.close();
-        resolve(resolveAddress);
       });
     });
-    broadcastSocket.bind();
-  });
-}
-
-export function stopBroadcasting() {
-  if (timeout) {
-    clearTimeout(timeout);
+  } catch {
+    // just catch
   }
 
-  return new Promise<void>((resolve) => {
-    if (!broadcastSocket) {
-      resolve();
-      return;
-    }
-    broadcastSocket.close(() => {
-      broadcastSocket = null;
-      resolve();
+  let v6Address = '';
+  const udp6Socket = createSocket('udp6');
+  try {
+    await new Promise<void>((resolve, reject) => {
+      udp6Socket.connect(53, '2001:4860:4860::8888', () => {
+        try {
+          v6Address = udp6Socket.address().address;
+          udp6Socket.close();
+          resolve();
+        } catch {
+          udp6Socket.close();
+          reject();
+        }
+      });
     });
-  });
+  } catch {
+    // just catch
+  }
+
+  if (DnsSd.getBackendInfo() === 'mdns-sd') {
+    if (!responder) {
+      responder = getResponder();
+    }
+    if (!ciaoService) {
+      ciaoService = responder.createService({
+        name: 'replayreporter',
+        type: 'http',
+        port,
+        txt: { replayreporter: 1 },
+      });
+      (async () => {
+        try {
+          await ciaoService.advertise();
+        } catch {
+          ciaoService.end();
+          ciaoService = null;
+        }
+      })();
+    }
+  } else {
+    advertisement = DnsSd.advertise({
+      name: 'replayreporter',
+      type: '_http._tcp',
+      port,
+      txt: { replayreporter: '1' },
+    }).on('error', () => {
+      advertisement?.stop();
+      advertisement = null;
+    });
+  }
+
+  return { v4Address, v6Address, port };
+}
+
+export async function stopBroadcasting() {
+  if (advertisement) {
+    advertisement.stop();
+    advertisement = null;
+  }
+  if (ciaoService) {
+    await ciaoService.end();
+    await ciaoService.destroy();
+    ciaoService = null;
+  }
+  if (responder) {
+    await responder.shutdown();
+    responder = null;
+  }
+}
+
+export function isBroadcasting() {
+  return Boolean(advertisement || ciaoService || responder);
 }

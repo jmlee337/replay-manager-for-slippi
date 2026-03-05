@@ -98,6 +98,7 @@ import {
   getCopyClients,
   getHost,
   getHostFormat,
+  isBroadcasting,
   kickCopyClient,
   setCopyDir,
   setMainWindow,
@@ -112,6 +113,7 @@ import {
   stopBroadcasting,
   stopHostServer,
   stopListening,
+  stopListeningAndSend,
 } from './host';
 import { assertInteger, assertString } from '../common/asserts';
 import { resolveHtmlPath } from './util';
@@ -690,7 +692,7 @@ export default function setupIPCs(
   ipcMain.handle('startListeningForHosts', startListening);
 
   ipcMain.removeHandler('stopListeningForHosts');
-  ipcMain.handle('stopListeningForHosts', stopListening);
+  ipcMain.handle('stopListeningForHosts', stopListeningAndSend);
 
   ipcMain.removeHandler('connectToHost');
   ipcMain.handle('connectToHost', (event, address: string) =>
@@ -1306,7 +1308,7 @@ export default function setupIPCs(
   );
 
   ipcMain.removeHandler('listenForOfflineMode');
-  ipcMain.handle('listenForOfflineMode', () => listenForOfflineMode());
+  ipcMain.handle('listenForOfflineMode', listenForOfflineMode);
 
   ipcMain.removeHandler('connectToOfflineMode');
   ipcMain.handle('connectToOfflineMode', (event, addressOrHost: string) =>
@@ -1425,7 +1427,7 @@ export default function setupIPCs(
   ipcMain.handle('setUseLAN', (event, newUseLAN: boolean) => {
     store.set('useLAN', newUseLAN);
     if (!newUseLAN) {
-      stopListening();
+      stopListeningAndSend();
       stopBroadcasting();
       stopHostServer();
     }
@@ -1717,6 +1719,7 @@ export default function setupIPCs(
 
   app.on('will-quit', (event) => {
     detectUsb.stopListening();
+    stopListening();
     deafenForOfflineMode();
     if (undoSrcFullPath) {
       event.preventDefault();
@@ -1729,6 +1732,14 @@ export default function setupIPCs(
           undoSrcFullPath = '';
           app.quit();
         }
+      })();
+      return;
+    }
+    if (isBroadcasting()) {
+      event.preventDefault();
+      (async () => {
+        await stopBroadcasting();
+        app.quit();
       })();
     }
   });
