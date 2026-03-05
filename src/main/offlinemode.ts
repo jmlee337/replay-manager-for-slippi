@@ -474,7 +474,7 @@ export function connectToOfflineMode(newAddressOrHost: string) {
         if (ipv4Addresses.length > 0) {
           if (options.all) {
             process.nextTick(callback, null, [
-              { address: ipv4Addresses[0].toString(), family: 6 },
+              { address: ipv4Addresses[0].toString(), family: 4 },
             ]);
           } else {
             process.nextTick(callback, null, ipv4Addresses[0].toString(), 6);
