@@ -576,6 +576,7 @@ export function connectToOfflineMode(newAddressOrHost: string) {
                             }
                           }
                         });
+                        completedSets.reverse();
                         return {
                           ...pool,
                           sets: { completedSets, pendingSets },
