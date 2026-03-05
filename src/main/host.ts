@@ -7,6 +7,7 @@ import { IncomingMessage } from 'http';
 import { CiaoService, getResponder, Responder } from '@homebridge/ciao';
 import DnsSd, { DnsSdAdvertisement, DnsSdBrowse } from '@fugood/dns-sd';
 import os from 'os';
+import { lookup } from 'dns';
 import {
   CopyHostOrClient,
   WebSocketServerStatus,
@@ -14,7 +15,7 @@ import {
   EnforcerSetting,
   CopyHostFormat,
 } from '../common/types';
-import { getComputerName } from './util';
+import { getComputerName, lookupInner } from './util';
 
 type HostMessage =
   | {
@@ -77,7 +78,7 @@ export function startListening() {
     browser = DnsSd.search('_http._tcp')
       .on('serviceFound', (service) => {
         if (service.txt?.replayreporter) {
-          hostnames.set(service.hostName.slice(0, -1), {
+          hostnames.set(service.hostName.slice(0, -1).toLowerCase(), {
             addresses: service.addresses,
             port: service.port,
           });
@@ -86,7 +87,7 @@ export function startListening() {
       })
       .on('serviceLost', (service) => {
         if (service.txt?.replayreporter) {
-          hostnames.delete(service.hostName.slice(0, -1));
+          hostnames.delete(service.hostName.slice(0, -1).toLowerCase());
           sendCopyHosts();
         }
       });
@@ -149,6 +150,34 @@ export function connectToHost(newAddress: string) {
 
   webSocket = new WebSocket(`ws://${newAddress}`, {
     handshakeTimeout: 1000,
+    lookup: (hostname, options, callback) => {
+      const hostnameObj = hostnames.get(hostname);
+      if (!hostnameObj) {
+        lookup(hostname, options, callback);
+        return;
+      }
+
+      const retAddrs = lookupInner(hostnameObj.addresses, options);
+      if (retAddrs.length === 0) {
+        lookup(hostname, options, callback);
+        return;
+      }
+
+      let all = false;
+      if (options.all) {
+        all = options.all;
+      }
+      if (all) {
+        process.nextTick(callback, null, retAddrs);
+      } else {
+        process.nextTick(
+          callback,
+          null,
+          retAddrs[0].address,
+          retAddrs[0].family,
+        );
+      }
+    },
   });
   webSocket.addEventListener('message', (event) => {
     if (typeof event.data !== 'string') {

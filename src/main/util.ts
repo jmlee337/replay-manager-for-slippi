@@ -2,6 +2,8 @@ import os from 'os';
 import { URL } from 'url';
 import path from 'path';
 import { execSync } from 'child_process';
+import { LookupOptions } from 'dns';
+import { IPv4, IPv6, parse } from 'ipaddr.js';
 
 export function resolveHtmlPath(htmlFileName: string) {
   if (process.env.NODE_ENV === 'development') {
@@ -36,4 +38,46 @@ export function getComputerName() {
       computerName = os.hostname();
       return computerName;
   }
+}
+
+export function lookupInner(addresses: string[], options: LookupOptions) {
+  // decent-effort, respect family and all, ignore hints and verbatim
+  let family: 0 | 4 | 6 = 0;
+  if (options.family !== undefined) {
+    if (options.family === 'IPv4') {
+      family = 4;
+    } else if (options.family === 'IPv6') {
+      family = 6;
+    } else if (
+      options.family === 0 ||
+      options.family === 4 ||
+      options.family === 6
+    ) {
+      family = options.family;
+    } else {
+      throw new Error(`invalid family: ${options.family}`);
+    }
+  }
+
+  const ipaddrs: (IPv4 | IPv6)[] = [];
+  addresses.forEach((address) => {
+    try {
+      const ipaddr = parse(address);
+      // to connect to an ipv6 link local address we need to know the network interface
+      // and we can't know that currently so filter them out.
+      if (ipaddr.kind() === 'ipv4' || ipaddr.range() !== 'linkLocal') {
+        ipaddrs.push(ipaddr);
+      }
+    } catch {
+      // just catch
+    }
+  });
+  let retAddrs = ipaddrs.map((ipaddr) => ({
+    address: ipaddr.toString(),
+    family: ipaddr.kind() === 'ipv4' ? 4 : 6,
+  }));
+  if (family !== 0) {
+    retAddrs = retAddrs.filter((retAddr) => retAddr.family === family);
+  }
+  return retAddrs;
 }

@@ -286,9 +286,9 @@ function HostsDialog({ host }: { host: CopyHostOrClient }) {
               event.stopPropagation();
 
               setConnecting(true);
-              await window.electron.stopListeningForHosts();
               try {
                 await window.electron.connectToHost(manualAddress);
+                await window.electron.stopListeningForHosts();
                 setOpen(false);
               } catch (e: unknown) {
                 if (e instanceof Error) {
@@ -353,9 +353,9 @@ function HostsDialog({ host }: { host: CopyHostOrClient }) {
                 <ListItemButton
                   onClick={async () => {
                     setConnecting(true);
-                    await window.electron.stopListeningForHosts();
                     try {
                       await window.electron.connectToHost(copyHost);
+                      await window.electron.stopListeningForHosts();
                       setOpen(false);
                     } catch (e: unknown) {
                       if (e instanceof Error) {

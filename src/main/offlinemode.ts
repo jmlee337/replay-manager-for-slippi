@@ -2,7 +2,7 @@ import { BrowserWindow } from 'electron';
 import WebSocket from 'ws';
 import { createHash } from 'crypto';
 import { DnsSd, DnsSdBrowse } from '@fugood/dns-sd';
-import { IPv4, IPv6, parse } from 'ipaddr.js';
+import { parse } from 'ipaddr.js';
 import { lookup } from 'dns';
 import {
   OfflineModeParticipant,
@@ -21,7 +21,7 @@ import {
   StartggGame,
   State,
 } from '../common/types';
-import { getComputerName } from './util';
+import { getComputerName, lookupInner } from './util';
 
 const INITIAL_TOURNAMENT: RendererOfflineModeTournament = {
   id: 0,
@@ -343,7 +343,7 @@ export function listenForOfflineMode() {
       .on('serviceFound', (service) => {
         if (service.txt?.offlinemode) {
           hostnameToAddresses.set(
-            service.hostName.slice(0, -1),
+            service.hostName.slice(0, -1).toLowerCase(),
             service.addresses,
           );
           sendOfflineModeHosts();
@@ -351,7 +351,9 @@ export function listenForOfflineMode() {
       })
       .on('serviceLost', (service) => {
         if (service.txt?.offlinemode) {
-          hostnameToAddresses.delete(service.hostName.slice(0, -1));
+          hostnameToAddresses.delete(
+            service.hostName.slice(0, -1).toLowerCase(),
+          );
           sendOfflineModeHosts();
         }
       });
@@ -438,53 +440,16 @@ export function connectToOfflineMode(newAddressOrHost: string) {
           return;
         }
 
-        // decent-effort, respect family and all, ignore hints and verbatim
-        let family: 0 | 4 | 6 = 0;
-        if (options.family !== undefined) {
-          if (options.family === 'IPv4') {
-            family = 4;
-          } else if (options.family === 'IPv6') {
-            family = 6;
-          } else if (
-            options.family === 0 ||
-            options.family === 4 ||
-            options.family === 6
-          ) {
-            family = options.family;
-          } else {
-            throw new Error(`invalid family: ${options.family}`);
-          }
-        }
-        let all = false;
-        if (options.all) {
-          all = options.all;
-        }
-
-        const ipaddrs: (IPv4 | IPv6)[] = [];
-        addresses.forEach((address) => {
-          try {
-            const ipaddr = parse(address);
-            // to connect to an ipv6 link local address we need to know the network interface
-            // and we can't know that currently so filter them out.
-            if (ipaddr.kind() === 'ipv4' || ipaddr.range() !== 'linkLocal') {
-              ipaddrs.push(ipaddr);
-            }
-          } catch {
-            // just catch
-          }
-        });
-        let retAddrs = ipaddrs.map((ipaddr) => ({
-          address: ipaddr.toString(),
-          family: ipaddr.kind() === 'ipv4' ? 4 : 6,
-        }));
-        if (family !== 0) {
-          retAddrs = retAddrs.filter((retAddr) => retAddr.family === family);
-        }
+        const retAddrs = lookupInner(addresses, options);
         if (retAddrs.length === 0) {
           lookup(hostname, options, callback);
           return;
         }
 
+        let all = false;
+        if (options.all) {
+          all = options.all;
+        }
         if (all) {
           process.nextTick(callback, null, retAddrs);
         } else {
