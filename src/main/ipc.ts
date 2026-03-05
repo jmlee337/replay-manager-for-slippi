@@ -375,13 +375,10 @@ export default function setupIPCs(
 
   const maybeEject = (currentDir: ReplayDir) => {
     if (currentDir.usbKey) {
-      return new Promise<boolean>((resolve, reject) => {
-        eject(currentDir.usbKey, (error: Error) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(true);
-          }
+      return new Promise<boolean>((resolve) => {
+        eject(currentDir.usbKey, () => {
+          // best effort
+          resolve(true);
         });
       });
     }
