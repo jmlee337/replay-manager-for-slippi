@@ -508,7 +508,7 @@ export function connectToOfflineMode(newAddressOrHost: string) {
               op: 'client-id-request',
               num,
               computerName: getComputerName(),
-              clientName: 'Replay Reporter for Slippi',
+              clientName: 'Replay Reporter',
             };
             websocket?.send(JSON.stringify(clientIdRequest));
           } else if (message.op === 'tournament-update-event') {
