@@ -2605,42 +2605,104 @@ function Hello() {
               {batchChip(3)}
             </Stack>
             {guidedMode ? (
-              <GuidedDialog
-                open={guidedDialogOpen}
-                mode={mode}
-                gettingAdminedTournaments={gettingAdminedTournaments}
-                adminedTournaments={adminedTournaments}
-                getAdminedTournaments={async () => {
-                  setGettingAdminedTournaments(true);
-                  try {
-                    setAdminedTournaments(
-                      await window.electron.getTournaments(),
-                    );
-                  } catch (e: unknown) {
-                    showErrorDialog([
-                      `Unable to fetch admined tournaments: ${
-                        e instanceof Error ? e.message : e
-                      }`,
-                    ]);
-                  }
-                  setGettingAdminedTournaments(false);
-                }}
-                gettingTournament={gettingTournament}
-                tournamentSet={tournamentSet}
-                copyDirSet={copyDirSet}
-                getStartggTournament={getStartggTournament}
-                getChallongeTournament={getChallongeTournament}
-                getParryggTournament={getParryggTournament}
-                offlineModeStatus={offlineModeStatus}
-                manualNames={manualNames}
-                setManualNames={setManualNamesOuter}
-                setCopyDir={setCopyDir}
-                confirmedCopySettings={confirmedCopySettings}
-                state={guideState}
-                setState={setGuideState}
-                backdropOpen={guideBackdropOpen}
-                setBackdropOpen={setGuideBackdropOpen}
-              />
+              <Stack
+                alignItems="start"
+                direction="row"
+                flexGrow={1}
+                justifyContent="right"
+                marginTop="8px"
+                spacing="8px"
+              >
+                <GuidedDialog
+                  open={guidedDialogOpen}
+                  mode={mode}
+                  gettingAdminedTournaments={gettingAdminedTournaments}
+                  adminedTournaments={adminedTournaments}
+                  getAdminedTournaments={async () => {
+                    setGettingAdminedTournaments(true);
+                    try {
+                      setAdminedTournaments(
+                        await window.electron.getTournaments(),
+                      );
+                    } catch (e: unknown) {
+                      showErrorDialog([
+                        `Unable to fetch admined tournaments: ${
+                          e instanceof Error ? e.message : e
+                        }`,
+                      ]);
+                    }
+                    setGettingAdminedTournaments(false);
+                  }}
+                  gettingTournament={gettingTournament}
+                  tournamentSet={tournamentSet}
+                  copyDirSet={copyDirSet}
+                  getStartggTournament={getStartggTournament}
+                  getChallongeTournament={getChallongeTournament}
+                  getParryggTournament={getParryggTournament}
+                  offlineModeStatus={offlineModeStatus}
+                  manualNames={manualNames}
+                  setManualNames={setManualNamesOuter}
+                  setCopyDir={setCopyDir}
+                  confirmedCopySettings={confirmedCopySettings}
+                  state={guideState}
+                  setState={setGuideState}
+                  backdropOpen={guideBackdropOpen}
+                  setBackdropOpen={setGuideBackdropOpen}
+                />
+                <Stack>
+                  <Typography
+                    variant="caption"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      setGuidedMode((old) => {
+                        window.electron.setGuidedMode(!old);
+                        return !old;
+                      });
+                    }}
+                  >
+                    F1: Walkthrough Mode Off
+                  </Typography>
+                  {(mode === Mode.STARTGG || mode === Mode.OFFLINE_MODE) && (
+                    <Typography
+                      variant="caption"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => {
+                        window.electron.openEntrantsWindow();
+                      }}
+                    >
+                      {superKey} + E: Pool Entrants
+                    </Typography>
+                  )}
+                  <Typography
+                    variant="caption"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                      window.dispatchEvent(new Event(WindowEvent.CTRLF));
+                    }}
+                  >
+                    {superKey} + F: Search players
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    style={{ cursor: 'pointer' }}
+                    onClick={async () => {
+                      setUndoDialogOpen(true);
+                      try {
+                        setGettingReportedSubdirs(true);
+                        setReportedSubdirs(
+                          await window.electron.getReportedSubdirs(),
+                        );
+                      } catch (e: any) {
+                        showErrorDialog([e instanceof Error ? e.message : e]);
+                      } finally {
+                        setGettingReportedSubdirs(false);
+                      }
+                    }}
+                  >
+                    {superKey} + Z: Fix reported set
+                  </Typography>
+                </Stack>
+              </Stack>
             ) : (
               <Stack
                 alignItems="start"
@@ -2815,7 +2877,7 @@ function Hello() {
                         window.electron.openEntrantsWindow();
                       }}
                     >
-                      {superKey} + E: View Pool Entrants
+                      {superKey} + E: Pool Entrants
                     </Typography>
                   )}
                   <Typography
