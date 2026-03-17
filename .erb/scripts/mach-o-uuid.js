@@ -9,7 +9,6 @@ exports.default = async function machOUuid(context) {
 
   const appName = context.packager.appInfo.productFilename;
   const appPath = `${appOutDir}/${appName}.app`;
-  console.log(appPath);
   const executablePath = `${appPath}/Contents/MacOS/${appName}`;
   try {
     const results = await PythonShell.run(`${__dirname}/mach-o-uuid.py`, {
