@@ -1,23 +1,10 @@
 const { notarize } = require('@electron/notarize');
-const { PythonShell } = require('python-shell');
 const { build } = require('../../package.json');
 
 exports.default = async function notarizeMacos(context) {
   const { electronPlatformName, appOutDir } = context;
   if (electronPlatformName !== 'darwin') {
     return;
-  }
-
-  const appName = context.packager.appInfo.productFilename;
-  const appPath = `${appOutDir}/${appName}.app`;
-  const executablePath = `${appPath}/Contents/MacOS/${appName}`;
-  try {
-    const results = await PythonShell.run(`${__dirname}/mach-o-uuid.py`, {
-      args: [executablePath],
-    });
-    console.log(results.join('\n'));
-  } catch (e) {
-    console.log(e);
   }
 
   if (process.env.CI !== 'true') {
@@ -34,9 +21,11 @@ exports.default = async function notarizeMacos(context) {
     return;
   }
 
+  const appName = context.packager.appInfo.productFilename;
+
   await notarize({
     appBundleId: build.appId,
-    appPath,
+    appPath: `${appOutDir}/${appName}.app`,
     appleId: process.env.APPLE_ID,
     appleIdPassword: process.env.APPLE_APP_SPECIFIC_PASSWORD,
   });
