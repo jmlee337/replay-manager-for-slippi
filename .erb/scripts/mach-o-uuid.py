@@ -8,6 +8,7 @@ os.system('python3 -m pip install macholib')
 from macholib.MachO import MachO
 from macholib.mach_o import LC_UUID
 
+new_uuids = []
 filename = sys.argv[1]
 executable = MachO(filename)
 for header in executable.headers:
@@ -17,7 +18,10 @@ for header in executable.headers:
   uuid_cmd = uuid_cmd[0]
   new_uuid = secrets.token_bytes(16)
   uuid_cmd[1].uuid = new_uuid
-  print(binascii.hexlify(new_uuid))
+  new_uuids.append(new_uuid)
 
 with open(filename, 'rb+') as fp:
   executable.write(fp)
+
+for new_uuid in new_uuids:
+  print(binascii.hexlify(new_uuid))
