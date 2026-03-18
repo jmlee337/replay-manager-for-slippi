@@ -16,7 +16,7 @@ exports.default = async function machOUuid(context) {
   console.log(results.join('\n'));
 
   await new Promise((resolve, reject) => {
-    exec(`codesign --deep -s - ${appPath}`, (error) => {
+    exec(`codesign --deep -s - "${appPath}"`, (error) => {
       if (error) {
         reject(error);
       } else {
