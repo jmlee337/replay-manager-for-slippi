@@ -12,6 +12,8 @@ jobs:
 
       - name: Setup Python (for Mach-O)
         uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
 
       - name: Install Node.js and NPM
         uses: actions/setup-node@v6
