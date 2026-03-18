@@ -10,11 +10,6 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v6
 
-      - name: Use Python 3.11 (for distutils)
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-
       - name: Install Node.js and NPM
         uses: actions/setup-node@v6
         with:
@@ -83,11 +78,6 @@ jobs:
     steps:
       - name: Check out Git repository
         uses: actions/checkout@v6
-
-      - name: Use Python 3.11 (for distutils)
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
 
       - name: Install Node.js and NPM
         uses: actions/setup-node@v6
