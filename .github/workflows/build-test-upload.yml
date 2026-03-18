@@ -95,13 +95,6 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install libuv
-        uses: johnwason/vcpkg-action@v7
-        with:
-          pkgs: 'libuv'
-          triplet: 'x64-windows-release'
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: npm install
         run: |
           npm install
