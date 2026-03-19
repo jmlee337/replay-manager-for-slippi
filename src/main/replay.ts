@@ -43,37 +43,109 @@ const RAW_HEADER_START = Buffer.from([
   0x7b, 0x55, 0x03, 0x72, 0x61, 0x77, 0x5b, 0x24, 0x55, 0x23, 0x6c,
 ]);
 
-function unsetWinnerIfTie(players: Player[]) {
+function maybeFixWinner(
+  players: Player[],
+  isValidTeams: boolean,
+  isTimeout: boolean,
+) {
   const realPlayers = players.filter(
     (player) => player.playerType === 0 || player.playerType === 1,
   );
-  if (realPlayers.length < 2) {
+  if (realPlayers.length !== 2 && !isValidTeams) {
+    return;
+  }
+  if (
+    realPlayers.some(
+      (player) => player.stocksRemaining === -1 || player.finalPercent === -1,
+    )
+  ) {
     return;
   }
 
-  if (
-    realPlayers.every(
-      (player) => player.stocksRemaining !== -1 && player.finalPercent !== -1,
-    )
-  ) {
-    const { stocksRemaining } = realPlayers[0];
-    const finalPercent = Math.trunc(realPlayers[0].finalPercent);
-    let tie = true;
-    for (let i = 1; i < realPlayers.length; i += 1) {
-      const player = realPlayers[i];
-      if (
-        player.stocksRemaining !== stocksRemaining ||
-        (stocksRemaining !== 0 &&
-          Math.trunc(player.finalPercent) !== finalPercent)
-      ) {
-        tie = false;
-        break;
+  const teamIdToFinal = new Map<
+    number,
+    { finalPercent: number; stocksRemaining: number }
+  >();
+  if (isValidTeams) {
+    realPlayers.forEach((player) => {
+      if (player.teamId === undefined) {
+        throw new Error('unreachable');
       }
+
+      let final = teamIdToFinal.get(player.teamId);
+      if (!final) {
+        final = { finalPercent: 0, stocksRemaining: 0 };
+        teamIdToFinal.set(player.teamId, final);
+      }
+
+      if (player.finalPercent !== -1) {
+        final.finalPercent += Math.trunc(player.finalPercent);
+      }
+      if (player.stocksRemaining !== -1) {
+        final.stocksRemaining += player.stocksRemaining;
+      }
+    });
+  }
+  const teamEntries = Array.from(teamIdToFinal).sort(([, a], [, b]) => {
+    if (a.stocksRemaining !== b.stocksRemaining) {
+      return b.stocksRemaining - a.stocksRemaining;
     }
-    if (tie) {
+    return a.finalPercent - b.finalPercent;
+  });
+
+  // unset winner in case of true tie
+  if (isValidTeams) {
+    if (teamEntries.length !== 2) {
+      throw new Error('unreachable');
+    }
+
+    if (
+      teamEntries[0][1].stocksRemaining === teamEntries[1][1].stocksRemaining &&
+      teamEntries[0][1].finalPercent === teamEntries[1][1].finalPercent
+    ) {
       players.forEach((player) => {
         player.isWinner = false;
       });
+      return;
+    }
+  } else {
+    if (realPlayers.length !== 2) {
+      throw new Error('unreachable');
+    }
+
+    if (
+      realPlayers[0].stocksRemaining === realPlayers[1].stocksRemaining &&
+      Math.trunc(realPlayers[0].finalPercent) ===
+        Math.trunc(realPlayers[1].finalPercent)
+    ) {
+      players.forEach((player) => {
+        player.isWinner = false;
+      });
+      return;
+    }
+  }
+
+  // set correct winner in case of timeout
+  if (isTimeout) {
+    players.forEach((player) => {
+      player.isWinner = false;
+    });
+    if (isValidTeams) {
+      realPlayers
+        .filter((player) => player.teamId === teamEntries[0][0])
+        .sort((a, b) => {
+          if (a.stocksRemaining !== b.stocksRemaining) {
+            return b.stocksRemaining - a.stocksRemaining;
+          }
+          return a.finalPercent - b.finalPercent;
+        })[0].isWinner = true;
+    } else {
+      realPlayers.sort((a, b) => {
+        if (a.stocksRemaining !== b.stocksRemaining) {
+          return b.stocksRemaining - a.stocksRemaining;
+        }
+        return a.finalPercent - b.finalPercent;
+      })[0].isWinner = true;
     }
   }
 }
@@ -238,6 +310,7 @@ export async function getReplaysInDir(
         if (hasIllegalCharacters) {
           invalidReasons.push('Has illegal character(s).');
         }
+        let isValidTeams = false;
         if (numPlayers !== 2 && numPlayers !== 4) {
           invalidReasons.push('Not singles or doubles.');
         } else if (numPlayers === 4) {
@@ -248,6 +321,8 @@ export async function getReplaysInDir(
               teamSizesArr[0] !== teamSizesArr[1]
             ) {
               invalidReasons.push('Not singles or doubles.');
+            } else {
+              isValidTeams = true;
             }
           } else {
             invalidReasons.push('Not singles or doubles.');
@@ -394,7 +469,7 @@ export async function getReplaysInDir(
             for (let i = 0; i < 4; i += 1) {
               players[i].isWinner = gameEnd[i + 3] === 0;
             }
-            unsetWinnerIfTie(players);
+            maybeFixWinner(players, isValidTeams, gameEnd[1] === 1);
           }
 
           // metadata
