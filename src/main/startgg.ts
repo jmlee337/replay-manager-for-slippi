@@ -208,6 +208,229 @@ const idToStation = new Map<number, Station>();
 const reportedSetIds = new Map<Id, boolean>();
 const setIdToOrdinal = new Map<Id, number | null>();
 
+function toSet(
+  apiSet: any,
+  ordinal: number | null,
+  entrantIdToParticipants: Map<number, Participant[]>,
+): Set {
+  const { id, entrant1Id, entrant2Id, streamId, stationId } = apiSet;
+  const entrant1Participants = entrantIdToParticipants.get(entrant1Id)!;
+  const entrant2Participants = entrantIdToParticipants.get(entrant2Id)!;
+  const stream = streamId === null ? null : idToStream.get(streamId) || null;
+  const station =
+    stationId === null ? null : idToStation.get(stationId) || null;
+  let { entrant1Score } = apiSet;
+  let { entrant2Score } = apiSet;
+  let gameScores = [];
+  if (Array.isArray(apiSet.games) && (apiSet.games as any[]).length > 0) {
+    entrant1Score = 0;
+    entrant2Score = 0;
+    gameScores = apiSet.games.map((game: any) => {
+      if (game.winnerId === game.entrant1Id) {
+        entrant1Score += 1;
+      } else if (game.winnerId === game.entrant2Id) {
+        entrant2Score += 1;
+      }
+      return {
+        entrant1Score: game.entrant1P1Stocks,
+        entrant2Score: game.entrant2P1Stocks,
+      };
+    });
+  }
+  return {
+    id,
+    sggId: typeof id === 'number' && Number.isInteger(id) && id > 0 ? id : null,
+    state: apiSet.state,
+    round: apiSet.round,
+    fullRoundText: apiSet.fullRoundText,
+    winnerId: apiSet.winnerId,
+    entrant1Id,
+    entrant1Participants,
+    entrant1Score,
+    entrant2Id,
+    entrant2Participants,
+    entrant2Score,
+    gameScores,
+    stream,
+    station,
+    ordinal,
+    wasReported: reportedSetIds.has(id),
+    updatedAtMs: apiSet.updatedAt * 1000,
+    completedAtMs: apiSet.completedAt ? apiSet.completedAt * 1000 : 0,
+  };
+}
+
+async function getMissingPlayerParticipants(
+  key: string,
+  missingPlayerParticipants: {
+    participantId: number;
+    playerId: number;
+  }[],
+  participantsToUpdate: Map<number, Participant>,
+) {
+  if (missingPlayerParticipants.length > 0) {
+    do {
+      const queryPlayerParticipants = missingPlayerParticipants.slice(0, 500);
+      const inner = queryPlayerParticipants.map(
+        ({ playerId }) => `
+        playerId${playerId}: player(id: ${playerId}) {
+          user {
+            genderPronoun
+          }
+        }`,
+      );
+      const query = `query PlayersQuery {${inner}\n}`;
+      // eslint-disable-next-line no-await-in-loop
+      const data = await fetchGql(key, query, {});
+      queryPlayerParticipants.forEach(({ playerId, participantId }) => {
+        const player = data[`playerId${playerId}`];
+        const pronouns = player.user?.genderPronoun || '';
+        participantsToUpdate.get(participantId)!.pronouns = pronouns;
+        playerIdToPronouns.set(playerId, pronouns);
+      });
+      missingPlayerParticipants.splice(0, 500);
+    } while (missingPlayerParticipants.length > 0);
+  }
+}
+
+async function getLadderPhaseGroup(
+  key: string,
+  phaseGroupJson: any,
+): Promise<PhaseGroup> {
+  const {
+    id,
+    groupTypeId: bracketType,
+    displayIdentifier,
+    state,
+    waveId,
+    winnersTargetPhaseId,
+  } = phaseGroupJson.entities.groups;
+  if (!currentTournament || !Array.isArray(phaseGroupJson.entities.entrants)) {
+    return {
+      id,
+      bracketType,
+      seeds: [],
+      name: displayIdentifier,
+      sets: { completedSets: [], pendingSets: [] },
+      state,
+      waveId,
+      winnersTargetPhaseId,
+    };
+  }
+
+  const { phaseId } = phaseGroupJson.entities.groups;
+  const pendingApiSets: any[] = [];
+  const completedApiSets: any[] = [];
+  const getAllPending = async () => {
+    let page = 1;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      // eslint-disable-next-line no-await-in-loop
+      const response = await wrappedFetch(
+        `https://api.start.gg/sets/tournament/${
+          currentTournament!.slug
+        }?page=${page}&per_page=100&sort_by=createdAt%20asc&filter={"phaseId":[${phaseId}],"isPlayable":true}&isAdmin=true&bustCache=true`,
+      );
+      // eslint-disable-next-line no-await-in-loop
+      const json = await response.json();
+      if (Array.isArray(json?.items?.entities?.sets)) {
+        pendingApiSets.push(...json.items.entities.sets);
+      } else if (json?.items?.entities?.sets instanceof Object) {
+        pendingApiSets.push(json.items.entities.sets);
+      }
+      if (json.total_count <= page * 100) {
+        break;
+      }
+      page += 1;
+    }
+  };
+  const getLast100Completed = async () => {
+    const response = await wrappedFetch(
+      `https://api.start.gg/sets/tournament/${
+        currentTournament!.slug
+      }?page=1&per_page=100&sort_by=completedAt%20desc&filter={"phaseId":[${phaseId}],"state":3}&isAdmin=true&bustCache=true`,
+    );
+    const json = await response.json();
+    if (Array.isArray(json?.items?.entities?.sets)) {
+      completedApiSets.push(...json.items.entities.sets);
+    } else if (json?.items?.entities?.sets instanceof Object) {
+      completedApiSets.push(json.items.entities.sets);
+    }
+  };
+
+  const setsPromise = Promise.all([getAllPending(), getLast100Completed()]);
+  const idToApiPlayer = new Map<
+    number,
+    { prefix: string; displayName: string }
+  >();
+  const entrantIdToParticipants = new Map<number, Participant[]>();
+  (phaseGroupJson.entities.player as any[]).forEach((player) => {
+    idToApiPlayer.set(player.id, {
+      prefix: player.prefix,
+      displayName: player.gamerTag,
+    });
+  });
+  const missingPlayerParticipants: {
+    participantId: number;
+    playerId: number;
+  }[] = [];
+  const participantsToUpdate = new Map<number, Participant>();
+  (phaseGroupJson.entities.entrants as any[]).forEach((entrant) => {
+    const participants = Array.from(
+      Object.entries<number>(entrant.playerIds),
+    ).map(([participantIdStr, playerId]): Participant => {
+      const participantId = Number.parseInt(participantIdStr, 10);
+      const player = idToApiPlayer.get(playerId)!;
+      const participant: Participant = {
+        id: participantId,
+        prefix: player.prefix,
+        displayName: player.displayName,
+        pronouns: playerIdToPronouns.get(playerId) ?? '',
+      };
+      if (!playerIdToPronouns.has(playerId)) {
+        missingPlayerParticipants.push({ participantId, playerId });
+        participantsToUpdate.set(participantId, participant);
+      }
+      return participant;
+    });
+    if (
+      participants.length === 2 &&
+      (entrant.name as string).startsWith(`${participants[1].displayName} /`)
+    ) {
+      [participants[0], participants[1]] = [participants[1], participants[0]];
+    }
+    entrantIdToParticipants.set(entrant.id, participants);
+  });
+  await getMissingPlayerParticipants(
+    key,
+    missingPlayerParticipants,
+    participantsToUpdate,
+  );
+  await setsPromise;
+
+  const toSetPred = (apiSet: any) => {
+    const existingSet = idToSet.get(apiSet.id);
+    if (existingSet && existingSet.updatedAtMs > apiSet.updatedAt * 1000) {
+      return existingSet;
+    }
+    return toSet(apiSet, null, entrantIdToParticipants);
+  };
+  const pendingSets = pendingApiSets.map(toSetPred);
+  const completedSets = completedApiSets.map(toSetPred);
+  phaseGroupIdToSets.set(id, { completedSets, pendingSets });
+  return {
+    id,
+    bracketType,
+    seeds: [],
+    name: displayIdentifier,
+    sets: { completedSets, pendingSets },
+    state,
+    waveId,
+    winnersTargetPhaseId,
+  };
+}
+
+// 841804 don-t-park-on-the-grass-2018-1
 // 1838376 genesis-9-1
 // 2254448 test-tournament-sorry
 // 2181889 BattleGateway-42
@@ -230,6 +453,10 @@ export async function getPhaseGroup(
     waveId,
     winnersTargetPhaseId,
   } = phaseGroup;
+  if (bracketType === 7) {
+    return getLadderPhaseGroup(key, json);
+  }
+
   const isBracketTypeValid =
     bracketType === 1 || // SINGLE_ELIMINATION
     bracketType === 2 || // DOUBLE_ELIMINATION
@@ -249,8 +476,8 @@ export async function getPhaseGroup(
       bracketType,
       seeds,
       name: displayIdentifier,
-      state,
       sets: { completedSets: [], pendingSets: [] },
+      state,
       waveId,
       winnersTargetPhaseId,
     };
@@ -328,29 +555,11 @@ export async function getPhaseGroup(
       }
     });
 
-  if (missingPlayerParticipants.length > 0) {
-    do {
-      const queryPlayerParticipants = missingPlayerParticipants.slice(0, 500);
-      const inner = queryPlayerParticipants.map(
-        ({ playerId }) => `
-          playerId${playerId}: player(id: ${playerId}) {
-            user {
-              genderPronoun
-            }
-          }`,
-      );
-      const query = `query PlayersQuery {${inner}\n}`;
-      // eslint-disable-next-line no-await-in-loop
-      const data = await fetchGql(key, query, {});
-      queryPlayerParticipants.forEach(({ playerId, participantId }) => {
-        const player = data[`playerId${playerId}`];
-        const pronouns = player.user?.genderPronoun || '';
-        participantsToUpdate.get(participantId)!.pronouns = pronouns;
-        playerIdToPronouns.set(playerId, pronouns);
-      });
-      missingPlayerParticipants.splice(0, 500);
-    } while (missingPlayerParticipants.length > 0);
-  }
+  await getMissingPlayerParticipants(
+    key,
+    missingPlayerParticipants,
+    participantsToUpdate,
+  );
 
   const completedSets: Set[] = [];
   const pendingSets: Set[] = [];
@@ -467,54 +676,7 @@ export async function getPhaseGroup(
           return;
         }
 
-        const entrant1Participants = entrantIdToParticipants.get(entrant1Id)!;
-        const entrant2Participants = entrantIdToParticipants.get(entrant2Id)!;
-        let { entrant1Score } = set;
-        let { entrant2Score } = set;
-        let gameScores = [];
-        if (Array.isArray(set.games) && (set.games as any[]).length > 0) {
-          entrant1Score = 0;
-          entrant2Score = 0;
-          gameScores = set.games.map((game: any) => {
-            if (game.winnerId === game.entrant1Id) {
-              entrant1Score += 1;
-            } else if (game.winnerId === game.entrant2Id) {
-              entrant2Score += 1;
-            }
-            return {
-              entrant1Score: game.entrant1P1Stocks,
-              entrant2Score: game.entrant2P1Stocks,
-            };
-          });
-        }
-        const stream =
-          streamId === null ? null : idToStream.get(streamId) || null;
-        const station =
-          stationId === null ? null : idToStation.get(stationId) || null;
-        newSet = {
-          id: setId,
-          sggId:
-            typeof setId === 'number' && Number.isInteger(setId) && setId > 0
-              ? setId
-              : null,
-          state: set.state,
-          round: set.round,
-          fullRoundText: set.fullRoundText,
-          winnerId: set.winnerId,
-          entrant1Id,
-          entrant1Participants,
-          entrant1Score,
-          entrant2Id,
-          entrant2Participants,
-          entrant2Score,
-          gameScores,
-          stream,
-          station,
-          ordinal,
-          wasReported: reportedSetIds.has(setId),
-          updatedAtMs,
-          completedAtMs: set.completedAt ? set.completedAt * 1000 : 0,
-        };
+        newSet = toSet(set, ordinal, entrantIdToParticipants);
         idToSet.set(setId, newSet);
         if (Number.isInteger(streamId) && !idToStream.has(streamId)) {
           missingStreamSets.push({ setId, streamId });
