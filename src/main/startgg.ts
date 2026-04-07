@@ -408,15 +408,22 @@ async function getLadderPhaseGroup(
   );
   await setsPromise;
 
+  const pendingSets: Set[] = [];
+  const completedSets: Set[] = [];
   const toSetPred = (apiSet: any) => {
-    const existingSet = idToSet.get(apiSet.id);
-    if (existingSet && existingSet.updatedAtMs > apiSet.updatedAt * 1000) {
-      return existingSet;
+    let set = idToSet.get(apiSet.id);
+    if (!set || set.updatedAtMs < apiSet.updatedAt * 1000) {
+      set = toSet(apiSet, null, entrantIdToParticipants);
     }
-    return toSet(apiSet, null, entrantIdToParticipants);
+    if (set.state === 3) {
+      completedSets.push(set);
+    } else {
+      pendingSets.push(set);
+    }
   };
-  const pendingSets = pendingApiSets.map(toSetPred);
-  const completedSets = completedApiSets.map(toSetPred);
+  pendingApiSets.forEach(toSetPred);
+  completedApiSets.forEach(toSetPred);
+  completedSets.sort((a, b) => b.completedAtMs - a.completedAtMs);
   phaseGroupIdToSets.set(id, { completedSets, pendingSets });
   return {
     id,
