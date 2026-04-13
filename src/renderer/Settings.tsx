@@ -157,6 +157,9 @@ export default function Settings({
           onClick={() => setOpen(true)}
           size="small"
           style={{ position: 'absolute', bottom: 8, left: 8 }}
+          sx={{
+            zIndex: (theme) => theme.zIndex.modal + 1,
+          }}
         >
           <SettingsIcon />
         </Fab>
