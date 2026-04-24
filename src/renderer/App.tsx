@@ -120,7 +120,7 @@ import SlpDownloadModal from './SlpDownloadModal';
 import { assertInteger, assertString } from '../common/asserts';
 import OfflineModeConnection from './OfflineModeConnection';
 
-const ENFORCER_VERSION = '2.3.2';
+const ENFORCER_VERSION = '2.3.3';
 
 const Bottom = styled(Paper)`
   height: 147px;
