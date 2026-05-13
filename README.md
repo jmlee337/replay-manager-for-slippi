@@ -2,8 +2,6 @@
 
 The shortcoming of Slippi replays is that they work per-game, while much of console Melee is played per-set. Now, USB hotswap in Slippi Nintendont makes it practical to collect replays per-set. With Replay Reporter for Slippi we can add player names, scores, and information about the set all while reporting the result to start.gg in the same amount of time. The result is replays grouped and labelled by set, packaged together with all relevant context, henceforth referred to as _Per-Set Replays_. _Per-Set Replays_ can then be used for Auto Streaming and Auto VODs.
 
-Mac users, please see how to [open an app from an unidentified developer](https://support.apple.com/en-gb/guide/mac-help/mh40616/mac).
-
 [![Download](https://github.com/user-attachments/assets/0f155c5c-bd25-45fb-99f7-db055a380e12)](http://github.com/jmlee337/replay-manager-for-slippi/releases/latest)
 
 ## Features
