@@ -1641,60 +1641,49 @@ function Hello() {
         subdir = subdir.replace('{roundShort}', roundShort);
         subdir = subdir.replace('{roundLong}', roundLong);
         subdir = subdir.replace('{games}', selectedReplays.length.toString(10));
+
         // do last in case tournament/event/phase/phase group names contain template strings LOL
+        let tournamentName = '';
+        let tournamentSlug = '';
         if (mode === Mode.STARTGG) {
-          subdir = subdir.replace('{tournamentName}', startggTournament.name);
-          subdir = subdir.replace('{tournamentSlug}', startggTournament.slug);
+          tournamentName = startggTournament.name;
+          tournamentSlug = startggTournament.slug;
         } else if (mode === Mode.CHALLONGE) {
-          subdir = subdir.replace(
-            '{tournamentName}',
-            selectedChallongeTournament.name,
-          );
-          subdir = subdir.replace(
-            '{tournamentSlug}',
-            selectedChallongeTournament.slug,
-          );
+          tournamentName = selectedChallongeTournament.name;
+          tournamentSlug = selectedChallongeTournament.slug;
         } else if (mode === Mode.PARRYGG) {
-          subdir = subdir.replace(
-            '{tournamentName}',
-            parryggTournament?.name || '',
-          );
-          subdir = subdir.replace('{tournamentSlug}', parryggSlug || '');
+          tournamentName = parryggTournament?.name ?? '';
+          tournamentSlug = parryggSlug;
         } else if (mode === Mode.OFFLINE_MODE) {
-          subdir = subdir.replace(
-            '{tournamentName}',
-            offlineModeTournament.name,
-          );
-          subdir = subdir.replace(
-            '{tournamentSlug}',
-            offlineModeTournament.slug,
-          );
+          tournamentName = offlineModeTournament.name;
+          tournamentSlug = offlineModeTournament.slug;
         }
+        subdir = subdir.replace('{tournamentName}', tournamentName);
+        subdir = subdir.replace('{tournamentSlug}', tournamentSlug);
+
+        let eventName = '';
+        let phaseName = '';
+        let phaseGroupName = '';
+        let phaseOrEvent = '';
         if (
           mode === Mode.STARTGG ||
           mode === Mode.PARRYGG ||
           mode === Mode.OFFLINE_MODE
         ) {
-          subdir = subdir.replace(
-            '{event}',
-            selectedSetChain.event?.name ?? '',
-          );
-          subdir = subdir.replace(
-            '{phase}',
-            selectedSetChain.phase?.name ?? '',
-          );
-          subdir = subdir.replace(
-            '{phaseGroup}',
-            selectedSetChain.phaseGroup?.name ?? '',
-          );
-          let phaseOrEvent = '';
+          eventName = selectedSetChain.event?.name ?? '';
+          phaseName = selectedSetChain.phase?.name ?? '';
+          phaseGroupName = selectedSetChain.phaseGroup?.name ?? '';
           if (selectedSetChain.phase?.hasSiblings) {
             phaseOrEvent = selectedSetChain.phase.name;
           } else if (selectedSetChain.event) {
             phaseOrEvent = selectedSetChain.event.name;
           }
-          subdir = subdir.replace('{phaseOrEvent}', phaseOrEvent);
         }
+        subdir = subdir.replace('{event}', eventName);
+        subdir = subdir.replace('{phase}', phaseName);
+        subdir = subdir.replace('{phaseGroup}', phaseGroupName);
+        subdir = subdir.replace('{phaseOrEvent}', phaseOrEvent);
+
         // do last in case player names contain template strings LOL
         subdir = subdir.replace('{playersOnly}', playersOnly);
         subdir = subdir.replace('{playersChars}', playersChars);
