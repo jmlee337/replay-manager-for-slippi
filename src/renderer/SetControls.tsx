@@ -1079,14 +1079,7 @@ export default function SetControls({
                 });
                 resetGuide();
               } catch (e: any) {
-                const rawMessage = e instanceof Error ? e.message : String(e);
-                // Electron wraps IPC errors as
-                // "Error invoking remote method 'channel': Error: <message>".
-                // Strip that so the underlying message reads cleanly.
-                const message = rawMessage.replace(
-                  /^Error invoking remote method '[^']*': (?:Error: )?/,
-                  '',
-                );
+                const message = e instanceof Error ? e.message : e;
                 setReportError(message);
                 setReportErrorOpen(true);
               } finally {
