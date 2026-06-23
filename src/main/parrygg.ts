@@ -7,10 +7,19 @@ import {
   AdminFilter,
   AdminFilterPermission,
   MatchServiceClient,
+  MatchGameServiceClient,
   StartMatchRequest,
   SetMatchResultRequest,
+  BatchReportMatchGamesRequest,
   MatchResult,
   MatchResultSlotMutation,
+  MatchGameMutation,
+  MatchGameState,
+  GameSlotMutation,
+  GameParticipantMutation,
+  CharacterSelection,
+  StageSelection,
+  SlotState,
   SlugType,
   MatchState,
   BracketServiceClient,
@@ -27,6 +36,8 @@ import {
   Seed,
   BracketType,
 } from '@parry-gg/client';
+import { Struct } from 'google-protobuf/google/protobuf/struct_pb';
+import { RpcError, StatusCode } from 'grpc-web';
 import XMLHttpRequest from 'xhr2';
 import {
   ParryggBracket,
@@ -39,6 +50,10 @@ import {
   SelectedPhase,
   SelectedPhaseGroup,
   SelectedSetChain,
+  ParryggGame,
+  ParryggGameSlot,
+  ParryggGameParticipant,
+  ParryggCharacterSelection,
 } from '../common/types';
 
 // XMLHttpRequest polyfill for grpcweb requests
@@ -62,6 +77,7 @@ let selectedSetId: string | undefined;
 const PARRYGG_API_BASE = 'https://grpcweb.parry.gg';
 const tournamentClient = new TournamentServiceClient(PARRYGG_API_BASE);
 const matchClient = new MatchServiceClient(PARRYGG_API_BASE);
+const matchGameClient = new MatchGameServiceClient(PARRYGG_API_BASE);
 const bracketClient = new BracketServiceClient(PARRYGG_API_BASE);
 const eventClient = new EventServiceClient(PARRYGG_API_BASE);
 const phaseClient = new PhaseServiceClient(PARRYGG_API_BASE);
@@ -70,6 +86,21 @@ function createAuthMetadata(apiKey: string): { [key: string]: string } {
   return {
     'X-API-KEY': apiKey,
   };
+}
+
+// Funnel every parry.gg gRPC call through here so a stale/invalid API key
+// surfaces as an actionable message instead of a raw "RpcError(UNAUTHENTICATED)".
+async function callParrygg<T>(call: Promise<T>): Promise<T> {
+  try {
+    return await call;
+  } catch (e) {
+    if (e instanceof RpcError && e.code === StatusCode.UNAUTHENTICATED) {
+      throw new Error(
+        'Your parry.gg API key is invalid or expired. Open Settings to update it.',
+      );
+    }
+    throw e;
+  }
 }
 
 function getSlug(tournament: Tournament.AsObject) {
@@ -227,7 +258,7 @@ export function convertParryggSetToSet(set: Match.AsObject): Set {
     station: null,
     ordinal: setIdToOrdinal.get(set.id) ?? null,
     wasReported: false,
-    updatedAtMs: set.stateUpdatedAt.seconds * 1000,
+    updatedAtMs: (set.stateUpdatedAt?.seconds ?? 0) * 1000,
     completedAtMs: 0,
   };
 }
@@ -430,9 +461,8 @@ export async function getParryggEvent(
   const request = new GetEventRequest();
   request.setId(eventId);
 
-  const response = await eventClient.getEvent(
-    request,
-    createAuthMetadata(apiKey),
+  const response = await callParrygg(
+    eventClient.getEvent(request, createAuthMetadata(apiKey)),
   );
   const event = response.getEvent();
 
@@ -451,9 +481,8 @@ export async function getParryggPhase(
   const request = new GetPhaseRequest();
   request.setId(phaseId);
 
-  const response = await phaseClient.getPhase(
-    request,
-    createAuthMetadata(apiKey),
+  const response = await callParrygg(
+    phaseClient.getPhase(request, createAuthMetadata(apiKey)),
   );
   const phase = response.getPhase();
 
@@ -470,9 +499,8 @@ export async function getParryggBracket(
   const request = new GetBracketRequest();
   request.setId(bracketId);
 
-  const response = await bracketClient.getBracket(
-    request,
-    createAuthMetadata(apiKey),
+  const response = await callParrygg(
+    bracketClient.getBracket(request, createAuthMetadata(apiKey)),
   );
   const bracket = response.getBracket();
 
@@ -497,15 +525,17 @@ export async function getParryggTournaments(
   request.setFilter(tournamentsFilter);
   request.setOptions(options);
 
-  const response = await tournamentClient.getTournaments(
-    request,
-    createAuthMetadata(apiKey),
+  const response = await callParrygg(
+    tournamentClient.getTournaments(request, createAuthMetadata(apiKey)),
   );
 
   return response
     .getTournamentsList()
     .sort((a, b) => {
-      return b.getStartDate().getSeconds() - a.getStartDate().getSeconds();
+      return (
+        (b.getStartDate()?.getSeconds() ?? 0) -
+        (a.getStartDate()?.getSeconds() ?? 0)
+      );
     })
     .map((tournament) => ({
       id: tournament.getId(),
@@ -522,9 +552,8 @@ export async function getParryggTournament(
   const request = new GetTournamentRequest();
   request.setTournamentSlug(tournamentSlug);
 
-  const response = await tournamentClient.getTournament(
-    request,
-    createAuthMetadata(apiKey),
+  const response = await callParrygg(
+    tournamentClient.getTournament(request, createAuthMetadata(apiKey)),
   );
   const tournament = response.getTournament();
 
@@ -558,20 +587,96 @@ export async function startParryggSet(
   const request = new StartMatchRequest();
   request.setId(setId);
 
-  await matchClient.startMatch(request, createAuthMetadata(apiKey));
+  await callParrygg(
+    matchClient.startMatch(request, createAuthMetadata(apiKey)),
+  );
+}
+
+function createCharacterSelection(
+  selection: ParryggCharacterSelection,
+): CharacterSelection {
+  const character = new CharacterSelection();
+  character.setCharacterSlug(selection.characterSlug);
+  if (selection.color) {
+    character.setVariant(Struct.fromJavaScript({ color: selection.color }));
+  }
+  return character;
+}
+
+function createGameParticipantMutation(
+  participant: ParryggGameParticipant,
+): GameParticipantMutation {
+  const mutation = new GameParticipantMutation();
+  mutation.setUserId(participant.userId);
+  mutation.setCharactersList(
+    participant.characters.map(createCharacterSelection),
+  );
+  return mutation;
+}
+
+function createGameSlotMutation(slot: ParryggGameSlot): GameSlotMutation {
+  const mutation = new GameSlotMutation();
+  mutation.setSlot(slot.slot);
+  mutation.setScore(slot.score);
+  mutation.setState(SlotState.SLOT_STATE_NUMERIC);
+  mutation.setPlacement(slot.score - 1);
+  mutation.setParticipantsList(
+    slot.participants.map(createGameParticipantMutation),
+  );
+  return mutation;
+}
+
+function createStageSelection(stageSlug: string): StageSelection {
+  const stage = new StageSelection();
+  stage.setStageSlug(stageSlug);
+  return stage;
+}
+
+function createMatchGameMutationFromObject(
+  game: ParryggGame,
+): MatchGameMutation {
+  const matchGame = new MatchGameMutation();
+  matchGame.setIndex(game.index);
+  matchGame.setState(MatchGameState.MATCH_GAME_STATE_COMPLETED);
+  if (game.stageSlug) {
+    matchGame.setStagesList([createStageSelection(game.stageSlug)]);
+  }
+  matchGame.setSlotsList(game.slots.map(createGameSlotMutation));
+  return matchGame;
 }
 
 export async function reportParryggSet(
   apiKey: string,
   setId: string,
   result: MatchResult.AsObject,
+  games?: ParryggGame[],
 ): Promise<Set | undefined> {
+  // When per-game data (characters, colors, stages) is available, report all
+  // games at once and finalize the match in a single transaction. Otherwise
+  // (DQ or manual reports without replays) fall back to a score-only result.
+  if (games && games.length > 0) {
+    const request = new BatchReportMatchGamesRequest();
+    request.setMatchId(setId);
+    request.setMatchGamesList(games.map(createMatchGameMutationFromObject));
+    request.setFinalize(true);
+
+    await callParrygg(
+      matchGameClient.batchReportMatchGames(
+        request,
+        createAuthMetadata(apiKey),
+      ),
+    );
+    return getSelectedParryggSet();
+  }
+
   const matchResult = createMatchResultFromMatchResultObject(result);
 
   const request = new SetMatchResultRequest();
   request.setId(setId);
   request.setResult(matchResult);
 
-  await matchClient.setMatchResult(request, createAuthMetadata(apiKey));
+  await callParrygg(
+    matchClient.setMatchResult(request, createAuthMetadata(apiKey)),
+  );
   return getSelectedParryggSet();
 }

@@ -10,6 +10,7 @@ import {
   InvalidReplay,
   Mode,
   Output,
+  ParryggGame,
   Replay,
   ReportSettings,
   Set,
@@ -228,7 +229,9 @@ const electronHandler = {
   reportParryggSet: (
     setId: string,
     result: MatchResult.AsObject,
-  ): Promise<Set> => ipcRenderer.invoke('reportParryggSet', setId, result),
+    games?: ParryggGame[],
+  ): Promise<Set> =>
+    ipcRenderer.invoke('reportParryggSet', setId, result, games),
   getOfflineModeStatus: (): Promise<OfflineModeStatus> =>
     ipcRenderer.invoke('getOfflineModeStatus'),
   getOfflineModeHosts: (): Promise<string[]> =>

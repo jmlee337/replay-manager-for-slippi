@@ -197,6 +197,111 @@ export const startggStageIds = new Map(
   Array.from(stageStartggIds.entries()).map(([key, value]) => [value, key]),
 );
 
+// Character external ID to parry.gg / game-metadata character slug.
+// Slugs are the filenames in
+// game-metadata/games/super-smash-bros-melee/characters/<slug>.json
+export const characterParryggSlugs = new Map([
+  [0, 'captain-falcon'],
+  [1, 'donkey-kong'],
+  [2, 'fox'],
+  [3, 'mr-game-and-watch'],
+  [4, 'kirby'],
+  [5, 'bowser'],
+  [6, 'link'],
+  [7, 'luigi'],
+  [8, 'mario'],
+  [9, 'marth'],
+  [10, 'mewtwo'],
+  [11, 'ness'],
+  [12, 'peach'],
+  [13, 'pikachu'],
+  [14, 'ice-climbers'],
+  [15, 'jigglypuff'],
+  [16, 'samus'],
+  [17, 'yoshi'],
+  [18, 'zelda'],
+  [19, 'sheik'],
+  [20, 'falco'],
+  [21, 'young-link'],
+  [22, 'doctor-mario'],
+  [23, 'roy'],
+  [24, 'pichu'],
+  [25, 'ganondorf'],
+]);
+
+// Stage ID to parry.gg / game-metadata stage slug.
+// Slugs are the filenames in
+// game-metadata/games/super-smash-bros-melee/stages/<slug>.json
+// (note accents are stripped: pokmon-stadium, pok-floats). Kongo Jungle N64
+// (stage 30) has no game-metadata entry so it is intentionally omitted.
+export const stageParryggSlugs = new Map([
+  [2, 'fountain-of-dreams'],
+  [3, 'pokmon-stadium'],
+  [4, 'peachs-castle'],
+  [5, 'kongo-jungle'],
+  [6, 'brinstar'],
+  [7, 'corneria'],
+  [8, 'yoshis-story'],
+  [9, 'onett'],
+  [10, 'mute-city'],
+  [11, 'rainbow-cruise'],
+  [12, 'jungle-japes'],
+  [13, 'great-bay'],
+  [14, 'temple'],
+  [15, 'brinstar-depths'],
+  [16, 'yoshis-island'],
+  [17, 'green-greens'],
+  [18, 'fourside'],
+  [19, 'mushroom-kingdom'],
+  [20, 'mushroom-kingdom-ii'],
+  [22, 'venom'],
+  [23, 'pok-floats'],
+  [24, 'big-blue'],
+  [25, 'icicle-mountain'],
+  [27, 'flat-zone'],
+  [28, 'dream-land'],
+  [29, 'yoshis-island-64'],
+  [31, 'battlefield'],
+  [32, 'final-destination'],
+]);
+
+// Character external ID to an array indexed by Slippi costumeIndex, whose
+// values are the parry.gg game-metadata color name for that costume (null for
+// the default costume at index 0). Ordered by external ID.
+export const parryggCharacterColors = (
+  [
+    [null, 'black', 'red', 'white', 'green', 'blue'], // Captain Falcon
+    [null, 'black', 'red', 'blue', 'green'], // Donkey Kong
+    [null, 'red', 'blue', 'green'], // Fox
+    [null, 'red', 'blue', 'green'], // Mr. Game & Watch
+    [null, 'yellow', 'blue', 'red', 'green', 'white'], // Kirby
+    [null, 'red', 'blue', 'black'], // Bowser
+    [null, 'red', 'blue', 'black', 'white'], // Link
+    [null, 'white', 'blue', 'red'], // Luigi
+    [null, 'yellow', 'black', 'blue', 'green'], // Mario
+    [null, 'red', 'green', 'black', 'white'], // Marth
+    [null, 'red', 'blue', 'green'], // Mewtwo
+    [null, 'gold', 'blue', 'green'], // Ness
+    [null, 'gold', 'white', 'blue', 'green'], // Peach
+    [null, 'red', 'blue', 'green'], // Pikachu
+    [null, 'green', 'yellow', 'red'], // Ice Climbers
+    [null, 'red', 'blue', 'green', 'gold'], // Jigglypuff
+    [null, 'pink', 'dark', 'green', 'blue'], // Samus
+    [null, 'red', 'blue', 'yellow', 'pink', 'cyan'], // Yoshi
+    [null, 'red', 'blue', 'green', 'white'], // Zelda
+    [null, 'red', 'blue', 'green', 'white'], // Sheik
+    [null, 'red', 'blue', 'green'], // Falco
+    [null, 'red', 'blue', 'white', 'black'], // Young Link
+    [null, 'red', 'blue', 'green', 'black'], // Dr. Mario
+    [null, 'red', 'blue', 'green', 'gold'], // Roy
+    [null, 'red', 'blue', 'green'], // Pichu
+    [null, 'red', 'blue', 'green', 'purple'], // Ganondorf
+  ] as (string | null)[][]
+).reduce(
+  (map, colors, characterId) => map.set(characterId, colors),
+  new Map<number, (string | null)[]>(),
+);
+
 export const frameMsDivisor = 0.05994;
 export const highlightColor = '#ffee58';
 

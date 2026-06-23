@@ -25,6 +25,8 @@ import {
   EnforceStatus,
   Id,
   Mode,
+  ParryggGame,
+  ParryggGameParticipant,
   Player,
   Replay,
   ReportSettings,
@@ -37,9 +39,12 @@ import {
 } from '../common/types';
 import {
   characterNames,
+  characterParryggSlugs,
   characterStartggIds,
   isValidCharacter,
+  parryggCharacterColors,
   stageNames,
+  stageParryggSlugs,
   stageStartggIds,
   startggCharacterIds,
   startggStageIds,
@@ -250,6 +255,7 @@ export default function SetControls({
   reportParryggSet: (
     result: MatchResult.AsObject,
     originalSet: Set,
+    games?: ParryggGame[],
   ) => Promise<Set | undefined>;
   reportOfflineModeSet: (set: StartggSet) => Promise<Set>;
   setReportSettings: (newReportSettings: ReportSettings) => Promise<void>;
@@ -433,6 +439,59 @@ export default function SetControls({
       });
     });
     return { setId: set.id, winnerId, isDQ: false, gameData };
+  };
+
+  // Per-game character/color/stage data for parry.gg, mirroring getStartggSet.
+  const getParryggGames = (): ParryggGame[] => {
+    const games: ParryggGame[] = [];
+    selectedReplays.forEach((replay, i) => {
+      const gameWinnerId = replay.players.find((player) => player.isWinner)
+        ?.playerOverrides.entrantId;
+      if (!gameWinnerId) {
+        return;
+      }
+
+      // slot 0 = entrant1, slot 1 = entrant2 (matches getMatchResult).
+      const slotParticipants: [
+        ParryggGameParticipant[],
+        ParryggGameParticipant[],
+      ] = [[], []];
+      replay.players
+        .filter(
+          (player) =>
+            isValid(player) && isValidCharacter(player.externalCharacterId),
+        )
+        .forEach((player) => {
+          const { entrantId, participantId } = player.playerOverrides;
+          const slotIndex = entrantId === set.entrant1Id ? 0 : 1;
+          slotParticipants[slotIndex].push({
+            userId: participantId.toString(),
+            characters: [
+              {
+                characterSlug: characterParryggSlugs.get(
+                  player.externalCharacterId,
+                )!,
+                color:
+                  parryggCharacterColors.get(player.externalCharacterId)?.[
+                    player.costumeIndex
+                  ] ?? null,
+              },
+            ],
+          });
+        });
+
+      const winnerSlotIndex = gameWinnerId === set.entrant1Id ? 0 : 1;
+      games.push({
+        index: i,
+        stageSlug: stageParryggSlugs.get(replay.stageId),
+        slots: [0, 1].map((slot) => ({
+          slot,
+          score: slot === winnerSlotIndex ? 1 : 0,
+          participants: slotParticipants[slot],
+        })),
+      });
+    });
+    return games;
   };
 
   const getChallongeMatchItems = (): ChallongeMatchItem[] => [
@@ -936,7 +995,11 @@ export default function SetControls({
                     challongeMatchItems,
                   );
                 } else if (mode === Mode.PARRYGG) {
-                  updatedSet = await reportParryggSet(parryggMatchResult, set);
+                  updatedSet = await reportParryggSet(
+                    parryggMatchResult,
+                    set,
+                    isDq ? undefined : getParryggGames(),
+                  );
                 } else if (mode === Mode.OFFLINE_MODE) {
                   updatedSet = await reportOfflineModeSet(startggSet);
                 }
@@ -1016,7 +1079,14 @@ export default function SetControls({
                 });
                 resetGuide();
               } catch (e: any) {
-                const message = e instanceof Error ? e.message : e;
+                const rawMessage = e instanceof Error ? e.message : String(e);
+                // Electron wraps IPC errors as
+                // "Error invoking remote method 'channel': Error: <message>".
+                // Strip that so the underlying message reads cleanly.
+                const message = rawMessage.replace(
+                  /^Error invoking remote method '[^']*': (?:Error: )?/,
+                  '',
+                );
                 setReportError(message);
                 setReportErrorOpen(true);
               } finally {

@@ -79,6 +79,7 @@ import {
   Mode,
   OfflineModeStatus,
   Output,
+  ParryggGame,
   PlayerOverrides,
   RendererOfflineModeTournament,
   Replay,
@@ -1364,10 +1365,15 @@ function Hello() {
     [resetDq],
   );
   const reportParryggSet = useCallback(
-    async (result: MatchResult.AsObject, originalSet: Set) => {
+    async (
+      result: MatchResult.AsObject,
+      originalSet: Set,
+      games?: ParryggGame[],
+    ) => {
       const updatedSet = await window.electron.reportParryggSet(
         assertString(originalSet.id),
         result,
+        games,
       );
       resetDq();
       return updatedSet;
