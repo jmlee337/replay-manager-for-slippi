@@ -357,7 +357,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('chooseReplaysDir');
   ipcMain.handle('chooseReplaysDir', async () => {
     const openDialogRes = await dialog.showOpenDialog({
-      properties: ['openDirectory', 'showHiddenFiles'],
+      properties: ['openDirectory', 'showHiddenFiles', 'createDirectory'],
     });
     if (openDialogRes.canceled) {
       return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
@@ -394,7 +394,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('chooseTrashDir');
   ipcMain.handle('chooseTrashDir', async () => {
     const openDialogRes = await dialog.showOpenDialog({
-      properties: ['openDirectory', 'showHiddenFiles'],
+      properties: ['openDirectory', 'showHiddenFiles', 'createDirectory'],
     });
     if (openDialogRes.canceled) {
       return trashDir;
@@ -670,7 +670,7 @@ export default function setupIPCs(
   ipcMain.removeHandler('chooseCopyDir');
   ipcMain.handle('chooseCopyDir', async () => {
     const openDialogRes = await dialog.showOpenDialog({
-      properties: ['openDirectory', 'showHiddenFiles'],
+      properties: ['openDirectory', 'showHiddenFiles', 'createDirectory'],
     });
     if (openDialogRes.canceled) {
       return '';
