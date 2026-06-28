@@ -84,6 +84,10 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v6
 
+      - name: Visual Studio build tools
+        run: |
+          choco install visualstudio2022-workload-vctools -y
+
       - name: Install Node.js and NPM
         uses: actions/setup-node@v6
         with:
