@@ -268,39 +268,34 @@ export const stageParryggSlugs = new Map([
 // Character external ID to an array indexed by Slippi costumeIndex, whose
 // values are the parry.gg game-metadata color name for that costume (null for
 // the default costume at index 0). Ordered by external ID.
-export const parryggCharacterColors = (
-  [
-    [null, 'black', 'red', 'white', 'green', 'blue'], // Captain Falcon
-    [null, 'black', 'red', 'blue', 'green'], // Donkey Kong
-    [null, 'red', 'blue', 'green'], // Fox
-    [null, 'red', 'blue', 'green'], // Mr. Game & Watch
-    [null, 'yellow', 'blue', 'red', 'green', 'white'], // Kirby
-    [null, 'red', 'blue', 'black'], // Bowser
-    [null, 'red', 'blue', 'black', 'white'], // Link
-    [null, 'white', 'blue', 'red'], // Luigi
-    [null, 'yellow', 'black', 'blue', 'green'], // Mario
-    [null, 'red', 'green', 'black', 'white'], // Marth
-    [null, 'red', 'blue', 'green'], // Mewtwo
-    [null, 'gold', 'blue', 'green'], // Ness
-    [null, 'gold', 'white', 'blue', 'green'], // Peach
-    [null, 'red', 'blue', 'green'], // Pikachu
-    [null, 'green', 'yellow', 'red'], // Ice Climbers
-    [null, 'red', 'blue', 'green', 'gold'], // Jigglypuff
-    [null, 'pink', 'dark', 'green', 'blue'], // Samus
-    [null, 'red', 'blue', 'yellow', 'pink', 'cyan'], // Yoshi
-    [null, 'red', 'blue', 'green', 'white'], // Zelda
-    [null, 'red', 'blue', 'green', 'white'], // Sheik
-    [null, 'red', 'blue', 'green'], // Falco
-    [null, 'red', 'blue', 'white', 'black'], // Young Link
-    [null, 'red', 'blue', 'green', 'black'], // Dr. Mario
-    [null, 'red', 'blue', 'green', 'gold'], // Roy
-    [null, 'red', 'blue', 'green'], // Pichu
-    [null, 'red', 'blue', 'green', 'purple'], // Ganondorf
-  ] as (string | null)[][]
-).reduce(
-  (map, colors, characterId) => map.set(characterId, colors),
-  new Map<number, (string | null)[]>(),
-);
+export const parryggCharacterColors = new Map<number, (string | null)[]>([
+  [0, [null, 'black', 'red', 'white', 'green', 'blue']], // Captain Falcon
+  [1, [null, 'black', 'red', 'blue', 'green']], // Donkey Kong
+  [2, [null, 'red', 'blue', 'green']], // Fox
+  [3, [null, 'red', 'blue', 'green']], // Mr. Game & Watch
+  [4, [null, 'yellow', 'blue', 'red', 'green', 'white']], // Kirby
+  [5, [null, 'red', 'blue', 'black']], // Bowser
+  [6, [null, 'red', 'blue', 'black', 'white']], // Link
+  [7, [null, 'white', 'blue', 'red']], // Luigi
+  [8, [null, 'yellow', 'black', 'blue', 'green']], // Mario
+  [9, [null, 'red', 'green', 'black', 'white']], // Marth
+  [10, [null, 'red', 'blue', 'green']], // Mewtwo
+  [11, [null, 'gold', 'blue', 'green']], // Ness
+  [12, [null, 'gold', 'white', 'blue', 'green']], // Peach
+  [13, [null, 'red', 'blue', 'green']], // Pikachu
+  [14, [null, 'green', 'yellow', 'red']], // Ice Climbers
+  [15, [null, 'red', 'blue', 'green', 'gold']], // Jigglypuff
+  [16, [null, 'pink', 'dark', 'green', 'blue']], // Samus
+  [17, [null, 'red', 'blue', 'yellow', 'pink', 'cyan']], // Yoshi
+  [18, [null, 'red', 'blue', 'green', 'white']], // Zelda
+  [19, [null, 'red', 'blue', 'green', 'white']], // Sheik
+  [20, [null, 'red', 'blue', 'green']], // Falco
+  [21, [null, 'red', 'blue', 'white', 'black']], // Young Link
+  [22, [null, 'red', 'blue', 'green', 'black']], // Dr. Mario
+  [23, [null, 'red', 'blue', 'green', 'gold']], // Roy
+  [24, [null, 'red', 'blue', 'green']], // Pichu
+  [25, [null, 'red', 'blue', 'green', 'purple']], // Ganondorf
+]);
 
 export const frameMsDivisor = 0.05994;
 export const highlightColor = '#ffee58';
