@@ -205,6 +205,36 @@ export type StartggSet = {
   gameData: StartggGame[];
 };
 
+// Plain, IPC-serializable description of a parry.gg game report. Protobuf
+// messages are built from these in the main process (see parrygg.ts).
+export type ParryggCharacterSelection = {
+  characterSlug: string;
+  // game-metadata color name (e.g. 'blue'); null/undefined for the neutral
+  // costume or a costume game-metadata does not model as a color.
+  color: string | null;
+};
+
+export type ParryggGameParticipant = {
+  // parry.gg user id (player.playerOverrides.participantId).
+  userId: string;
+  characters: ParryggCharacterSelection[];
+};
+
+export type ParryggGameSlot = {
+  // 0 = entrant1, 1 = entrant2 (matches MatchResult slot convention).
+  slot: number;
+  // Games won in this game: 1 for the winner, 0 for the loser.
+  score: number;
+  participants: ParryggGameParticipant[];
+};
+
+export type ParryggGame = {
+  // 0-indexed game number.
+  index: number;
+  stageSlug?: string;
+  slots: ParryggGameSlot[];
+};
+
 export type ChallongeMatchItem = {
   participant_id: string;
   score_set: string;
