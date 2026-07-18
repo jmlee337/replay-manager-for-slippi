@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
-  AppBar,
   CircularProgress,
-  IconButton,
+  Fab,
   List,
   ListItem,
   ListItemText,
   Stack,
-  Toolbar,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import { createRoot } from 'react-dom/client';
@@ -88,29 +85,22 @@ function Entrants() {
 
   return (
     <>
-      <AppBar position="fixed" color="inherit">
-        <Toolbar disableGutters style={{ justifyContent: 'space-between' }}>
-          <Typography variant="h5" marginLeft="16px">
-            Seeds by Pool
-          </Typography>
-          <Tooltip arrow title="Refresh">
-            <IconButton
-              disabled={gettingWaves}
-              onClick={async () => {
-                setGettingWaves(true);
-                try {
-                  setWaves(await window.electron.getPoolsByWave());
-                } catch {
-                  // just catch
-                }
-                setGettingWaves(false);
-              }}
-            >
-              <Refresh />
-            </IconButton>
-          </Tooltip>
-        </Toolbar>
-      </AppBar>
+      <Fab
+        aria-label="Refresh"
+        disabled={gettingWaves}
+        style={{ position: 'fixed', bottom: '16px', right: '16px' }}
+        onClick={async () => {
+          setGettingWaves(true);
+          try {
+            setWaves(await window.electron.getPoolsByWave());
+          } catch {
+            // just catch
+          }
+          setGettingWaves(false);
+        }}
+      >
+        <Refresh />
+      </Fab>
       {gettingWaves ? (
         <Stack
           width="100%"
@@ -121,7 +111,7 @@ function Entrants() {
           <CircularProgress size="24px" />
         </Stack>
       ) : (
-        <List disablePadding style={{ marginTop: '64px' }}>
+        <List disablePadding>
           {waves.map((wave) => (
             <WaveEl key={wave.id} wave={wave} />
           ))}
