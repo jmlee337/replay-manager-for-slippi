@@ -3296,6 +3296,7 @@ function Hello() {
         hideCopyButton={hideCopyButton}
         setHideCopyButton={setHideCopyButton}
         setAdminedTournaments={setAdminedTournaments}
+        setGettingAdminedTournaments={setGettingAdminedTournaments}
         showErrorDialog={showErrorDialog}
         enforcerVersion={ENFORCER_VERSION}
         hostFormat={hostFormat}

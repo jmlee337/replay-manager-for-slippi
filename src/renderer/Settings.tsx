@@ -71,6 +71,7 @@ export default function Settings({
   hideCopyButton,
   setHideCopyButton,
   setAdminedTournaments,
+  setGettingAdminedTournaments,
   showErrorDialog,
   enforcerVersion,
   hostFormat,
@@ -96,6 +97,7 @@ export default function Settings({
   hideCopyButton: boolean;
   setHideCopyButton: (hideCopyButton: boolean) => void;
   setAdminedTournaments: (tournaments: AdminedTournament[]) => void;
+  setGettingAdminedTournaments: (gettingAdminedTournaments: boolean) => void;
   showErrorDialog: (errors: string[]) => void;
   enforcerVersion: string;
   hostFormat: CopyHostFormat;
@@ -180,25 +182,27 @@ export default function Settings({
           } catch (e: any) {
             showErrorDialog([e instanceof Error ? e.message : e]);
           }
+          setOpen(false);
           if (shouldGetTournaments) {
+            setAdminedTournaments([]);
             if (
               (mode === Mode.STARTGG && startggApiKey) ||
               (mode === Mode.CHALLONGE && challongeApiKey) ||
               (mode === Mode.PARRYGG && parryggApiKey)
             ) {
               try {
+                setGettingAdminedTournaments(true);
                 setAdminedTournaments(await window.electron.getTournaments());
               } catch (e: any) {
                 showErrorDialog([e instanceof Error ? e.message : e]);
               } finally {
+                setGettingAdminedTournaments(false);
                 setShouldGetTournaments(false);
               }
             } else {
-              setAdminedTournaments([]);
               setShouldGetTournaments(false);
             }
           }
-          setOpen(false);
         }}
       >
         <Stack

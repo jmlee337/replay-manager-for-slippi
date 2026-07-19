@@ -50,7 +50,7 @@ export default function ChallongeTournamentForm({
         alignItems="center"
         direction="row"
         justifyContent="space-between"
-        marginRight="24px"
+        marginRight="16px"
       >
         <DialogTitle>Add Challonge tournament</DialogTitle>
         {gettingAdminedTournaments ? (
@@ -63,13 +63,12 @@ export default function ChallongeTournamentForm({
           </Tooltip>
         )}
       </Stack>
-      <DialogContent sx={{ pt: 0 }}>
+      <DialogContent sx={{ pl: 0, pr: 0, pt: 0 }}>
         <form
           style={{
             alignItems: 'center',
             display: 'flex',
-            marginTop: '8px',
-            marginBottom: '8px',
+            margin: '8px 24px',
             gap: '8px',
           }}
           onSubmit={getTournamentOnSubmit}
@@ -91,7 +90,7 @@ export default function ChallongeTournamentForm({
           </Button>
         </form>
         {gettingAdminedTournaments && adminedTournaments.length === 0 ? (
-          <Stack direction="row" marginTop="8px" spacing="8px">
+          <Stack direction="row" margin="8px 24px" spacing="8px">
             <CircularProgress size="24px" />
             <DialogContentText>
               Getting admined tournaments...
@@ -101,6 +100,7 @@ export default function ChallongeTournamentForm({
           adminedTournaments.map((adminedTournament) => (
             <ListItemButton
               key={adminedTournament.slug}
+              style={{ paddingLeft: '24px', paddingRight: '24px' }}
               onClick={async () => {
                 await getTournament(adminedTournament.slug);
                 close();
