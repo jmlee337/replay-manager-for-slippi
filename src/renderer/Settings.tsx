@@ -125,8 +125,9 @@ export default function Settings({
     () =>
       valid(appVersion) &&
       valid(latestAppVersion) &&
-      lt(appVersion, latestAppVersion),
-    [appVersion, latestAppVersion],
+      lt(appVersion, latestAppVersion) &&
+      mode !== Mode.CHALLONGE,
+    [appVersion, latestAppVersion, mode],
   );
   if (
     gotSettings &&
