@@ -47,10 +47,13 @@ const electronHandler = {
   getTrashDir: (): Promise<string> => ipcRenderer.invoke('getTrashDir'),
   chooseTrashDir: (): Promise<string> => ipcRenderer.invoke('chooseTrashDir'),
   clearTrashDir: (): Promise<void> => ipcRenderer.invoke('clearTrashDir'),
-  deleteReplaysDir: (): Promise<boolean> =>
-    ipcRenderer.invoke('deleteReplaysDir'),
-  deleteSelectedReplays: (replayPaths: string[]): Promise<void> =>
-    ipcRenderer.invoke('deleteSelectedReplays', replayPaths),
+  deleteReplaysDir: (usedFilenames: string[]): Promise<boolean> =>
+    ipcRenderer.invoke('deleteReplaysDir', usedFilenames),
+  deleteSelectedReplays: (
+    replayPaths: string[],
+    used: boolean,
+  ): Promise<void> =>
+    ipcRenderer.invoke('deleteSelectedReplays', replayPaths, used),
   maybeEject: (): Promise<boolean> => ipcRenderer.invoke('maybeEject'),
   getReplaysInDir: (): Promise<{
     replays: Replay[];

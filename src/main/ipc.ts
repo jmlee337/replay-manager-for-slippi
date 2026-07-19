@@ -413,7 +413,7 @@ export default function setupIPCs(
 
   let copyDir = '';
   ipcMain.removeHandler('deleteReplaysDir');
-  ipcMain.handle('deleteReplaysDir', async () => {
+  ipcMain.handle('deleteReplaysDir', async (event, usedFilenames: string[]) => {
     if (replayDirs.length === 0 && !undoSrcFullPath) {
       return Promise.resolve(false);
     }
@@ -432,10 +432,17 @@ export default function setupIPCs(
       const trashSubdir = format(new Date(), 'yyyy-MM-dd HHmmss');
       const fullPath = path.join(trashDir, trashSubdir);
       await mkdir(fullPath, { recursive: true });
+      const usedFilenamesMap = new Map(
+        usedFilenames.map((filename) => [filename, true]),
+      );
       await Promise.all(
         slpFilenames.map(async (filename) => {
           const srcPath = path.join(currentDir, filename);
-          const dstPath = path.join(fullPath, filename);
+          const dstDir = usedFilenamesMap.has(fullPath)
+            ? path.join(fullPath, 'used')
+            : path.join(fullPath, 'unused');
+          await mkdir(dstDir, { recursive: true });
+          const dstPath = path.join(dstDir, filename);
           return copyFile(srcPath, dstPath);
         }),
       );
@@ -454,10 +461,14 @@ export default function setupIPCs(
   ipcMain.removeHandler('deleteSelectedReplays');
   ipcMain.handle(
     'deleteSelectedReplays',
-    async (event, replayPaths: string[]) => {
+    async (event, replayPaths: string[], used: boolean) => {
       if (trashDir) {
         const trashSubdir = format(new Date(), 'yyyy-MM-dd HHmmss');
-        const fullPath = path.join(trashDir, trashSubdir);
+        const fullPath = path.join(
+          trashDir,
+          trashSubdir,
+          used ? 'used' : 'unused',
+        );
         await mkdir(fullPath, { recursive: true });
         await Promise.all(
           replayPaths.map(async (replayPath) => {

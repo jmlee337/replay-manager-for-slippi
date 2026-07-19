@@ -805,7 +805,7 @@ function Hello() {
     dir.length > 0 && copyDir.length > 0 && dir === copyDir;
   const [ejecting, setEjecting] = useState(false);
   const [ejected, setEjected] = useState(false);
-  const deleteDir = async () => {
+  const deleteDir = async (usedFilenames: string[]) => {
     if (!dir || wouldDeleteCopyDir) {
       return;
     }
@@ -813,7 +813,7 @@ function Hello() {
     setDirDeleting(true);
     setEjecting(true);
     try {
-      setEjected(await window.electron.deleteReplaysDir());
+      setEjected(await window.electron.deleteReplaysDir(usedFilenames));
       setWasDeleted(true);
       await refreshReplays();
     } finally {
@@ -821,7 +821,7 @@ function Hello() {
       setEjecting(false);
     }
   };
-  const deleteSelected = async () => {
+  const deleteSelected = async (used: boolean) => {
     if (!dir || wouldDeleteCopyDir) {
       return;
     }
@@ -830,6 +830,7 @@ function Hello() {
     try {
       await window.electron.deleteSelectedReplays(
         selectedReplays.map((selectedReplay) => selectedReplay.filePath),
+        used,
       );
       await refreshReplays();
     } finally {
@@ -2118,7 +2119,7 @@ function Hello() {
                               }
                               onClick={async () => {
                                 try {
-                                  await deleteDir();
+                                  await deleteDir([]);
                                   setGuideState(GuideState.NONE);
                                 } catch (e: any) {
                                   showErrorDialog([
@@ -2151,7 +2152,7 @@ function Hello() {
                               wouldDeleteCopyDir ||
                               dirDeleting
                             }
-                            onClick={() => deleteSelected()}
+                            onClick={() => deleteSelected(false)}
                           >
                             <DeleteForeverOutlined />
                           </IconButton>
@@ -3150,7 +3151,17 @@ function Hello() {
                 copyReplays={onCopy}
                 deleteReplays={
                   // eslint-disable-next-line no-nested-ternary
-                  undoSubdir ? deleteUndo : isUsb ? deleteDir : deleteSelected
+                  undoSubdir
+                    ? deleteUndo
+                    : isUsb
+                    ? () => {
+                        return deleteDir(
+                          selectedReplays.map((replay) => replay.fileName),
+                        );
+                      }
+                    : () => {
+                        return deleteSelected(true);
+                      }
                 }
                 reportChallongeSet={reportChallongeSet}
                 reportStartggSet={reportStartggSet}
