@@ -9,6 +9,7 @@ import {
   MatchServiceClient,
   MatchGameServiceClient,
   StartMatchRequest,
+  CallMatchRequest,
   SetMatchResultRequest,
   BatchReportMatchGamesRequest,
   MatchResult,
@@ -34,6 +35,7 @@ import {
   Phase,
   Event,
   Seed,
+  Slot,
   BracketType,
 } from '@parry-gg/client';
 import { Struct } from 'google-protobuf/google/protobuf/struct_pb';
@@ -117,6 +119,8 @@ function getSetState(set: Match.AsObject): State {
       return State.COMPLETED;
     case MatchState.MATCH_STATE_IN_PROGRESS:
       return State.STARTED;
+    case MatchState.MATCH_STATE_CALLED:
+      return State.CALLED;
     case MatchState.MATCH_STATE_PENDING:
     default:
       return State.PENDING;
@@ -225,10 +229,16 @@ function updateSetOrdinalMap(bracket: ParryggBracket): void {
 
 export function convertParryggSetToSet(set: Match.AsObject): Set {
   const slots = set.slotsList;
-  const slot1 = slots[0];
-  const slot2 = slots[1];
-  const entrant1 = seedMap.get(slot1.seedId)?.eventEntrant?.entrant;
-  const entrant2 = seedMap.get(slot2.seedId)?.eventEntrant?.entrant;
+  // A match's slots may not be populated yet (progressions, byes), so treat a
+  // missing slot the same way we treat a missing entrant: TBD.
+  const slot1 = slots[0] as Slot.AsObject | undefined;
+  const slot2 = slots[1] as Slot.AsObject | undefined;
+  const entrant1 = slot1
+    ? seedMap.get(slot1.seedId)?.eventEntrant?.entrant
+    : undefined;
+  const entrant2 = slot2
+    ? seedMap.get(slot2.seedId)?.eventEntrant?.entrant
+    : undefined;
 
   const entrant1Participants: Participant[] = getParticipants(entrant1);
   const entrant2Participants: Participant[] = getParticipants(entrant2);
@@ -248,11 +258,15 @@ export function convertParryggSetToSet(set: Match.AsObject): Set {
     entrant1Id: entrant1?.id ?? '',
     entrant1Participants,
     entrant1Score:
-      set.state === MatchState.MATCH_STATE_COMPLETED ? slot1.score : null,
+      set.state === MatchState.MATCH_STATE_COMPLETED
+        ? slot1?.score ?? null
+        : null,
     entrant2Id: entrant2?.id ?? '',
     entrant2Participants,
     entrant2Score:
-      set.state === MatchState.MATCH_STATE_COMPLETED ? slot2.score : null,
+      set.state === MatchState.MATCH_STATE_COMPLETED
+        ? slot2?.score ?? null
+        : null,
     gameScores: [],
     stream: null,
     station: null,
@@ -275,9 +289,12 @@ function updateBracketGlobalState(bracket: ParryggBracket): void {
 
   const filteredSets = bracket.matchesList.filter(
     (set) =>
-      set.state === MatchState.MATCH_STATE_READY ||
-      set.state === MatchState.MATCH_STATE_IN_PROGRESS ||
-      set.state === MatchState.MATCH_STATE_COMPLETED,
+      // skip this set if not fully populated
+      set.slotsList.length >= 2 &&
+      (set.state === MatchState.MATCH_STATE_READY ||
+        set.state === MatchState.MATCH_STATE_CALLED ||
+        set.state === MatchState.MATCH_STATE_IN_PROGRESS ||
+        set.state === MatchState.MATCH_STATE_COMPLETED),
   );
 
   const convertedSets = filteredSets.map(convertParryggSetToSet);
@@ -578,6 +595,16 @@ export async function getParryggTournament(
       }
     }),
   );
+}
+
+export async function callParryggSet(
+  apiKey: string,
+  setId: string,
+): Promise<void> {
+  const request = new CallMatchRequest();
+  request.setId(setId);
+
+  await callParrygg(matchClient.callMatch(request, createAuthMetadata(apiKey)));
 }
 
 export async function startParryggSet(

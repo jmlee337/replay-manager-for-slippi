@@ -88,6 +88,7 @@ import {
   setSelectedParryggSetId,
   setSelectedParryggTournament,
   startParryggSet,
+  callParryggSet,
   getAdminedParryggTournaments,
   getSelectedParryggSetChain,
 } from './parrygg';
@@ -1267,6 +1268,20 @@ export default function setupIPCs(
     }
 
     await getParryggBracket(parryggApiKey, bracketId);
+    mainWindow.webContents.send('tournament', {
+      selectedSet: getSelectedParryggSet(),
+      parryggTournament: getCurrentParryggTournament(),
+    });
+  });
+
+  ipcMain.removeHandler('callParryggSet');
+  ipcMain.handle('callParryggSet', async (event, setId: string) => {
+    if (!parryggApiKey) {
+      throw new Error('Please set parry.gg API key.');
+    }
+
+    await callParryggSet(parryggApiKey, setId);
+    await getParryggBracket(parryggApiKey, assertString(selectedPhaseGroupId));
     mainWindow.webContents.send('tournament', {
       selectedSet: getSelectedParryggSet(),
       parryggTournament: getCurrentParryggTournament(),

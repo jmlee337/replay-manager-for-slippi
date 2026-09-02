@@ -227,6 +227,8 @@ const electronHandler = {
     ipcRenderer.invoke('getParryggPhase', id),
   getParryggBracket: (id: string): Promise<void> =>
     ipcRenderer.invoke('getParryggBracket', id),
+  callParryggSet: (setId: string): Promise<void> =>
+    ipcRenderer.invoke('callParryggSet', setId),
   startParryggSet: (setId: string): Promise<void> =>
     ipcRenderer.invoke('startParryggSet', setId),
   reportParryggSet: (

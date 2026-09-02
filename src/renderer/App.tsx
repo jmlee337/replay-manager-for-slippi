@@ -1308,6 +1308,8 @@ function Hello() {
     try {
       if (mode === Mode.STARTGG) {
         await window.electron.callSet(originalSet);
+      } else if (mode === Mode.PARRYGG) {
+        await window.electron.callParryggSet(assertString(originalSet.id));
       } else if (mode === Mode.OFFLINE_MODE) {
         await window.electron.callOfflineModeSet(assertInteger(originalSet.id));
       }
@@ -3088,7 +3090,9 @@ function Hello() {
                 }
               />
               <ResetSet mode={mode} selectedSet={selectedSet} />
-              {(mode === Mode.STARTGG || mode === Mode.OFFLINE_MODE) && (
+              {(mode === Mode.STARTGG ||
+                mode === Mode.PARRYGG ||
+                mode === Mode.OFFLINE_MODE) && (
                 <Tooltip arrow title="Mark set called">
                   <div>
                     <IconButton
