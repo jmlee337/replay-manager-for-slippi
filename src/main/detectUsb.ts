@@ -38,6 +38,8 @@ class USBEventsController extends EventEmitter<{
 }> {
   usbList: Map<string, MountData>;
 
+  timeout: NodeJS.Timeout | undefined;
+
   constructor() {
     super();
     this.usbList = new Map();
@@ -69,7 +71,8 @@ class USBEventsController extends EventEmitter<{
 
       // Detect insert
       usbDetect.on('add', async () => {
-        const poll = setInterval(async () => {
+        clearInterval(this.timeout);
+        this.timeout = setInterval(async () => {
           const drives = await list();
           // eslint-disable-next-line no-restricted-syntax
           for await (const drive of drives) {
@@ -86,7 +89,7 @@ class USBEventsController extends EventEmitter<{
                     };
                     this.emit('insert', mountData);
                     this.usbList.set(i.path, mountData);
-                    clearInterval(poll);
+                    clearInterval(this.timeout);
                   }
                 }
               }
