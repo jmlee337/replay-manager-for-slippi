@@ -15,8 +15,9 @@
   },
   "dependencies": {
     "@fugood/dns-sd": "^0.1.0-alpha.1",
-    "detect-usb": "^2.0.0",
+    "drivelist": "^12.0.2",
     "eject-media": "^0.0.3",
+    "usb-detection": "^4.14.2",
     "ws": "^8.18.0",
     "yauzl-promise": "^4.0.0"
   },

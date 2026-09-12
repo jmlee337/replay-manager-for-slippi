@@ -17,7 +17,6 @@ import {
   unlink,
   writeFile,
 } from 'fs/promises';
-import detectUsb from 'detect-usb';
 import path from 'path';
 import { eject } from 'eject-media';
 import { format } from 'date-fns';
@@ -26,6 +25,7 @@ import { MatchResult } from '@parry-gg/client';
 import { createWriteStream } from 'fs';
 import yauzl from 'yauzl-promise';
 import { pipeline } from 'stream/promises';
+import detectUsb from './detectUsb';
 import {
   ChallongeMatchItem,
   Context,
