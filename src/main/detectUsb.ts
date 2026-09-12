@@ -95,7 +95,7 @@ class USBEventsController extends EventEmitter<{
               }
             }
           }
-        }, 500);
+        }, 1000);
       });
 
       // Detect remove
