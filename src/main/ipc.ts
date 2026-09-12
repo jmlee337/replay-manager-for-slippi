@@ -25,7 +25,7 @@ import { MatchResult } from '@parry-gg/client';
 import { createWriteStream } from 'fs';
 import yauzl from 'yauzl-promise';
 import { pipeline } from 'stream/promises';
-import detectUsb from './detectUsb';
+import { detectUsb, MountData } from './detectUsb';
 import {
   ChallongeMatchItem,
   Context,
@@ -281,27 +281,27 @@ export default function setupIPCs(
     handleProtocolLoadSlpUrls(slpUrls);
   });
 
-  const onInsert = (e: any) => {
-    if (knownUsbs.has(e.data.key)) {
+  const onInsert = (e: MountData) => {
+    if (knownUsbs.has(e.key)) {
       return;
     }
 
-    if (e.data.isAccessible) {
-      knownUsbs.set(e.data.key, true);
+    if (e.isAccessible) {
+      knownUsbs.set(e.key, true);
       const dir =
         process.platform === 'win32'
-          ? `${e.data.key}Slippi`
-          : path.join(e.data.key, 'Slippi');
-      addReplayDir(dir, e.data.key);
+          ? `${e.key}Slippi`
+          : path.join(e.key, 'Slippi');
+      addReplayDir(dir, e.key);
     }
   };
-  const onEject = (e: any) => {
-    if (!knownUsbs.has(e.data.key)) {
+  const onEject = (e: string) => {
+    if (!knownUsbs.has(e)) {
       return;
     }
 
-    knownUsbs.delete(e.data.key);
-    replayDirs = replayDirs.filter((dir) => !dir.dir.startsWith(e.data.key));
+    knownUsbs.delete(e);
+    replayDirs = replayDirs.filter((dir) => !dir.dir.startsWith(e));
     const newDir =
       replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : null;
     mainWindow.webContents.send(

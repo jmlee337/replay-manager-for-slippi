@@ -23,14 +23,19 @@ class Utils {
   }
 }
 
-type MountData = {
+export type MountData = {
   key: string;
   name: string;
   devicepath: string;
   isAccessible: boolean;
 };
 
-class USBEventsController extends EventEmitter {
+class USBEventsController extends EventEmitter<{
+  ready: [MountData[]];
+  insert: [MountData];
+  eject: [string];
+  error: [unknown];
+}> {
   usbList: Map<string, MountData>;
 
   constructor() {
@@ -79,10 +84,7 @@ class USBEventsController extends EventEmitter {
                       devicepath: drive.device,
                       isAccessible: await Utils.isReadable(i.path),
                     };
-                    this.emit('insert', {
-                      event: 'insert',
-                      data: mountData,
-                    });
+                    this.emit('insert', mountData);
                     this.usbList.set(i.path, mountData);
                     clearInterval(poll);
                   }
@@ -114,11 +116,11 @@ class USBEventsController extends EventEmitter {
         );
         removalList.forEach((i) => {
           this.usbList.delete(i);
-          this.emit('eject', { event: 'eject', data: { key: i } });
+          this.emit('eject', i);
         });
       });
     } catch (err) {
-      this.emit('error', { event: 'error', data: [] });
+      this.emit('error', err);
     }
   }
 
@@ -128,4 +130,5 @@ class USBEventsController extends EventEmitter {
   }
 }
 
-export default new USBEventsController();
+const detectUsb = new USBEventsController();
+export { detectUsb };
