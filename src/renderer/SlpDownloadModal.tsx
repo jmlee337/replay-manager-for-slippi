@@ -59,7 +59,13 @@ export default function SlpDownloadModal({
             Failed to download the following SLP files:
           </DialogContentText>
           {status.failedFiles.map((file) => (
-            <DialogContentText key={file}>{file}</DialogContentText>
+            <DialogContentText
+              key={`${file.label}|${file.fileName ?? ''}|${file.reason}`}
+            >
+              {`${file.label}${file.fileName ? ` - ${file.fileName}` : ''}: ${
+                file.reason
+              }`}
+            </DialogContentText>
           ))}
         </DialogContent>
         <DialogActions>

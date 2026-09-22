@@ -15,7 +15,6 @@ import {
   readFile,
   rm,
   unlink,
-  writeFile,
 } from 'fs/promises';
 import path from 'path';
 import { eject } from 'eject-media';
@@ -42,6 +41,8 @@ import {
   ReportSettings,
   SelectedSetChain,
   Set,
+  SlpDownloadStatus,
+  RequestFailure,
   StartggGame,
   StartggSet,
 } from '../common/types';
@@ -119,6 +120,7 @@ import {
 } from './host';
 import { assertInteger, assertString } from '../common/asserts';
 import { resolveHtmlPath } from './util';
+import { downloadFile } from './download';
 import {
   assignOfflineModeSetStation,
   assignOfflineModeSetStream,
@@ -186,44 +188,25 @@ export default function setupIPCs(
     replayDirs.push({ dir, usbKey });
     mainWindow.webContents.send('usbstorage', dir, Boolean(usbKey));
   }
-  // Helper to download a file from a URL to a given path
-  async function downloadFile(url: string, dest: string): Promise<void> {
-    let response;
-    try {
-      response = await fetch(url, {
-        signal: AbortSignal.timeout(15000),
-      });
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error(`Timeout downloading '${url}'`);
-      }
-      throw error;
-    }
-
-    if (!response.ok) {
-      throw new Error(`Failed to get '${url}' (${response.status})`);
-    }
-
-    if (!response.body) {
-      throw new Error(`No response body for '${url}'`);
-    }
-
-    await writeFile(dest, Buffer.from(await response.arrayBuffer()));
-  }
-
-  let slpDownloadStatus: {
-    status: 'idle' | 'downloading' | 'error' | 'success';
-    slpUrls?: string[];
-    progress?: number;
-    currentFile?: string;
-    failedFiles?: string[];
-  } = { status: 'idle' };
+  let slpDownloadStatus: SlpDownloadStatus = { status: 'idle' };
 
   async function handleProtocolLoadSlpUrls(slpUrls: string[]) {
     await mkdir(protocolLoadFullPath, { recursive: true });
-    const failedFiles: string[] = [];
+    const failedFiles: RequestFailure[] = [];
     const total = slpUrls.length;
     let completed = 0;
+
+    const send = (fileName: string) => {
+      slpDownloadStatus = {
+        status: 'downloading',
+        progress: Math.round((completed / total) * 100),
+        currentFile: fileName,
+      };
+      if (mainWindow) {
+        mainWindow.webContents.send('slp-download-status', slpDownloadStatus);
+      }
+    };
+
     await Promise.all(
       slpUrls.map(async (url) => {
         const fileName = path.basename(new URL(url).pathname);
@@ -231,34 +214,19 @@ export default function setupIPCs(
         try {
           await downloadFile(url, dest);
         } catch (err) {
-          // Delete partial files
-          try {
-            await unlink(dest);
-          } catch (unlinkErr) {
-            // ignore
-          }
-          failedFiles.push(url);
+          failedFiles.push({
+            label: url,
+            reason: err instanceof Error ? err.message : String(err),
+          });
         } finally {
           completed += 1;
-          slpDownloadStatus = {
-            status: 'downloading',
-            slpUrls,
-            progress: Math.round((completed / total) * 100),
-            currentFile: fileName,
-          };
-          if (mainWindow) {
-            mainWindow.webContents.send(
-              'slp-download-status',
-              slpDownloadStatus,
-            );
-          }
+          send(fileName);
         }
       }),
     );
-    // Emit 100% progress after last file
+
     slpDownloadStatus = {
       status: 'downloading',
-      slpUrls,
       progress: 100,
       currentFile: '',
     };

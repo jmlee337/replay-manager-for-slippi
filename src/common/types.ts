@@ -436,15 +436,20 @@ export enum WebSocketServerStatus {
   STARTED,
 }
 
+export type RequestFailure = {
+  label: string;
+  fileName?: string;
+  reason: string;
+};
+
 export type SlpDownloadStatus =
   | { status: 'idle' }
   | {
       status: 'downloading';
-      slpUrls: string[];
       progress: number;
       currentFile: string;
     }
-  | { status: 'error'; failedFiles: string[] }
+  | { status: 'error'; failedFiles: RequestFailure[] }
   | { status: 'success' };
 
 export type ParryggBracket = ParryggBracketPb.AsObject & { sets?: Sets };
