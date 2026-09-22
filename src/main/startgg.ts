@@ -940,12 +940,11 @@ export async function getTournament(
   (json.entities.event as any[])
     .filter((event: any) => {
       const isMelee = event.videogameId === 1;
-      const isOffline = !event.isOnline;
       const isSinglesOrDoubles =
         event.teamRosterSize === null ||
         (event.teamRosterSize.minPlayers === 2 &&
           event.teamRosterSize.maxPlayers === 2);
-      return isMelee && isOffline && isSinglesOrDoubles;
+      return isMelee && isSinglesOrDoubles;
     })
     .forEach((event: any) => {
       const newEvent: Event = {

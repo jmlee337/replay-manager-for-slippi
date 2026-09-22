@@ -518,7 +518,7 @@ export function connectToOfflineMode(newAddressOrHost: string) {
               setTournament({
                 ...newTournament,
                 events: newTournament.events
-                  .filter((event) => event.videogameId === 1 && !event.isOnline)
+                  .filter((event) => event.videogameId === 1)
                   .map((event) => ({
                     ...event,
                     phases: event.phases.map((phase) => ({
