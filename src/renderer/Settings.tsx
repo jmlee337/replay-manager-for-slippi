@@ -36,6 +36,10 @@ import {
   Mode,
 } from '../common/types';
 
+function toMegabytes(bytes: number) {
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 function LabeledRadioButton({ label, value }: { label: string; value: Mode }) {
   return (
     <FormControlLabel
@@ -151,7 +155,25 @@ export default function Settings({
     })();
   }, []);
 
+  const [beamersAutoSubscribe, setBeamersAutoSubscribe] = useState(true);
+  useEffect(() => {
+    (async () => {
+      setBeamersAutoSubscribe(await window.electron.getBeamersAutoSubscribe());
+    })();
+  }, []);
+
   const [choosingTrashDir, setChoosingTrashDir] = useState(false);
+
+  const [replayCache, setReplayCache] = useState({ files: 0, bytes: 0 });
+  const [clearingReplayCache, setClearingReplayCache] = useState(false);
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    (async () => {
+      setReplayCache(await window.electron.getReplayCacheSize());
+    })();
+  }, [open]);
 
   return (
     <>
@@ -432,6 +454,56 @@ export default function Settings({
                 </Button>
               )}
             </Stack>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
+              <Typography variant="caption">
+                {replayCache.files > 0
+                  ? `Cached replays: ${replayCache.files} (${toMegabytes(
+                      replayCache.bytes,
+                    )})`
+                  : 'No cached replays'}
+              </Typography>
+              <Button
+                disabled={replayCache.files === 0 || clearingReplayCache}
+                endIcon={
+                  clearingReplayCache ? (
+                    <CircularProgress size="24px" />
+                  ) : undefined
+                }
+                onClick={async () => {
+                  setClearingReplayCache(true);
+                  try {
+                    await window.electron.clearReplayCache();
+                    setReplayCache({ files: 0, bytes: 0 });
+                  } catch (e) {
+                    showErrorDialog([
+                      e instanceof Error ? e.message : String(e),
+                    ]);
+                  } finally {
+                    setClearingReplayCache(false);
+                  }
+                }}
+                variant="contained"
+              >
+                Delete cached replays
+              </Button>
+            </Stack>
+            <LabeledCheckbox
+              checked={beamersAutoSubscribe}
+              label="Auto-subscribe to all Beamers"
+              labelPlacement="end"
+              set={async (checked) => {
+                try {
+                  await window.electron.setBeamersAutoSubscribe(checked);
+                  setBeamersAutoSubscribe(checked);
+                } catch (e) {
+                  showErrorDialog([e instanceof Error ? e.message : String(e)]);
+                }
+              }}
+            />
             <LabeledCheckbox
               checked={vlerkMode}
               label={

@@ -1,7 +1,11 @@
+import { Beamer } from './types';
+
 // Is character external ID tournament legal
 export function isValidCharacter(characterId: number) {
   return characterId >= 0 && characterId <= 25;
 }
+
+export const unknownCharacterId = 31;
 
 // Character external ID to short name
 export const characterNames = new Map([
@@ -302,3 +306,16 @@ export const highlightColor = '#ffee58';
 
 export const calledColor = '#f9a825';
 export const startedColor = '#0d8225';
+
+export const beamerHealthColor: Record<Beamer['health'], string> = {
+  ok: '#31d158',
+  starting: '#8a8a8e',
+  warn: '#f5a623',
+  error: '#f04438',
+  unknown: '#8a8a8e',
+};
+
+export const beamerDeadColor: Partial<Record<Beamer['health'], string>> = {
+  ok: '#062E03',
+  warn: '#2E1D03',
+};

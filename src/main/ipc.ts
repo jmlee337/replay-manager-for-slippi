@@ -14,6 +14,7 @@ import {
   readdir,
   readFile,
   rm,
+  stat,
   unlink,
 } from 'fs/promises';
 import path from 'path';
@@ -26,6 +27,7 @@ import yauzl from 'yauzl-promise';
 import { pipeline } from 'stream/promises';
 import { detectUsb, MountData } from './detectUsb';
 import {
+  ReplayDir,
   ChallongeMatchItem,
   Context,
   CopySettings,
@@ -122,6 +124,25 @@ import { assertInteger, assertString } from '../common/asserts';
 import { resolveHtmlPath } from './util';
 import { downloadFile } from './download';
 import {
+  initBeamers,
+  selectBeamer,
+  refreshFromBeamer,
+  getPreviousBeamerReplay,
+  downloadPreviousBeamerReplay,
+  startBeamerBrowse,
+  stopBeamerBrowse,
+  setBeamerSubscribed,
+  getBeamersAutoSubscribe,
+  setBeamersAutoSubscribe,
+  refreshBeamerStatus,
+  resetBeamer,
+  refreshAllBeamers,
+  resetAllBeamers,
+  clampMaxGamesFromIndex,
+  beamerFullPath,
+} from './beamer';
+import { beamerDirWritten, cancelBeamerDownload } from './downloadQueue';
+import {
   assignOfflineModeSetStation,
   assignOfflineModeSetStream,
   callOfflineModeSet,
@@ -144,15 +165,51 @@ import {
   deafenForOfflineModeAndSend,
 } from './offlinemode';
 
-type ReplayDir = {
-  dir: string;
-  usbKey: string;
-};
-
 let entrantsWindow: BrowserWindow | null = null;
 
-const protocolLoadFullPath = path.join(app.getPath('userData'), 'protocol');
+const replayCacheFullPath = path.join(app.getPath('userData'), 'replayCache');
+const protocolLoadFullPath = path.join(replayCacheFullPath, 'protocol');
 const undoDstFullPath = path.join(app.getPath('userData'), 'undo');
+
+async function measureReplayCache(cacheRoot: string) {
+  let files = 0;
+  let bytes = 0;
+
+  const walk = async (dir: string) => {
+    let dirents;
+    try {
+      dirents = await readdir(dir, { withFileTypes: true });
+    } catch {
+      // no cache dir yet - nothing to measure
+      return;
+    }
+    await Promise.all(
+      dirents.map(async (dirent) => {
+        const full = path.join(dir, dirent.name);
+        if (dirent.isDirectory()) {
+          await walk(full);
+          return;
+        }
+        if (
+          !dirent.name.endsWith('.slp') &&
+          !dirent.name.endsWith('.slp.part')
+        ) {
+          return;
+        }
+        try {
+          const stats = await stat(full);
+          files += 1;
+          bytes += stats.size;
+        } catch {
+          // gone between the readdir and the stat...
+        }
+      }),
+    );
+  };
+
+  await walk(cacheRoot);
+  return { files, bytes };
+}
 
 export default function setupIPCs(
   mainWindow: BrowserWindow,
@@ -160,8 +217,11 @@ export default function setupIPCs(
   eventEmitter: EventEmitter,
 ): void {
   const store = new Store<{
+    autoSubscribeBeamers: boolean;
     copySettings: CopySettings;
     hideCopyButton: boolean;
+    maxGamesFromIndex: number;
+    mode: Mode;
     offlineModePassword: string;
   }>();
   initOfflineMode(mainWindow);
@@ -183,11 +243,44 @@ export default function setupIPCs(
 
   let replayDirs: ReplayDir[] = [];
   const knownUsbs = new Map<string, boolean>();
-  // Helper to add a new replay directory and notify renderer
-  function addReplayDir(dir: string, usbKey: string) {
-    replayDirs.push({ dir, usbKey });
-    mainWindow.webContents.send('usbstorage', dir, Boolean(usbKey));
+
+  function topReplayDir() {
+    return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : null;
   }
+
+  function announceReplayDir() {
+    mainWindow.webContents.send('replayDir', topReplayDir());
+  }
+
+  function addReplayDir(entry: ReplayDir) {
+    replayDirs.push(entry);
+    announceReplayDir();
+  }
+
+  function removeReplayDirs(pred: (replayDir: ReplayDir) => boolean) {
+    replayDirs = replayDirs.filter((replayDir) => !pred(replayDir));
+    announceReplayDir();
+  }
+
+  function announceIfActive(dest: string) {
+    const top =
+      replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : null;
+    if (top && top.dir === dest) {
+      announceReplayDir();
+    }
+  }
+
+  function beamerReplayDir(beamerId: string) {
+    const current = replayDirs.find(
+      (replayDir) =>
+        replayDir.dirType === 'beamer' && replayDir.beamerId === beamerId,
+    );
+    if (!current) {
+      throw new Error('Those replays are no longer loaded from a Beamer.');
+    }
+    return current.dir;
+  }
+
   let slpDownloadStatus: SlpDownloadStatus = { status: 'idle' };
 
   async function handleProtocolLoadSlpUrls(slpUrls: string[]) {
@@ -199,8 +292,12 @@ export default function setupIPCs(
     const send = (fileName: string) => {
       slpDownloadStatus = {
         status: 'downloading',
+        sources: [],
         progress: Math.round((completed / total) * 100),
         currentFile: fileName,
+        filesDone: completed,
+        totalFiles: total,
+        failedCount: failedFiles.length,
       };
       if (mainWindow) {
         mainWindow.webContents.send('slp-download-status', slpDownloadStatus);
@@ -212,8 +309,13 @@ export default function setupIPCs(
         const fileName = path.basename(new URL(url).pathname);
         const dest = path.join(protocolLoadFullPath, fileName);
         try {
-          await downloadFile(url, dest);
+          await downloadFile(url, dest, { encoding: 'identity' });
         } catch (err) {
+          try {
+            await unlink(`${dest}.part`);
+          } catch (unlinkErr) {
+            // ignore
+          }
           failedFiles.push({
             label: url,
             reason: err instanceof Error ? err.message : String(err),
@@ -227,8 +329,12 @@ export default function setupIPCs(
 
     slpDownloadStatus = {
       status: 'downloading',
+      sources: [],
       progress: 100,
       currentFile: '',
+      filesDone: total,
+      totalFiles: total,
+      failedCount: failedFiles.length,
     };
     if (mainWindow) {
       mainWindow.webContents.send('slp-download-status', slpDownloadStatus);
@@ -241,7 +347,17 @@ export default function setupIPCs(
       slpDownloadStatus = { status: 'success' };
       if (mainWindow)
         mainWindow.webContents.send('slp-download-status', slpDownloadStatus);
-      addReplayDir(protocolLoadFullPath, '');
+      let display = protocolLoadFullPath;
+      try {
+        display = new URL(slpUrls[0]).origin;
+      } catch {
+        // fall back to the cache path if the url can't be parsed
+      }
+      addReplayDir({
+        dir: protocolLoadFullPath,
+        dirType: 'deeplink',
+        display,
+      });
     }
   }
 
@@ -260,7 +376,12 @@ export default function setupIPCs(
         process.platform === 'win32'
           ? `${e.key}Slippi`
           : path.join(e.key, 'Slippi');
-      addReplayDir(dir, e.key);
+      addReplayDir({
+        dir,
+        dirType: 'usb',
+        display: dir,
+        usbKey: e.key,
+      });
     }
   };
   const onEject = (e: string) => {
@@ -269,14 +390,7 @@ export default function setupIPCs(
     }
 
     knownUsbs.delete(e);
-    replayDirs = replayDirs.filter((dir) => !dir.dir.startsWith(e));
-    const newDir =
-      replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : null;
-    mainWindow.webContents.send(
-      'usbstorage',
-      newDir ? newDir.dir : '',
-      Boolean(newDir?.usbKey),
-    );
+    removeReplayDirs((replayDir) => replayDir.dir.startsWith(e));
   };
   detectUsb.removeAllListeners('insert');
   detectUsb.on('insert', onInsert);
@@ -341,20 +455,152 @@ export default function setupIPCs(
       }
     }
     [chosenReplaysDir] = openDialogRes.filePaths;
-    replayDirs.push({ dir: chosenReplaysDir, usbKey: '' });
+    replayDirs.push({
+      dir: chosenReplaysDir,
+      dirType: 'local',
+      display: chosenReplaysDir,
+    });
     return chosenReplaysDir;
   });
 
-  const maybeEject = (currentDir: ReplayDir) => {
-    if (currentDir.usbKey) {
-      return new Promise<boolean>((resolve) => {
-        eject(currentDir.usbKey, () => {
-          // best effort
-          resolve(true);
-        });
+  let maxGamesFromIndex = store.get('maxGamesFromIndex', 4);
+  initBeamers(mainWindow, store.get('autoSubscribeBeamers', false));
+
+  beamerDirWritten.removeAllListeners('dirWritten');
+  beamerDirWritten.on('dirWritten', (dest) => {
+    announceIfActive(dest);
+  });
+
+  ipcMain.removeHandler('cancelBeamerDownload');
+  ipcMain.handle('cancelBeamerDownload', () => {
+    cancelBeamerDownload();
+  });
+
+  ipcMain.removeHandler('selectBeamer');
+  ipcMain.handle(
+    'selectBeamer',
+    async (event, beamerId: string, newMaxGamesFromIndex: number) => {
+      maxGamesFromIndex = clampMaxGamesFromIndex(newMaxGamesFromIndex);
+      store.set('maxGamesFromIndex', maxGamesFromIndex);
+      const {
+        dest,
+        display,
+        beamerId: indexBeamerId,
+      } = await selectBeamer(beamerId, maxGamesFromIndex);
+      replayDirs = replayDirs.filter((replayDir) => replayDir.dir !== dest);
+      addReplayDir({
+        dir: dest,
+        dirType: 'beamer',
+        display,
+        beamerId: indexBeamerId,
       });
+      return dest;
+    },
+  );
+
+  ipcMain.removeHandler('refreshFromBeamer');
+  ipcMain.handle('refreshFromBeamer', async (event, beamerId: string) => {
+    await refreshFromBeamer(
+      beamerId,
+      beamerReplayDir(beamerId),
+      maxGamesFromIndex,
+    );
+  });
+
+  ipcMain.removeHandler('getPreviousBeamerReplay');
+  ipcMain.handle('getPreviousBeamerReplay', (event, beamerId: string) => {
+    try {
+      return getPreviousBeamerReplay(beamerId, beamerReplayDir(beamerId));
+    } catch {
+      return '';
     }
-    return Promise.resolve(false);
+  });
+
+  ipcMain.removeHandler('downloadPreviousBeamerReplay');
+  ipcMain.handle(
+    'downloadPreviousBeamerReplay',
+    async (event, beamerId: string) => {
+      await downloadPreviousBeamerReplay(beamerId, beamerReplayDir(beamerId));
+    },
+  );
+
+  ipcMain.removeHandler('getReplayCacheSize');
+  ipcMain.handle('getReplayCacheSize', () =>
+    measureReplayCache(replayCacheFullPath),
+  );
+
+  const pathInside = (child: string, parent: string) => {
+    const rel = path.relative(parent, child);
+    return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+  };
+
+  ipcMain.removeHandler('clearReplayCache');
+  ipcMain.handle('clearReplayCache', async () => {
+    const cached = (replayDir: ReplayDir) =>
+      pathInside(replayDir.dir, replayCacheFullPath);
+    if (replayDirs.some(cached)) {
+      removeReplayDirs(cached);
+    }
+    cancelBeamerDownload();
+    await rm(replayCacheFullPath, { recursive: true, force: true });
+  });
+
+  ipcMain.removeHandler('startBeamerBrowse');
+  ipcMain.handle('startBeamerBrowse', () => {
+    startBeamerBrowse();
+  });
+
+  ipcMain.removeHandler('stopBeamerBrowse');
+  ipcMain.handle('stopBeamerBrowse', () => {
+    stopBeamerBrowse();
+  });
+
+  ipcMain.removeHandler('setBeamerSubscribed');
+  ipcMain.handle(
+    'setBeamerSubscribed',
+    (event, beamerId: string, subscribed: boolean) => {
+      setBeamerSubscribed(beamerId, subscribed);
+    },
+  );
+
+  ipcMain.removeHandler('getBeamersAutoSubscribe');
+  ipcMain.handle('getBeamersAutoSubscribe', () => getBeamersAutoSubscribe());
+
+  ipcMain.removeHandler('setBeamersAutoSubscribe');
+  ipcMain.handle('setBeamersAutoSubscribe', (event, on: boolean) => {
+    store.set('autoSubscribeBeamers', on);
+    setBeamersAutoSubscribe(on);
+  });
+
+  ipcMain.removeHandler('refreshBeamerStatus');
+  ipcMain.handle('refreshBeamerStatus', (event, beamerId: string) =>
+    refreshBeamerStatus(beamerId),
+  );
+
+  ipcMain.removeHandler('refreshAllBeamers');
+  ipcMain.handle('refreshAllBeamers', () => refreshAllBeamers());
+
+  ipcMain.removeHandler('resetBeamer');
+  ipcMain.handle('resetBeamer', (event, beamerId: string) =>
+    resetBeamer(beamerId),
+  );
+
+  ipcMain.removeHandler('resetAllBeamers');
+  ipcMain.handle('resetAllBeamers', () => resetAllBeamers());
+
+  ipcMain.removeHandler('getMaxGamesFromIndex');
+  ipcMain.handle('getMaxGamesFromIndex', () => maxGamesFromIndex);
+
+  const maybeEject = (currentDir: ReplayDir) => {
+    if (currentDir.dirType !== 'usb') {
+      return Promise.resolve(false);
+    }
+    return new Promise<boolean>((resolve) => {
+      eject(currentDir.usbKey, () => {
+        // best effort
+        resolve(true);
+      });
+    });
   };
 
   let trashDir = store.get('trashDir', '') as string;
@@ -392,6 +638,16 @@ export default function setupIPCs(
       : replayDirs[replayDirs.length - 1].dir;
     if (currentDir && copyDir && currentDir === copyDir) {
       return Promise.resolve(false);
+    }
+    if (!undoSrcFullPath) {
+      if (replayDirs.length === 0) {
+        throw new Error('replayDirs empty');
+      }
+      if (replayDirs[replayDirs.length - 1].dirType === 'beamer') {
+        throw new Error(
+          'Beamer replays live in the cache - erase on the beamer or clear the cache in Settings.',
+        );
+      }
     }
 
     const slpFilenames = (await readdir(currentDir, { withFileTypes: true }))
@@ -431,6 +687,14 @@ export default function setupIPCs(
   ipcMain.handle(
     'deleteSelectedReplays',
     async (event, replayPaths: string[], used: boolean) => {
+      const beamerRoot = beamerFullPath;
+      if (
+        replayPaths.some((replayPath) => pathInside(replayPath, beamerRoot))
+      ) {
+        throw new Error(
+          'Beamer replays live in the cache - erase on the beamer or clear the cache in Settings.',
+        );
+      }
       if (trashDir) {
         const trashSubdir = format(new Date(), 'yyyy-MM-dd HHmmss');
         const fullPath = path.join(
@@ -467,6 +731,9 @@ export default function setupIPCs(
     const replayDir = undoSrcFullPath
       ? undoDstFullPath
       : replayDirs[replayDirs.length - 1].dir;
+    const dirType: ReplayDir['dirType'] = undoSrcFullPath
+      ? 'local'
+      : replayDirs[replayDirs.length - 1].dirType;
     const retReplays = await getReplaysInDir(replayDir);
     replayLoadCount += 1;
     const currentReplayLoadCount = replayLoadCount;
@@ -503,7 +770,12 @@ export default function setupIPCs(
         currentReplayLoadCount,
       );
     }
-    return { ...retReplays, replayLoadCount: currentReplayLoadCount };
+    return {
+      ...retReplays,
+      dir: replayDir,
+      dirType,
+      replayLoadCount: currentReplayLoadCount,
+    };
   });
 
   ipcMain.removeHandler('writeReplays');
@@ -571,62 +843,69 @@ export default function setupIPCs(
   ipcMain.handle('getUndoSubdir', () => path.basename(undoSrcFullPath));
 
   ipcMain.removeHandler('setUndoSubdir');
-  ipcMain.handle('setUndoSubdir', async (event, newUndoSubdir: string) => {
-    if (newUndoSubdir === '') {
-      await rm(undoDstFullPath, { force: true, recursive: true });
+  ipcMain.handle(
+    'setUndoSubdir',
+    async (event, newUndoSubdir: string): Promise<ReplayDir | null> => {
+      if (newUndoSubdir === '') {
+        await rm(undoDstFullPath, { force: true, recursive: true });
 
-      undoSrcFullPath = '';
-      return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
-    }
+        undoSrcFullPath = '';
+        return topReplayDir();
+      }
 
-    await mkdir(undoDstFullPath, { recursive: true });
-    const newUndoSrcFullPath = path.join(copyDir, newUndoSubdir);
-    if (newUndoSrcFullPath.endsWith('.zip')) {
-      try {
-        const zip = await yauzl.open(newUndoSrcFullPath);
+      await mkdir(undoDstFullPath, { recursive: true });
+      const newUndoSrcFullPath = path.join(copyDir, newUndoSubdir);
+      if (newUndoSrcFullPath.endsWith('.zip')) {
         try {
-          // eslint-disable-next-line no-restricted-syntax
-          for await (const entry of zip) {
-            if (entry.filename.endsWith('.slp')) {
-              const readStream = await entry.openReadStream();
-              const writeStream = createWriteStream(
-                path.join(undoDstFullPath, entry.filename),
-              );
-              await pipeline(readStream, writeStream);
+          const zip = await yauzl.open(newUndoSrcFullPath);
+          try {
+            // eslint-disable-next-line no-restricted-syntax
+            for await (const entry of zip) {
+              if (entry.filename.endsWith('.slp')) {
+                const readStream = await entry.openReadStream();
+                const writeStream = createWriteStream(
+                  path.join(undoDstFullPath, entry.filename),
+                );
+                await pipeline(readStream, writeStream);
+              }
             }
+          } finally {
+            zip.close();
           }
-        } finally {
-          zip.close();
+        } catch (e: any) {
+          await rm(undoDstFullPath, { force: true, recursive: true });
+          throw e;
         }
-      } catch (e: any) {
-        await rm(undoDstFullPath, { force: true, recursive: true });
-        throw e;
-      }
-    } else {
-      const undoSlpNames = (await readdir(newUndoSrcFullPath)).filter((name) =>
-        name.endsWith('.slp'),
-      );
-      try {
-        await Promise.all(
-          undoSlpNames.map(async (undoSlpName) => {
-            const srcSlpFullPath = path.join(newUndoSrcFullPath, undoSlpName);
-            const dstSlpFullPath = path.join(undoDstFullPath, undoSlpName);
-            return copyFile(srcSlpFullPath, dstSlpFullPath);
-          }),
+      } else {
+        const undoSlpNames = (await readdir(newUndoSrcFullPath)).filter(
+          (name) => name.endsWith('.slp'),
         );
-      } catch (e: any) {
-        await rm(undoDstFullPath, { force: true, recursive: true });
-        throw e;
+        try {
+          await Promise.all(
+            undoSlpNames.map(async (undoSlpName) => {
+              const srcSlpFullPath = path.join(newUndoSrcFullPath, undoSlpName);
+              const dstSlpFullPath = path.join(undoDstFullPath, undoSlpName);
+              return copyFile(srcSlpFullPath, dstSlpFullPath);
+            }),
+          );
+        } catch (e: any) {
+          await rm(undoDstFullPath, { force: true, recursive: true });
+          throw e;
+        }
       }
-    }
 
-    undoSrcFullPath = newUndoSrcFullPath;
-    return undoDstFullPath;
-  });
+      undoSrcFullPath = newUndoSrcFullPath;
+      return {
+        dir: undoDstFullPath,
+        display: undoDstFullPath,
+        dirType: 'local',
+      };
+    },
+  );
 
   // host delete
   ipcMain.removeHandler('deleteUndoSrcDst');
-  ipcMain.handle('deleteUndoSrcDst', async () => {
+  ipcMain.handle('deleteUndoSrcDst', async (): Promise<ReplayDir | null> => {
     if (!undoSrcFullPath) {
       throw new Error('no undo subdir');
     }
@@ -642,7 +921,7 @@ export default function setupIPCs(
     await rm(undoSrcFullPath, { force: true, recursive: true });
     undoSrcFullPath = '';
 
-    return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
+    return topReplayDir();
   });
 
   ipcMain.removeHandler('getCopyDir');

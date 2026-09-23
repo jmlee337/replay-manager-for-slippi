@@ -506,6 +506,7 @@ const ReplayListItem = forwardRef(
 
 export default function ReplayList({
   dirInit,
+  header,
   numAvailablePlayers,
   replays,
   replayRefs,
@@ -519,6 +520,7 @@ export default function ReplayList({
   elevateNames,
 }: {
   dirInit: boolean;
+  header?: JSX.Element | null;
   numAvailablePlayers: number;
   replays: Replay[];
   replayRefs: RefObject<HTMLDivElement>[];
@@ -539,6 +541,7 @@ export default function ReplayList({
         zIndex: (theme) => (elevate ? theme.zIndex.drawer + 2 : undefined),
       }}
     >
+      {header}
       {replays.length === 0 ? (
         <Alert severity="warning" sx={{ mb: '8px', mt: '8px', pl: '10px' }}>
           {dirInit ? 'Click refresh replays!' : 'No replays in folder.'}
@@ -564,3 +567,7 @@ export default function ReplayList({
     </List>
   );
 }
+
+ReplayList.defaultProps = {
+  header: null,
+};

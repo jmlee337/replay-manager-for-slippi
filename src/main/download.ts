@@ -1,7 +1,9 @@
+/* eslint-disable max-classes-per-file */
 import { createWriteStream } from 'fs';
 import { rename, stat, unlink } from 'fs/promises';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
+import path from 'path';
 
 const CONNECT_TIMEOUT_MS = 4000;
 const STALL_TIMEOUT_MS = 4000;
@@ -19,58 +21,103 @@ const UNREACHABLE_CODES = new Set([
 const BACKOFF_MS = [1000, 2000, 4000, 4000];
 
 export class DownloadError extends Error {
-  readonly retryable: boolean;
-
-  readonly discardPartial: boolean;
-
-  readonly unreachable: boolean;
-
-  readonly retryAfterMs: number | undefined;
-
-  constructor(
-    message: string,
-    {
-      retryable = true,
-      discardPartial = false,
-      unreachable = false,
-      retryAfterMs = undefined as number | undefined,
-    } = {},
-  ) {
+  constructor(message: string) {
     super(message);
     this.name = 'DownloadError';
-    this.retryable = retryable;
-    this.discardPartial = discardPartial;
-    this.unreachable = unreachable;
+  }
+}
+
+export class RetryableDownloadError extends DownloadError {
+  readonly retryAfterMs?: number;
+
+  constructor(message: string, retryAfterMs?: number) {
+    super(message);
+    this.name = 'RetryableDownloadError';
     this.retryAfterMs = retryAfterMs;
   }
 }
 
-function toDownloadError(error: unknown) {
+export class UnreachableDownloadError extends RetryableDownloadError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnreachableDownloadError';
+  }
+}
+
+export class StalePartialDownloadError extends RetryableDownloadError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'StalePartialDownloadError';
+  }
+}
+
+export class NotFoundDownloadError extends DownloadError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFoundDownloadError';
+  }
+}
+
+export function toDownloadError(error: unknown) {
   return error instanceof DownloadError
     ? error
-    : new DownloadError(error instanceof Error ? error.message : String(error));
+    : new RetryableDownloadError(
+        error instanceof Error ? error.message : String(error),
+      );
+}
+
+function errorCode(error: unknown) {
+  const source =
+    error instanceof Error && error.cause instanceof Error
+      ? error.cause
+      : error;
+  return source instanceof Error &&
+    'code' in source &&
+    typeof source.code === 'string'
+    ? source.code
+    : undefined;
 }
 
 function networkError(error: unknown) {
-  const code = (error as any)?.cause?.code ?? (error as any)?.code;
-  if (typeof code === 'string' && UNREACHABLE_CODES.has(code)) {
-    return new DownloadError(`unreachable (${code})`, {
-      unreachable: true,
-    });
+  const code = errorCode(error);
+  if (code && UNREACHABLE_CODES.has(code)) {
+    return new UnreachableDownloadError(`unreachable (${code})`);
   }
-  if (typeof code === 'string') {
-    return new DownloadError(`the connection failed (${code})`);
+  if (code) {
+    return new RetryableDownloadError(`the connection failed (${code})`);
   }
-  return new DownloadError(
+  return new RetryableDownloadError(
     error instanceof Error ? error.message : String(error),
   );
 }
+
+export type DownloadOptions = {
+  expectedSize?: number;
+  onChunk?: (written: number) => void;
+  onAttempt?: (attempt: number) => void;
+  onStart?: (written: number) => void;
+  signal?: AbortSignal;
+  beamerResume?: boolean;
+  encoding: 'gzip' | 'identity';
+};
 
 async function sizeOf(file: string) {
   try {
     return (await stat(file)).size;
   } catch {
     return 0;
+  }
+}
+
+export async function hasCompleteFile(
+  dest: string,
+  file: { name: string; size?: number },
+) {
+  try {
+    const stats = await stat(path.join(dest, file.name));
+    return stats.isFile() && (file.size == null || stats.size === file.size);
+  } catch {
+    return false;
   }
 }
 
@@ -82,9 +129,21 @@ async function discard(file: string) {
   }
 }
 
-function sleep(ms: number): Promise<void> {
+// abortable :)
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
-    setTimeout(resolve, ms);
+    if (signal?.aborted) {
+      resolve();
+      return;
+    }
+    let timer: NodeJS.Timeout;
+    const done = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', done);
+      resolve();
+    };
+    timer = setTimeout(done, ms);
+    signal?.addEventListener('abort', done, { once: true });
   });
 }
 
@@ -103,21 +162,27 @@ function parseRetryAfter(value: string | null): number | undefined {
   }
   return Math.max(0, date - Date.now());
 }
-const STATUS_DISCARD_PARTIAL = new Set([404]);
 
 function statusError(response: Response) {
   const { status } = response;
-  const retryable = status >= 500 || status === 408 || status === 429;
-  return new DownloadError(`HTTP ${status}`, {
-    retryable,
-    discardPartial: STATUS_DISCARD_PARTIAL.has(status),
-    retryAfterMs: retryable
-      ? parseRetryAfter(response.headers.get('retry-after'))
-      : undefined,
-  });
+  const message = `HTTP ${status}`;
+  if (status === 404) {
+    return new NotFoundDownloadError(message);
+  }
+  if (status >= 500 || status === 408 || status === 429) {
+    return new RetryableDownloadError(
+      message,
+      parseRetryAfter(response.headers.get('retry-after')),
+    );
+  }
+  return new DownloadError(message);
 }
 
-function expectedTotal(response: Response, from: number) {
+function expectedTotal(
+  response: Response,
+  from: number,
+  fromIndex: number | undefined,
+) {
   const contentRange = response.headers.get('content-range');
   const total = contentRange?.match(/\/(\d+)\s*$/)?.[1];
   if (total) {
@@ -127,20 +192,31 @@ function expectedTotal(response: Response, from: number) {
   if (length !== null && length !== '') {
     return from + Number(length);
   }
-  return undefined;
+  return fromIndex;
 }
 
-function resumeHeader(from: number): Record<string, string> | undefined {
+function resumeHeader(
+  beamer: boolean,
+  from: number,
+): Record<string, string> | undefined {
   if (from <= 0) {
     return undefined;
   }
-  return { Range: `bytes=${from}-` };
+  return beamer
+    ? { 'X-Replay-From': String(from) }
+    : { Range: `bytes=${from}-` };
 }
 
-async function downloadAttempt(url: string, part: string): Promise<number> {
+async function downloadAttempt(
+  url: string,
+  part: string,
+  options: DownloadOptions,
+): Promise<number> {
   const from = await sizeOf(part);
+  const beamer = options.beamerResume === true;
   const controller = new AbortController();
   const abort = () => controller.abort();
+  options.signal?.addEventListener('abort', abort, { once: true });
 
   let timer: NodeJS.Timeout | undefined;
   const watchdog = (ms: number) => {
@@ -155,31 +231,39 @@ async function downloadAttempt(url: string, part: string): Promise<number> {
     try {
       response = await fetch(url, {
         signal: controller.signal,
-        headers: resumeHeader(from),
+        headers: {
+          'Accept-Encoding': options.encoding,
+          ...resumeHeader(beamer, from),
+        },
       });
     } catch (error) {
+      if (options.signal?.aborted) {
+        throw new DownloadError('cancelled');
+      }
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new DownloadError('timed out');
+        throw new RetryableDownloadError('timed out');
       }
       throw networkError(error);
     }
 
     if (from > 0 && response.status === 416) {
-      throw new DownloadError('the partial file was stale', {
-        discardPartial: true,
-      });
+      throw new StalePartialDownloadError('the partial file was stale');
     }
 
-    const resumed = from > 0 && response.status === 206;
+    const resumed =
+      from > 0 &&
+      (beamer
+        ? Number(response.headers.get('x-replay-from')) === from
+        : response.status === 206);
     const start = resumed ? from : 0;
-    if (response.status !== (start > 0 ? 206 : 200)) {
+    if (response.status !== (!beamer && start > 0 ? 206 : 200)) {
       throw statusError(response);
     }
     if (!response.body) {
-      throw new DownloadError('no response body');
+      throw new RetryableDownloadError('no response body');
     }
 
-    const expected = expectedTotal(response, start);
+    const expected = expectedTotal(response, start, options.expectedSize);
 
     let written = start;
     watchdog(STALL_TIMEOUT_MS);
@@ -188,6 +272,7 @@ async function downloadAttempt(url: string, part: string): Promise<number> {
     ).map((chunk: Buffer) => {
       written += chunk.length;
       watchdog(STALL_TIMEOUT_MS);
+      options.onChunk?.(written);
       return chunk;
     });
 
@@ -197,44 +282,58 @@ async function downloadAttempt(url: string, part: string): Promise<number> {
         createWriteStream(part, resumed ? { flags: 'a' } : {}),
       );
     } catch (error) {
+      if (options.signal?.aborted) {
+        throw new DownloadError('cancelled');
+      }
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new DownloadError('the connection stalled');
+        throw new RetryableDownloadError('the connection stalled');
       }
       throw networkError(error);
     }
 
     if (expected != null && written !== expected) {
-      throw new DownloadError(`truncated (${written} of ${expected} bytes)`, {
-        discardPartial: written > expected,
-      });
+      const message = `truncated (${written} of ${expected} bytes)`;
+      throw written > expected
+        ? new StalePartialDownloadError(message)
+        : new RetryableDownloadError(message);
     }
     return written;
   } finally {
     clearTimeout(timer);
+    options.signal?.removeEventListener('abort', abort);
   }
 }
 
-export async function downloadFile(url: string, dest: string): Promise<void> {
+export async function downloadFile(
+  url: string,
+  dest: string,
+  options: DownloadOptions,
+): Promise<void> {
   const part = `${dest}.part`;
   let tries = 1;
   let attempts = 0;
-  let best = await sizeOf(part);
+  const started = await sizeOf(part);
+  options.onStart?.(started);
+  let best = started;
 
   for (;;) {
     try {
       // eslint-disable-next-line no-await-in-loop
-      await downloadAttempt(url, part);
+      await downloadAttempt(url, part, options);
       // eslint-disable-next-line no-await-in-loop
       await rename(part, dest);
       return;
     } catch (error) {
       const failure = toDownloadError(error);
-      if (failure.discardPartial) {
+      if (
+        failure instanceof StalePartialDownloadError ||
+        failure instanceof NotFoundDownloadError
+      ) {
         // eslint-disable-next-line no-await-in-loop
         await discard(part);
         best = 0;
       }
-      if (!failure.retryable) {
+      if (!(failure instanceof RetryableDownloadError)) {
         throw failure;
       }
 
@@ -246,18 +345,25 @@ export async function downloadFile(url: string, dest: string): Promise<void> {
       } else {
         attempts += 1;
       }
-      const budget = failure.unreachable ? UNREACHABLE_ATTEMPTS : MAX_ATTEMPTS;
+      const budget =
+        failure instanceof UnreachableDownloadError
+          ? UNREACHABLE_ATTEMPTS
+          : MAX_ATTEMPTS;
       if (attempts >= budget || tries >= MAX_TOTAL_ATTEMPTS) {
         throw failure;
       }
 
       tries += 1;
+      options.onAttempt?.(tries);
 
       const backoff =
         failure.retryAfterMs ??
         BACKOFF_MS[Math.min(attempts - 1, BACKOFF_MS.length - 1)];
       // eslint-disable-next-line no-await-in-loop
-      await sleep(backoff);
+      await sleep(backoff, options.signal);
+      if (options.signal?.aborted) {
+        throw new DownloadError('cancelled');
+      }
     }
   }
 }

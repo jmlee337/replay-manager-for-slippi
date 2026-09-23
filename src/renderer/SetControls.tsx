@@ -226,7 +226,8 @@ export default function SetControls({
   enforcerVersion,
   enforcerSetting,
   smuggleCostumeIndex,
-  wouldDeleteCopyDir,
+  deleteBlocked,
+  deleteBlockedReason,
   replayLoadCount,
   undoSubdir,
 }: {
@@ -273,7 +274,8 @@ export default function SetControls({
   enforcerVersion: string;
   enforcerSetting: EnforcerSetting;
   smuggleCostumeIndex: boolean;
-  wouldDeleteCopyDir: boolean;
+  deleteBlocked: boolean;
+  deleteBlockedReason: string;
   replayLoadCount: number;
   undoSubdir: string;
 }) {
@@ -536,8 +538,8 @@ export default function SetControls({
   let deleteOverrideReason = '';
   if (set.fullRoundText === 'Grand Final' && hasRemainingReplays) {
     deleteOverrideReason = 'possible Grand Finals Reset replays detected';
-  } else if (wouldDeleteCopyDir) {
-    deleteOverrideReason = 'would delete replays in copy folder';
+  } else if (deleteBlocked) {
+    deleteOverrideReason = deleteBlockedReason;
   }
 
   let reportCopyDeleteIntent = 'Report';
