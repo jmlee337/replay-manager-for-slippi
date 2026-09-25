@@ -19,6 +19,16 @@ let mainWindow: BrowserWindow | null = null;
 let enforcerWindow: BrowserWindow | null = null;
 const eventEmitter = new EventEmitter();
 
+function focusMainWindow() {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.show();
+    mainWindow.focus();
+  }
+}
+
 async function handleProtocolUrl(url: string) {
   try {
     const parsed = new URL(url);
@@ -27,14 +37,14 @@ async function handleProtocolUrl(url: string) {
       const paths = parsed.searchParams.get('path');
       if (paths) {
         const slpUrls = paths.split(';');
-        if (mainWindow) {
-          if (mainWindow.isMinimized()) {
-            mainWindow.restore();
-          }
-          mainWindow.show();
-          mainWindow.focus();
-        }
+        focusMainWindow();
         eventEmitter.emit('protocol-load-slp-urls', slpUrls);
+      }
+    } else if (parsed.hostname === 'open') {
+      const dir = parsed.searchParams.get('path');
+      if (dir) {
+        focusMainWindow();
+        eventEmitter.emit('protocol-open-dir', dir);
       }
     }
   } catch (e) {
