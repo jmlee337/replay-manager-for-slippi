@@ -43,6 +43,11 @@ export type InvalidReplay = {
   invalidReason: string;
 };
 
+export type Subdir = {
+  name: string;
+  label: string;
+};
+
 export enum State {
   PENDING = 1,
   STARTED = 2,

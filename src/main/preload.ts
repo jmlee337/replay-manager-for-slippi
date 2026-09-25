@@ -28,6 +28,7 @@ import {
   SelectedSetChain,
   OfflineModeStatus,
   StartggGame,
+  Subdir,
 } from '../common/types';
 
 const electronHandler = {
@@ -60,6 +61,12 @@ const electronHandler = {
     invalidReplays: InvalidReplay[];
     replayLoadCount: number;
   }> => ipcRenderer.invoke('getReplaysInDir'),
+  getSubdirs: (): Promise<{ dir: string; subdirs: Subdir[] }> =>
+    ipcRenderer.invoke('getSubdirs'),
+  getSubdir: (): Promise<{ dir: string; subdir: string }> =>
+    ipcRenderer.invoke('getSubdir'),
+  setSubdir: (subdir: string): Promise<void> =>
+    ipcRenderer.invoke('setSubdir', subdir),
   writeReplays: (
     fileNames: string[],
     output: Output,
@@ -366,6 +373,12 @@ const electronHandler = {
   ) => {
     ipcRenderer.removeAllListeners('usbstorage');
     ipcRenderer.on('usbstorage', callback);
+  },
+  onSubdir: (
+    callback: (event: IpcRendererEvent, dir: string, subdir: string) => void,
+  ) => {
+    ipcRenderer.removeAllListeners('subdir');
+    ipcRenderer.on('subdir', callback);
   },
   update: (): Promise<void> => ipcRenderer.invoke('update'),
   isMac: process.platform === 'darwin',

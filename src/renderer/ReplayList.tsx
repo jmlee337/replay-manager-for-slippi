@@ -21,7 +21,7 @@ import { ForwardedRef, forwardRef, RefObject, useCallback, JSX } from 'react';
 import styled from '@emotion/styled';
 import { format } from 'date-fns';
 import { UTCDate } from '@date-fns/utc';
-import { Id, PlayerOverrides, Replay } from '../common/types';
+import { Id, PlayerOverrides, Replay, Subdir } from '../common/types';
 import {
   characterNames,
   frameMsDivisor,
@@ -31,6 +31,7 @@ import {
 } from '../common/constants';
 import { DroppableChip } from './DragAndDrop';
 import getCharacterIcon from './getCharacterIcon';
+import SubdirChips from './SubdirChips';
 
 const PlayersRow = styled.div`
   display: flex;
@@ -517,6 +518,9 @@ export default function ReplayList({
   elevate,
   elevateChips,
   elevateNames,
+  subdirs,
+  selectedSubdir,
+  onSubdirClick,
 }: {
   dirInit: boolean;
   numAvailablePlayers: number;
@@ -530,6 +534,9 @@ export default function ReplayList({
   elevate: boolean;
   elevateChips: boolean;
   elevateNames: boolean;
+  subdirs: Subdir[];
+  selectedSubdir: string;
+  onSubdirClick: (subdir: string) => void;
 }) {
   return (
     <List
@@ -539,6 +546,13 @@ export default function ReplayList({
         zIndex: (theme) => (elevate ? theme.zIndex.drawer + 2 : undefined),
       }}
     >
+      {subdirs.length > 0 && (
+        <SubdirChips
+          subdirs={subdirs}
+          selectedSubdir={selectedSubdir}
+          onSubdirClick={onSubdirClick}
+        />
+      )}
       {replays.length === 0 ? (
         <Alert severity="warning" sx={{ mb: '8px', mt: '8px', pl: '10px' }}>
           {dirInit ? 'Click refresh replays!' : 'No replays in folder.'}
