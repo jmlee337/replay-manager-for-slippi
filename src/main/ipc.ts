@@ -64,7 +64,12 @@ import {
   getPoolsByWave,
   getSelectedSetChain,
 } from './startgg';
-import { getReplaysInDir, getReportedSubdirs, writeReplays } from './replay';
+import {
+  getReplaysInDir,
+  getReportedSubdirs,
+  getSubdirs,
+  writeReplays,
+} from './replay';
 import {
   getChallongeTournament,
   getChallongeTournaments,
@@ -355,6 +360,41 @@ export default function setupIPCs(
     return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
   });
 
+  // selection is remembered on refresh and ignored if dir changes
+  let selectedSubdir = { dir: '', subdir: '' };
+
+  ipcMain.removeHandler('getSubdir');
+  ipcMain.handle('getSubdir', () => selectedSubdir);
+
+  ipcMain.removeHandler('setSubdir');
+  ipcMain.handle('setSubdir', (event, subdir: string) => {
+    const dir =
+      replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
+    selectedSubdir = { dir, subdir };
+    mainWindow.webContents.send('subdir', dir, subdir);
+  });
+
+  ipcMain.removeHandler('getSubdirs');
+  ipcMain.handle('getSubdirs', async () => {
+    if (replayDirs.length === 0) {
+      return { dir: '', subdirs: [] };
+    }
+
+    const { dir } = replayDirs[replayDirs.length - 1];
+    const subdirs = await getSubdirs(dir);
+    if (
+      selectedSubdir.dir === dir &&
+      selectedSubdir.subdir &&
+      !subdirs.some(
+        ({ name, hidden }) => name === selectedSubdir.subdir && !hidden,
+      )
+    ) {
+      selectedSubdir = { dir, subdir: '' };
+      mainWindow.webContents.send('subdir', dir, '');
+    }
+    return { dir, subdirs };
+  });
+
   let chosenReplaysDir = '';
   ipcMain.removeHandler('chooseReplaysDir');
   ipcMain.handle('chooseReplaysDir', async () => {
@@ -496,9 +536,15 @@ export default function setupIPCs(
       throw new Error();
     }
 
-    const replayDir = undoSrcFullPath
-      ? undoDstFullPath
-      : replayDirs[replayDirs.length - 1].dir;
+    let replayDir;
+    if (undoSrcFullPath) {
+      replayDir = undoDstFullPath;
+    } else {
+      replayDir = replayDirs[replayDirs.length - 1].dir;
+      if (selectedSubdir.dir === replayDir && selectedSubdir.subdir) {
+        replayDir = path.join(replayDir, selectedSubdir.subdir);
+      }
+    }
     const retReplays = await getReplaysInDir(replayDir);
     replayLoadCount += 1;
     const currentReplayLoadCount = replayLoadCount;

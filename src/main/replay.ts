@@ -22,6 +22,7 @@ import {
   Output,
   Player,
   Replay,
+  Subdir,
 } from '../common/types';
 import { isValidCharacter } from '../common/constants';
 import { writeZip } from './host';
@@ -1001,4 +1002,35 @@ export async function getReportedSubdirs(copyDir: string) {
   }
 
   return subdirs;
+}
+
+export async function getSubdirs(dir: string) {
+  const subdirDirents = (await readdir(dir, { withFileTypes: true })).filter(
+    (dirent) => dirent.isDirectory() && !dirent.name.startsWith('.'),
+  );
+  const subdirs = await Promise.all(
+    subdirDirents.map(async (dirent): Promise<Subdir> => {
+      let label = '';
+      let hidden = false;
+      try {
+        const context = JSON.parse(
+          await readFile(path.join(dir, dirent.name, 'context.json'), {
+            encoding: 'utf8',
+          }),
+        );
+        if (typeof context.label === 'string') {
+          label = context.label;
+        }
+        hidden = context.hidden === true;
+      } catch {
+        // no worries, we can just use the folder name
+      }
+      return { name: dirent.name, label, hidden };
+    }),
+  );
+  return subdirs.sort((a, b) =>
+    (a.label || a.name).localeCompare(b.label || b.name, undefined, {
+      numeric: true,
+    }),
+  );
 }
