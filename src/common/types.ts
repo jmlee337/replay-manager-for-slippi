@@ -46,6 +46,7 @@ export type InvalidReplay = {
 export type Subdir = {
   name: string;
   label: string;
+  hidden: boolean;
 };
 
 export enum State {

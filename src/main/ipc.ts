@@ -385,7 +385,9 @@ export default function setupIPCs(
     if (
       selectedSubdir.dir === dir &&
       selectedSubdir.subdir &&
-      !subdirs.some(({ name }) => name === selectedSubdir.subdir)
+      !subdirs.some(
+        ({ name, hidden }) => name === selectedSubdir.subdir && !hidden,
+      )
     ) {
       selectedSubdir = { dir, subdir: '' };
       mainWindow.webContents.send('subdir', dir, '');

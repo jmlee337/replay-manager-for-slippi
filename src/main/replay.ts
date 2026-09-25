@@ -1011,6 +1011,7 @@ export async function getSubdirs(dir: string) {
   const subdirs = await Promise.all(
     subdirDirents.map(async (dirent): Promise<Subdir> => {
       let label = '';
+      let hidden = false;
       try {
         const context = JSON.parse(
           await readFile(path.join(dir, dirent.name, 'context.json'), {
@@ -1020,10 +1021,11 @@ export async function getSubdirs(dir: string) {
         if (typeof context.label === 'string') {
           label = context.label;
         }
+        hidden = context.hidden === true;
       } catch {
         // no worries, we can just use the folder name
       }
-      return { name: dirent.name, label };
+      return { name: dirent.name, label, hidden };
     }),
   );
   return subdirs.sort((a, b) =>

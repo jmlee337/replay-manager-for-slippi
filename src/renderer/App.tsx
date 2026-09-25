@@ -282,7 +282,10 @@ function Hello() {
     dir: string;
     subdirs: Subdir[];
   }>({ dir: '', subdirs: [] });
-  const subdirs = subdirList.dir === dir ? subdirList.subdirs : [];
+  const subdirs =
+    subdirList.dir === dir
+      ? subdirList.subdirs.filter(({ hidden }) => !hidden)
+      : [];
   const [copyDir, setCopyDir] = useState('');
   const [host, setHost] = useState<CopyHostOrClient>({
     name: '',
