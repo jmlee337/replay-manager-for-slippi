@@ -15,7 +15,7 @@ export default function SubdirChips({
       direction="row"
       gap="8px"
       padding="8px 0"
-      useFlexGap 
+      useFlexGap
       sx={{ flexWrap: 'wrap' }}
     >
       {subdirs.map((subdir) => {
