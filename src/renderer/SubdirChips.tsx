@@ -15,7 +15,8 @@ export default function SubdirChips({
       direction="row"
       gap="8px"
       padding="8px 0"
-      style={{ overflowX: 'auto' }}
+      useFlexGap 
+      sx={{ flexWrap: 'wrap' }}
     >
       {subdirs.map((subdir) => {
         const selected = subdir.name === selectedSubdir;
