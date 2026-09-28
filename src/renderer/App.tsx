@@ -2473,11 +2473,7 @@ function Hello() {
                   subdirs={subdirs}
                   selectedSubdir={selectedSubdir}
                   onSubdirClick={async (name) =>
-                    applySubdirSelection(
-                      await window.electron.setSubdir(
-                        name === selectedSubdir ? '' : name,
-                      ),
-                    )
+                    applySubdirSelection(await window.electron.setSubdir(name))
                   }
                 />
                 <Dialog

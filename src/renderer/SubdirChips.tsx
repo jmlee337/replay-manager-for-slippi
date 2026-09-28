@@ -27,7 +27,7 @@ export default function SubdirChips({
             label={subdir.label || subdir.name}
             style={{ flexShrink: 0 }}
             variant={selected ? 'filled' : 'outlined'}
-            onClick={() => onSubdirClick(subdir.name)}
+            onClick={() => onSubdirClick(selected ? '' : subdir.name)}
           />
         );
       })}
