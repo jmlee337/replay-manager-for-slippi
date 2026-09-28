@@ -2041,7 +2041,10 @@ function Hello() {
                   <Tooltip arrow title="Cancel">
                     <IconButton
                       onClick={async () => {
-                        setDir(await window.electron.setUndoSubdir(''));
+                        const { dir: newDir, isUsb: newIsUsb } =
+                          await window.electron.setUndoSubdir('');
+                        setDir(newDir);
+                        setIsUsb(newIsUsb);
                         setUndoSubdir('');
                         refreshReplays(true);
                       }}
@@ -3225,12 +3228,12 @@ function Hello() {
                     disableGutters
                     onClick={async () => {
                       try {
-                        setDir(
-                          await window.electron.setUndoSubdir(reportedSubdir),
-                        );
+                        const { dir: newDir, isUsb: newIsUsb } =
+                          await window.electron.setUndoSubdir(reportedSubdir);
+                        setDir(newDir);
                         setUndoSubdir(reportedSubdir);
                         setUndoDialogOpen(false);
-                        setIsUsb(false);
+                        setIsUsb(newIsUsb);
                         setWasDeleted(false);
                         refreshReplays(true);
                         setEjected(false);
