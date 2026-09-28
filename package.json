@@ -201,6 +201,14 @@
     ],
     "afterPack": ".erb/scripts/mach-o-uuid.js",
     "afterSign": ".erb/scripts/notarize.js",
+    "protocols": [
+      {
+        "name": "Replay Reporter for Slippi",
+        "schemes": [
+          "replay-manager"
+        ]
+      }
+    ],
     "mac": {
       "target": {
         "target": "dmg",

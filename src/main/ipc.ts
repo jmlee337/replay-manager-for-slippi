@@ -356,14 +356,7 @@ export default function setupIPCs(
   });
 
   let chosenReplaysDir = '';
-  ipcMain.removeHandler('chooseReplaysDir');
-  ipcMain.handle('chooseReplaysDir', async () => {
-    const openDialogRes = await dialog.showOpenDialog({
-      properties: ['openDirectory', 'showHiddenFiles', 'createDirectory'],
-    });
-    if (openDialogRes.canceled) {
-      return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
-    }
+  function setChosenReplaysDir(newChosenReplaysDir: string) {
     if (chosenReplaysDir) {
       const spliceI = replayDirs.findIndex(
         ({ dir }) => dir === chosenReplaysDir,
@@ -372,9 +365,25 @@ export default function setupIPCs(
         replayDirs.splice(spliceI, 1);
       }
     }
-    [chosenReplaysDir] = openDialogRes.filePaths;
+    chosenReplaysDir = newChosenReplaysDir;
+  }
+  ipcMain.removeHandler('chooseReplaysDir');
+  ipcMain.handle('chooseReplaysDir', async () => {
+    const openDialogRes = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'showHiddenFiles', 'createDirectory'],
+    });
+    if (openDialogRes.canceled) {
+      return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
+    }
+    setChosenReplaysDir(openDialogRes.filePaths[0]);
     replayDirs.push({ dir: chosenReplaysDir, usbKey: '' });
     return chosenReplaysDir;
+  });
+
+  eventEmitter.removeAllListeners('protocol-open-dir');
+  eventEmitter.on('protocol-open-dir', (dir: string) => {
+    setChosenReplaysDir(dir);
+    addReplayDir(dir, '');
   });
 
   const maybeEject = (currentDir: ReplayDir) => {
