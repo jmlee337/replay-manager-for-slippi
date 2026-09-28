@@ -973,23 +973,32 @@ function Hello() {
     });
   }, [refreshReplays, undoSubdir]);
 
-  useEffect(() => {
-    window.electron.onSubdir((e, newDir, newSubdir) => {
-      setSubdirSelection({ dir: newDir, subdir: newSubdir });
+  const applySubdirSelection = useCallback(
+    (selection: { dir: string; subdir: string }) => {
+      setSubdirSelection(selection);
       if (!undoSubdir) {
         setWasDeleted(false);
         refreshReplays(true);
       }
-    });
-  }, [refreshReplays, undoSubdir]);
+    },
+    [refreshReplays, undoSubdir],
+  );
 
   const refreshSubdirs = useCallback(async () => {
     try {
-      setSubdirList(await window.electron.getSubdirs());
+      const {
+        dir: subdirsDir,
+        subdirs: newSubdirs,
+        currentSubdirInvalid,
+      } = await window.electron.getSubdirs();
+      setSubdirList({ dir: subdirsDir, subdirs: newSubdirs });
+      if (currentSubdirInvalid) {
+        applySubdirSelection({ dir: subdirsDir, subdir: '' });
+      }
     } catch {
       // some sort of fileops issue... whoopsie.
     }
-  }, []);
+  }, [applySubdirSelection]);
   useEffect(() => {
     refreshSubdirs();
   }, [dir, refreshSubdirs]);
@@ -2463,9 +2472,11 @@ function Hello() {
                   }
                   subdirs={subdirs}
                   selectedSubdir={selectedSubdir}
-                  onSubdirClick={(name) =>
-                    window.electron.setSubdir(
-                      name === selectedSubdir ? '' : name,
+                  onSubdirClick={async (name) =>
+                    applySubdirSelection(
+                      await window.electron.setSubdir(
+                        name === selectedSubdir ? '' : name,
+                      ),
                     )
                   }
                 />

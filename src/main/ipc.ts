@@ -371,28 +371,27 @@ export default function setupIPCs(
     const dir =
       replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
     selectedSubdir = { dir, subdir };
-    mainWindow.webContents.send('subdir', dir, subdir);
+    return selectedSubdir;
   });
 
   ipcMain.removeHandler('getSubdirs');
   ipcMain.handle('getSubdirs', async () => {
     if (replayDirs.length === 0) {
-      return { dir: '', subdirs: [] };
+      return { dir: '', subdirs: [], currentSubdirInvalid: false };
     }
 
     const { dir } = replayDirs[replayDirs.length - 1];
     const subdirs = await getSubdirs(dir);
-    if (
+    const currentSubdirInvalid =
       selectedSubdir.dir === dir &&
-      selectedSubdir.subdir &&
+      selectedSubdir.subdir !== '' &&
       !subdirs.some(
         ({ name, hidden }) => name === selectedSubdir.subdir && !hidden,
-      )
-    ) {
+      );
+    if (currentSubdirInvalid) {
       selectedSubdir = { dir, subdir: '' };
-      mainWindow.webContents.send('subdir', dir, '');
     }
-    return { dir, subdirs };
+    return { dir, subdirs, currentSubdirInvalid };
   });
 
   let chosenReplaysDir = '';
