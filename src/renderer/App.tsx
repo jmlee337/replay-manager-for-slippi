@@ -946,9 +946,9 @@ function Hello() {
 
   useEffect(() => {
     window.electron.onUsb((e, newDir, newIsUsb) => {
+      setIsUsb(newIsUsb);
       if (!undoSubdir) {
         setDir(newDir);
-        setIsUsb(newIsUsb);
         setWasDeleted(false);
         refreshReplays(true);
         setEjected(false);
@@ -3230,7 +3230,6 @@ function Hello() {
                         );
                         setUndoSubdir(reportedSubdir);
                         setUndoDialogOpen(false);
-                        setIsUsb(false);
                         setWasDeleted(false);
                         refreshReplays(true);
                         setEjected(false);
