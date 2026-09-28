@@ -366,7 +366,6 @@ export default function setupIPCs(
       }
     }
     chosenReplaysDir = newChosenReplaysDir;
-    replayDirs.push({ dir: chosenReplaysDir, usbKey: '' });
   }
   ipcMain.removeHandler('chooseReplaysDir');
   ipcMain.handle('chooseReplaysDir', async () => {
@@ -377,13 +376,14 @@ export default function setupIPCs(
       return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
     }
     setChosenReplaysDir(openDialogRes.filePaths[0]);
+    replayDirs.push({ dir: chosenReplaysDir, usbKey: '' });
     return chosenReplaysDir;
   });
 
   eventEmitter.removeAllListeners('protocol-open-dir');
   eventEmitter.on('protocol-open-dir', (dir: string) => {
     setChosenReplaysDir(dir);
-    mainWindow.webContents.send('usbstorage', dir, false);
+    addReplayDir(dir, '');
   });
 
   const maybeEject = (currentDir: ReplayDir) => {
