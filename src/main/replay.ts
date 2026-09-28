@@ -1014,7 +1014,7 @@ export async function getSubdirs(dir: string) {
       let hidden = false;
       try {
         const context = JSON.parse(
-          await readFile(path.join(dir, dirent.name, 'context.json'), {
+          await readFile(path.join(dir, dirent.name, 'subdir.json'), {
             encoding: 'utf8',
           }),
         );
