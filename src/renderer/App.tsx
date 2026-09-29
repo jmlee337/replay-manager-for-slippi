@@ -2021,8 +2021,8 @@ function Hello() {
                 ))}
               {!undoSubdir && (
                 <>
-                  {dir && (
-                    <Tooltip arrow title="Eject (if USB)">
+                  {dir && isUsb && (
+                    <Tooltip arrow title="Eject">
                       <IconButton
                         disabled={ejecting}
                         onClick={async () => {
@@ -2484,6 +2484,7 @@ function Hello() {
         </TopColumn>
         <TopColumn
           width="300px"
+          style={{ flexShrink: 0 }}
           sx={{
             zIndex: (theme) =>
               guideActive &&
