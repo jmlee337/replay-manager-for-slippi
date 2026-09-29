@@ -90,6 +90,7 @@ import {
   StartggSet,
   State,
   Stream,
+  Subdir,
   Tournament,
 } from '../common/types';
 import { DraggableChip, DroppableChip } from './DragAndDrop';
@@ -271,6 +272,20 @@ function Hello() {
   const [dir, setDir] = useState('');
   const [dirInit, setDirInit] = useState(false);
   const [isUsb, setIsUsb] = useState(false);
+  const [subdirSelection, setSubdirSelection] = useState({
+    dir: '',
+    subdir: '',
+  });
+  const selectedSubdir =
+    subdirSelection.dir === dir ? subdirSelection.subdir : '';
+  const [subdirList, setSubdirList] = useState<{
+    dir: string;
+    subdirs: Subdir[];
+  }>({ dir: '', subdirs: [] });
+  const subdirs =
+    subdirList.dir === dir
+      ? subdirList.subdirs.filter(({ hidden }) => !hidden)
+      : [];
   const [copyDir, setCopyDir] = useState('');
   const [host, setHost] = useState<CopyHostOrClient>({
     name: '',
@@ -367,6 +382,7 @@ function Hello() {
 
       // initial state
       const replaysDirPromise = window.electron.getReplaysDir();
+      const subdirSelectionPromise = window.electron.getSubdir();
       const copyDirPromise = window.electron.getCopyDir();
       const hostPromise = window.electron.getCopyHost();
       const hostFormatPromise = window.electron.getCopyHostFormat();
@@ -406,6 +422,7 @@ function Hello() {
       const replaysDir = await replaysDirPromise;
       setDir(replaysDir);
       setDirInit(replaysDir.length > 0);
+      setSubdirSelection(await subdirSelectionPromise);
       setCopyDir(await copyDirPromise);
       setHost(await hostPromise);
       setHostFormat(await hostFormatPromise);
@@ -955,6 +972,36 @@ function Hello() {
       }
     });
   }, [refreshReplays, undoSubdir]);
+
+  const applySubdirSelection = useCallback(
+    (selection: { dir: string; subdir: string }) => {
+      setSubdirSelection(selection);
+      if (!undoSubdir) {
+        setWasDeleted(false);
+        refreshReplays(true);
+      }
+    },
+    [refreshReplays, undoSubdir],
+  );
+
+  const refreshSubdirs = useCallback(async () => {
+    try {
+      const {
+        dir: subdirsDir,
+        subdirs: newSubdirs,
+        currentSubdirInvalid,
+      } = await window.electron.getSubdirs();
+      setSubdirList({ dir: subdirsDir, subdirs: newSubdirs });
+      if (currentSubdirInvalid) {
+        applySubdirSelection({ dir: subdirsDir, subdir: '' });
+      }
+    } catch {
+      // some sort of fileops issue... whoopsie.
+    }
+  }, [applySubdirSelection]);
+  useEffect(() => {
+    refreshSubdirs();
+  }, [dir, refreshSubdirs]);
 
   const availablePlayers: PlayerOverrides[] = [];
   selectedSet.entrant1Participants.forEach((participant) => {
@@ -2166,7 +2213,12 @@ function Hello() {
                     ))}
                   {dir && !gettingReplays && (
                     <Tooltip arrow title="Refresh replays">
-                      <IconButton onClick={() => refreshReplays()}>
+                      <IconButton
+                        onClick={() => {
+                          refreshReplays();
+                          refreshSubdirs();
+                        }}
+                      >
                         <Refresh />
                       </IconButton>
                     </Tooltip>
@@ -2420,6 +2472,11 @@ function Hello() {
                     guideActive &&
                     guideBackdropOpen &&
                     guideState === GuideState.PLAYERS
+                  }
+                  subdirs={subdirs}
+                  selectedSubdir={selectedSubdir}
+                  onSubdirClick={async (name) =>
+                    applySubdirSelection(await window.electron.setSubdir(name))
                   }
                 />
                 <Dialog
