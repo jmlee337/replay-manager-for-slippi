@@ -117,8 +117,12 @@ async function wrappedFetch(
   let response: Response | undefined;
   try {
     response = await fetch(input, init);
-  } catch {
-    throw new Error('***You may not be connected to the internet***');
+  } catch (e: unknown) {
+    let msg = '***You may not be connected to the internet***';
+    if (e instanceof Error) {
+      msg = `${msg}: ${e.message}`;
+    }
+    throw new Error(msg);
   }
   if (!response.ok) {
     if (

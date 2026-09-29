@@ -1648,8 +1648,12 @@ export default function setupIPCs(
         return '';
       }
       return latestVersion;
-    } catch {
-      throw new Error('***You may not be connected to the internet***');
+    } catch (e: unknown) {
+      let msg = '***You may not be connected to the internet***';
+      if (e instanceof Error) {
+        msg = `${msg}: ${e.message}`;
+      }
+      throw new Error(msg);
     }
   });
 
