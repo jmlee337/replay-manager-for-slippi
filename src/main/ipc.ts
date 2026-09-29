@@ -27,7 +27,6 @@ import yauzl from 'yauzl-promise';
 import { pipeline } from 'stream/promises';
 import { detectUsb, MountData } from './detectUsb';
 import {
-  ChallongeMatchItem,
   Context,
   CopySettings,
   EnforcePlayerFailure,
@@ -70,17 +69,6 @@ import {
   getSubdirs,
   writeReplays,
 } from './replay';
-import {
-  getChallongeTournament,
-  getChallongeTournaments,
-  getCurrentTournaments,
-  getSelectedChallongeSet,
-  getSelectedTournament,
-  reportChallongeSet,
-  setSelectedChallongeSetId,
-  setSelectedTournament,
-  startChallongeSet,
-} from './challonge';
 import {
   getParryggTournament,
   getParryggTournaments,
@@ -1176,18 +1164,6 @@ export default function setupIPCs(
     return [];
   });
 
-  let challongeApiKey = store.has('challongeApiKey')
-    ? (store.get('challongeApiKey') as string)
-    : '';
-  ipcMain.removeHandler('getChallongeKey');
-  ipcMain.handle('getChallongeKey', () => challongeApiKey);
-
-  ipcMain.removeHandler('setChallongeKey');
-  ipcMain.handle('setChallongeKey', (event, newChallongeKey: string) => {
-    store.set('challongeApiKey', newChallongeKey);
-    challongeApiKey = newChallongeKey;
-  });
-
   let parryggApiKey = store.has('parryggApiKey')
     ? (store.get('parryggApiKey') as string)
     : '';
@@ -1199,74 +1175,6 @@ export default function setupIPCs(
     store.set('parryggApiKey', newParryggKey);
     parryggApiKey = newParryggKey;
   });
-
-  ipcMain.removeHandler('getCurrentChallongeTournaments');
-  ipcMain.handle('getCurrentChallongeTournaments', getCurrentTournaments);
-
-  ipcMain.removeHandler('getSelectedChallongeTournament');
-  ipcMain.handle('getSelectedChallongeTournament', getSelectedTournament);
-
-  ipcMain.removeHandler('setSelectedChallongeTournament');
-  ipcMain.handle('setSelectedChallongeTournament', (event, slug: string) => {
-    setSelectedTournament(slug);
-  });
-
-  ipcMain.removeHandler('getChallongeTournament');
-  ipcMain.handle('getChallongeTournament', async (event, slug: string) => {
-    if (!challongeApiKey) {
-      throw new Error('Please set Challonge API key.');
-    }
-
-    await getChallongeTournament(challongeApiKey, slug);
-    mainWindow.webContents.send('tournament', {
-      selectedSet: getSelectedChallongeSet(),
-      challongeTournaments: getCurrentTournaments(),
-    });
-  });
-
-  ipcMain.removeHandler('startChallongeSet');
-  ipcMain.handle(
-    'startChallongeSet',
-    async (event, slug: string, id: string) => {
-      if (!challongeApiKey) {
-        throw new Error('Please set Challonge API key.');
-      }
-
-      await startChallongeSet(slug, id, challongeApiKey);
-      await getChallongeTournament(challongeApiKey, slug);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedChallongeSet(),
-        challongeTournaments: getCurrentTournaments(),
-      });
-    },
-  );
-
-  ipcMain.removeHandler('reportChallongeSet');
-  ipcMain.handle(
-    'reportChallongeSet',
-    async (event, id: string, items: ChallongeMatchItem[]) => {
-      if (!challongeApiKey) {
-        throw new Error('Please set Challonge API key.');
-      }
-      const slug = getSelectedTournament()?.slug;
-      if (!slug) {
-        throw new Error('unreachable, no selected challonge tournament');
-      }
-
-      const updatedSet = await reportChallongeSet(
-        slug,
-        id,
-        items,
-        challongeApiKey,
-      );
-      await getChallongeTournament(challongeApiKey, slug);
-      mainWindow.webContents.send('tournament', {
-        selectedSet: getSelectedChallongeSet(),
-        challongeTournaments: getCurrentTournaments(),
-      });
-      return updatedSet;
-    },
-  );
 
   ipcMain.removeHandler('getAdminedParryggTournaments');
   ipcMain.handle('getAdminedParryggTournaments', getAdminedParryggTournaments);
@@ -1466,9 +1374,6 @@ export default function setupIPCs(
     if (mode === Mode.STARTGG) {
       return sggApiKey ? getTournaments(sggApiKey) : [];
     }
-    if (mode === Mode.CHALLONGE) {
-      return challongeApiKey ? getChallongeTournaments(challongeApiKey) : [];
-    }
     if (mode === Mode.PARRYGG) {
       return parryggApiKey ? getParryggTournaments(parryggApiKey) : [];
     }
@@ -1479,9 +1384,6 @@ export default function setupIPCs(
   ipcMain.handle('getSelectedSet', () => {
     if (mode === Mode.STARTGG) {
       return getSelectedSet();
-    }
-    if (mode === Mode.CHALLONGE) {
-      return getSelectedChallongeSet();
     }
     if (mode === Mode.PARRYGG) {
       return getSelectedParryggSet();
@@ -1499,8 +1401,6 @@ export default function setupIPCs(
     }
     if (mode === Mode.STARTGG) {
       setSelectedSetId(selectedSetId);
-    } else if (mode === Mode.CHALLONGE) {
-      setSelectedChallongeSetId(assertString(selectedSetId));
     } else if (mode === Mode.PARRYGG) {
       setSelectedParryggSetId(assertString(selectedSetId));
     } else if (mode === Mode.OFFLINE_MODE) {

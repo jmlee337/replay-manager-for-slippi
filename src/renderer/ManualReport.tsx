@@ -14,16 +14,8 @@ import {
 import { HourglassTop, SaveAs } from '@mui/icons-material';
 import styled from '@emotion/styled';
 import { MatchResult, SlotState } from '@parry-gg/client';
-import {
-  ChallongeMatchItem,
-  Id,
-  Mode,
-  Set,
-  StartggGame,
-  StartggSet,
-  State,
-} from '../common/types';
-import { assertInteger, assertString } from '../common/asserts';
+import { Id, Mode, Set, StartggGame, StartggSet, State } from '../common/types';
+import { assertInteger } from '../common/asserts';
 
 function createStartggGameData(
   entrant1Score: number,
@@ -71,17 +63,12 @@ const ThinButton = styled(Button)`
 
 export default function ManualReport({
   mode,
-  reportChallongeSet,
   reportStartggSet,
   reportParryggSet,
   reportOfflineModeSet,
   selectedSet,
 }: {
   mode: Mode;
-  reportChallongeSet: (
-    matchId: string,
-    items: ChallongeMatchItem[],
-  ) => Promise<Set>;
   reportStartggSet: (
     set: StartggSet,
     originalSet: Set,
@@ -101,8 +88,6 @@ export default function ManualReport({
   const [entrant2Dq, setEntrant2Dq] = useState(false);
   const [entrant1Win, setEntrant1Win] = useState(false);
   const [entrant2Win, setEntrant2Win] = useState(false);
-
-  // challonge
   const [entrant1Score, setEntrant1Score] = useState(0);
   const [entrant2Score, setEntrant2Score] = useState(0);
 
@@ -156,12 +141,6 @@ export default function ManualReport({
     } else if (entrant2Win || entrant1Dq) {
       winnerId = selectedSet.entrant2Id;
     }
-  } else if (mode === Mode.CHALLONGE) {
-    if (entrant1Score > entrant2Score) {
-      winnerId = selectedSet.entrant1Id;
-    } else if (entrant1Score < entrant2Score) {
-      winnerId = selectedSet.entrant2Id;
-    }
   }
   const getStartggSet = () => ({
     setId: selectedSet.id,
@@ -174,20 +153,6 @@ export default function ManualReport({
       selectedSet.entrant2Id,
     ),
   });
-  const challongeMatchItems: ChallongeMatchItem[] = [
-    {
-      participant_id: selectedSet.entrant1Id.toString(10),
-      score_set: entrant1Score.toString(10),
-      rank: winnerId === selectedSet.entrant1Id ? 1 : 2,
-      advancing: winnerId === selectedSet.entrant1Id,
-    },
-    {
-      participant_id: selectedSet.entrant2Id.toString(10),
-      score_set: entrant2Score.toString(10),
-      rank: winnerId === selectedSet.entrant2Id ? 1 : 2,
-      advancing: winnerId === selectedSet.entrant2Id,
-    },
-  ];
 
   const parryggSetResult: MatchResult.AsObject = {
     slotsList: [
@@ -398,55 +363,6 @@ export default function ManualReport({
                     )}
                   </>
                 )}
-                {mode === Mode.CHALLONGE && (
-                  <>
-                    <Button
-                      color="secondary"
-                      variant={entrant1Score === -1 ? 'contained' : 'outlined'}
-                      onClick={() => {
-                        setEntrant1Score(-1);
-                      }}
-                    >
-                      -1
-                    </Button>
-                    <Button
-                      color="secondary"
-                      variant={entrant1Score === 0 ? 'contained' : 'outlined'}
-                      onClick={() => {
-                        setEntrant1Score(0);
-                      }}
-                    >
-                      0
-                    </Button>
-                    <Button
-                      color="secondary"
-                      variant={entrant1Score === 1 ? 'contained' : 'outlined'}
-                      onClick={() => {
-                        setEntrant1Score(1);
-                      }}
-                    >
-                      1
-                    </Button>
-                    <Button
-                      color="secondary"
-                      variant={entrant1Score === 2 ? 'contained' : 'outlined'}
-                      onClick={() => {
-                        setEntrant1Score(2);
-                      }}
-                    >
-                      2
-                    </Button>
-                    <Button
-                      color="secondary"
-                      variant={entrant1Score === 3 ? 'contained' : 'outlined'}
-                      onClick={() => {
-                        setEntrant1Score(3);
-                      }}
-                    >
-                      3
-                    </Button>
-                  </>
-                )}
               </Stack>
             </Stack>
             <Stack
@@ -592,55 +508,6 @@ export default function ManualReport({
                     )}
                   </>
                 )}
-                {mode === Mode.CHALLONGE && (
-                  <>
-                    <Button
-                      color="secondary"
-                      variant={entrant2Score === -1 ? 'contained' : 'outlined'}
-                      onClick={() => {
-                        setEntrant2Score(-1);
-                      }}
-                    >
-                      -1
-                    </Button>
-                    <Button
-                      color="secondary"
-                      variant={entrant2Score === 0 ? 'contained' : 'outlined'}
-                      onClick={() => {
-                        setEntrant2Score(0);
-                      }}
-                    >
-                      0
-                    </Button>
-                    <Button
-                      color="secondary"
-                      variant={entrant2Score === 1 ? 'contained' : 'outlined'}
-                      onClick={() => {
-                        setEntrant2Score(1);
-                      }}
-                    >
-                      1
-                    </Button>
-                    <Button
-                      color="secondary"
-                      variant={entrant2Score === 2 ? 'contained' : 'outlined'}
-                      onClick={() => {
-                        setEntrant2Score(2);
-                      }}
-                    >
-                      2
-                    </Button>
-                    <Button
-                      color="secondary"
-                      variant={entrant2Score === 3 ? 'contained' : 'outlined'}
-                      onClick={() => {
-                        setEntrant2Score(3);
-                      }}
-                    >
-                      3
-                    </Button>
-                  </>
-                )}
               </Stack>
             </Stack>
           </Stack>
@@ -654,11 +521,6 @@ export default function ManualReport({
               try {
                 if (mode === Mode.STARTGG) {
                   await reportStartggSet(getStartggSet(), selectedSet);
-                } else if (mode === Mode.CHALLONGE) {
-                  await reportChallongeSet(
-                    assertString(selectedSet.id),
-                    challongeMatchItems,
-                  );
                 } else if (mode === Mode.PARRYGG) {
                   await reportParryggSet(parryggSetResult, selectedSet);
                 } else if (mode === Mode.OFFLINE_MODE) {

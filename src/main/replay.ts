@@ -965,7 +965,7 @@ export async function getReportedSubdirs(copyDir: string) {
           if (entry.filename === 'context.json') {
             const readStream = await entry.openReadStream();
             const context = JSON.parse(await text(readStream)) as Context;
-            if (context.startgg || context.challonge) {
+            if (context.startgg) {
               subdirs.push(dirent.name);
               break;
             }
@@ -991,7 +991,7 @@ export async function getReportedSubdirs(copyDir: string) {
               encoding: 'utf8',
             }),
           ) as Context;
-          if (context.startgg || context.challonge) {
+          if (context.startgg) {
             subdirs.push(dirent.name);
           }
         }

@@ -19,7 +19,6 @@ import {
 import { MouseEventHandler, useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import {
-  ChallongeMatchItem,
   EnforcerSetting,
   EnforceState,
   EnforceStatus,
@@ -34,7 +33,6 @@ import {
   StartggGame,
   StartggGameSelection,
   StartggSet,
-  State,
   Stream,
 } from '../common/types';
 import {
@@ -51,7 +49,7 @@ import {
 } from '../common/constants';
 import LabeledCheckbox from './LabeledCheckbox';
 import getCharacterIcon from './getCharacterIcon';
-import { assertInteger, assertString } from '../common/asserts';
+import { assertInteger } from '../common/asserts';
 
 const bgColor = 'rgba(34, 178, 76, 0.2)';
 
@@ -92,12 +90,9 @@ function isValid(player: Player) {
   return player.playerType === 0 || player.playerType === 1;
 }
 
-function setAndReplaysValid(selectedReplays: Replay[], set: Set, mode: Mode) {
+function setAndReplaysValid(selectedReplays: Replay[], set: Set) {
   if (selectedReplays.length === 0) {
     return { valid: false, reason: 'No replays selected' };
-  }
-  if (mode === Mode.CHALLONGE && set.state === State.COMPLETED) {
-    return { valid: false, reason: 'Set already completed' };
   }
 
   let reason = '';
@@ -207,7 +202,6 @@ ReportButton.defaultProps = {
 export default function SetControls({
   copyReplays,
   deleteReplays,
-  reportChallongeSet,
   reportStartggSet,
   reportParryggSet,
   reportOfflineModeSet,
@@ -244,10 +238,6 @@ export default function SetControls({
     }[],
   ) => Promise<void>;
   deleteReplays: () => Promise<void>;
-  reportChallongeSet: (
-    matchId: string,
-    items: ChallongeMatchItem[],
-  ) => Promise<Set>;
   reportStartggSet: (
     set: StartggSet,
     originalSet: Set,
@@ -287,22 +277,6 @@ export default function SetControls({
     isDQ: false,
     gameData: [],
   });
-  const [challongeMatchItems, setChallongeMatchItems] = useState<
-    ChallongeMatchItem[]
-  >([
-    {
-      participant_id: '',
-      score_set: '',
-      rank: 0,
-      advancing: false,
-    },
-    {
-      participant_id: '',
-      score_set: '',
-      rank: 0,
-      advancing: false,
-    },
-  ]);
   const [parryggMatchResult, setParryggMatchResult] =
     useState<MatchResult.AsObject>({
       slotsList: [
@@ -353,7 +327,7 @@ export default function SetControls({
   }
 
   const isDq = dqId === set.entrant1Id || dqId === set.entrant2Id;
-  const validSelections = setAndReplaysValid(selectedReplays, set, mode);
+  const validSelections = setAndReplaysValid(selectedReplays, set);
   let scores = new Map<Id, number>();
   let winnerId: Id = 0;
   if (validSelections.valid) {
@@ -494,21 +468,6 @@ export default function SetControls({
     return games;
   };
 
-  const getChallongeMatchItems = (): ChallongeMatchItem[] => [
-    {
-      participant_id: set.entrant1Id.toString(10),
-      score_set: entrant1SetScore.toString(10),
-      rank: winnerId === set.entrant1Id ? 1 : 2,
-      advancing: winnerId === set.entrant1Id,
-    },
-    {
-      participant_id: set.entrant2Id.toString(10),
-      score_set: entrant2SetScore.toString(10),
-      rank: winnerId === set.entrant2Id ? 1 : 2,
-      advancing: winnerId === set.entrant2Id,
-    },
-  ];
-
   const getMatchResult = (): MatchResult.AsObject => {
     const entrant1Dq = isDq && dqId === set.entrant1Id;
     const entrant2Dq = isDq && dqId === set.entrant2Id;
@@ -574,8 +533,6 @@ export default function SetControls({
           onClick={() => {
             if (mode === Mode.STARTGG || mode === Mode.OFFLINE_MODE) {
               setStartggSet(getStartggSet());
-            } else if (mode === Mode.CHALLONGE) {
-              setChallongeMatchItems(getChallongeMatchItems());
             } else if (mode === Mode.PARRYGG) {
               setParryggMatchResult(getMatchResult());
             }
@@ -613,7 +570,6 @@ export default function SetControls({
       >
         <DialogTitle typography="body1">
           Report set on {mode === Mode.STARTGG && 'start.gg'}
-          {mode === Mode.CHALLONGE && 'Challonge'}
           {mode === Mode.PARRYGG && 'parry.gg'}
           {mode === Mode.OFFLINE_MODE && 'Offline Mode'}
         </DialogTitle>
@@ -989,11 +945,6 @@ export default function SetControls({
                 let updatedSet: Set | undefined;
                 if (mode === Mode.STARTGG) {
                   updatedSet = await reportStartggSet(startggSet, set);
-                } else if (mode === Mode.CHALLONGE) {
-                  updatedSet = await reportChallongeSet(
-                    assertString(set.id),
-                    challongeMatchItems,
-                  );
                 } else if (mode === Mode.PARRYGG) {
                   updatedSet = await reportParryggSet(
                     parryggMatchResult,

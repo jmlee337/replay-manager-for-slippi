@@ -3,7 +3,6 @@ import { Tournament as ParryggTournament } from '@parry-gg/client';
 import SearchBox from './SearchBox';
 import StartggView from './StartggView';
 import {
-  ChallongeTournament,
   GuideState,
   Mode,
   PlayerOverrides,
@@ -15,7 +14,6 @@ import {
   Set,
   Tournament,
 } from '../common/types';
-import ChallongeView from './ChallongeView';
 import ParryggView from './ParryggView';
 import ManualView from './ManualView';
 import ErrorDialog from './ErrorDialog';
@@ -36,9 +34,6 @@ export default function RightColumn({
   selectedSetChain,
   setSelectedSetChain,
   startggTournament,
-  challongeTournaments,
-  getChallongeTournament,
-  setSelectedChallongeTournament,
   parryggTournament,
   offlineModeTournament,
   manualNames,
@@ -53,13 +48,6 @@ export default function RightColumn({
   selectedSetChain: SelectedSetChain;
   setSelectedSetChain: (selectedSetChain: SelectedSetChain) => void;
   startggTournament: Tournament;
-  challongeTournaments: Map<string, ChallongeTournament>;
-  getChallongeTournament: (maybeSlug: string) => Promise<void>;
-  setSelectedChallongeTournament: (selectedChallongeTournament: {
-    name: string;
-    slug: string;
-    tournamentType: string;
-  }) => void;
   parryggTournament: ParryggTournament.AsObject | undefined;
   offlineModeTournament: RendererOfflineModeTournament;
   manualNames: string[];
@@ -142,20 +130,6 @@ export default function RightColumn({
       assertInteger(phaseGroup.id),
     );
   };
-  const selectChallongeSet = async (
-    set: Set,
-    selectedTournament: ChallongeTournament,
-  ) => {
-    selectSet(set);
-    setSelectedChallongeTournament({
-      name: selectedTournament.name,
-      slug: selectedTournament.slug,
-      tournamentType: selectedTournament.tournamentType,
-    });
-    await window.electron.setSelectedChallongeTournament(
-      selectedTournament.slug,
-    );
-  };
   const selectParryggSet = async (
     set: Set,
     phaseGroup: SelectedPhaseGroup,
@@ -219,23 +193,6 @@ export default function RightColumn({
           }}
         />
       )}
-      {mode === Mode.CHALLONGE &&
-        Array.from(challongeTournaments.values()).map((challongeTournament) => (
-          <ChallongeView
-            key={challongeTournament.slug}
-            searchSubstr={searchSubstr}
-            tournament={challongeTournament}
-            getChallongeTournament={() =>
-              getChallongeTournament(challongeTournament.slug)
-            }
-            selectSet={(set: Set) => {
-              selectChallongeSet(set, challongeTournament);
-              if (guideState !== GuideState.NONE) {
-                setGuideState(GuideState.REPLAYS);
-              }
-            }}
-          />
-        ))}
       {mode === Mode.PARRYGG && (
         <ParryggView
           searchSubstr={searchSubstr}

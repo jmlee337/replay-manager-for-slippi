@@ -100,7 +100,7 @@ export type Set = {
   gameScores: GameScore[];
   stream: Stream | null;
   station: Station | null;
-  ordinal: number | null; // can be null for start.gg non-DE and challonge swiss
+  ordinal: number | null; // can be null for start.gg non-DE
   wasReported: boolean;
   updatedAtMs: number;
   completedAtMs: number;
@@ -179,16 +179,6 @@ export type AdminedTournament = {
   name: string;
 };
 
-export type ChallongeTournament = {
-  entrants: Entrant[];
-  name: string;
-  slug: string;
-  sets: Sets;
-  state: State;
-  // can be 'swiss' or 'round robin' or 'double elimination' among others
-  tournamentType: string;
-};
-
 export type StartggGameSelection = {
   characterId: number;
   entrantId: Id;
@@ -239,13 +229,6 @@ export type ParryggGame = {
   index: number;
   stageSlug?: string;
   slots: ParryggGameSlot[];
-};
-
-export type ChallongeMatchItem = {
-  participant_id: string;
-  score_set: string;
-  rank: number;
-  advancing: boolean;
 };
 
 export enum Output {
@@ -357,21 +340,6 @@ export type Context = {
       stream: Stream | null;
     };
   };
-  challonge?: {
-    tournament: {
-      name: string;
-      slug: string;
-      // can be 'swiss' or 'round robin' among others
-      tournamentType: string;
-    };
-    set: {
-      id?: string;
-      fullRoundText: string;
-      ordinal: number | null;
-      round: number;
-      stream: Stream | null;
-    };
-  };
   startMs: number;
 };
 
@@ -391,7 +359,6 @@ export type ReportSettings = {
 export enum Mode {
   MANUAL = 'manual',
   STARTGG = 'start.gg',
-  CHALLONGE = 'challonge',
   PARRYGG = 'parry.gg',
   OFFLINE_MODE = 'offline mode',
 }

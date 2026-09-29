@@ -2,8 +2,6 @@ import { IpcRendererEvent, contextBridge, ipcRenderer } from 'electron';
 import { Tournament as ParryggTournament, MatchResult } from '@parry-gg/client';
 import {
   AdminedTournament,
-  ChallongeMatchItem,
-  ChallongeTournament,
   Context,
   CopySettings,
   Id,
@@ -200,24 +198,6 @@ const electronHandler = {
   getPoolsByWave: (): Promise<RendererWave[]> =>
     ipcRenderer.invoke('getPoolsByWave'),
 
-  getChallongeKey: (): Promise<string> => ipcRenderer.invoke('getChallongeKey'),
-  setChallongeKey: (challongeKey: string): Promise<void> =>
-    ipcRenderer.invoke('setChallongeKey', challongeKey),
-  getCurrentChallongeTournaments: (): Promise<
-    Map<string, ChallongeTournament>
-  > => ipcRenderer.invoke('getCurrentChallongeTournaments'),
-  getSelectedChallongeTournament: (): Promise<
-    ChallongeTournament | undefined
-  > => ipcRenderer.invoke('getSelectedChallongeTournament'),
-  setSelectedChallongeTournament: (slug: string): Promise<void> =>
-    ipcRenderer.invoke('setSelectedChallongeTournament', slug),
-  getChallongeTournament: (slug: string): Promise<void> =>
-    ipcRenderer.invoke('getChallongeTournament', slug),
-  startChallongeSet: (slug: string, id: string): Promise<void> =>
-    ipcRenderer.invoke('startChallongeSet', slug, id),
-  reportChallongeSet: (id: string, items: ChallongeMatchItem[]): Promise<Set> =>
-    ipcRenderer.invoke('reportChallongeSet', id, items),
-
   getParryggKey: (): Promise<string> => ipcRenderer.invoke('getParryggKey'),
   setParryggKey: (parryggKey: string): Promise<void> =>
     ipcRenderer.invoke('setParryggKey', parryggKey),
@@ -358,7 +338,6 @@ const electronHandler = {
       data: {
         selectedSet?: Set;
         startggTournament?: Tournament;
-        challongeTournaments?: Map<string, ChallongeTournament>;
         parryggTournament?: ParryggTournament.AsObject;
         offlineModeTournament?: RendererOfflineModeTournament;
       },

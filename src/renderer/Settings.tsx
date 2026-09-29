@@ -104,15 +104,12 @@ export default function Settings({
 }) {
   const [gotSettings, setGotSettings] = useState(false);
   const [startggApiKey, setStartggApiKey] = useState('');
-  const [challongeApiKey, setChallongeApiKey] = useState('');
   const [parryggApiKey, setParryggApiKey] = useState('');
   useEffect(() => {
     (async () => {
       const startggKeyPromise = window.electron.getStartggKey();
-      const challongeKeyPromise = window.electron.getChallongeKey();
       const parryggKeyPromise = window.electron.getParryggKey();
       setStartggApiKey(await startggKeyPromise);
-      setChallongeApiKey(await challongeKeyPromise);
       setParryggApiKey(await parryggKeyPromise);
       setGotSettings(true);
     })();
@@ -127,15 +124,13 @@ export default function Settings({
     () =>
       valid(appVersion) &&
       valid(latestAppVersion) &&
-      lt(appVersion, latestAppVersion) &&
-      mode !== Mode.CHALLONGE,
-    [appVersion, latestAppVersion, mode],
+      lt(appVersion, latestAppVersion),
+    [appVersion, latestAppVersion],
   );
   if (
     gotSettings &&
     !hasAutoOpened &&
     ((mode === Mode.STARTGG && !startggApiKey) ||
-      (mode === Mode.CHALLONGE && !challongeApiKey) ||
       (mode === Mode.PARRYGG && !parryggApiKey) ||
       needUpdate)
   ) {
@@ -173,7 +168,6 @@ export default function Settings({
         onClose={async () => {
           try {
             await Promise.all([
-              window.electron.setChallongeKey(challongeApiKey),
               window.electron.setStartggKey(startggApiKey),
               window.electron.setParryggKey(parryggApiKey),
               window.electron.setFileNameFormat(fileNameFormat),
@@ -187,7 +181,6 @@ export default function Settings({
             setAdminedTournaments([]);
             if (
               (mode === Mode.STARTGG && startggApiKey) ||
-              (mode === Mode.CHALLONGE && challongeApiKey) ||
               (mode === Mode.PARRYGG && parryggApiKey)
             ) {
               try {
@@ -233,7 +226,6 @@ export default function Settings({
                 }}
               >
                 <LabeledRadioButton label="start.gg" value={Mode.STARTGG} />
-                <LabeledRadioButton label="Challonge" value={Mode.CHALLONGE} />
                 <LabeledRadioButton label="parry.gg" value={Mode.PARRYGG} />
                 <LabeledRadioButton
                   label="Offline Mode"
@@ -276,48 +268,6 @@ export default function Settings({
                   endIcon={copied ? undefined : <ContentCopy />}
                   onClick={async () => {
                     await window.electron.copyToClipboard(startggApiKey);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 5000);
-                  }}
-                  variant="contained"
-                >
-                  {copied ? 'Copied!' : 'Copy'}
-                </Button>
-              </Stack>
-            </>
-          )}
-          {mode === Mode.CHALLONGE && (
-            <>
-              <DialogContentText>
-                Get your Challonge v1 API key on{' '}
-                <Link
-                  href="https://challonge.com/settings/developer"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  this page
-                </Link>{' '}
-                (you may need to click “Generate a new API key”). Keep it
-                private!
-              </DialogContentText>
-              <Stack alignItems="center" direction="row" gap="8px">
-                <TextField
-                  fullWidth
-                  label="Challonge v1 API key (Keep it private!)"
-                  onChange={(event) => {
-                    setChallongeApiKey(event.target.value);
-                    setShouldGetTournaments(true);
-                  }}
-                  size="small"
-                  type="password"
-                  value={challongeApiKey}
-                  variant="standard"
-                />
-                <Button
-                  disabled={copied}
-                  endIcon={copied ? undefined : <ContentCopy />}
-                  onClick={async () => {
-                    await window.electron.copyToClipboard(challongeApiKey);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 5000);
                   }}

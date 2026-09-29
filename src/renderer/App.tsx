@@ -63,8 +63,6 @@ import {
 } from '@parry-gg/client';
 import {
   AdminedTournament,
-  ChallongeMatchItem,
-  ChallongeTournament,
   Context,
   ContextPlayers,
   ContextScore,
@@ -111,7 +109,6 @@ import {
 import ManualBar from './ManualBar';
 import GuidedDialog from './GuidedDialog';
 import StartggTournamentForm from './StartggTournamentForm';
-import ChallongeTournamentForm from './ChallongeTournamentForm';
 import ParryggTournamentForm from './ParryggTournamentForm';
 import ResetSet from './ResetSet';
 import AssignStream from './AssignStream';
@@ -308,11 +305,6 @@ function Hello() {
     stations: [],
     streams: [],
   });
-  const [challongeTournaments, setChallongeTournaments] = useState(
-    new Map<string, ChallongeTournament>(),
-  );
-  const [selectedChallongeTournament, setSelectedChallongeTournament] =
-    useState({ name: '', slug: '', tournamentType: '' });
   const [parryggTournament, setParryggTournament] =
     useState<ParryggTournament.AsObject>();
   const parryggSlug = useMemo(
@@ -344,14 +336,12 @@ function Hello() {
   const tournamentSet = useMemo(
     () =>
       (mode === Mode.STARTGG && startggTournament.slug.length > 0) ||
-      (mode === Mode.CHALLONGE && challongeTournaments.size > 0) ||
       (mode === Mode.PARRYGG && parryggSlug.length > 0) ||
       (mode === Mode.OFFLINE_MODE &&
         offlineModeStatus.addressOrHost.length > 0 &&
         offlineModeStatus.error.length === 0) ||
       (mode === Mode.MANUAL && manualNames.length > 0),
     [
-      challongeTournaments,
       manualNames.length,
       mode,
       offlineModeStatus,
@@ -389,10 +379,6 @@ function Hello() {
       const tournamentPromise = window.electron.getCurrentTournament();
       const selectedSetPromise = window.electron.getSelectedSet();
       const selectedSetChainPromise = window.electron.getSelectedSetChain();
-      const challongeTournamentsPromise =
-        window.electron.getCurrentChallongeTournaments();
-      const selectedChallongeTournamentPromise =
-        window.electron.getSelectedChallongeTournament();
       const selectedParryggTournamentPromise =
         window.electron.getCurrentParryggTournament();
       const offlineModeStatusPromise = window.electron.getOfflineModeStatus();
@@ -441,12 +427,6 @@ function Hello() {
         phase,
         phaseGroup,
       });
-      setChallongeTournaments(await challongeTournamentsPromise);
-      const initSelectedChallongeTournament =
-        await selectedChallongeTournamentPromise;
-      if (initSelectedChallongeTournament) {
-        setSelectedChallongeTournament(initSelectedChallongeTournament);
-      }
       const initSelectedParryggTournament =
         await selectedParryggTournamentPromise;
       if (initSelectedParryggTournament) {
@@ -924,7 +904,6 @@ function Hello() {
         {
           selectedSet: newSelectedSet,
           startggTournament: newTournament,
-          challongeTournaments: newChallongeTournaments,
           parryggTournament: newParryggTournament,
           offlineModeTournament: newOfflineModeTournament,
         },
@@ -937,12 +916,6 @@ function Hello() {
             setGuideBackdropOpen(false);
           }
           setStartggTournament(newTournament);
-        }
-        if (newChallongeTournaments) {
-          if (tournamentSet && copyDirSet && confirmedCopySettings) {
-            setGuideBackdropOpen(false);
-          }
-          setChallongeTournaments(newChallongeTournaments);
         }
         if (newParryggTournament) {
           if (tournamentSet && copyDirSet && confirmedCopySettings) {
@@ -1026,22 +999,6 @@ function Hello() {
   const [slugDialogOpen, setSlugDialogOpen] = useState(false);
   const [parryggSlugDialogOpen, setParryggSlugDialogOpen] = useState(false);
   const [gettingTournament, setGettingTournament] = useState(false);
-
-  // Challonge tournament view
-  const getChallongeTournament = async (maybeSlug: string) => {
-    if (!maybeSlug) {
-      return;
-    }
-
-    setGettingTournament(true);
-    try {
-      await window.electron.getChallongeTournament(maybeSlug);
-    } catch (e: any) {
-      showErrorDialog([e.toString()]);
-    } finally {
-      setGettingTournament(false);
-    }
-  };
 
   const getParryggTournament = async (
     maybeSlug: string,
@@ -1373,11 +1330,6 @@ function Hello() {
     try {
       if (mode === Mode.STARTGG) {
         await window.electron.startSet(originalSet);
-      } else if (mode === Mode.CHALLONGE) {
-        await window.electron.startChallongeSet(
-          selectedChallongeTournament.slug,
-          assertString(originalSet.id),
-        );
       } else if (mode === Mode.PARRYGG) {
         await window.electron.startParryggSet(assertString(originalSet.id));
       } else if (mode === Mode.OFFLINE_MODE) {
@@ -1398,17 +1350,6 @@ function Hello() {
         originalSet.state === State.COMPLETED
           ? await window.electron.updateSet(set)
           : await window.electron.reportSet(set, originalSet);
-      resetDq();
-      return updatedSet;
-    },
-    [resetDq],
-  );
-  const reportChallongeSet = useCallback(
-    async (matchId: string, items: ChallongeMatchItem[]) => {
-      const updatedSet = await window.electron.reportChallongeSet(
-        matchId,
-        items,
-      );
       resetDq();
       return updatedSet;
     },
@@ -1704,9 +1645,6 @@ function Hello() {
         if (mode === Mode.STARTGG) {
           tournamentName = startggTournament.name;
           tournamentSlug = startggTournament.slug;
-        } else if (mode === Mode.CHALLONGE) {
-          tournamentName = selectedChallongeTournament.name;
-          tournamentSlug = selectedChallongeTournament.slug;
         } else if (mode === Mode.PARRYGG) {
           tournamentName = parryggTournament?.name ?? '';
           tournamentSlug = parryggSlug;
@@ -1901,23 +1839,6 @@ function Hello() {
                     : selectedSet.stream,
                 },
               };
-            } else if (mode === Mode.CHALLONGE) {
-              context.challonge = {
-                tournament: {
-                  name: selectedChallongeTournament.name,
-                  slug: selectedChallongeTournament.slug,
-                  tournamentType: selectedChallongeTournament.tournamentType,
-                },
-                set: {
-                  id: typeof setId === 'string' ? setId : undefined,
-                  fullRoundText: selectedSet.fullRoundText,
-                  ordinal: selectedSet.ordinal,
-                  round: selectedSet.round,
-                  stream: updatedSetFields
-                    ? updatedSetFields.stream
-                    : selectedSet.stream,
-                },
-              };
             } else if (mode === Mode.PARRYGG) {
               context.startgg = {
                 tournament: {
@@ -1993,8 +1914,6 @@ function Hello() {
           mode === Mode.OFFLINE_MODE
         ) {
           poolName = selectedSetChain.phaseGroup?.name ?? '';
-        } else if (mode === Mode.CHALLONGE) {
-          poolName = selectedChallongeTournament.name;
         }
         await window.electron.appendEnforcerResult(
           violators
@@ -2307,55 +2226,6 @@ function Hello() {
                 </Dialog>
               </Stack>
             )}
-            {mode === Mode.CHALLONGE && (
-              <Stack direction="row">
-                <InputBase
-                  disabled
-                  size="small"
-                  value="Add Challonge tournament..."
-                  style={{ flexGrow: 1 }}
-                />
-                <Tooltip arrow title="Add Challonge tournament">
-                  <IconButton
-                    aria-label="Add Challonge tournament"
-                    onClick={() => setSlugDialogOpen(true)}
-                  >
-                    <Edit />
-                  </IconButton>
-                </Tooltip>
-                <Dialog
-                  open={slugDialogOpen}
-                  onClose={() => {
-                    setSlugDialogOpen(false);
-                  }}
-                >
-                  <ChallongeTournamentForm
-                    gettingAdminedTournaments={gettingAdminedTournaments}
-                    adminedTournaments={adminedTournaments}
-                    gettingTournament={gettingTournament}
-                    getAdminedTournaments={async () => {
-                      setGettingAdminedTournaments(true);
-                      try {
-                        setAdminedTournaments(
-                          await window.electron.getTournaments(),
-                        );
-                      } catch (e: unknown) {
-                        showErrorDialog([
-                          `Unable to fetch admined tournaments: ${
-                            e instanceof Error ? e.message : e
-                          }`,
-                        ]);
-                      }
-                      setGettingAdminedTournaments(false);
-                    }}
-                    getTournament={getChallongeTournament}
-                    close={() => {
-                      setSlugDialogOpen(false);
-                    }}
-                  />
-                </Dialog>
-              </Stack>
-            )}
             {mode === Mode.PARRYGG && (
               <Stack direction="row">
                 <InputBase
@@ -2633,9 +2503,6 @@ function Hello() {
             selectedSetChain={selectedSetChain}
             setSelectedSetChain={setSelectedSetChain}
             startggTournament={startggTournament}
-            challongeTournaments={challongeTournaments}
-            getChallongeTournament={getChallongeTournament}
-            setSelectedChallongeTournament={setSelectedChallongeTournament}
             parryggTournament={parryggTournament}
             offlineModeTournament={offlineModeTournament}
             manualNames={manualNames}
@@ -2695,7 +2562,6 @@ function Hello() {
                   tournamentSet={tournamentSet}
                   copyDirSet={copyDirSet}
                   getStartggTournament={getStartggTournament}
-                  getChallongeTournament={getChallongeTournament}
                   getParryggTournament={getParryggTournament}
                   offlineModeStatus={offlineModeStatus}
                   manualNames={manualNames}
@@ -3204,7 +3070,6 @@ function Hello() {
               </Tooltip>
               <ManualReport
                 mode={mode}
-                reportChallongeSet={reportChallongeSet}
                 reportStartggSet={reportStartggSet}
                 reportParryggSet={reportParryggSet}
                 reportOfflineModeSet={reportOfflineModeSet}
@@ -3227,7 +3092,6 @@ function Hello() {
                         return deleteSelected(true);
                       }
                 }
-                reportChallongeSet={reportChallongeSet}
                 reportStartggSet={reportStartggSet}
                 reportParryggSet={reportParryggSet}
                 reportOfflineModeSet={reportOfflineModeSet}
@@ -3335,13 +3199,7 @@ function Hello() {
           setMode(newMode);
           setSelectedSet(EMPTY_SET);
           setSelectedSetChain(EMPTY_SELECTED_SET_CHAIN);
-          setSelectedChallongeTournament({
-            name: '',
-            slug: '',
-            tournamentType: '',
-          });
           await window.electron.setSelectedSetChain(0, 0, 0);
-          await window.electron.setSelectedChallongeTournament('');
         }}
         useLAN={useLAN}
         setUseLAN={setUseLAN}

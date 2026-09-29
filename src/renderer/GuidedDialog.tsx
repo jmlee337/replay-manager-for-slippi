@@ -15,7 +15,6 @@ import {
 } from '../common/types';
 import ManualNamesForm from './ManualNamesForm';
 import StartggTournamentForm from './StartggTournamentForm';
-import ChallongeTournamentForm from './ChallongeTournamentForm';
 import ParryggTournamentForm from './ParryggTournamentForm';
 import { OfflineModeConnectionDialogContent } from './OfflineModeConnection';
 
@@ -29,7 +28,6 @@ export default function GuidedDialog({
   tournamentSet,
   copyDirSet,
   getStartggTournament,
-  getChallongeTournament,
   getParryggTournament,
   offlineModeStatus,
   manualNames,
@@ -50,7 +48,6 @@ export default function GuidedDialog({
   tournamentSet: boolean;
   copyDirSet: boolean;
   getStartggTournament: (maybeSlug: string, initial?: boolean) => Promise<void>;
-  getChallongeTournament: (maybeSlug: string) => Promise<void>;
   getParryggTournament: (maybeSlug: string) => Promise<void>;
   offlineModeStatus: OfflineModeStatus;
   manualNames: string[];
@@ -142,16 +139,6 @@ export default function GuidedDialog({
             gettingTournament={gettingTournament}
             getAdminedTournaments={getAdminedTournaments}
             getTournament={getStartggTournament}
-            close={() => {}}
-          />
-        )}
-        {!tournamentSet && mode === Mode.CHALLONGE && (
-          <ChallongeTournamentForm
-            gettingAdminedTournaments={gettingAdminedTournaments}
-            adminedTournaments={adminedTournaments}
-            gettingTournament={gettingTournament}
-            getAdminedTournaments={getAdminedTournaments}
-            getTournament={getChallongeTournament}
             close={() => {}}
           />
         )}
