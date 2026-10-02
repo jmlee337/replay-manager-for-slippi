@@ -210,6 +210,25 @@ export default function Settings({
           </Typography>
         </Stack>
         <DialogContent sx={{ pt: 0 }}>
+          {needUpdate && (
+            <Alert
+              severity="warning"
+              style={{ marginBottom: '8px' }}
+              action={
+                <Button
+                  endIcon={<CloudDownload />}
+                  variant="contained"
+                  onClick={() => {
+                    window.electron.update();
+                  }}
+                >
+                  Quit and download
+                </Button>
+              }
+            >
+              Update available! Version {latestAppVersion}
+            </Alert>
+          )}
           <Stack>
             <FormControl>
               <FormLabel id="mode-radio-group-label">Mode</FormLabel>
@@ -537,25 +556,6 @@ export default function Settings({
               </Button>
             </Stack>
           </Stack>
-          {needUpdate && (
-            <Alert
-              severity="warning"
-              style={{ marginTop: '8px' }}
-              action={
-                <Button
-                  endIcon={<CloudDownload />}
-                  variant="contained"
-                  onClick={() => {
-                    window.electron.update();
-                  }}
-                >
-                  Quit and download
-                </Button>
-              }
-            >
-              Update available! Version {latestAppVersion}
-            </Alert>
-          )}
         </DialogContent>
       </Dialog>
     </>
