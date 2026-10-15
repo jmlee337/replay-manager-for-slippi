@@ -15,6 +15,7 @@ import { ZipFile } from 'yazl';
 import { parse } from 'date-fns';
 import { buffer as bufferConsumer, text } from 'stream/consumers';
 import yauzl from 'yauzl-promise';
+import { Dirent } from 'fs';
 import {
   Context,
   CopyHostOrClient,
@@ -151,10 +152,24 @@ function maybeFixWinner(
   }
 }
 
-export async function getReplaysInDir(
-  dir: string,
-): Promise<{ replays: Replay[]; invalidReplays: InvalidReplay[] }> {
-  const objs = (await readdir(dir, { withFileTypes: true }))
+export async function getReplaysInDir(dir: string): Promise<{
+  exists: boolean;
+  replays: Replay[];
+  invalidReplays: InvalidReplay[];
+}> {
+  let dirents: Dirent<string>[] = [];
+  try {
+    dirents = await await readdir(dir, { withFileTypes: true });
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      if ((e as any).code === 'ENOENT') {
+        return { exists: false, replays: [], invalidReplays: [] };
+      }
+    }
+    throw e;
+  }
+
+  const objs = dirents
     .filter((dirent) => dirent.isFile() && dirent.name.endsWith('.slp'))
     .map(async (dirent): Promise<Replay | InvalidReplay> => {
       const fileName = dirent.name;
@@ -592,7 +607,7 @@ export async function getReplaysInDir(
   ).sort((invalidReplayA, invalidReplayB) =>
     invalidReplayA.fileName.localeCompare(invalidReplayB.fileName),
   );
-  return { replays, invalidReplays };
+  return { exists: true, replays, invalidReplays };
 }
 
 const narrowSpecialChars = new Map([
@@ -1004,10 +1019,20 @@ export async function getReportedSubdirs(copyDir: string) {
   return subdirs;
 }
 
-export async function getSubdirs(dir: string) {
-  const subdirDirents = (await readdir(dir, { withFileTypes: true })).filter(
-    (dirent) => dirent.isDirectory() && !dirent.name.startsWith('.'),
-  );
+export async function getSubdirs(dir: string): Promise<Subdir[]> {
+  let subdirDirents: Dirent<string>[] = [];
+  try {
+    subdirDirents = (await readdir(dir, { withFileTypes: true })).filter(
+      (dirent) => dirent.isDirectory() && !dirent.name.startsWith('.'),
+    );
+  } catch (e: unknown) {
+    if (e instanceof Error) {
+      if ((e as any).code === 'ENOENT') {
+        return [];
+      }
+    }
+    throw e;
+  }
   const subdirs = await Promise.all(
     subdirDirents.map(async (dirent): Promise<Subdir> => {
       let label = '';

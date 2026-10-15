@@ -121,6 +121,8 @@ import OfflineModeConnection from './OfflineModeConnection';
 
 const ENFORCER_VERSION = '2.3.3';
 
+class ExistsError extends Error {}
+
 const Bottom = styled(Paper)`
   height: 147px;
 `;
@@ -612,7 +614,10 @@ function Hello() {
   const [allReplaysSelected, setAllReplaysSelected] = useState(true);
   const [dirDeleteDialogOpen, setDirDeleteDialogOpen] = useState(false);
   const [dirDeleting, setDirDeleting] = useState(false);
-  const [dirExists, setDirExists] = useState(true);
+  const [dirError, setDirError] = useState({
+    isExistsError: false,
+    message: '',
+  });
   const [replays, setReplays] = useState<Replay[]>([]);
   const [replayRefs, setReplayRefs] = useState<RefObject<HTMLDivElement>[]>([]);
   const [invalidReplays, setInvalidReplays] = useState<InvalidReplay[]>([]);
@@ -693,7 +698,6 @@ function Hello() {
   }, [replayLoadCount]);
   const [skewDetected, setSkewDetected] = useState(false);
   const [skewDialogOpen, setSkewDialogOpen] = useState(false);
-  const [wasDeleted, setWasDeleted] = useState(false);
   const chooseDir = async () => {
     setGettingReplays(true);
     const newDir = await window.electron.chooseReplaysDir();
@@ -710,7 +714,7 @@ function Hello() {
       );
       setDir(newDir);
       setIsUsb(false);
-      setDirExists(true);
+      setDirError({ isExistsError: false, message: '' });
       setDirInit(false);
       resetOverrides();
       const skew = hasTimeSkew(newReplays);
@@ -730,7 +734,6 @@ function Hello() {
         );
       }
       setReplayRefs(vlerkMode ? newReplays.map(() => createRef()) : []);
-      setWasDeleted(false);
     }
     setGettingReplays(false);
   };
@@ -753,10 +756,13 @@ function Hello() {
       setGettingReplays(true);
       try {
         const res = await window.electron.getReplaysInDir();
+        if (!res.exists) {
+          throw new ExistsError();
+        }
         newReplays = res.replays;
         newInvalidReplays = res.invalidReplays;
         setReplayLoadCount(res.replayLoadCount);
-        setDirExists(true);
+        setDirError({ isExistsError: false, message: '' });
         if (triggerGuide && newReplays.length > 0) {
           setGuideState(
             mode === Mode.MANUAL ? GuideState.PLAYERS : GuideState.SET,
@@ -766,7 +772,14 @@ function Hello() {
           }
         }
       } catch (e: any) {
-        setDirExists(false);
+        if (e instanceof ExistsError) {
+          setDirError({
+            isExistsError: true,
+            message: 'Replays folder not found.',
+          });
+        } else if (e instanceof Error) {
+          setDirError({ isExistsError: false, message: e.message });
+        }
         setGuideBackdropOpen(false);
         setGuideState(GuideState.NONE);
       }
@@ -811,7 +824,6 @@ function Hello() {
     setEjecting(true);
     try {
       setEjected(await window.electron.deleteReplaysDir(usedFilenames));
-      setWasDeleted(true);
       await refreshReplays();
     } finally {
       setDirDeleting(false);
@@ -939,7 +951,6 @@ function Hello() {
       if (!undoSubdir) {
         setDir(newDir);
         setIsUsb(newIsUsb);
-        setWasDeleted(false);
         refreshReplays(true);
         setEjected(false);
       }
@@ -950,7 +961,6 @@ function Hello() {
     (selection: { dir: string; subdir: string }) => {
       setSubdirSelection(selection);
       if (!undoSubdir) {
-        setWasDeleted(false);
         refreshReplays(true);
       }
     },
@@ -2050,7 +2060,7 @@ function Hello() {
                     </Tooltip>
                   )}
                   {dir &&
-                    dirExists &&
+                    !dirError.message &&
                     !gettingReplays &&
                     (replays.length > 0 || invalidReplays.length > 0) &&
                     (isUsb ? (
@@ -2325,7 +2335,7 @@ function Hello() {
         <TopColumn flexGrow={1} minWidth="600px">
           {dir &&
             !gettingReplays &&
-            (dirExists ? (
+            (!dirError.message ? (
               <>
                 <ReplayList
                   dirInit={dirInit}
@@ -2444,12 +2454,10 @@ function Hello() {
               </>
             ) : (
               <Alert
-                severity={wasDeleted ? 'warning' : 'error'}
+                severity={dirError.isExistsError ? 'warning' : 'error'}
                 sx={{ mb: '8px', mt: '8px', pl: '10px' }}
               >
-                {wasDeleted
-                  ? 'Replays folder deleted.'
-                  : 'Replays folder not found.'}
+                {dirError.message}
               </Alert>
             ))}
           {dir && gettingReplays && (
@@ -3167,7 +3175,6 @@ function Hello() {
                         setUndoSubdir(reportedSubdir);
                         setUndoDialogOpen(false);
                         setIsUsb(newIsUsb);
-                        setWasDeleted(false);
                         refreshReplays(true);
                         setEjected(false);
                       } catch (e: any) {
