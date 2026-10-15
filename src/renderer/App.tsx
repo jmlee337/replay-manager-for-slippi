@@ -2038,6 +2038,17 @@ function Hello() {
                       </IconButton>
                     </Tooltip>
                   )}
+                  {dir && !isUsb && (
+                    <Tooltip arrow title="Close replays folder">
+                      <IconButton
+                        onClick={async () => {
+                          window.electron.closeReplayDir();
+                        }}
+                      >
+                        <Close />
+                      </IconButton>
+                    </Tooltip>
+                  )}
                   {dir &&
                     dirExists &&
                     !gettingReplays &&

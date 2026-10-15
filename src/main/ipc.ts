@@ -523,6 +523,25 @@ export default function setupIPCs(
     maybeEject(replayDirs[replayDirs.length - 1]),
   );
 
+  ipcMain.removeHandler('closeReplayDir');
+  ipcMain.handle('closeReplayDir', async () => {
+    if (replayDirs.length === 0) {
+      throw new Error('No replay dir to close');
+    }
+    if (replayDirs[replayDirs.length - 1].usbKey) {
+      throw new Error('Cannot close USB');
+    }
+
+    replayDirs.length -= 1;
+    const newDir =
+      replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : null;
+    mainWindow.webContents.send(
+      'usbstorage',
+      newDir ? newDir.dir : '',
+      Boolean(newDir?.usbKey),
+    );
+  });
+
   let replayLoadCount = 0;
   let enforcerSetting = store.get('enforcerSetting', EnforcerSetting.NONE);
   setOwnEnforcerSetting(enforcerSetting);
