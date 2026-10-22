@@ -252,6 +252,7 @@ const ReplayListItem = forwardRef(
                     innerPlayer.isWinner = false;
                   });
                   player.isWinner = true;
+                  replay.selected = true;
                   onOverride();
                 }}
               >
@@ -323,6 +324,7 @@ const ReplayListItem = forwardRef(
                 innerPlayer.isWinner = false;
               });
               player.isWinner = true;
+              replay.selected = true;
               onOverride();
             }}
           >
