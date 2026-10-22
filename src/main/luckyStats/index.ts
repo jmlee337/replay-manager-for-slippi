@@ -3,6 +3,7 @@ import Store from 'electron-store';
 import path from 'path';
 import { createHash } from 'crypto';
 import { readdir, readFile } from 'fs/promises';
+import { contextSetId, contextTournament } from './context';
 import LuckyQueue, { SourceFile } from './queue';
 import { LuckyClient } from './client';
 
@@ -23,7 +24,7 @@ function secureStorage() {
       'An OS credential store is required to connect Lucky Stats.',
     );
 }
-export function initLuckyStats() {
+export function initLuckyStats(parryKey: () => string = () => '') {
   initialized ??= (async () => {
     const encrypted = store.get('encryptedKey');
     if (encrypted) {
@@ -37,7 +38,7 @@ export function initLuckyStats() {
     }
     queue = new LuckyQueue(
       path.join(app.getPath('userData'), 'lucky-stats-uploads'),
-      new LuckyClient(() => key),
+      new LuckyClient(() => key, undefined, parryKey),
       () => Boolean(key),
     );
     await queue.init();
@@ -106,11 +107,7 @@ export function initLuckyStats() {
       const context = JSON.parse(
         await readFile(path.join(dir, 'context.json'), 'utf8'),
       );
-      const slug = String(context?.startgg?.event?.slug || '').match(
-        /^tournament\/([^/]+)\/event\//,
-      )?.[1];
-      if (!slug)
-        throw new Error('The context must include a Start.gg event slug.');
+      const slug = contextTournament(context);
       const entries = await readdir(dir, { withFileTypes: true });
       const files = entries
         .filter(
@@ -120,7 +117,7 @@ export function initLuckyStats() {
               f.name.toLowerCase().endsWith('.slp')),
         )
         .map((f) => ({ name: f.name, source: path.join(dir, f.name) }));
-      await queue.enqueue(slug, String(context?.startgg?.set?.id || ''), files);
+      await queue.enqueue(slug, contextSetId(context), files);
     },
     luckyCancel: async (id: string) => {
       await initialized;

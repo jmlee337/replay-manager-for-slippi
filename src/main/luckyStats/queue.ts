@@ -12,6 +12,7 @@ import {
   writeFile,
 } from 'fs/promises';
 import path from 'path';
+import { contextSetId } from './context';
 import { LuckyBatch, LuckyJob, LuckySnapshot } from '../../common/luckyStats';
 import { LuckyClient, LuckyError } from './client';
 
@@ -104,11 +105,17 @@ export default class LuckyQueue {
     const id = randomUUID();
     const dir = path.join(this.root, id);
     try {
-      const slug = `tournament/${tournament
-        .replace(/^tournament\//, '')
-        .toLowerCase()}`;
-      if (!/^[1-9][0-9]{0,19}$/.test(setId))
-        throw new Error('A confirmed Start.gg set ID is required.');
+      const slug = tournament.startsWith('parry:')
+        ? tournament.toLowerCase()
+        : `tournament/${tournament.replace(/^tournament\//, '').toLowerCase()}`;
+      if (
+        !(slug.startsWith('parry:')
+          ? /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(
+              setId,
+            )
+          : /^[1-9][0-9]{0,19}$/.test(setId))
+      )
+        throw new Error('A confirmed set ID is required.');
       if (
         this.finishing.has(slug) ||
         this.state.batches.some(
@@ -151,8 +158,8 @@ export default class LuckyQueue {
       const context = JSON.parse(
         await readFile(path.join(dir, 'context.json'), 'utf8'),
       );
-      if (String(context?.startgg?.set?.id) !== setId)
-        throw new Error('Set context does not match the Start.gg set ID.');
+      if (contextSetId(context) !== setId)
+        throw new Error('Set context does not match the set ID.');
       const fingerprint = createHash('sha256')
         .update(JSON.stringify({ slug, setId, manifest }))
         .digest('hex');

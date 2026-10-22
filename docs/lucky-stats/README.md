@@ -1,16 +1,16 @@
 # Lucky Stats game data uploads
 
-This opt-in integration uploads finalized Start.gg sets to Lucky Stats after Copy, including Report with **Also copy** enabled. Folder, ZIP and individual-file copy outputs use the same finalized bytes. It does not upload directly from the source USB or require a storage credential.
+This opt-in integration uploads finalized Start.gg or Parry sets to Lucky Stats after Copy, including Report with **Also copy** enabled. Folder, ZIP and individual-file copy outputs use the same finalized bytes. It does not upload directly from the source USB or require a storage credential.
 
 ## Connect
 
-1. Connect the Start.gg account that administers your tournament on [Lucky Stats game data](https://luckystats.gg/?tab=gamedata).
+1. For Start.gg, connect your organizer account on [Lucky Stats game data](https://luckystats.gg/?tab=gamedata). For Parry, configure your organizer API key in the app and import the tournament into Lucky Stats.
 2. Create a device-specific key at [Account → API keys → App uploads](https://luckystats.gg/account?tab=api#upload-keys). The **How to integrate** guide there documents the service contract.
 3. Open **Lucky Stats** in this app, paste the key and select **Connect**.
 4. Enable **Upload copied sets automatically**. Copy each completed set as usual, or use **Add existing set folder** for a folder containing its game files and `context.json`.
 5. At the end of the tournament, wait for every set and correction on every device to finish uploading, then select **Finish tournament** and confirm. This closes this account's tournament upload to further changes.
 
-The automatic hook currently supports online Start.gg mode. Other bracket modes keep their existing behavior. Adding an existing folder requires a real Start.gg set ID and event slug in its context. Start.gg reporting itself remains independent of Lucky Stats upload success.
+The automatic hook supports online Start.gg and Parry modes. Existing folders need a confirmed set identity and tournament reference in their context.
 
 ## Lifecycle
 
@@ -43,3 +43,12 @@ The E2E script launches the packaged Electron app in a disposable profile. It su
 Additional live verification on October 22, 2026 used the packaged app and an isolated, temporary credential against the real Lucky Stats API and S3. Connection, signed upload, handoff and correction/replacement succeeded. Those screenshots are prefixed `live-`. The fixture files were not playable games and were never finalized into production imports. Temporary credentials and database fixtures were removed; stored objects were tagged for the existing storage expiration policy.
 
 A real tournament's import-to-analytics completion, Windows/Linux packaging, and automatic Copy/Report interaction against a real Start.gg bracket are not covered by the live check. The finalized-file writer hook is covered for folder, ZIP and individual-file outputs in the regression tests. This is a draft for upstream review before a tournament trial.
+
+
+## Parry uploads
+
+Parry Copy/Report uses the same automatic upload queue, including forced context generation when enabled. New context files include `startgg.tournament.parryId`; sets retain their UUID in `startgg.set.internalId` with a null numeric ID. Recopy older folders that lack the tournament ID.
+
+The app sends its configured Parry API key to Lucky Stats in `X-Parry-API-Key`. Lucky Stats checks admin, manager, or reporter permissions with Parry for that tournament; ordinary organizers do not need Lucky Stats game-data-admin access. The credential is not persisted by Lucky Stats or sent to S3. The Parry tournament must already be imported into Lucky Stats.
+
+Validation: UUID/context tests, all three writer output modes, and the packaged Electron UI using `PLATFORM=parry npm run test:lucky-stats:e2e` with local API/storage/analytics fixtures. Screenshots in `screenshots/parry/` show that fixture flow, not a live Parry tournament. A live organizer-credential check remains pending.

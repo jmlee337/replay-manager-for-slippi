@@ -16,6 +16,7 @@ export class LuckyClient {
   constructor(
     private key: () => string,
     private base = 'https://luckystats.gg/api/integrations/v1',
+    private parryKey: () => string = () => '',
   ) {
     // Dependencies are initialized by TypeScript parameter properties.
   }
@@ -34,6 +35,7 @@ export class LuckyClient {
           Authorization: `Bearer ${this.key()}`,
           'X-App-Id': 'replay-reporter',
           'Content-Type': 'application/json',
+          ...(this.parryKey() ? { 'X-Parry-API-Key': this.parryKey() } : {}),
           ...(idempotency ? { 'Idempotency-Key': idempotency } : {}),
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),

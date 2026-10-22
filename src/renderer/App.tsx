@@ -1461,7 +1461,7 @@ function Hello() {
     let subdir = '';
     let context: Context | undefined;
     if (
-      (luckyStatsEnabled && mode === Mode.STARTGG) ||
+      (luckyStatsEnabled && (mode === Mode.STARTGG || mode === Mode.PARRYGG)) ||
       copySettings.writeFileNames ||
       copySettings.output === Output.FOLDER ||
       copySettings.output === Output.ZIP
@@ -1734,7 +1734,8 @@ function Hello() {
       }
 
       if (
-        (luckyStatsEnabled && mode === Mode.STARTGG) ||
+        (luckyStatsEnabled &&
+          (mode === Mode.STARTGG || mode === Mode.PARRYGG)) ||
         (copySettings.writeContext &&
           (copySettings.output === Output.FOLDER ||
             copySettings.output === Output.ZIP))
@@ -1857,6 +1858,7 @@ function Hello() {
             } else if (mode === Mode.PARRYGG) {
               context.startgg = {
                 tournament: {
+                  parryId: parryggTournament?.id,
                   name: parryggTournament?.name || '',
                   location: parryggTournament?.venueAddress || '',
                 },

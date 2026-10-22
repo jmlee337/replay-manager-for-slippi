@@ -109,8 +109,8 @@ export default function LuckyStats({
         <DialogContent dividers>
           <Stack spacing={2}>
             <Typography>
-              Upload each copied Start.gg set automatically. Corrected copies
-              replace the previous set. Start advanced analytics when the
+              Upload each copied Start.gg or Parry set automatically. Corrected
+              copies replace the previous set. Start advanced analytics when the
               tournament finishes.
             </Typography>
             {error || snapshot?.error ? (
@@ -124,9 +124,9 @@ export default function LuckyStats({
               Create an upload key on Lucky Stats
             </Link>
             <Typography variant="body2">
-              Connect your Start.gg account on Lucky Stats to authorize
-              tournaments you administer. Keys are saved in your OS credential
-              store.
+              For Start.gg, connect your account on Lucky Stats. For Parry, use
+              your Parry API key in app settings; Lucky Stats checks its
+              tournament permissions with Parry.
             </Typography>
             {snapshot?.connected ? (
               <Chip

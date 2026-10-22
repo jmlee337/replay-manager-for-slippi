@@ -8,6 +8,9 @@ const os = require('node:os');
 const assert = require('node:assert/strict');
 
 async function main() {
+  const parry = process.env.PLATFORM === 'parry';
+  const setId = parry ? '01a0bc51-736d-761d-b6ed-042418c5cd14' : '12345678';
+  const tournamentId = '01a0bc41-9f3b-70fa-8c35-500608f7dcab';
   const executablePath = process.env.ELECTRON_APP;
   assert.ok(executablePath, 'Set ELECTRON_APP to the packaged app executable.');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'lucky-ui-'));
@@ -25,6 +28,7 @@ async function main() {
     path.join(profile, 'config.json'),
     JSON.stringify({
       mode: 'manual',
+      ...(parry ? { parryggApiKey: 'fixture-parry-key' } : {}),
       guidedMode: false,
       manualNames: ['Player One', 'Player Two'],
       useLAN: false,
@@ -35,7 +39,8 @@ async function main() {
     JSON.stringify({
       startgg: {
         event: { slug: 'tournament/integration-test-weekly/event/singles' },
-        set: { id: 12345678 },
+        tournament: parry ? { parryId: tournamentId } : undefined,
+        set: parry ? { id: null, internalId: setId } : { id: Number(setId) },
       },
       scores: [],
     }),
@@ -55,6 +60,7 @@ async function main() {
       const route = req.url;
       if (req.method === 'PUT') {
         assert.equal(req.headers.authorization, undefined);
+        assert.equal(req.headers['x-parry-api-key'], undefined);
         const [, id, index] = route.split('/');
         const upload = uploads.get(id);
         const file = upload.files[Number(index)];
@@ -80,6 +86,11 @@ async function main() {
         return;
       }
       if (route === '/uploads') {
+        assert.equal(body.setId, setId);
+        if (parry) {
+          assert.equal(body.tournament, `parry:${tournamentId}`);
+          assert.equal(req.headers['x-parry-api-key'], 'fixture-parry-key');
+        }
         assert.equal(finalized, false);
         const id = req.headers['idempotency-key'];
         if (!uploads.has(id))
@@ -195,7 +206,13 @@ async function main() {
     }
     assert.ok(page);
     page.setDefaultTimeout(20000);
-    await page.getByRole('button', { name: /^Lucky Stats$/i }).click();
+    try {
+      await page.getByRole('button', { name: /^Lucky Stats$/i }).click();
+    } catch (error) {
+      console.log(await page.locator('body').innerText());
+      await page.screenshot({ path: '/tmp/lucky-startup-failure.png' });
+      throw error;
+    }
     return page;
   }
   try {
@@ -207,15 +224,15 @@ async function main() {
     await page
       .getByRole('button', { name: /Add existing set folder/i })
       .click();
-    await page.getByText('Set 12345678 · Queued', { exact: true }).waitFor();
+    await page.getByText(`Set ${setId} · Queued`, { exact: true }).waitFor();
     assert.equal(uploads.size, 0);
     await app.close();
     app = undefined;
     page = await launch();
-    await page.getByText('Set 12345678 · Queued', { exact: true }).waitFor();
+    await page.getByText(`Set ${setId} · Queued`, { exact: true }).waitFor();
     await page.getByRole('switch').check();
     await page
-      .getByText('Set 12345678 · Uploaded · waiting for tournament finish', {
+      .getByText(`Set ${setId} · Uploaded · waiting for tournament finish`, {
         exact: true,
       })
       .waitFor();
@@ -224,9 +241,9 @@ async function main() {
     await page
       .getByRole('button', { name: /Add existing set folder/i })
       .click();
-    await page.getByText('Set 12345678 · Replaced', { exact: true }).waitFor();
+    await page.getByText(`Set ${setId} · Replaced`, { exact: true }).waitFor();
     await page
-      .getByText('Set 12345678 · Uploaded · waiting for tournament finish', {
+      .getByText(`Set ${setId} · Uploaded · waiting for tournament finish`, {
         exact: true,
       })
       .waitFor();
