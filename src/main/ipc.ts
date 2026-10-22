@@ -307,7 +307,10 @@ export default function setupIPCs(
   detectUsb.on('insert', onInsert);
   detectUsb.removeAllListeners('eject');
   detectUsb.on('eject', onEject);
-  detectUsb.startListening();
+  detectUsb
+    .startListening()
+    .then((mountDatas) => mountDatas.forEach(onInsert))
+    .catch(() => {});
 
   let mode = store.has('mode') ? (store.get('mode') as Mode) : Mode.STARTGG;
   if (mode === Mode.OFFLINE_MODE) {
@@ -345,7 +348,14 @@ export default function setupIPCs(
     if (undoSrcFullPath) {
       return undoDstFullPath;
     }
-    return replayDirs.length > 0 ? replayDirs[replayDirs.length - 1].dir : '';
+
+    const replayDir =
+      replayDirs.length > 0 ? replayDirs[replayDirs.length - 1] : null;
+    const isUsb = Boolean(replayDir?.usbKey ?? false);
+    return {
+      replaysDir: replayDir?.dir ?? '',
+      isUsb,
+    };
   });
 
   // selection is remembered on refresh and ignored if dir changes

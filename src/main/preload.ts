@@ -40,7 +40,8 @@ const electronHandler = {
     ipcRenderer.removeAllListeners('slp-download-status');
     ipcRenderer.on('slp-download-status', callback);
   },
-  getReplaysDir: (): Promise<string> => ipcRenderer.invoke('getReplaysDir'),
+  getReplaysDir: (): Promise<{ replaysDir: string; isUsb: boolean }> =>
+    ipcRenderer.invoke('getReplaysDir'),
   chooseReplaysDir: (): Promise<string> =>
     ipcRenderer.invoke('chooseReplaysDir'),
   getTrashDir: (): Promise<string> => ipcRenderer.invoke('getTrashDir'),

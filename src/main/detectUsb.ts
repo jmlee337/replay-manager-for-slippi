@@ -1,7 +1,6 @@
 // Ported from https://github.com/sudhakar3697/node-detect-usb/blob/54f9b58eaccf19417034623927c806ad36878b29/index.js
 /* eslint-disable max-classes-per-file */
 import fs from 'fs';
-import nodePath from 'path';
 import { EventEmitter } from 'events';
 import usbDetect from 'usb-detection';
 import { list } from 'drivelist';
@@ -17,16 +16,10 @@ class Utils {
       return false;
     }
   }
-
-  static getUSBLabel(mountPath: string) {
-    return nodePath.basename(mountPath);
-  }
 }
 
 export type MountData = {
   key: string;
-  name: string;
-  devicepath: string;
   isAccessible: boolean;
 };
 
@@ -42,7 +35,7 @@ class USBEventsController extends EventEmitter<{
 
   constructor() {
     super();
-    this.usbList = new Map();
+    this.usbList = new Map<string, MountData>();
   }
 
   async startListening() {
@@ -58,8 +51,6 @@ class USBEventsController extends EventEmitter<{
             if (i) {
               this.usbList.set(i.path, {
                 key: i.path,
-                name: Utils.getUSBLabel(i.path),
-                devicepath: drive.device,
                 isAccessible: await Utils.isReadable(i.path),
               });
             }
@@ -81,10 +72,8 @@ class USBEventsController extends EventEmitter<{
               for await (const i of drive.mountpoints) {
                 if (i) {
                   if (!this.usbList.has(i.path)) {
-                    const mountData = {
+                    const mountData: MountData = {
                       key: i.path,
-                      name: Utils.getUSBLabel(i.path),
-                      devicepath: drive.device,
                       isAccessible: await Utils.isReadable(i.path),
                     };
                     this.emit('insert', mountData);
@@ -125,6 +114,7 @@ class USBEventsController extends EventEmitter<{
     } catch (err) {
       this.emit('error', err);
     }
+    return Array.from(this.usbList.values());
   }
 
   // eslint-disable-next-line class-methods-use-this

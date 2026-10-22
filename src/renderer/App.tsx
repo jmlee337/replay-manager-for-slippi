@@ -408,8 +408,9 @@ function Hello() {
 
       // initial state
       const replaysDir = await replaysDirPromise;
-      setDir(replaysDir);
-      setDirInit(replaysDir.length > 0);
+      setDir(replaysDir.replaysDir);
+      setDirInit(replaysDir.replaysDir.length > 0);
+      setIsUsb(replaysDir.isUsb);
       setSubdirSelection(await subdirSelectionPromise);
       setCopyDir(await copyDirPromise);
       setHost(await hostPromise);
