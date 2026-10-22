@@ -30,6 +30,20 @@ import {
 } from '../common/types';
 
 const electronHandler = {
+  luckyDisconnect: (): Promise<void> => ipcRenderer.invoke('luckyDisconnect'),
+  luckyAddFolder: (): Promise<void> => ipcRenderer.invoke('luckyAddFolder'),
+  luckyStatus: (): Promise<import('../common/luckyStats').LuckySnapshot> =>
+    ipcRenderer.invoke('luckyStatus'),
+  luckyConnect: (key: string): Promise<void> =>
+    ipcRenderer.invoke('luckyConnect', key),
+  luckyEnable: (enabled: boolean): Promise<void> =>
+    ipcRenderer.invoke('luckyEnable', enabled),
+  luckyCancel: (id: string): Promise<void> =>
+    ipcRenderer.invoke('luckyCancel', id),
+  luckyRetry: (id: string): Promise<void> =>
+    ipcRenderer.invoke('luckyRetry', id),
+  luckyFinish: (id: string): Promise<void> =>
+    ipcRenderer.invoke('luckyFinish', id),
   getOfflineModePassword: (): Promise<string> =>
     ipcRenderer.invoke('getOfflineModePassword'),
   setOfflineModePassword: (offlineModePassword: string): Promise<void> =>

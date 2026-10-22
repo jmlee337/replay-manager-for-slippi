@@ -66,3 +66,7 @@ To package apps for the local platform:
 ```bash
 npm run package
 ```
+
+## Lucky Stats integration (draft)
+
+Optionally upload game data after each Start.gg set, replace corrected sets, and submit advanced analytics when the tournament finishes. See the [setup, lifecycle and verification guide](docs/lucky-stats/README.md).

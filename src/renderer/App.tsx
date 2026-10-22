@@ -97,6 +97,7 @@ import CopyControls from './CopyControls';
 import SetControls from './SetControls';
 import ErrorDialog from './ErrorDialog';
 import Settings from './Settings';
+import LuckyStats from './LuckyStats';
 import ManualReport from './ManualReport';
 import {
   calledColor,
@@ -250,6 +251,7 @@ function Hello() {
   const [appVersion, setAppVersion] = useState('');
   const [latestAppVersion, setLatestAppVersion] = useState('');
   const [hideCopyButton, setHideCopyButton] = useState(false);
+  const [luckyStatsEnabled, setLuckyStatsEnabled] = useState(false);
   const [copySettings, setCopySettings] = useState<CopySettings>({
     output: Output.FILES,
     writeContext: false,
@@ -1459,6 +1461,7 @@ function Hello() {
     let subdir = '';
     let context: Context | undefined;
     if (
+      (luckyStatsEnabled && mode === Mode.STARTGG) ||
       copySettings.writeFileNames ||
       copySettings.output === Output.FOLDER ||
       copySettings.output === Output.ZIP
@@ -1731,9 +1734,10 @@ function Hello() {
       }
 
       if (
-        copySettings.writeContext &&
-        (copySettings.output === Output.FOLDER ||
-          copySettings.output === Output.ZIP)
+        (luckyStatsEnabled && mode === Mode.STARTGG) ||
+        (copySettings.writeContext &&
+          (copySettings.output === Output.FOLDER ||
+            copySettings.output === Output.ZIP))
       ) {
         let canWriteContext = true;
         const scores: ContextScore[] = [];
@@ -3211,6 +3215,7 @@ function Hello() {
         }}
         open={errorDialogOpen}
       />
+      <LuckyStats onEnabledChange={setLuckyStatsEnabled} />
       <Settings
         appVersion={appVersion}
         latestAppVersion={latestAppVersion}

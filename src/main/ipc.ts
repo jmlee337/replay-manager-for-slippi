@@ -25,6 +25,7 @@ import { MatchResult } from '@parry-gg/client';
 import { createWriteStream } from 'fs';
 import yauzl from 'yauzl-promise';
 import { pipeline } from 'stream/promises';
+import { initLuckyStats, luckyEnabled, enqueueLuckySet } from './luckyStats';
 import { detectUsb, MountData } from './detectUsb';
 import {
   Context,
@@ -156,6 +157,7 @@ export default function setupIPCs(
     offlineModePassword: string;
   }>();
   initOfflineMode(mainWindow);
+  initLuckyStats();
 
   let offlineModePassword = store.get('offlineModePassword', '');
   setOfflineModePassword(offlineModePassword);
@@ -627,6 +629,12 @@ export default function setupIPCs(
         throw new Error('copy dir not set');
       }
 
+      const upload = mode === Mode.STARTGG && (await luckyEnabled());
+      const tournamentSlug = getCurrentTournament()?.slug || '';
+      if (upload && !context?.startgg?.set.id)
+        throw new Error(
+          'Lucky Stats needs a confirmed Start.gg set and its context before copying.',
+        );
       return writeReplays(
         copyDir,
         host,
@@ -637,6 +645,14 @@ export default function setupIPCs(
         subdir,
         writeDisplayNames,
         context,
+        upload
+          ? (files) =>
+              enqueueLuckySet(
+                tournamentSlug,
+                String(context!.startgg!.set.id),
+                files,
+              )
+          : undefined,
       );
     },
   );

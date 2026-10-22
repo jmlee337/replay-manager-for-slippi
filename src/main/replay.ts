@@ -27,6 +27,7 @@ import {
 } from '../common/types';
 import { isValidCharacter } from '../common/constants';
 import { writeZip } from './host';
+import type { SourceFile } from './luckyStats/queue';
 
 // https://github.com/project-slippi/slippi-launcher/blob/ae8bb69e235b6e46b24bc966aeaa80f45030c6f9/src/replays/file_system_replay_provider/load_file.ts#L91-L101
 // ty vince
@@ -681,6 +682,7 @@ export async function writeReplays(
   subdir: string,
   writeDisplayNames: boolean,
   context: Context | undefined,
+  onWritten?: (files: SourceFile[]) => Promise<void>,
 ) {
   if (fileNames.length > 0 && fileNames.length !== replays.length) {
     throw new Error(
@@ -947,6 +949,24 @@ export async function writeReplays(
         rejections.map((rejection) => rejection.reason).join(', '),
       );
     }
+  }
+  if (onWritten && context) {
+    const files: SourceFile[] =
+      output === Output.ZIP
+        ? replayBuffers.map((file) => ({
+            name: file.fileName,
+            bytes: file.buffer,
+          }))
+        : replays.map((replay, i) => ({
+            name: sanitizedFileNames[i] ?? replay.fileName,
+            source: join(writeDir, sanitizedFileNames[i] ?? replay.fileName),
+          }));
+    if (output !== Output.ZIP)
+      files.push({
+        name: 'context.json',
+        bytes: Buffer.from(JSON.stringify(context)),
+      });
+    await onWritten(files);
   }
 }
 
