@@ -219,7 +219,22 @@ async function main() {
     let page = await launch();
     await page.getByLabel('Upload key').fill(`l7u_${'a'.repeat(64)}`);
     await page.getByRole('button', { name: /^Connect$/i }).click();
-    await page.getByText('Connected', { exact: true }).waitFor();
+    await page.getByText('Automatic uploads on', { exact: true }).waitFor();
+    assert.equal(await page.getByRole('switch').count(), 0);
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page
+      .getByRole('switch', { name: 'Pause Lucky Stats uploads' })
+      .check();
+    await page.waitForTimeout(500);
+    await page.screenshot({
+      path: path.join(shots, 'fixture-upload-settings.png'),
+    });
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: /^Lucky Stats$/i }).click();
+    await page
+      .getByText('Uploads paused. Resume in Settings → Lucky Stats.')
+      .waitFor();
     // Queue while paused, then restart: no network handoff until explicitly enabled.
     await page
       .getByRole('button', { name: /Add existing set folder/i })
@@ -230,7 +245,14 @@ async function main() {
     app = undefined;
     page = await launch();
     await page.getByText(`Set ${setId} · Queued`, { exact: true }).waitFor();
-    await page.getByRole('switch').check();
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page
+      .getByRole('switch', { name: 'Pause Lucky Stats uploads' })
+      .uncheck();
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: /^Lucky Stats$/i }).click();
     await page
       .getByText(`Set ${setId} · Uploaded · waiting for tournament finish`, {
         exact: true,
@@ -274,6 +296,15 @@ async function main() {
     console.log(
       'PASS: built Electron UI → encrypted key → persisted queue → restart → storage transfer → replacement → explicit finish → import and analytics polling (local fixture server).',
     );
+  } catch (error) {
+    const failedPage = app
+      ?.windows()
+      .find((p) => p.url().endsWith('/index.html'));
+    if (failedPage) {
+      console.log(await failedPage.locator('body').innerText());
+      await failedPage.screenshot({ path: '/tmp/lucky-settings-failure.png' });
+    }
+    throw error;
   } finally {
     if (app) await app.close();
     await new Promise((resolve) => server.close(resolve));

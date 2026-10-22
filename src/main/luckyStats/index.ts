@@ -77,6 +77,7 @@ export function initLuckyStats(parryKey: () => string = () => '') {
       );
       store.set('keyFingerprint', fingerprint);
       key = next;
+      await queue.enable(true);
       error = undefined;
     },
     luckyDisconnect: async () => {

@@ -8,11 +8,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
   LinearProgress,
   Link,
   Stack,
-  Switch,
   TextField,
   Typography,
 } from '@mui/material';
@@ -130,7 +128,7 @@ export default function LuckyStats({
             </Typography>
             {snapshot?.connected ? (
               <Chip
-                label="Connected"
+                label={snapshot.enabled ? 'Automatic uploads on' : 'Connected'}
                 color="success"
                 sx={{ alignSelf: 'flex-start' }}
               />
@@ -170,22 +168,14 @@ export default function LuckyStats({
                 Reconnect with the original key to resume this queue.
               </Typography>
             )}
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={snapshot?.enabled || false}
-                  disabled={busy || !snapshot?.connected}
-                  onChange={(_, enabled) =>
-                    act(() => window.electron.luckyEnable(enabled))
-                  }
-                />
-              }
-              label="Upload copied sets automatically"
-            />
+            {snapshot?.connected && !snapshot.enabled && (
+              <Alert severity="warning">
+                Uploads paused. Resume in Settings → Lucky Stats.
+              </Alert>
+            )}
             <Typography variant="body2">
               Use Copy or Report with “Also copy” enabled. Keep the app open for
-              transfers. Pending uploads resume when the app reopens; pausing
-              stops new transfers after the current transfer.
+              transfers.
             </Typography>
             <Button
               disabled={busy || !snapshot?.connected}
