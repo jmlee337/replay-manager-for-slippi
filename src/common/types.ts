@@ -323,6 +323,7 @@ export type Context = {
   players: ContextPlayers;
   startgg?: {
     tournament: {
+      parryId?: string;
       name: string;
       location: string;
     };

@@ -37,7 +37,9 @@
     "start:main": "cross-env NODE_ENV=development electronmon -r ts-node/register/transpile-only .",
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
-    "test": "jest"
+    "test": "jest",
+    "test:lucky-stats": "jest src/main/luckyStats --runInBand",
+    "test:lucky-stats:e2e": "node scripts/lucky-stats-e2e.cjs"
   },
   "browserslist": [],
   "prettier": {
@@ -167,6 +169,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "mini-css-extract-plugin": "^2.7.6",
     "node-gyp": "^9.4.1",
+    "playwright": "^1.62.1",
     "prettier": "^3.0.3",
     "python-shell": "^5.0.0",
     "react-refresh": "^0.14.0",

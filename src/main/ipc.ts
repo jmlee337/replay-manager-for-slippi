@@ -25,6 +25,8 @@ import { MatchResult } from '@parry-gg/client';
 import { createWriteStream } from 'fs';
 import yauzl from 'yauzl-promise';
 import { pipeline } from 'stream/promises';
+import { contextSetId, contextTournament } from './luckyStats/context';
+import { initLuckyStats, luckyEnabled, enqueueLuckySet } from './luckyStats';
 import { detectUsb, MountData } from './detectUsb';
 import {
   Context,
@@ -156,6 +158,7 @@ export default function setupIPCs(
     offlineModePassword: string;
   }>();
   initOfflineMode(mainWindow);
+  initLuckyStats(() => String(store.get('parryggApiKey') || ''));
 
   let offlineModePassword = store.get('offlineModePassword', '');
   setOfflineModePassword(offlineModePassword);
@@ -627,6 +630,11 @@ export default function setupIPCs(
         throw new Error('copy dir not set');
       }
 
+      const upload =
+        (mode === Mode.STARTGG || mode === Mode.PARRYGG) &&
+        (await luckyEnabled());
+      const tournamentSlug = upload ? contextTournament(context) : '';
+      const uploadSetId = upload ? contextSetId(context) : '';
       return writeReplays(
         copyDir,
         host,
@@ -637,6 +645,9 @@ export default function setupIPCs(
         subdir,
         writeDisplayNames,
         context,
+        upload
+          ? (files) => enqueueLuckySet(tournamentSlug, uploadSetId, files)
+          : undefined,
       );
     },
   );

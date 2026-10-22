@@ -29,6 +29,7 @@ import {
 import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import { lt, valid } from 'semver';
 import LabeledCheckbox from './LabeledCheckbox';
+import LuckyStatsUploadSettings from './LuckyStatsUploadSettings';
 import {
   AdminedTournament,
   CopyHostFormat,
@@ -152,6 +153,7 @@ export default function Settings({
     <>
       <Tooltip arrow title="Settings">
         <Fab
+          aria-label="Settings"
           onClick={() => setOpen(true)}
           size="small"
           style={{ position: 'absolute', bottom: 8, left: 8 }}
@@ -210,6 +212,7 @@ export default function Settings({
           </Typography>
         </Stack>
         <DialogContent sx={{ pt: 0 }}>
+          {open && <LuckyStatsUploadSettings />}
           {needUpdate && (
             <Alert
               severity="warning"
