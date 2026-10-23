@@ -33,6 +33,10 @@ export default class LuckyQueue {
 
   private finishing = new Set<string>();
 
+  private polling = false;
+
+  private refreshIds = new Map<string, number>();
+
   // TypeScript parameter properties initialize persisted queue dependencies.
   // eslint-disable-next-line no-useless-constructor, no-empty-function
   constructor(
@@ -60,7 +64,7 @@ export default class LuckyQueue {
     });
     // A lost finish response is retried with the same tournament ID.
     this.state.batches.forEach((batch) => {
-      if (batch.finishing) batch.pollAt = 0;
+      batch.pollAt = 0;
     });
   }
 
@@ -119,10 +123,10 @@ export default class LuckyQueue {
       if (
         this.finishing.has(slug) ||
         this.state.batches.some(
-          (b) => b.tournament === slug && (b.finalized || b.finishing),
+          (b) => b.tournament === slug && (b.finishing || b.reopening),
         )
       )
-        throw new Error('This tournament upload is already finalized.');
+        throw new Error('Wait for the collection change to finish.');
       if (files.length > 2000 || !files.some((f) => f.name === 'context.json'))
         throw new Error('The set needs game data and context.json.');
       await mkdir(dir, { mode: 0o700 });
@@ -244,19 +248,24 @@ export default class LuckyQueue {
           )
         : undefined;
       if (job) await this.upload(job);
-      const batch = this.state.batches.find(
-        (b) => (b.finalized || b.finishing) && b.pollAt <= Date.now(),
-      );
+      await this.poll();
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  async poll() {
+    if (this.polling || !this.connected()) return;
+    this.polling = true;
+    try {
+      const batch = this.state.batches.find((b) => b.pollAt <= Date.now());
       if (batch) {
         try {
           if (batch.finishing) await this.finish(batch.id);
-          batch.progress = await this.client.api(`tournaments/${batch.id}`);
+          if (batch.reopening) await this.reopen(batch.id);
+          await this.refreshBatch(batch);
           batch.error = undefined;
-          batch.pollAt =
-            batch.progress?.pollAfterSeconds === null
-              ? Number.MAX_SAFE_INTEGER
-              : Date.now() +
-                Math.max(10, batch.progress?.pollAfterSeconds || 10) * 1000;
+          batch.pollAt = Date.now() + 15000;
         } catch (e) {
           batch.error =
             e instanceof Error
@@ -269,7 +278,7 @@ export default class LuckyQueue {
         await this.save();
       }
     } finally {
-      this.busy = false;
+      this.polling = false;
     }
   }
 
@@ -340,6 +349,25 @@ export default class LuckyQueue {
         force: true,
       }).catch(() => {});
     } catch (e) {
+      if (
+        e instanceof LuckyError &&
+        e.code === 'tournament_finalized' &&
+        e.details
+      ) {
+        job.tournamentUploadId = e.details.tournamentUploadId;
+        if (
+          !this.state.batches.some(
+            (b) => b.id === e.details!.tournamentUploadId,
+          )
+        )
+          this.state.batches.push({
+            id: e.details.tournamentUploadId,
+            tournament: job.tournament,
+            finalized: true,
+            pollAt: 0,
+          });
+      }
+      job.blockedReason = e instanceof LuckyError ? e.code : undefined;
       if (e instanceof LuckyError && e.code === 'upload_expired') {
         job.idempotencyKey = randomUUID();
         job.uploadId = undefined;
@@ -360,10 +388,94 @@ export default class LuckyQueue {
     }
   }
 
+  private async refreshBatch(batch: LuckyBatch) {
+    const requestId = (this.refreshIds.get(batch.id) || 0) + 1;
+    this.refreshIds.set(batch.id, requestId);
+    const progress = await this.client.api(`tournaments/${batch.id}`);
+    if (this.refreshIds.get(batch.id) !== requestId) return;
+    const oldVersion = batch.progress?.collectionVersion || 0;
+    if (
+      progress.collectionVersion < oldVersion ||
+      (progress.collectionVersion === oldVersion &&
+        batch.finalized &&
+        progress.status === 'collecting')
+    )
+      return;
+    batch.progress = progress;
+    batch.finalized = progress.status === 'submitted';
+    this.state.jobs.forEach((job) => {
+      const latest = batch.progress?.sets?.find(
+        (set) => set.setId === job.setId,
+      );
+      if (
+        job.tournament === batch.tournament &&
+        job.status === 'staged' &&
+        latest &&
+        latest.uploadId !== job.uploadId
+      )
+        job.status = 'superseded';
+    });
+    if (!batch.finalized) {
+      this.state.jobs.forEach((job) => {
+        if (
+          job.tournament === batch.tournament &&
+          job.status === 'blocked' &&
+          job.blockedReason === 'tournament_finalized'
+        ) {
+          job.status = 'pending';
+          job.error = undefined;
+          job.blockedReason = undefined;
+          job.retryAt = 0;
+        }
+      });
+    }
+  }
+
+  async reopen(id: string) {
+    const batch = this.state.batches.find((b) => b.id === id);
+    if (!batch) throw new Error('Tournament upload not found.');
+    if (
+      this.finishing.has(batch.tournament) ||
+      batch.finishing ||
+      this.preparing
+    )
+      throw new Error('Wait for the current collection change to finish.');
+    this.finishing.add(batch.tournament);
+    try {
+      if (!batch.reopening) {
+        await this.refreshBatch(batch);
+        batch.reopeningVersion = batch.progress!.collectionVersion;
+      }
+      batch.reopening = true;
+      await this.save();
+      await this.client.api(`tournaments/${id}/reopen`, 'POST', {
+        collectionVersion: batch.reopeningVersion,
+      });
+      batch.reopening = false;
+      batch.reopeningVersion = undefined;
+      await this.refreshBatch(batch);
+      batch.error = undefined;
+      batch.pollAt = 0;
+      await this.save();
+    } catch (error) {
+      if (!(error instanceof LuckyError && error.retryable)) {
+        batch.reopening = false;
+        batch.reopeningVersion = undefined;
+      }
+      batch.error =
+        error instanceof Error ? error.message : 'Could not reopen uploads.';
+      batch.pollAt = Date.now() + 30000;
+      await this.save();
+      throw error;
+    } finally {
+      this.finishing.delete(batch.tournament);
+    }
+  }
+
   async finish(id: string) {
     const batch = this.state.batches.find((b) => b.id === id);
     if (!batch) throw new Error('Tournament upload not found.');
-    if (this.finishing.has(batch.tournament))
+    if (this.finishing.has(batch.tournament) || batch.reopening)
       throw new Error('Tournament finalization is already running.');
     if (
       this.preparing ||
@@ -378,17 +490,28 @@ export default class LuckyQueue {
       );
     this.finishing.add(batch.tournament);
     try {
+      if (!batch.finishing) {
+        await this.refreshBatch(batch);
+        batch.finishingVersion = batch.progress!.collectionVersion;
+      }
       batch.finishing = true;
       await this.save();
-      await this.client.api(`tournaments/${id}/complete`, 'POST');
+      await this.client.api(`tournaments/${id}/complete`, 'POST', {
+        collectionVersion: batch.finishingVersion,
+      });
       batch.finalized = true;
       batch.finishing = false;
+      batch.finishingVersion = undefined;
+      await this.refreshBatch(batch);
       batch.error = undefined;
       batch.pollAt = 0;
       await this.save();
     } catch (e) {
       // Keep an ambiguous network response locked; tick retries the idempotent finish.
-      if (!(e instanceof LuckyError && e.retryable)) batch.finishing = false;
+      if (!(e instanceof LuckyError && e.retryable)) {
+        batch.finishing = false;
+        batch.finishingVersion = undefined;
+      }
       batch.error =
         e instanceof Error ? e.message : 'Could not finalize tournament.';
       batch.pollAt = Date.now() + 30000;

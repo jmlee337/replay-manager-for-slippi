@@ -43,7 +43,7 @@ export function initLuckyStats(parryKey: () => string = () => '') {
     );
     await queue.init();
     setInterval(() => {
-      queue.tick().catch(() => {
+      Promise.all([queue.tick(), queue.poll()]).catch(() => {
         error = 'Could not save upload progress. Check available disk space.';
       });
     }, 1000).unref();
@@ -127,6 +127,10 @@ export function initLuckyStats(parryKey: () => string = () => '') {
     luckyRetry: async (id: string) => {
       await initialized;
       await queue.retry(id);
+    },
+    luckyReopen: async (id: string) => {
+      await initialized;
+      await queue.reopen(id);
     },
     luckyFinish: async (id: string) => {
       await initialized;

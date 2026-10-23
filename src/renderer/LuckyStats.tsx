@@ -44,6 +44,7 @@ export default function LuckyStats({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [discard, setDiscard] = useState<string>();
+  const [reopen, setReopen] = useState<string>();
   const [confirm, setConfirm] = useState<string>();
   useEffect(() => {
     let active = true;
@@ -214,11 +215,55 @@ export default function LuckyStats({
                       <Typography variant="h6">
                         {tournament.replace(/^tournament\//, '')}
                       </Typography>
+                      {batch?.progress && (
+                        <Stack spacing={1}>
+                          <Typography>
+                            <strong>
+                              {batch.progress.totalUploadedSets} sets uploaded
+                            </strong>{' '}
+                            · {batch.progress.inFlightUploads} uploads in
+                            progress
+                          </Typography>
+                          <Typography>
+                            {!batch.finalized && 'Collecting sets'}
+                            {batch.finalized &&
+                              batch.progress.finalizedBy === 'automatic' &&
+                              'Finished automatically'}
+                            {batch.finalized &&
+                              batch.progress.finalizedBy !== 'automatic' &&
+                              'Finished'}
+                          </Typography>
+                          {batch.progress.contributions?.map((contribution) => (
+                            <Typography
+                              variant="body2"
+                              key={contribution.keyPrefix}
+                            >
+                              <code>{contribution.keyPrefix}…</code> ·{' '}
+                              {contribution.uploadedSets}{' '}
+                              {contribution.uploadedSets === 1 ? 'set' : 'sets'}
+                            </Typography>
+                          ))}
+                          {!batch.finalized && (
+                            <Typography variant="body2">
+                              Auto-finishes after{' '}
+                              {batch.progress.autoFinishIdleHours} hours without
+                              upload activity once Lucky Stats has complete
+                              tournament standings.
+                            </Typography>
+                          )}
+                        </Stack>
+                      )}
                       {jobs.map((job) => (
                         <Box key={job.id} sx={{ py: 1 }}>
                           <Typography>
                             Set {job.setId} ·{' '}
-                            {job.status === 'staged' && batch?.finalized
+                            {job.status === 'staged' &&
+                            (batch?.finalized ||
+                              batch?.progress?.sets?.some(
+                                (set) =>
+                                  set.uploadId === job.uploadId &&
+                                  set.status === 'queued',
+                              ))
                               ? 'Uploaded · submitted for processing'
                               : labels[job.status]}
                           </Typography>
@@ -277,7 +322,13 @@ export default function LuckyStats({
                       {batch && !batch.finalized && (
                         <Button
                           variant="contained"
-                          disabled={busy || waiting || batch.finishing}
+                          disabled={
+                            busy ||
+                            waiting ||
+                            batch.finishing ||
+                            batch.reopening ||
+                            Boolean(batch.progress?.inFlightUploads)
+                          }
                           onClick={() => setConfirm(batch.id)}
                         >
                           {batch.finishing
@@ -286,7 +337,12 @@ export default function LuckyStats({
                         </Button>
                       )}
                       {batch?.finalized && (
-                        <Typography>Submitted for processing</Typography>
+                        <Button
+                          disabled={busy || batch.finishing || batch.reopening}
+                          onClick={() => setReopen(batch.id)}
+                        >
+                          {batch.reopening ? 'Reopening…' : 'Reopen uploads'}
+                        </Button>
                       )}
                       {batch?.progress?.imports.map((run) => (
                         <Box key={run.importRunId}>
@@ -354,12 +410,34 @@ export default function LuckyStats({
           </Button>
         </DialogActions>
       </Dialog>
+      <Dialog open={Boolean(reopen)} onClose={() => setReopen(undefined)}>
+        <DialogTitle>Reopen tournament uploads?</DialogTitle>
+        <DialogContent>
+          All authorized contributors can add sets and corrections again.
+          Processing already started will continue. The inactivity timer
+          restarts.
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReopen(undefined)}>Keep finished</Button>
+          <Button
+            disabled={busy}
+            onClick={() => {
+              const id = reopen!;
+              setReopen(undefined);
+              act(() => window.electron.luckyReopen(id));
+            }}
+          >
+            Reopen uploads
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Dialog open={Boolean(confirm)} onClose={() => setConfirm(undefined)}>
         <DialogTitle>Finish tournament uploads?</DialogTitle>
         <DialogContent>
-          Confirm all sets and corrections have been copied on every device.
-          This submits the latest uploaded version of each set for processing
-          and closes this tournament to further uploads for your account.
+          Confirm every laptop has finished uploading. This submits the latest
+          uploaded sets from all contributors. Files still queued on another
+          laptop are not included. You can reopen uploads to add more sets
+          afterward.
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirm(undefined)}>Keep uploading</Button>

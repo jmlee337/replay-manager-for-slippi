@@ -48,6 +48,8 @@ async function main() {
   await fs.writeFile(path.join(folder, 'game.slp'), Buffer.alloc(4096, 1));
   const uploads = new Map();
   let finalized = false;
+  let collectionVersion = 1;
+  let finalizedBy = null;
   let polls = 0;
   let finishCalls = 0;
   let stored = 0;
@@ -117,38 +119,61 @@ async function main() {
         send({ handoffAccepted: true, status: 'staged' });
         return;
       }
+      if (route === `/tournaments/${batch}/reopen`) {
+        assert.equal(body.collectionVersion, collectionVersion);
+        finalized = false;
+        finalizedBy = null;
+        collectionVersion++;
+        send({ status: 'collecting', collectionVersion });
+        return;
+      }
       if (route === `/tournaments/${batch}/complete`) {
+        assert.equal(body.collectionVersion, collectionVersion);
         assert.ok([...uploads.values()].every((u) => u.accepted));
         finalized = true;
+        finalizedBy = 'manual';
+        polls = 0;
         finishCalls += 1;
         send({ status: 'submitted' });
         return;
       }
       if (route === `/tournaments/${batch}`) {
-        polls += 1;
-        const ready = polls >= 2;
+        if (finalized) polls += 1;
+        const ready = polls >= 3;
         send({
-          status: 'submitted',
-          pollAfterSeconds: ready ? null : 10,
-          imports: [
-            {
-              importRunId: 'test-import',
-              import: {
-                phase: ready ? 'completed' : 'importing',
-                percent: ready ? 100 : 50,
-                importedSets: ready ? 1 : 0,
-                importedGames: ready ? 1 : 0,
-              },
-              analytics: {
-                state: ready ? 'ready' : 'processing',
-                percent: ready ? 100 : 0,
-                readySets: ready ? 1 : 0,
-                totalSets: 1,
-                coverageComplete: ready,
-              },
-              skipped: [],
-            },
+          status: finalized ? 'submitted' : 'collecting',
+          collectionVersion,
+          finalizedBy,
+          totalUploadedSets: 3,
+          inFlightUploads: 0,
+          contributions: [
+            { keyPrefix: 'l7u_aaaaaaaa', uploadedSets: 1 },
+            { keyPrefix: 'l7u_bbbbbbbb', uploadedSets: 2 },
           ],
+          autoFinishIdleHours: 6,
+          pollAfterSeconds: 15,
+          imports:
+            finishCalls || finalized
+              ? [
+                  {
+                    importRunId: 'test-import',
+                    import: {
+                      phase: ready ? 'completed' : 'importing',
+                      percent: ready ? 100 : 50,
+                      importedSets: ready ? 1 : 0,
+                      importedGames: ready ? 1 : 0,
+                    },
+                    analytics: {
+                      state: ready ? 'ready' : 'processing',
+                      percent: ready ? 100 : 0,
+                      readySets: ready ? 1 : 0,
+                      totalSets: 1,
+                      coverageComplete: ready,
+                    },
+                    skipped: [],
+                  },
+                ]
+              : [],
         });
         return;
       }
@@ -206,6 +231,16 @@ async function main() {
     }
     assert.ok(page);
     page.setDefaultTimeout(20000);
+    // Upstream may auto-open Settings when a new app release is available.
+    const settingsHeading = page.getByRole('heading', {
+      name: 'Settings',
+      exact: true,
+    });
+    await settingsHeading.waitFor({ timeout: 3000 }).catch(() => {});
+    if (await settingsHeading.isVisible()) {
+      await page.keyboard.press('Escape');
+      await settingsHeading.waitFor({ state: 'hidden' });
+    }
     try {
       await page.getByRole('button', { name: /^Lucky Stats$/i }).click();
     } catch (error) {
@@ -225,7 +260,10 @@ async function main() {
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page
       .getByRole('switch', { name: 'Pause Lucky Stats uploads' })
-      .check();
+      .click();
+    await page.waitForFunction(
+      async () => !(await window.electron.luckyStatus()).enabled,
+    );
     await page.waitForTimeout(500);
     await page.screenshot({
       path: path.join(shots, 'fixture-upload-settings.png'),
@@ -249,7 +287,10 @@ async function main() {
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page
       .getByRole('switch', { name: 'Pause Lucky Stats uploads' })
-      .uncheck();
+      .click();
+    await page.waitForFunction(
+      async () => (await window.electron.luckyStatus()).enabled,
+    );
     await page.waitForTimeout(500);
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: /^Lucky Stats$/i }).click();
@@ -290,11 +331,50 @@ async function main() {
       .waitFor({ timeout: 30000 });
     await page.waitForTimeout(500); // Let progress-bar transitions finish before capture.
     await page.screenshot({ path: path.join(shots, 'fixture-ready.png') });
+    await page.getByText('l7u_bbbbbbbb… · 2 sets').waitFor();
+    await page.screenshot({
+      path: path.join(shots, 'fixture-contributors.png'),
+    });
+    // Another reporter reopens: this app must follow without any local action.
+    finalized = false;
+    finalizedBy = null;
+    collectionVersion++;
+    await page
+      .getByText('Collecting sets', { exact: true })
+      .waitFor({ timeout: 25000 });
+    await page.screenshot({
+      path: path.join(shots, 'fixture-remote-reopen.png'),
+    });
+    // The server's inactivity job finishes the same collection.
+    finalized = true;
+    finalizedBy = 'automatic';
+    await page
+      .getByText('Finished automatically', { exact: true })
+      .waitFor({ timeout: 25000 });
+    await page.screenshot({
+      path: path.join(shots, 'fixture-auto-finished.png'),
+    });
+    await page
+      .getByRole('button', { name: 'Reopen uploads', exact: true })
+      .click();
+    await page
+      .getByRole('dialog')
+      .last()
+      .getByRole('button', { name: 'Reopen uploads', exact: true })
+      .click();
+    await page.getByText('Collecting sets', { exact: true }).waitFor();
+    assert.equal(collectionVersion, 3);
+    // A remote manual finish must also be reflected after reopening.
+    finalized = true;
+    finalizedBy = 'manual';
+    await page
+      .getByText('Finished', { exact: true })
+      .waitFor({ timeout: 25000 });
     assert.equal(finishCalls, 1);
     assert.equal(uploads.size, 2);
     assert.equal(stored, 4);
     console.log(
-      'PASS: built Electron UI → encrypted key → persisted queue → restart → storage transfer → replacement → explicit finish → import and analytics polling (local fixture server).',
+      'PASS: built Electron UI → connect → settings pause/resume → restart → upload/replacement → shared key counts → finish → remote reopen → automatic finish → local reopen → remote manual finish (local fixture server).',
     );
   } catch (error) {
     const failedPage = app

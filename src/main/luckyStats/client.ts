@@ -60,11 +60,28 @@ export class LuckyClient {
         Number(header) ||
         Math.max(0, (Date.parse(header || '') - Date.now()) / 1000) ||
         0;
+      const messages: Record<string, string> = {
+        tournament_finalized:
+          'Uploads are finished. Reopen uploads to add this set.',
+        collection_changed:
+          'The collection changed on another device. Wait for status to refresh, then try again.',
+        previous_imports_processing:
+          'Earlier imports are still processing. Finish again once they complete.',
+        uploads_in_progress:
+          'Other uploads are still in progress. Wait for them to finish.',
+      };
       throw new LuckyError(
-        `Lucky Stats: ${code} (${response.status}).`,
+        messages[code] || `Lucky Stats: ${code} (${response.status}).`,
         retry,
         seconds * 1000,
         code,
+        typeof data.tournamentUploadId === 'string' &&
+        Number.isSafeInteger(data.collectionVersion)
+          ? {
+              tournamentUploadId: data.tournamentUploadId,
+              collectionVersion: data.collectionVersion,
+            }
+          : undefined,
       );
     }
     return data;

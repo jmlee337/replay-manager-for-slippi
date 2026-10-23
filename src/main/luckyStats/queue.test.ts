@@ -16,7 +16,11 @@ let root: string;
 let api: jest.Mock;
 let put: jest.Mock;
 let queue: LuckyQueue;
+let serverStatus: string;
+let serverVersion: number;
 beforeEach(async () => {
+  serverStatus = 'collecting';
+  serverVersion = 1;
   root = await mkdtemp(path.join(os.tmpdir(), 'lucky-queue-test-'));
   api = jest.fn(
     async (route: string, method: string, body: any, id: string) => {
@@ -33,8 +37,26 @@ beforeEach(async () => {
         };
       if (route.startsWith('uploads/'))
         return { handoffAccepted: true, status: 'staged' };
-      if (method === 'POST') return { status: 'submitted' };
-      return { status: 'submitted', pollAfterSeconds: null, imports: [] };
+      if (route.endsWith('/reopen')) {
+        serverStatus = 'collecting';
+        serverVersion += 1;
+        return { status: serverStatus, collectionVersion: serverVersion };
+      }
+      if (method === 'POST') {
+        serverStatus = 'submitted';
+        return { status: 'submitted' };
+      }
+      return {
+        status: serverStatus,
+        collectionVersion: serverVersion,
+        contributions: [{ keyPrefix: 'l7u_abc', uploadedSets: 1 }],
+        totalUploadedSets: 1,
+        inFlightUploads: 0,
+        autoFinishIdleHours: 6,
+        finalizedBy: 'manual',
+        pollAfterSeconds: 15,
+        imports: [],
+      };
     },
   );
   put = jest.fn(async () => {});
@@ -71,9 +93,8 @@ it('persists handoffs, replaces changed content, and finalizes only on request',
   ]);
   await queue.finish('batch');
   expect(queue.state.batches[0].finalized).toBe(true);
-  await expect(queue.enqueue('weekly', '123', files(3))).rejects.toThrow(
-    'already finalized',
-  );
+  await queue.enqueue('weekly', '123', files(3));
+  expect(queue.state.jobs[2].status).toBe('pending');
 });
 it('resumes a lost completion response with the same idempotency key after restart', async () => {
   await queue.enqueue('weekly', '123', files());
@@ -137,10 +158,15 @@ it('refreshes expired sessions and respects server retry delays', async () => {
 it('retains an ambiguous finish for idempotent recovery and blocks new revisions', async () => {
   await queue.enqueue('weekly', '123', files());
   await queue.tick();
+  api.mockResolvedValueOnce({
+    status: 'collecting',
+    collectionVersion: 1,
+    imports: [],
+  });
   api.mockRejectedValueOnce(new LuckyError('network', true));
   await expect(queue.finish('batch')).rejects.toThrow('network');
   await expect(queue.enqueue('weekly', '123', files(2))).rejects.toThrow(
-    'finalized',
+    'collection change',
   );
   queue.state.batches[0].pollAt = 0;
   await queue.tick();
@@ -175,4 +201,86 @@ it('discards a blocked revision so a correction can upload', async () => {
       ([route, method]) => route.startsWith('uploads/') && method === 'DELETE',
     ),
   ).toBe(true);
+});
+
+it('follows remote finish and reopen while collecting and after completion', async () => {
+  await queue.enqueue('weekly', '123', files());
+  await queue.tick();
+  const batch = queue.state.batches[0];
+  expect(batch.finalized).toBe(false);
+  serverStatus = 'submitted';
+  batch.pollAt = 0;
+  await queue.tick();
+  expect(batch.finalized).toBe(true);
+  serverStatus = 'collecting';
+  serverVersion = 2;
+  batch.pollAt = 0;
+  await queue.tick();
+  expect(batch.finalized).toBe(false);
+  expect(batch.progress?.collectionVersion).toBe(2);
+  expect(batch.pollAt).toBeLessThan(Date.now() + 16000);
+  serverStatus = 'submitted';
+  batch.pollAt = 0;
+  await queue.tick();
+  expect(batch.finalized).toBe(true);
+});
+it('reopens collection with the observed version and resumes finalized-blocked uploads', async () => {
+  await queue.enqueue('weekly', '123', files());
+  await queue.tick();
+  await queue.finish('batch');
+  await queue.enqueue('weekly', '123', files(2));
+  const job = queue.state.jobs[1];
+  job.status = 'blocked';
+  job.blockedReason = 'tournament_finalized';
+  await queue.reopen('batch');
+  expect(api).toHaveBeenCalledWith('tournaments/batch/reopen', 'POST', {
+    collectionVersion: 1,
+  });
+  expect(queue.state.batches[0].finalized).toBe(false);
+  expect(job.status).toBe('pending');
+});
+it('keeps the original version on ambiguous finish retries after remote reopening', async () => {
+  await queue.enqueue('weekly', '123', files());
+  await queue.tick();
+  api.mockResolvedValueOnce({ status: 'collecting', collectionVersion: 1 });
+  api.mockRejectedValueOnce(new LuckyError('network', true));
+  await expect(queue.finish('batch')).rejects.toThrow('network');
+  serverVersion = 2;
+  serverStatus = 'collecting';
+  api.mockRejectedValueOnce(
+    new LuckyError('collection_changed', false, 0, 'collection_changed'),
+  );
+  queue.state.batches[0].pollAt = 0;
+  await queue.tick();
+  expect(api).toHaveBeenLastCalledWith('tournaments/batch/complete', 'POST', {
+    collectionVersion: 1,
+  });
+  expect(queue.state.batches[0].finishing).toBe(false);
+  queue.state.batches[0].pollAt = 0;
+  await queue.tick();
+  expect(queue.state.batches[0].finalized).toBe(false);
+});
+
+it('polls server state even while a file transfer is busy', async () => {
+  await queue.enqueue('weekly', '123', files());
+  await queue.tick();
+  serverStatus = 'submitted';
+  queue.state.batches[0].pollAt = 0;
+  queue.busy = true;
+  await queue.poll();
+  expect(queue.state.batches[0].finalized).toBe(true);
+  expect(queue.busy).toBe(true);
+});
+it('marks a local accepted revision replaced when another key uploads a newer set', async () => {
+  await queue.enqueue('weekly', '123', files());
+  await queue.tick();
+  api.mockResolvedValueOnce({
+    status: 'collecting',
+    collectionVersion: 1,
+    sets: [{ setId: '123', uploadId: 'other-key-upload', status: 'staged' }],
+    imports: [],
+  });
+  queue.state.batches[0].pollAt = 0;
+  await queue.poll();
+  expect(queue.state.jobs[0].status).toBe('superseded');
 });

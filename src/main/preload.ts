@@ -42,6 +42,8 @@ const electronHandler = {
     ipcRenderer.invoke('luckyCancel', id),
   luckyRetry: (id: string): Promise<void> =>
     ipcRenderer.invoke('luckyRetry', id),
+  luckyReopen: (id: string): Promise<void> =>
+    ipcRenderer.invoke('luckyReopen', id),
   luckyFinish: (id: string): Promise<void> =>
     ipcRenderer.invoke('luckyFinish', id),
   getOfflineModePassword: (): Promise<string> =>

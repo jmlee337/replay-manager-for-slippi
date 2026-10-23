@@ -8,7 +8,7 @@ This opt-in integration uploads finalized Start.gg or Parry sets to Lucky Stats 
 2. Create a device-specific key at [Account → API keys → App uploads](https://luckystats.gg/account?tab=api#upload-keys). The **How to integrate** guide there documents the service contract.
 3. Open **Lucky Stats** in this app, paste the key and select **Connect**.
 4. Uploads start automatically when the key connects. Copy each completed set as usual, or use **Add existing set folder** for a folder containing its game files and `context.json`.
-5. At the end of the tournament, wait for every set and correction on every device to finish uploading, then select **Finish tournament** and confirm. This closes this account's tournament upload to further changes.
+5. At the end of the tournament, wait for every set and correction on every device to finish uploading, then select **Finish tournament** and confirm. This submits the shared collection from all authorized accounts. **Reopen uploads** accepts late sets and corrections.
 
 The automatic hook supports online Start.gg and Parry modes. Existing folders need a confirmed set identity and tournament reference in their context.
 
@@ -21,8 +21,8 @@ The automatic hook supports online Start.gg and Parry modes. Existing folders ne
 - Network/5xx/429 failures retry with capped exponential backoff, jitter and `Retry-After`. Expired sessions get a new persisted idempotency key. A lost transfer or completion response can be retried safely; S3 `412` is verified by the completion call.
 - **Settings → Lucky Stats → Pause Lucky Stats uploads** stops automatic snapshots and new transfers after the active operation. Already queued data remains on disk. Reopening the app resumes pending uploads when enabled. Disconnect removes the encrypted credential and pauses; reconnect with the original key for the existing queue. Switching keys/accounts with a populated queue is intentionally rejected.
 - Confirmed local snapshots are deleted only after the server receipt is saved. **Discard pending upload** cancels an approved session before deleting that private snapshot. Original source/output files are untouched.
-- **Finish tournament** calls `/tournaments/:id/complete` only after all local uploads are accepted/discarded and no snapshot is being prepared. The server also checks in-flight uploads for this account. A lost finish response is retried with the same batch ID while further changes remain locked.
-- After finish, read-only `/tournaments/:id` polling reports each import batch and advanced analytics counts, respects `pollAfterSeconds` (at least ten seconds), and stops at `null`. Analytics percentages describe currently tracked sets, not elapsed worker time.
+- **Finish tournament** calls `/tournaments/:id/complete` only after all local uploads are accepted/discarded and no snapshot is being prepared. The server also checks in-flight uploads across all contributors. A lost finish response is retried with the same batch ID while further changes remain locked.
+- Shared `/tournaments/:id` status is polled every 15 seconds while connected, including during collection and after processing completes. Polling runs independently of file transfers. Server status controls the UI after another reporter finishes/reopens or the inactivity job auto-finishes. Analytics percentages describe currently tracked sets, not elapsed worker time.
 
 The app must be open to transfer or poll. There is no operating-system background daemon. A second installation can still have unapproved local files, so the operator must confirm that every device has finished copying before finalization.
 
@@ -52,3 +52,14 @@ Parry Copy/Report uses the same automatic upload queue, including forced context
 The app sends its configured Parry API key to Lucky Stats in `X-Parry-API-Key`. Lucky Stats checks admin, manager, or reporter permissions with Parry for that tournament; ordinary organizers do not need Lucky Stats game-data-admin access. The credential is not persisted by Lucky Stats or sent to S3. The Parry tournament must already be imported into Lucky Stats.
 
 Validation: UUID/context tests, all three writer output modes, and the packaged Electron UI using `PLATFORM=parry npm run test:lucky-stats:e2e` with local API/storage/analytics fixtures. Screenshots in `screenshots/parry/` show that fixture flow, not a live Parry tournament. A live organizer-credential check remains pending.
+
+
+## Shared collection, reopening and auto-finish
+
+Authorized accounts using this app share one collection for the same tournament. The UI shows total uploaded sets, active uploads, and per-key counts using only truncated key prefixes. A correction replaces the current accepted revision of that set across contributors. Individual upload sessions stay key-scoped.
+
+Finish and reopen carry the server's `collectionVersion`. Ambiguous retries preserve that version, so an old finish request cannot finalize a reopened collection. Reopen preserves submitted imports, restarts the inactivity timer, and permits new sets/corrections; a subsequent finish waits for previous imports to finish. Local files blocked by `tournament_finalized` resume after reopening, including when another laptop reopens remotely.
+
+The server checks every 15 minutes and auto-finishes after 6 idle hours (configurable with `UPLOAD_AUTO_FINISH_IDLE_HOURS`). It requires an ingested tournament whose end date passed, complete positive standings and a champion in each imported Melee event, completed-match evidence, and no unresolved matches or active uploads. Missing evidence defers auto-finish. The server cannot detect files still local to an offline laptop; reopen if they arrive later.
+
+Roll out the companion Lucky Stats API change and `prisma/20261023_shared_upload_batches.sql` before using these controls. Legacy per-account batch links are preserved. The desktop fixture test covers remote manual finish, remote reopen, automatic finish, and local reopen without restarting, in addition to the transfer/replacement flow. These are simulated server transitions; production multi-account/auto-finish trials remain pending.

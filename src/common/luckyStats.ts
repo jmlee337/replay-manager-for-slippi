@@ -16,10 +16,18 @@ export type LuckyJob = {
   attempts: number;
   retryAt: number;
   error?: string;
+  blockedReason?: string;
   uploadId?: string;
   tournamentUploadId?: string;
 };
 export type LuckyProgress = {
+  collectionVersion: number;
+  totalUploadedSets: number;
+  inFlightUploads: number;
+  contributions: { keyPrefix: string; uploadedSets: number }[];
+  autoFinishIdleHours: number;
+  finalizedBy: string | null;
+  sets?: { setId: string; uploadId: string; status: string }[];
   status: string;
   pollAfterSeconds: number | null;
   imports: {
@@ -45,6 +53,9 @@ export type LuckyBatch = {
   tournament: string;
   finalized: boolean;
   finishing?: boolean;
+  finishingVersion?: number;
+  reopening?: boolean;
+  reopeningVersion?: number;
   progress?: LuckyProgress;
   error?: string;
   pollAt: number;
