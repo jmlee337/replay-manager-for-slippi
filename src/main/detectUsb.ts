@@ -10,7 +10,7 @@ class Utils {
   static async isReadable(mediaDrive: string) {
     try {
       // eslint-disable-next-line no-bitwise
-      access(mediaDrive, fs.constants.F_OK | fs.constants.R_OK);
+      await access(mediaDrive, fs.constants.F_OK | fs.constants.R_OK);
       return true;
     } catch {
       return false;
