@@ -1748,6 +1748,7 @@ function Hello() {
               prefixes: [],
               pronouns: [],
               score: gameScores[j],
+              characters: [],
             };
             let teamId: number | undefined;
             for (let k = 0; k < replay.players.length; k += 1) {
@@ -1766,6 +1767,10 @@ function Hello() {
                 slots[j].ports.push(player.port);
                 slots[j].prefixes.push(player.playerOverrides.prefix);
                 slots[j].pronouns.push(player.playerOverrides.pronouns);
+                slots[j].characters.push({
+                  id: player.externalCharacterId,
+                  costume: player.costumeIndex
+                });
                 if (player.isWinner) {
                   gameScores[j] += 1;
                 }
