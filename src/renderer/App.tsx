@@ -1771,6 +1771,9 @@ function Hello() {
                   id: player.externalCharacterId,
                   costume: player.costumeIndex
                 });
+                if (replay.isTeams) {
+                  slots[j].team = player.teamId;
+                }
                 if (player.isWinner) {
                   gameScores[j] += 1;
                 }
