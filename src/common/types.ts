@@ -303,7 +303,7 @@ export type ContextSlot = {
   pronouns: string[];
   score: number;
   characters: ContextCharacter[];
-  teamId: number | null;
+  teamId?: number;
 };
 
 // in game 1 port order
