@@ -93,11 +93,11 @@ export type Set = {
   winnerId: Id | null;
   entrant1Id: Id;
   entrant1Participants: Participant[];
-  entrant1Losers: boolean;
+  entrant1Losers?: boolean;
   entrant1Score: number | null;
   entrant2Id: Id;
   entrant2Participants: Participant[];
-  entrant2Losers: boolean;
+  entrant2Losers?: boolean;
   entrant2Score: number | null;
   gameScores: GameScore[];
   stream: Stream | null;
