@@ -1769,7 +1769,7 @@ function Hello() {
                 slots[j].pronouns.push(player.playerOverrides.pronouns);
                 slots[j].characters.push({
                   id: player.externalCharacterId,
-                  costume: player.costumeIndex
+                  costume: player.costumeIndex,
                 });
                 if (replay.isTeams) {
                   slots[j].teamId = player.teamId;
