@@ -212,10 +212,20 @@ const idToStation = new Map<number, Station>();
 const reportedSetIds = new Map<Id, boolean>();
 const setIdToOrdinal = new Map<Id, number | null>();
 
+function isSetInLosers(set: any): boolean {
+  return (
+    set.entrant1PrereqCondition === 'loser' ||
+    set.entrant2PrereqCondition === 'loser'
+  );
+}
+
 function getLosersValues(
   apiSet: any,
-  losersSetIds: Map<number, boolean>,
+  inLosers?: Map<number, boolean>,
 ): [boolean | undefined, boolean | undefined] {
+  if (inLosers === undefined) {
+    return [undefined, undefined];
+  }
   if (!apiSet.isGF) {
     return [undefined, undefined];
   }
@@ -230,14 +240,14 @@ function getLosersValues(
     return [true, true];
   }
 
-  return [losersSetIds.has(prereqId1), losersSetIds.has(prereqId2)];
+  return [inLosers.get(prereqId1), inLosers.get(prereqId2)];
 }
 
 function toSet(
   apiSet: any,
   ordinal: number | null,
   entrantIdToParticipants: Map<number, Participant[]>,
-  losersSetIds: Map<number, boolean>,
+  inLosers?: Map<number, boolean>,
 ): Set {
   const { id, entrant1Id, entrant2Id, streamId, stationId } = apiSet;
   const entrant1Participants = entrantIdToParticipants.get(entrant1Id)!;
@@ -263,10 +273,7 @@ function toSet(
       };
     });
   }
-  const [entrant1Losers, entrant2Losers] = getLosersValues(
-    apiSet,
-    losersSetIds,
-  );
+  const [entrant1Losers, entrant2Losers] = getLosersValues(apiSet, inLosers);
   return {
     id,
     sggId: typeof id === 'number' && Number.isInteger(id) && id > 0 ? id : null,
@@ -445,7 +452,7 @@ async function getLadderPhaseGroup(
   const toSetPred = (apiSet: any) => {
     let set = idToSet.get(apiSet.id);
     if (!set || set.updatedAtMs < apiSet.updatedAt * 1000) {
-      set = toSet(apiSet, null, entrantIdToParticipants, new Map());
+      set = toSet(apiSet, null, entrantIdToParticipants);
     }
     if (set.state === 3) {
       completedSets.push(set);
@@ -681,10 +688,8 @@ export async function getPhaseGroup(
     }
 
     const setsToUpdate = new Map<Id, Set>();
-    const losersSetIds = new Map(
-      reachableSets
-        .filter((apiSet) => apiSet.round < 0)
-        .map((apiSet) => [apiSet.id, true]),
+    const inLosers = new Map(
+      reachableSets.map((set) => [set.id, isSetInLosers(set)]),
     );
     const missingStreamSets: { setId: Id; streamId: number }[] = [];
     const missingStationSets: { setId: Id; stationId: number }[] = [];
@@ -720,7 +725,7 @@ export async function getPhaseGroup(
           return;
         }
 
-        newSet = toSet(set, ordinal, entrantIdToParticipants, losersSetIds);
+        newSet = toSet(set, ordinal, entrantIdToParticipants, inLosers);
         idToSet.set(setId, newSet);
         if (Number.isInteger(streamId) && !idToStream.has(streamId)) {
           missingStreamSets.push({ setId, streamId });
