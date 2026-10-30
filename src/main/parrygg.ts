@@ -257,12 +257,14 @@ export function convertParryggSetToSet(set: Match.AsObject): Set {
     winnerId,
     entrant1Id: entrant1?.id ?? '',
     entrant1Participants,
+    entrant1Losers: false, // TODO
     entrant1Score:
       set.state === MatchState.MATCH_STATE_COMPLETED
         ? slot1?.score ?? null
         : null,
     entrant2Id: entrant2?.id ?? '',
     entrant2Participants,
+    entrant2Losers: false, // TODO
     entrant2Score:
       set.state === MatchState.MATCH_STATE_COMPLETED
         ? slot2?.score ?? null

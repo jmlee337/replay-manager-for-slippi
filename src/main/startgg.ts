@@ -1318,9 +1318,11 @@ function gqlSetToSet(set: any): Set {
     winnerId: set.winnerId,
     entrant1Id: slot1.entrant.id,
     entrant1Participants,
+    entrant1Losers: false, // Populated later
     entrant1Score: slot1.standing?.stats?.score?.value ?? null,
     entrant2Id: slot2.entrant.id,
     entrant2Participants,
+    entrant2Losers: false, // Populated later
     entrant2Score: slot2.standing?.stats?.score?.value ?? null,
     gameScores: Array.isArray(set.games)
       ? set.games.map((game: any) => ({
