@@ -47,6 +47,7 @@ export function DraggableChip({
   participantId,
   prefix,
   pronouns,
+  losers,
   selectedChipData,
   setSelectedChipData,
   elevate,
@@ -56,6 +57,7 @@ export function DraggableChip({
   participantId: Id;
   prefix: string;
   pronouns: string;
+  losers: boolean;
   selectedChipData: PlayerOverrides;
   setSelectedChipData: ({
     displayName,
@@ -63,12 +65,14 @@ export function DraggableChip({
     participantId,
     prefix,
     pronouns,
+    losers,
   }: {
     displayName: string;
     entrantId: Id;
     participantId: Id;
     prefix: string;
     pronouns: string;
+    losers?: boolean;
   }) => void;
   elevate?: boolean;
 }) {
@@ -81,6 +85,7 @@ export function DraggableChip({
         participantId: event.currentTarget.dataset.participantId,
         prefix: event.currentTarget.dataset.prefix,
         pronouns: event.currentTarget.dataset.pronouns,
+        losers: event.currentTarget.dataset.losers,
       }),
     );
   };
@@ -118,6 +123,7 @@ export function DraggableChip({
         data-participant-id={participantId.toString(10)}
         data-prefix={prefix}
         data-pronouns={pronouns}
+        data-losers={losers}
         draggable
         onClick={() => {
           if (selected) {
@@ -135,6 +141,7 @@ export function DraggableChip({
               participantId,
               prefix,
               pronouns,
+              losers,
             });
           }
         }}
@@ -184,6 +191,7 @@ export function DroppableChip({
     participantId: Id,
     prefix: string,
     pronouns: string,
+    losers?: boolean,
   ) => void;
   elevate?: boolean;
 }) {
@@ -195,6 +203,7 @@ export function DroppableChip({
       parseId(json.participantId),
       json.prefix,
       json.pronouns,
+      json.losers,
     );
   };
 
@@ -245,6 +254,7 @@ export function DroppableChip({
                 selectedChipData.participantId,
                 selectedChipData.prefix,
                 selectedChipData.pronouns,
+                selectedChipData.losers,
               );
               event.stopPropagation();
             }

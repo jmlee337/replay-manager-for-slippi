@@ -997,15 +997,17 @@ function Hello() {
       participantId: participant.id,
       prefix: participant.prefix,
       pronouns: participant.pronouns,
+      losers: selectedSet.entrant1Losers,
     });
   });
   selectedSet.entrant2Participants.forEach((participant) => {
     availablePlayers.push({
       displayName: participant.displayName,
-      entrantId: selectedSet.entrant1Id,
+      entrantId: selectedSet.entrant1Id, // TODO: Should this be entrant 2?
       participantId: participant.id,
       prefix: participant.prefix,
       pronouns: participant.pronouns,
+      losers: selectedSet.entrant1Losers,
     });
   });
 
@@ -1056,6 +1058,7 @@ function Hello() {
           participantId: participantToCheck.id,
           prefix: participantToCheck.prefix,
           pronouns: participantToCheck.pronouns,
+          losers: selectedSet.entrant1Losers,
         };
       }
     } else if (!isEntrant1 && isTeams) {
@@ -1069,6 +1072,7 @@ function Hello() {
           participantId: participantToCheck.id,
           prefix: participantToCheck.prefix,
           pronouns: participantToCheck.pronouns,
+          losers: selectedSet.entrant2Losers,
         };
       }
     } else if (isEntrant1 && !isTeams) {
@@ -1078,6 +1082,7 @@ function Hello() {
         participantId: selectedSet.entrant2Participants[0].id,
         prefix: selectedSet.entrant2Participants[0].prefix,
         pronouns: selectedSet.entrant2Participants[0].pronouns,
+        losers: selectedSet.entrant2Losers,
       };
     } else if (!isEntrant1 && !isTeams) {
       return {
@@ -1086,6 +1091,7 @@ function Hello() {
         participantId: selectedSet.entrant1Participants[0].id,
         prefix: selectedSet.entrant1Participants[0].prefix,
         pronouns: selectedSet.entrant1Participants[0].pronouns,
+        losers: selectedSet.entrant1Losers,
       };
     }
     return {
@@ -1123,6 +1129,7 @@ function Hello() {
     prefix: string,
     pronouns: string,
     index: number,
+    losers?: boolean,
   ) => {
     const newOverrides = Array.from(overrides) as [
       PlayerOverrides,
@@ -1136,6 +1143,7 @@ function Hello() {
       participantId,
       prefix,
       pronouns,
+      losers,
     };
     newOverrides.forEach((override, i) => {
       if (
@@ -1231,6 +1239,7 @@ function Hello() {
           participantId: Id,
           prefix: string,
           pronouns: string,
+          losers?: boolean,
         ) =>
           onClickOrDrop(
             displayName,
@@ -1239,6 +1248,7 @@ function Hello() {
             prefix,
             pronouns,
             index,
+            losers,
           )
         }
       />
@@ -1776,6 +1786,7 @@ function Hello() {
                 if (replay.isTeams) {
                   slots[j].teamId = player.teamId;
                 }
+                slots[j].losers = player.playerOverrides.losers || undefined;
                 if (player.isWinner) {
                   gameScores[j] += 1;
                 }
@@ -1802,7 +1813,7 @@ function Hello() {
               pronouns: lastScore.slots[0].pronouns,
               score: gameScores[0],
               characters: lastScore.slots[0].characters,
-              losers: selectedSet.entrant1Losers || undefined,
+              losers: lastScore.slots[0].losers,
             },
             {
               displayNames: lastScore.slots[1].displayNames,
@@ -1811,7 +1822,7 @@ function Hello() {
               pronouns: lastScore.slots[1].pronouns,
               score: gameScores[1],
               characters: lastScore.slots[1].characters,
-              losers: selectedSet.entrant2Losers || undefined,
+              losers: lastScore.slots[1].losers,
             },
           ],
         };
@@ -2959,6 +2970,7 @@ function Hello() {
                           pronouns={
                             selectedSet.entrant1Participants[0].pronouns
                           }
+                          losers={selectedSet.entrant1Losers}
                           selectedChipData={selectedChipData}
                           setSelectedChipData={setSelectedChipData}
                           elevate={
@@ -2981,6 +2993,7 @@ function Hello() {
                             pronouns={
                               selectedSet.entrant1Participants[1].pronouns
                             }
+                            losers={selectedSet.entrant1Losers}
                             selectedChipData={selectedChipData}
                             setSelectedChipData={setSelectedChipData}
                             elevate={
@@ -3003,6 +3016,7 @@ function Hello() {
                           pronouns={
                             selectedSet.entrant2Participants[0].pronouns
                           }
+                          losers={selectedSet.entrant2Losers}
                           selectedChipData={selectedChipData}
                           setSelectedChipData={setSelectedChipData}
                           elevate={
@@ -3025,6 +3039,7 @@ function Hello() {
                             pronouns={
                               selectedSet.entrant2Participants[1].pronouns
                             }
+                            losers={selectedSet.entrant2Losers}
                             selectedChipData={selectedChipData}
                             setSelectedChipData={setSelectedChipData}
                             elevate={
