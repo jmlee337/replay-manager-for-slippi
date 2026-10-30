@@ -1748,6 +1748,7 @@ function Hello() {
               prefixes: [],
               pronouns: [],
               score: gameScores[j],
+              characters: [],
             };
             let teamId: number | undefined;
             for (let k = 0; k < replay.players.length; k += 1) {
@@ -1766,6 +1767,13 @@ function Hello() {
                 slots[j].ports.push(player.port);
                 slots[j].prefixes.push(player.playerOverrides.prefix);
                 slots[j].pronouns.push(player.playerOverrides.pronouns);
+                slots[j].characters.push({
+                  id: player.externalCharacterId,
+                  costume: player.costumeIndex,
+                });
+                if (replay.isTeams) {
+                  slots[j].teamId = player.teamId;
+                }
                 if (player.isWinner) {
                   gameScores[j] += 1;
                 }
@@ -1791,6 +1799,7 @@ function Hello() {
               prefixes: lastScore.slots[0].prefixes,
               pronouns: lastScore.slots[0].pronouns,
               score: gameScores[0],
+              characters: lastScore.slots[0].characters,
             },
             {
               displayNames: lastScore.slots[1].displayNames,
@@ -1798,6 +1807,7 @@ function Hello() {
               prefixes: lastScore.slots[1].prefixes,
               pronouns: lastScore.slots[1].pronouns,
               score: gameScores[1],
+              characters: lastScore.slots[1].characters,
             },
           ],
         };

@@ -291,12 +291,19 @@ export type SelectedSetChain = {
   phaseGroup?: SelectedPhaseGroup;
 };
 
+export type ContextCharacter = {
+  id: number;
+  costume: number;
+};
+
 export type ContextSlot = {
   displayNames: string[];
   ports: number[];
   prefixes: string[];
   pronouns: string[];
   score: number;
+  characters: ContextCharacter[];
+  teamId?: number;
 };
 
 // in game 1 port order
