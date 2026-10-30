@@ -1799,6 +1799,7 @@ function Hello() {
               prefixes: lastScore.slots[0].prefixes,
               pronouns: lastScore.slots[0].pronouns,
               score: gameScores[0],
+              characters: lastScore.slots[0].characters,
               losers: selectedSet.entrant1Losers,
             },
             {
@@ -1807,6 +1808,7 @@ function Hello() {
               prefixes: lastScore.slots[1].prefixes,
               pronouns: lastScore.slots[1].pronouns,
               score: gameScores[1],
+              characters: lastScore.slots[1].characters,
               losers: selectedSet.entrant2Losers,
             },
           ],
