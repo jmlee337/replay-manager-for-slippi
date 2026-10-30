@@ -1769,7 +1769,7 @@ function Hello() {
                 slots[j].pronouns.push(player.playerOverrides.pronouns);
                 slots[j].characters.push({
                   id: player.externalCharacterId,
-                  costume: player.costumeIndex
+                  costume: player.costumeIndex,
                 });
                 if (replay.isTeams) {
                   slots[j].teamId = player.teamId;
@@ -1799,6 +1799,7 @@ function Hello() {
               prefixes: lastScore.slots[0].prefixes,
               pronouns: lastScore.slots[0].pronouns,
               score: gameScores[0],
+              characters: lastScore.slots[0].characters,
             },
             {
               displayNames: lastScore.slots[1].displayNames,
@@ -1806,6 +1807,7 @@ function Hello() {
               prefixes: lastScore.slots[1].prefixes,
               pronouns: lastScore.slots[1].pronouns,
               score: gameScores[1],
+              characters: lastScore.slots[1].characters,
             },
           ],
         };
