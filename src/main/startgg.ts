@@ -215,14 +215,12 @@ const setIdToOrdinal = new Map<Id, number | null>();
 function getLosersValues(
   apiSet: any,
   losersSetIds: Map<number, boolean>,
-): [boolean, boolean] {
-  if (
-    losersSetIds.size === 0 ||
-    !apiSet.isGF ||
-    apiSet.entrant1PrereqType !== 'set' ||
-    apiSet.entrant2PrereqType !== 'set'
-  ) {
-    return [false, false];
+): [boolean | undefined, boolean | undefined] {
+  if (!apiSet.isGF) {
+    return [undefined, undefined];
+  }
+  if (apiSet.entrant1PrereqType !== 'set' || apiSet.entrant2PrereqType !== 'set') {
+    return [undefined, undefined];
   }
 
   const prereqId1 = apiSet.entrant1PrereqId;

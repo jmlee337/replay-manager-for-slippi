@@ -1800,7 +1800,7 @@ function Hello() {
               pronouns: lastScore.slots[0].pronouns,
               score: gameScores[0],
               characters: lastScore.slots[0].characters,
-              losers: selectedSet.entrant1Losers || undefined,
+              losers: selectedSet.entrant1Losers,
             },
             {
               displayNames: lastScore.slots[1].displayNames,
@@ -1809,7 +1809,7 @@ function Hello() {
               pronouns: lastScore.slots[1].pronouns,
               score: gameScores[1],
               characters: lastScore.slots[1].characters,
-              losers: selectedSet.entrant2Losers || undefined,
+              losers: selectedSet.entrant2Losers,
             },
           ],
         };
