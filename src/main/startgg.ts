@@ -220,21 +220,21 @@ function isSetInLosers(set: any): boolean {
 }
 
 function getLosersValues(
-  set: any,
+  apiSet: any,
   inLosers?: Map<number, boolean>,
 ): [boolean | undefined, boolean | undefined] {
   if (inLosers === undefined) {
     return [undefined, undefined];
   }
-  if (!set.isGF) {
+  if (!apiSet.isGF) {
     return [undefined, undefined];
   }
-  if (set.entrant1PrereqType !== 'set' || set.entrant2PrereqType !== 'set') {
+  if (apiSet.entrant1PrereqType !== 'set' || apiSet.entrant2PrereqType !== 'set') {
     return [undefined, undefined];
   }
 
-  const prereqId1 = set.entrant1PrereqId;
-  const prereqId2 = set.entrant2PrereqId;
+  const prereqId1 = apiSet.entrant1PrereqId;
+  const prereqId2 = apiSet.entrant2PrereqId;
   if (prereqId1 === prereqId2) {
     // Grand finals reset
     return [true, true];
