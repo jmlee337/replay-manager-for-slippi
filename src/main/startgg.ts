@@ -212,40 +212,10 @@ const idToStation = new Map<number, Station>();
 const reportedSetIds = new Map<Id, boolean>();
 const setIdToOrdinal = new Map<Id, number | null>();
 
-function isSetInLosers(set: any) : boolean {
-  return set.entrant1PrereqCondition === 'loser' || set.entrant2PrereqCondition === 'loser';
-}
-
-function getLosersValues(
-  set: any,
-  inLosers?: Map<number, boolean>,
-): [boolean | undefined, boolean | undefined] {
-  if (inLosers === undefined) {
-    return [undefined, undefined];
-  }
-  if (!set.isGF) {
-    return [undefined, undefined];
-  }
-  if (set.entrant1PrereqType !== 'set' || set.entrant2PrereqType !== 'set')
-  {
-    return [undefined, undefined];
-  }
-
-  const prereqId1 = set.entrant1PrereqId;
-  const prereqId2 = set.entrant2PrereqId;
-  if (prereqId1 === prereqId2) {
-    // Grand finals reset
-    return [true, true];
-  }
-
-  return [inLosers.get(prereqId1), inLosers.get(prereqId2)];
-}
-
 function toSet(
   apiSet: any,
   ordinal: number | null,
   entrantIdToParticipants: Map<number, Participant[]>,
-  inLosers?: Map<number, boolean>,
 ): Set {
   const { id, entrant1Id, entrant2Id, streamId, stationId } = apiSet;
   const entrant1Participants = entrantIdToParticipants.get(entrant1Id)!;
@@ -271,7 +241,6 @@ function toSet(
       };
     });
   }
-  const [entrant1Losers, entrant2Losers] = getLosersValues(apiSet, inLosers);
   return {
     id,
     sggId: typeof id === 'number' && Number.isInteger(id) && id > 0 ? id : null,
@@ -282,11 +251,9 @@ function toSet(
     entrant1Id,
     entrant1Participants,
     entrant1Score,
-    entrant1Losers,
     entrant2Id,
     entrant2Participants,
     entrant2Score,
-    entrant2Losers,
     gameScores,
     stream,
     station,
@@ -686,7 +653,6 @@ export async function getPhaseGroup(
     }
 
     const setsToUpdate = new Map<Id, Set>();
-    const inLosers = new Map(reachableSets.map((set) => [set.id, isSetInLosers(set)]));
     const missingStreamSets: { setId: Id; streamId: number }[] = [];
     const missingStationSets: { setId: Id; stationId: number }[] = [];
     reachableSets.forEach((set) => {
@@ -721,7 +687,7 @@ export async function getPhaseGroup(
           return;
         }
 
-        newSet = toSet(set, ordinal, entrantIdToParticipants, inLosers);
+        newSet = toSet(set, ordinal, entrantIdToParticipants);
         idToSet.set(setId, newSet);
         if (Number.isInteger(streamId) && !idToStream.has(streamId)) {
           missingStreamSets.push({ setId, streamId });
