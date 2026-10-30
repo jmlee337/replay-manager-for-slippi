@@ -987,25 +987,12 @@ function Hello() {
     refreshSubdirs();
   }, [dir, refreshSubdirs]);
 
-  const availablePlayers: PlayerOverrides[] = [];
-  selectedSet.entrant1Participants.forEach((participant) => {
-    availablePlayers.push({
-      displayName: participant.displayName,
-      entrantId: selectedSet.entrant1Id,
-      participantId: participant.id,
-      prefix: participant.prefix,
-      pronouns: participant.pronouns,
-    });
-  });
-  selectedSet.entrant2Participants.forEach((participant) => {
-    availablePlayers.push({
-      displayName: participant.displayName,
-      entrantId: selectedSet.entrant1Id,
-      participantId: participant.id,
-      prefix: participant.prefix,
-      pronouns: participant.pronouns,
-    });
-  });
+  const numAvailablePlayers = useMemo(
+    () =>
+      selectedSet.entrant1Participants.length +
+      selectedSet.entrant2Participants.length,
+    [selectedSet.entrant1Participants, selectedSet.entrant2Participants],
+  );
 
   const [slugDialogOpen, setSlugDialogOpen] = useState(false);
   const [parryggSlugDialogOpen, setParryggSlugDialogOpen] = useState(false);
@@ -1150,9 +1137,9 @@ function Hello() {
     });
 
     // pigeonhole remaining player if possible
-    if (numBatchActive === availablePlayers.length) {
+    if (numBatchActive === numAvailablePlayers) {
       const { teamI } = batchActives[index];
-      const isTeams = availablePlayers.length === 4 && teamI !== -1;
+      const isTeams = numAvailablePlayers === 4 && teamI !== -1;
 
       // find if there's exactly one hole to pigeon
       const elligibleIndicies: number[] = [];
@@ -2350,7 +2337,7 @@ function Hello() {
               <>
                 <ReplayList
                   dirInit={dirInit}
-                  numAvailablePlayers={availablePlayers.length}
+                  numAvailablePlayers={numAvailablePlayers}
                   replays={replays}
                   replayRefs={replayRefs}
                   selectedChipData={selectedChipData}
