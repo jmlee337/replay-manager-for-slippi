@@ -8,7 +8,6 @@ export type PlayerOverrides = {
   participantId: Id;
   prefix: string;
   pronouns: string;
-  losers?: boolean;
 };
 
 export type Player = {

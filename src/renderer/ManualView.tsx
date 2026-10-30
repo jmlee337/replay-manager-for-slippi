@@ -38,7 +38,6 @@ export default function ManualView({
           participantId={i + 1}
           prefix=""
           pronouns=""
-          losers={false}
           selectedChipData={selectedChipData}
           setSelectedChipData={setSelectedChipData}
         />
