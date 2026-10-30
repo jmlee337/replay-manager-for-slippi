@@ -167,7 +167,6 @@ const EMPTY_SET: Set = {
       pronouns: '',
     },
   ],
-  entrant1Losers: false,
   entrant1Score: null,
   entrant2Id: 0,
   entrant2Participants: [
@@ -178,7 +177,6 @@ const EMPTY_SET: Set = {
       pronouns: '',
     },
   ],
-  entrant2Losers: false,
   entrant2Score: null,
   gameScores: [],
   stream: null,
