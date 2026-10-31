@@ -481,11 +481,15 @@ export type OfflineModeSet = {
   entrant1Participants: OfflineModeParticipant[];
   entrant1PrereqStr: string | null;
   entrant1Score: number | null;
+  // possibly undefined due to version skew
+  entrant1Losers: boolean | undefined;
   entrant2Id: number | null;
   entrant2Name: string | null;
   entrant2Participants: OfflineModeParticipant[];
   entrant2PrereqStr: string | null;
   entrant2Score: number | null;
+  // possibly undefined due to version skew
+  entrant2Losers: boolean | undefined;
   games: OfflineModeGame[];
   winnerId: number | null;
   updatedAt: number;
