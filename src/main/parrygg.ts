@@ -227,7 +227,39 @@ function updateSetOrdinalMap(bracket: ParryggBracket): void {
   });
 }
 
-export function convertParryggSetToSet(set: Match.AsObject): Set {
+function getLosers(
+  set: Match.AsObject,
+  losersSetIds: Map<string, boolean>,
+): { entrant1Losers: boolean; entrant2Losers: boolean } {
+  if (
+    losersSetIds.size === 0 ||
+    !set.grandFinals ||
+    !set.prevMatchId1 ||
+    !set.prevMatchId2
+  ) {
+    return {
+      entrant1Losers: false,
+      entrant2Losers: false,
+    };
+  }
+
+  if (set.prevMatchId1 === set.prevMatchId2) {
+    return {
+      entrant1Losers: true,
+      entrant2Losers: true,
+    };
+  }
+
+  return {
+    entrant1Losers: losersSetIds.has(set.prevMatchId1),
+    entrant2Losers: losersSetIds.has(set.prevMatchId2),
+  };
+}
+
+export function convertParryggSetToSet(
+  set: Match.AsObject,
+  losersSetIds: Map<string, boolean>,
+): Set {
   const slots = set.slotsList;
   // A match's slots may not be populated yet (progressions, byes), so treat a
   // missing slot the same way we treat a missing entrant: TBD.
@@ -245,6 +277,7 @@ export function convertParryggSetToSet(set: Match.AsObject): Set {
 
   const winnerSlot = slots.find((slot) => slot.placement === 1);
   const winnerId = winnerSlot ? parseInt(winnerSlot.seedId, 10) || null : null;
+  const { entrant1Losers, entrant2Losers } = getLosers(set, losersSetIds);
 
   return {
     id: set.id,
@@ -261,14 +294,14 @@ export function convertParryggSetToSet(set: Match.AsObject): Set {
       set.state === MatchState.MATCH_STATE_COMPLETED
         ? slot1?.score ?? null
         : null,
-    entrant1Losers: false, // TODO
+    entrant1Losers,
     entrant2Id: entrant2?.id ?? '',
     entrant2Participants,
     entrant2Score:
       set.state === MatchState.MATCH_STATE_COMPLETED
         ? slot2?.score ?? null
         : null,
-    entrant2Losers: false, // TODO
+    entrant2Losers,
     gameScores: [],
     stream: null,
     station: null,
@@ -299,7 +332,12 @@ function updateBracketGlobalState(bracket: ParryggBracket): void {
         set.state === MatchState.MATCH_STATE_COMPLETED),
   );
 
-  const convertedSets = filteredSets.map(convertParryggSetToSet);
+  const losersSetIds = new Map(
+    filteredSets.filter((set) => !set.winnersSide).map((set) => [set.id, true]),
+  );
+  const convertedSets = filteredSets.map((set) =>
+    convertParryggSetToSet(set, losersSetIds),
+  );
   bracketIdToSets.set(bracket.id, {
     pendingSets: convertedSets
       .filter((set) => set.state !== State.COMPLETED)
@@ -310,7 +348,7 @@ function updateBracketGlobalState(bracket: ParryggBracket): void {
   });
 
   filteredSets.forEach((set) => {
-    setIdToSet.set(set.id, convertParryggSetToSet(set));
+    setIdToSet.set(set.id, convertParryggSetToSet(set, losersSetIds));
   });
 }
 
