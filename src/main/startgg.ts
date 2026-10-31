@@ -212,10 +212,40 @@ const idToStation = new Map<number, Station>();
 const reportedSetIds = new Map<Id, boolean>();
 const setIdToOrdinal = new Map<Id, number | null>();
 
+const setIdToLosers = new Map<
+  Id,
+  { entrant1Losers: boolean; entrant2Losers: boolean }
+>();
+function getSetLosers(
+  apiSet: any,
+  losersApiSetIds: Map<Id, boolean>,
+): { entrant1Losers: boolean; entrant2Losers: boolean } {
+  if (
+    losersApiSetIds.size === 0 ||
+    !apiSet.isGF ||
+    apiSet.entrant1PrereqType !== 'set' ||
+    apiSet.entrant2PrereqType !== 'set'
+  ) {
+    return { entrant1Losers: false, entrant2Losers: false };
+  }
+
+  const { id: apiSetId, entrant1PrereqId, entrant2PrereqId } = apiSet;
+  const ret =
+    entrant1PrereqId === entrant2PrereqId
+      ? { entrant1Losers: true, entrant2Losers: true }
+      : {
+          entrant1Losers: losersApiSetIds.has(entrant1PrereqId),
+          entrant2Losers: losersApiSetIds.has(entrant2PrereqId),
+        };
+  setIdToLosers.set(apiSetId, ret);
+  return ret;
+}
+
 function toSet(
   apiSet: any,
   ordinal: number | null,
   entrantIdToParticipants: Map<number, Participant[]>,
+  losersApiSetIds: Map<Id, boolean>,
 ): Set {
   const { id, entrant1Id, entrant2Id, streamId, stationId } = apiSet;
   const entrant1Participants = entrantIdToParticipants.get(entrant1Id)!;
@@ -241,6 +271,10 @@ function toSet(
       };
     });
   }
+  const { entrant1Losers, entrant2Losers } = getSetLosers(
+    apiSet,
+    losersApiSetIds,
+  );
   return {
     id,
     sggId: typeof id === 'number' && Number.isInteger(id) && id > 0 ? id : null,
@@ -251,9 +285,11 @@ function toSet(
     entrant1Id,
     entrant1Participants,
     entrant1Score,
+    entrant1Losers,
     entrant2Id,
     entrant2Participants,
     entrant2Score,
+    entrant2Losers,
     gameScores,
     stream,
     station,
@@ -417,7 +453,7 @@ async function getLadderPhaseGroup(
   const toSetPred = (apiSet: any) => {
     let set = idToSet.get(apiSet.id);
     if (!set || set.updatedAtMs < apiSet.updatedAt * 1000) {
-      set = toSet(apiSet, null, entrantIdToParticipants);
+      set = toSet(apiSet, null, entrantIdToParticipants, new Map());
     }
     if (set.state === 3) {
       completedSets.push(set);
@@ -585,9 +621,13 @@ export async function getPhaseGroup(
     }
 
     const idToDEOrdinal = new Map<Id, number>();
+    const losersApiSetIds = new Map<Id, boolean>();
     if (bracketType === 2) {
       const idToApiSet = new Map<number, any>();
       reachableSets.forEach((set) => idToApiSet.set(set.id, set));
+      reachableSets
+        .filter((set) => set.round < 0)
+        .forEach((set) => losersApiSetIds.set(set.id, true));
 
       const stack: any[] = [];
       const winnersQueue: any[] = [];
@@ -687,7 +727,7 @@ export async function getPhaseGroup(
           return;
         }
 
-        newSet = toSet(set, ordinal, entrantIdToParticipants);
+        newSet = toSet(set, ordinal, entrantIdToParticipants, losersApiSetIds);
         idToSet.set(setId, newSet);
         if (Number.isInteger(streamId) && !idToStream.has(streamId)) {
           missingStreamSets.push({ setId, streamId });
@@ -1267,6 +1307,7 @@ function gqlSetToSet(set: any): Set {
       entrant2Participants[0],
     ];
   }
+  const losers = setIdToLosers.get(set.id);
   return {
     id: set.id,
     sggId:
@@ -1281,9 +1322,11 @@ function gqlSetToSet(set: any): Set {
     entrant1Id: slot1.entrant.id,
     entrant1Participants,
     entrant1Score: slot1.standing?.stats?.score?.value ?? null,
+    entrant1Losers: losers?.entrant1Losers || false,
     entrant2Id: slot2.entrant.id,
     entrant2Participants,
     entrant2Score: slot2.standing?.stats?.score?.value ?? null,
+    entrant2Losers: losers?.entrant2Losers || false,
     gameScores: Array.isArray(set.games)
       ? set.games.map((game: any) => ({
           entrant1Score: game.entrant1Score ?? 0,

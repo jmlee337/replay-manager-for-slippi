@@ -168,6 +168,7 @@ const EMPTY_SET: Set = {
     },
   ],
   entrant1Score: null,
+  entrant1Losers: false,
   entrant2Id: 0,
   entrant2Participants: [
     {
@@ -178,6 +179,7 @@ const EMPTY_SET: Set = {
     },
   ],
   entrant2Score: null,
+  entrant2Losers: false,
   gameScores: [],
   stream: null,
   station: null,
@@ -1758,6 +1760,13 @@ function Hello() {
                   id: player.externalCharacterId,
                   costume: player.costumeIndex,
                 });
+                const losers =
+                  player.playerOverrides.entrantId === selectedSet.entrant1Id
+                    ? selectedSet.entrant1Losers
+                    : selectedSet.entrant2Losers;
+                if (losers) {
+                  slots[j].losers = true;
+                }
                 if (replay.isTeams) {
                   slots[j].teamId = player.teamId;
                 }
@@ -1787,6 +1796,7 @@ function Hello() {
               pronouns: lastScore.slots[0].pronouns,
               score: gameScores[0],
               characters: lastScore.slots[0].characters,
+              losers: lastScore.slots[0].losers,
             },
             {
               displayNames: lastScore.slots[1].displayNames,
@@ -1795,6 +1805,7 @@ function Hello() {
               pronouns: lastScore.slots[1].pronouns,
               score: gameScores[1],
               characters: lastScore.slots[1].characters,
+              losers: lastScore.slots[1].losers,
             },
           ],
         };

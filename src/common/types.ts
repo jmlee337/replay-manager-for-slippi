@@ -94,9 +94,11 @@ export type Set = {
   entrant1Id: Id;
   entrant1Participants: Participant[];
   entrant1Score: number | null;
+  entrant1Losers: boolean;
   entrant2Id: Id;
   entrant2Participants: Participant[];
   entrant2Score: number | null;
+  entrant2Losers: boolean;
   gameScores: GameScore[];
   stream: Stream | null;
   station: Station | null;
@@ -304,6 +306,7 @@ export type ContextSlot = {
   score: number;
   characters: ContextCharacter[];
   teamId?: number;
+  losers?: boolean;
 };
 
 // in game 1 port order
